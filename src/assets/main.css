@@ -1,6 +1,7 @@
 /* 全局样式 */
 :root {
   --primary-color: #667eea;
+  --primary-rgb: 102, 126, 234;
   --secondary-color: #764ba2;
   --success-color: #2ecc71;
   --warning-color: #f39c12;

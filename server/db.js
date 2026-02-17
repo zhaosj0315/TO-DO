@@ -44,6 +44,13 @@ export async function initDB() {
     )
   `);
 
+  // 检查并添加 description 字段 (如果不存在)
+  try {
+    await db.exec(`ALTER TABLE tasks ADD COLUMN description TEXT`);
+  } catch (e) {
+    // 字段可能已存在，忽略错误
+  }
+
   console.log('SQLite tables initialized.');
 }
 

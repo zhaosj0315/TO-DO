@@ -133,7 +133,8 @@
               @change="toggleTaskCompletion(task.id)"
             >
             <div class="task-content">
-              <span class="task-title">{{ task.text }}</span>
+              <span class="task-title" @click="openEditModal(task)" title="点击编辑详情">{{ task.text }}</span>
+              <div v-if="task.description" class="task-description">{{ task.description }}</div>
               <div class="task-meta">
                 <span class="task-time" :title="'创建于 ' + new Date(task.created_at).toLocaleString()">🕒 {{ formatDateTime(task.created_at) }}</span>
                 <span class="task-type">{{ getTaskTypeText(task) }}</span>
@@ -168,7 +169,7 @@
             <li v-for="task in taskStore.deletedTasks" :key="task.id" class="trash-item">
               <div class="trash-info">
                 <span class="trash-title">{{ task.text }}</span>
-                <span class="trash-meta">原分类: {{ getCategoryText(task.category) }}</span>
+                <span class="trash-meta:">原分类: {{ getCategoryText(task.category) }}</span>
               </div>
               <div class="trash-actions">
                 <button class="btn btn-success btn-sm" @click="restoreTask(task.id)">恢复</button>
@@ -177,6 +178,39 @@
             </li>
           </ul>
           <p v-else class="empty-state">回收站空空如也</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 任务详情编辑模态框 -->
+    <div v-if="editingTask" class="modal-overlay" @click.self="editingTask = null">
+      <div class="modal-content glass-card" style="background: white;">
+        <div class="modal-header">
+          <h3>编辑任务详情</h3>
+          <button class="close-btn" @click="editingTask = null">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="edit-field">
+            <label>任务名称</label>
+            <input 
+              v-model="editText" 
+              class="input" 
+              placeholder="任务名称"
+            >
+          </div>
+          <div class="edit-field">
+            <label>详细描述</label>
+            <textarea 
+              v-model="editDescription" 
+              class="input textarea" 
+              placeholder="添加更多细节描述..."
+              rows="5"
+            ></textarea>
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn-secondary" @click="editingTask = null">取消</button>
+            <button class="btn btn-primary" @click="saveDescription">保存更改</button>
+          </div>
         </div>
       </div>
     </div>
@@ -214,6 +248,9 @@ const startDate = ref('')
 const endDate = ref('')
 const countdownInterval = ref(null)
 const showTrash = ref(false)
+const editingTask = ref(null)
+const editDescription = ref('')
+const editText = ref('')
 
 // 筛选选项
 const filters = [
@@ -313,6 +350,30 @@ const permanentDelete = async (taskId) => {
     await taskStore.permanentDeleteTask(taskId)
     showNotification('任务已永久删除！', 'error')
   }
+}
+
+// 方法：打开编辑模态框
+const openEditModal = (task) => {
+  editingTask.value = { ...task }
+  editText.value = task.text
+  editDescription.value = task.description || ''
+}
+
+// 方法：保存描述
+const saveDescription = async () => {
+  if (!editingTask.value) return
+  if (!editText.value.trim()) {
+    showNotification('任务名称不能为空！', 'error')
+    return
+  }
+  
+  await taskStore.updateTask(editingTask.value.id, {
+    text: editText.value.trim(),
+    description: editDescription.value
+  })
+  
+  editingTask.value = null
+  showNotification('任务已更新！', 'success')
 }
 
 // 方法：退出登录
@@ -677,6 +738,21 @@ onUnmounted(() => {
 .task-title {
   font-size: 1.1rem;
   font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.task-title:hover {
+  color: var(--primary-color);
+}
+
+.task-description {
+  font-size: 0.85rem;
+  color: #888;
+  margin-top: 0.4rem;
+  line-height: 1.4;
+  max-width: 100%;
+  word-wrap: break-word;
 }
 
 .task-meta {
@@ -787,5 +863,45 @@ onUnmounted(() => {
   padding: 4rem 2rem;
   color: var(--text-light);
   text-align: center;
+}
+
+.edit-field {
+  margin-bottom: 1.5rem;
+}
+
+.edit-field label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text-dark);
+}
+
+.task-name-static {
+  padding: 0.8rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  color: #666;
+}
+
+.textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 120px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.btn-secondary {
+  background-color: #e9ecef;
+  color: #495057;
+}
+
+.btn-secondary:hover {
+  background-color: #dee2e6;
 }
 </style>

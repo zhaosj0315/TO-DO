@@ -65,11 +65,11 @@ app.get('/api/tasks/:userId/deleted', async (req, res) => {
 
 // 添加任务
 app.post('/api/tasks', async (req, res) => {
-  const { user_id, text, category, priority, type, weekdays } = req.body;
+  const { user_id, text, category, priority, type, weekdays, description } = req.body;
   try {
     const [result] = await pool.query(
-      'INSERT INTO tasks (user_id, text, category, priority, type, weekdays) VALUES (?, ?, ?, ?, ?, ?)',
-      [user_id, text, category, priority, type, JSON.stringify(weekdays)]
+      'INSERT INTO tasks (user_id, text, category, priority, type, weekdays, description) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [user_id, text, category, priority, type, JSON.stringify(weekdays), description || '']
     );
     const [newTask] = await pool.query('SELECT * FROM tasks WHERE id = ?', [result.insertId]);
     res.json({
@@ -90,7 +90,7 @@ app.put('/api/tasks/:id', async (req, res) => {
   const values = [];
   
   // 允许更新的所有合法字段
-  const allowedFields = ['text', 'status', 'category', 'priority', 'type', 'weekdays', 'last_completed', 'completed_at', 'is_deleted'];
+  const allowedFields = ['text', 'description', 'status', 'category', 'priority', 'type', 'weekdays', 'last_completed', 'completed_at', 'is_deleted'];
   
   for (const [key, value] of Object.entries(updates)) {
     if (allowedFields.includes(key)) {

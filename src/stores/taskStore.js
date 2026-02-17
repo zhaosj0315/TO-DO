@@ -155,7 +155,8 @@ export const useTaskStore = defineStore('task', {
           category: taskData.category,
           priority: taskData.priority,
           type: taskData.type,
-          weekdays: taskData.weekdays
+          weekdays: taskData.weekdays,
+          description: taskData.description || ''
         })
         if (response.data) {
           this.tasks.push(response.data)
