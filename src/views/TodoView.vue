@@ -1,15 +1,5 @@
 <template>
   <div class="todo-layout">
-    <!-- 调试日志面板 -->
-    <div class="debug-panel">
-      <div class="debug-title">任务页面调试日志</div>
-      <div class="debug-logs">
-        <div v-for="(log, index) in debugLogs" :key="index" class="debug-log" :class="log.type">
-          {{ log.time }} - {{ log.message }}
-        </div>
-      </div>
-    </div>
-    
     <!-- 核心内容区 -->
     <main class="main-content glass-card">
       <!-- 顶部标题栏 -->
@@ -234,18 +224,6 @@ import { useOfflineTaskStore } from '../stores/offlineTaskStore'
 
 const router = useRouter()
 const taskStore = useOfflineTaskStore()
-
-// 调试日志
-const debugLogs = ref([])
-const addLog = (message, type = 'info') => {
-  const time = new Date().toLocaleTimeString()
-  debugLogs.value.push({ time, message, type })
-  console.log(`[${time}] ${message}`)
-}
-
-addLog('TodoView组件加载', 'success')
-addLog(`当前URL: ${window.location.href}`, 'info')
-addLog(`当前hash: ${window.location.hash}`, 'info')
 
 // 任务状态枚举
 const TaskStatus = {
@@ -477,9 +455,7 @@ const showNotification = (message, type = 'info') => {
 
 // 生命周期钩子：组件挂载时
 onMounted(() => {
-  addLog('onMounted: 开始加载任务', 'info')
   taskStore.loadTasks()
-  addLog('onMounted: 任务加载完成', 'success')
   
   countdownInterval.value = setInterval(() => {
     taskStore.checkOverdueTasks()
@@ -493,55 +469,18 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.debug-panel {
-  position: fixed;
-  top: 10px;
-  left: 10px;
-  right: 10px;
-  max-height: 150px;
-  background: rgba(0, 0, 0, 0.9);
-  color: #0f0;
-  padding: 10px;
-  border-radius: 8px;
-  font-family: monospace;
-  font-size: 10px;
-  overflow-y: auto;
-  z-index: 9999;
-  border: 2px solid #0f0;
-}
-
-.debug-title {
-  color: #ff0;
-  font-weight: bold;
-  margin-bottom: 5px;
-  font-size: 11px;
-}
-
-.debug-logs {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.debug-log {
-  padding: 2px 5px;
-}
-
-.debug-log.info { color: #0ff; }
-.debug-log.success { color: #0f0; font-weight: bold; }
-.debug-log.error { color: #f00; font-weight: bold; }
-
 .todo-layout {
   display: flex;
   justify-content: center;
-  padding: 1rem;
+  padding: 0.5rem;
   min-height: 100vh;
 }
 
 .main-content {
   width: 100%;
-  max-width: 600px;
+  max-width: 100%;
   flex: none;
+  padding: 1rem;
 }
 
 .dashboard-area {
