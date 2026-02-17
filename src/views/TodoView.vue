@@ -1,23 +1,8 @@
 <template>
   <div class="todo-layout">
-    <!-- 左侧侧边栏: 分类与统计 -->
-    <aside class="sidebar">
-      <div class="glass-card card-padding">
-        <h3 class="card-title">📊 任务统计</h3>
-        <div class="progress-container">
-          <div class="progress-bar">
-            <div class="progress-fill" :style="{ width: completionPercentage + '%' }"></div>
-          </div>
-          <p style="font-size: 0.9rem; color: var(--text-light); text-align: center;">
-            今日已完成 {{ completionPercentage }}%
-          </p>
-        </div>
-      </div>
-    </aside>
-
-    <!-- 中间核心任务列表 -->
+    <!-- 核心内容区 -->
     <main class="main-content glass-card">
-      <!-- 顶部栏 -->
+      <!-- 顶部标题栏 -->
       <header class="header">
         <div class="user-info">
           <h1>My Tasks</h1>
@@ -27,6 +12,33 @@
           <button class="btn btn-danger" @click="handleLogout">退出登录</button>
         </div>
       </header>
+
+      <!-- 数据概览仪表盘 -->
+      <section class="dashboard-area">
+        <div class="stats-main">
+          <div class="progress-ring-container">
+            <div class="progress-value">{{ completionPercentage }}%</div>
+            <div class="progress-label">今日进度</div>
+          </div>
+          <div class="stats-grid">
+            <div class="stat-item">
+              <span class="stat-count">{{ pendingCount }}</span>
+              <span class="stat-label">待办</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-count success">{{ completedCount }}</span>
+              <span class="stat-label">已完成</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-count danger">{{ overdueCount }}</span>
+              <span class="stat-label">已逾期</span>
+            </div>
+          </div>
+        </div>
+        <div class="progress-bar-mini">
+          <div class="progress-fill" :style="{ width: completionPercentage + '%' }"></div>
+        </div>
+      </section>
 
       <!-- 筛选与添加区域容器 -->
       <div class="interaction-area">
@@ -144,42 +156,6 @@
       </div>
     </main>
 
-    <!-- 右侧挂件区 -->
-    <aside class="widgets-area">
-      <div class="glass-card card-padding">
-        <h3 class="card-title">⏰ 当前时间</h3>
-        <div style="text-align: center;">
-          <div style="font-size: 2.5rem; font-weight: 800; color: var(--primary-color);">{{ currentTime }}</div>
-          <div style="font-size: 1rem; color: var(--text-light);">{{ currentDay }}</div>
-        </div>
-      </div>
-
-      <div class="glass-card card-padding">
-        <h3 class="card-title">💡 每日灵感</h3>
-        <p style="font-style: italic; color: var(--text-light); line-height: 1.8;">
-          "{{ randomMotto }}"
-        </p>
-      </div>
-
-      <div class="glass-card card-padding">
-        <h3 class="card-title">📅 今日概览</h3>
-        <div style="display: flex; flex-direction: column; gap: 0.8rem;">
-          <div style="display: flex; justify-content: space-between;">
-            <span>待办:</span>
-            <span style="font-weight: 700;">{{ pendingCount }}</span>
-          </div>
-          <div style="display: flex; justify-content: space-between;">
-            <span>已完成:</span>
-            <span style="font-weight: 700; color: var(--success-color);">{{ completedCount }}</span>
-          </div>
-          <div style="display: flex; justify-content: space-between;">
-            <span>已逾期:</span>
-            <span style="font-weight: 700; color: var(--error-color);">{{ overdueCount }}</span>
-          </div>
-        </div>
-      </div>
-    </aside>
-
     <!-- 回收站模态框 -->
     <div v-if="showTrash" class="modal-overlay" @click.self="showTrash = false">
       <div class="modal-content glass-card" style="background: white;">
@@ -237,9 +213,7 @@ const currentCategoryFilter = ref('all')
 const startDate = ref('')
 const endDate = ref('')
 const countdownInterval = ref(null)
-const clockInterval = ref(null)
 const showTrash = ref(false)
-const timeNow = ref(new Date())
 
 // 筛选选项
 const filters = [
@@ -250,24 +224,6 @@ const filters = [
 
 // 星期几选项
 const weekdays = ['日', '一', '二', '三', '四', '五', '六']
-
-// 每日灵感
-const mottos = [
-  "种一棵树最好的时间是十年前，其次是现在。",
-  "不积跬步，无以至千里。",
-  "越努力，越幸运。",
-  "每一个不曾起舞的日子，都是对生命的辜负。",
-  "成功不是终点，失败也非末日。"
-]
-const randomMotto = mottos[Math.floor(Math.random() * mottos.length)]
-
-// 时间显示
-const currentTime = computed(() => {
-  return timeNow.value.toLocaleTimeString('zh-CN', { hour12: false })
-})
-const currentDay = computed(() => {
-  return timeNow.value.toLocaleDateString('zh-CN', { weekday: 'long', month: 'long', day: 'numeric' })
-})
 
 // 统计数据
 const completionPercentage = computed(() => {
@@ -443,20 +399,101 @@ onMounted(() => {
   countdownInterval.value = setInterval(() => {
     taskStore.checkOverdueTasks()
   }, 1000)
-
-  clockInterval.value = setInterval(() => {
-    timeNow.value = new Date()
-  }, 1000)
 })
 
 // 生命周期钩子：组件卸载时
 onUnmounted(() => {
   if (countdownInterval.value) clearInterval(countdownInterval.value)
-  if (clockInterval.value) clearInterval(clockInterval.value)
 })
 </script>
 
 <style scoped>
+.todo-layout {
+  display: flex;
+  justify-content: center;
+  padding: 1rem;
+  min-height: 100vh;
+}
+
+.main-content {
+  width: 100%;
+  max-width: 600px;
+  flex: none;
+}
+
+.dashboard-area {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  padding: 1.2rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.stats-main {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 1rem;
+}
+
+.progress-ring-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.progress-value {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--primary-color);
+}
+
+.progress-label {
+  font-size: 0.65rem;
+  color: var(--text-light);
+}
+
+.stats-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-count {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text-dark);
+}
+
+.stat-count.success { color: var(--success-color); }
+.stat-count.danger { color: var(--error-color); }
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--text-light);
+}
+
+.progress-bar-mini {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 0.5rem;
+}
+
 .interaction-area {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 16px;
