@@ -35,24 +35,52 @@ export const useTaskStore = defineStore('task', {
   
   getters: {
     // 获取筛选后的任务
-    getFilteredTasks: (state) => (filter, categoryFilter) => {
+    getFilteredTasks: (state) => (filter, categoryFilter, dateRange = { start: null, end: null }) => {
       return state.tasks.filter(task => {
-        // 按完成状态筛选
+        // 按完成状态筛选 (UI 顶部的状态页签筛选)
         if (filter === 'pending' && task.status === TaskStatus.COMPLETED) return false
         if (filter === 'completed' && task.status !== TaskStatus.COMPLETED) return false
         
         // 按分类筛选
         if (categoryFilter && categoryFilter !== 'all' && task.category !== categoryFilter) return false
+
+        // 按时间区间筛选 (基于任务创建时间 created_at，精确到小时)
+        if (dateRange.start || dateRange.end) {
+          const taskDate = new Date(task.created_at)
+          taskDate.setMinutes(0, 0, 0) // 忽略分钟和秒，只看小时
+          
+          if (dateRange.start) {
+            const start = new Date(dateRange.start)
+            start.setMinutes(0, 0, 0)
+            if (taskDate < start) return false
+          }
+          if (dateRange.end) {
+            const end = new Date(dateRange.end)
+            end.setMinutes(0, 0, 0)
+            if (taskDate > end) return false
+          }
+        }
         
         return true
       }).sort((a, b) => {
-        // 按优先级排序
+        // 1. 按照完成状态排序：已完成 (completed) 的排在最后
+        const isACompleted = a.status === TaskStatus.COMPLETED
+        const isBCompleted = b.status === TaskStatus.COMPLETED
+        if (isACompleted !== isBCompleted) {
+          return isACompleted ? 1 : -1
+        }
+
+        // 2. 在状态相同的情况下，按优先级排序 (高 > 中 > 低)
         const priorityOrder = {
           [TaskPriority.HIGH]: 3,
           [TaskPriority.MEDIUM]: 2,
           [TaskPriority.LOW]: 1
         }
-        return priorityOrder[b.priority] - priorityOrder[a.priority]
+        const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority]
+        if (priorityDiff !== 0) return priorityDiff
+
+        // 3. 优先级也相同时，按创建时间倒序（最新的在最上面）
+        return new Date(b.created_at) - new Date(a.created_at)
       })
     }
   },

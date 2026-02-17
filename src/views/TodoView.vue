@@ -30,13 +30,32 @@
       </div>
 
       <div class="glass-card card-padding">
-        <h3 class="card-title">📁 分类选择</h3>
-        <select v-model="currentCategoryFilter" class="select" style="width: 100%;" @change="filterTasks">
-          <option value="all">全部分类</option>
-          <option value="work">工作</option>
-          <option value="study">学习</option>
-          <option value="life">生活</option>
-        </select>
+        <div style="margin-bottom: 1.5rem;">
+          <h3 class="card-title">📁 分类选择</h3>
+          <select v-model="currentCategoryFilter" class="select" style="width: 100%;" @change="filterTasks">
+            <option value="all">全部分类</option>
+            <option value="work">工作</option>
+            <option value="study">学习</option>
+            <option value="life">生活</option>
+          </select>
+        </div>
+
+        <div class="time-filter-section">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
+            <h3 class="card-title" style="margin-bottom: 0;">📅 时间筛选</h3>
+            <button v-if="startDate || endDate" class="btn-text" @click="clearDateFilter">清除</button>
+          </div>
+          <div class="date-filter-group" style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <div class="date-input-item">
+              <label style="font-size: 0.8rem; color: var(--text-light);">从:</label>
+              <input type="datetime-local" v-model="startDate" step="3600" class="input" style="padding: 0.4rem; font-size: 0.85rem;">
+            </div>
+            <div class="date-input-item">
+              <label style="font-size: 0.8rem; color: var(--text-light);">至:</label>
+              <input type="datetime-local" v-model="endDate" step="3600" class="input" style="padding: 0.4rem; font-size: 0.85rem;">
+            </div>
+          </div>
+        </div>
       </div>
     </aside>
 
@@ -118,6 +137,7 @@
             <div class="task-content">
               <span class="task-title">{{ task.text }}</span>
               <div class="task-meta">
+                <span class="task-time" :title="'创建于 ' + new Date(task.created_at).toLocaleString()">🕒 {{ formatDateTime(task.created_at) }}</span>
                 <span class="task-type">{{ getTaskTypeText(task) }}</span>
                 <span class="badge" :class="`priority-${task.priority}`">{{ getPriorityText(task.priority) }}</span>
                 <span class="badge" :class="`category-${task.category}`">{{ getCategoryText(task.category) }}</span>
@@ -228,6 +248,8 @@ const newTaskPriority = ref('medium')
 const selectedWeekdays = ref([])
 const currentFilter = ref('all')
 const currentCategoryFilter = ref('all')
+const startDate = ref('')
+const endDate = ref('')
 const countdownInterval = ref(null)
 const clockInterval = ref(null)
 const showTrash = ref(false)
@@ -275,12 +297,21 @@ const overdueCount = computed(() => taskStore.tasks.filter(t => t.status === Tas
 
 // 计算属性：筛选后的任务
 const filteredTasks = computed(() => {
-  return taskStore.getFilteredTasks(currentFilter.value, currentCategoryFilter.value)
+  return taskStore.getFilteredTasks(currentFilter.value, currentCategoryFilter.value, {
+    start: startDate.value,
+    end: endDate.value
+  })
 })
 
 // 方法：设置筛选条件
 const setFilter = (filter) => {
   currentFilter.value = filter
+}
+
+// 方法：清除时间筛选
+const clearDateFilter = () => {
+  startDate.value = ''
+  endDate.value = ''
 }
 
 // 方法：筛选任务
@@ -386,6 +417,17 @@ const getCategoryText = (category) => {
   return categoryMap[category] || category
 }
 
+// 方法：格式化日期时间
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return date.toLocaleString('zh-CN', {
+    month: 'numeric',
+    day: 'numeric',
+    hour: '2-digit'
+  }) + '时'
+}
+
 // 方法：获取倒计时
 const getCountdown = (task) => {
   const now = new Date()
@@ -429,6 +471,35 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.btn-text {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.date-input-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.date-input-item .input {
+  flex: 1;
+}
+
+.task-time {
+  font-size: 0.75rem;
+  color: var(--text-light);
+  background: rgba(0, 0, 0, 0.05);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  margin-right: 0.3rem;
+}
+
 .task-filters {
   display: flex;
   justify-content: space-between;
