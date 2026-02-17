@@ -1,20 +1,182 @@
 <template>
-  <div class="container">
-    <!-- 顶部栏 -->
-    <header class="header">
-      <div class="user-info">
-        <h1>待办事项</h1>
-        <p>{{ currentDate }}</p>
+  <div class="todo-layout">
+    <!-- 左侧侧边栏: 分类与统计 -->
+    <aside class="sidebar">
+      <div class="glass-card card-padding">
+        <h3 class="card-title">📊 任务统计</h3>
+        <div class="progress-container">
+          <div class="progress-bar">
+            <div class="progress-fill" :style="{ width: completionPercentage + '%' }"></div>
+          </div>
+          <p style="font-size: 0.9rem; color: var(--text-light); text-align: center;">
+            今日已完成 {{ completionPercentage }}%
+          </p>
+        </div>
       </div>
-      <div class="header-actions">
-        <button class="btn btn-info" @click="showTrash = true">回收站 ({{ taskStore.deletedTasks.length }})</button>
-        <button class="btn btn-danger" @click="handleLogout">退出登录</button>
+
+      <div class="glass-card card-padding">
+        <h3 class="card-title">🔍 状态筛选</h3>
+        <div class="filter-group" style="display: flex; flex-direction: column; gap: 0.8rem;">
+          <button 
+            v-for="filter in filters" 
+            :key="filter.value"
+            class="filter-btn" 
+            :class="{ active: currentFilter === filter.value }"
+            @click="setFilter(filter.value)"
+          >
+            {{ filter.label }}
+          </button>
+        </div>
       </div>
-    </header>
+
+      <div class="glass-card card-padding">
+        <h3 class="card-title">📁 分类选择</h3>
+        <select v-model="currentCategoryFilter" class="select" style="width: 100%;" @change="filterTasks">
+          <option value="all">全部分类</option>
+          <option value="work">工作</option>
+          <option value="study">学习</option>
+          <option value="life">生活</option>
+        </select>
+      </div>
+    </aside>
+
+    <!-- 中间核心任务列表 -->
+    <main class="main-content glass-card">
+      <!-- 顶部栏 -->
+      <header class="header">
+        <div class="user-info">
+          <h1>My Tasks</h1>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-info" @click="showTrash = true">回收站 ({{ taskStore.deletedTasks.length }})</button>
+          <button class="btn btn-danger" @click="handleLogout">退出登录</button>
+        </div>
+      </header>
+
+      <!-- 任务添加区域 -->
+      <div class="task-input-section">
+        <div class="input-row">
+          <input 
+            type="text" 
+            v-model="newTaskText" 
+            class="input"
+            placeholder="有什么新计划吗？"
+            @keyup.enter="addTask"
+          >
+        </div>
+        <div class="input-row">
+          <select v-model="newTaskType" class="select">
+            <option value="today">仅今天</option>
+            <option value="daily">每天</option>
+            <option value="weekly">自定义</option>
+          </select>
+          <select v-model="newTaskCategory" class="select">
+            <option value="work">工作</option>
+            <option value="study">学习</option>
+            <option value="life">生活</option>
+          </select>
+          <select v-model="newTaskPriority" class="select">
+            <option value="medium">中优先级</option>
+            <option value="high">高优先级</option>
+            <option value="low">低优先级</option>
+          </select>
+          <button class="btn btn-primary" @click="addTask">添加任务</button>
+        </div>
+        
+        <div v-if="newTaskType === 'weekly'" class="weekday-select" style="margin-top: 0.5rem;">
+          <label style="font-size: 0.85rem; margin-bottom: 0.3rem;">选择重复周期:</label>
+          <div class="weekday-checkboxes">
+            <label 
+              v-for="(day, index) in weekdays" 
+              :key="index"
+              class="weekday-checkbox-item"
+            >
+              <input type="checkbox" :value="index" v-model="selectedWeekdays"> {{ day }}
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 任务列表 -->
+      <div class="task-list">
+        <ul v-if="filteredTasks.length > 0">
+          <li 
+            v-for="task in filteredTasks" 
+            :key="task.id"
+            class="task-item"
+            :class="{
+              'task-completed': task.status === TaskStatus.COMPLETED,
+              'task-overdue': task.status === TaskStatus.OVERDUE
+            }"
+          >
+            <input 
+              type="checkbox" 
+              class="task-checkbox" 
+              :checked="task.status === TaskStatus.COMPLETED"
+              @change="toggleTaskCompletion(task.id)"
+            >
+            <div class="task-content">
+              <span class="task-title">{{ task.text }}</span>
+              <div class="task-meta">
+                <span class="task-type">{{ getTaskTypeText(task) }}</span>
+                <span class="badge" :class="`priority-${task.priority}`">{{ getPriorityText(task.priority) }}</span>
+                <span class="badge" :class="`category-${task.category}`">{{ getCategoryText(task.category) }}</span>
+                <span v-if="task.type === 'today' && task.status !== TaskStatus.COMPLETED" class="task-countdown">
+                  {{ getCountdown(task) }}
+                </span>
+              </div>
+            </div>
+            <button class="btn btn-danger" style="width: 32px; height: 32px; padding: 0; border-radius: 50%;" @click="deleteTask(task.id)">
+              ×
+            </button>
+          </li>
+        </ul>
+        <div v-else class="empty-state">
+          <img src="https://illustrations.popsy.co/purple/taking-notes.svg" alt="empty" style="width: 150px; opacity: 0.5; margin-bottom: 1rem;">
+          <p>任务清单空空如也，开启高效的一天吧！</p>
+        </div>
+      </div>
+    </main>
+
+    <!-- 右侧挂件区 -->
+    <aside class="widgets-area">
+      <div class="glass-card card-padding">
+        <h3 class="card-title">⏰ 当前时间</h3>
+        <div style="text-align: center;">
+          <div style="font-size: 2.5rem; font-weight: 800; color: var(--primary-color);">{{ currentTime }}</div>
+          <div style="font-size: 1rem; color: var(--text-light);">{{ currentDay }}</div>
+        </div>
+      </div>
+
+      <div class="glass-card card-padding">
+        <h3 class="card-title">💡 每日灵感</h3>
+        <p style="font-style: italic; color: var(--text-light); line-height: 1.8;">
+          "{{ randomMotto }}"
+        </p>
+      </div>
+
+      <div class="glass-card card-padding">
+        <h3 class="card-title">📅 今日概览</h3>
+        <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+          <div style="display: flex; justify-content: space-between;">
+            <span>待办:</span>
+            <span style="font-weight: 700;">{{ pendingCount }}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span>已完成:</span>
+            <span style="font-weight: 700; color: var(--success-color);">{{ completedCount }}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span>已逾期:</span>
+            <span style="font-weight: 700; color: var(--error-color);">{{ overdueCount }}</span>
+          </div>
+        </div>
+      </div>
+    </aside>
 
     <!-- 回收站模态框 -->
     <div v-if="showTrash" class="modal-overlay" @click.self="showTrash = false">
-      <div class="modal-content">
+      <div class="modal-content glass-card" style="background: white;">
         <div class="modal-header">
           <h3>回收站</h3>
           <button class="close-btn" @click="showTrash = false">&times;</button>
@@ -35,108 +197,6 @@
           <p v-else class="empty-state">回收站空空如也</p>
         </div>
       </div>
-    </div>
-
-    <!-- 任务分类导航 -->
-    <nav class="task-filters">
-      <div class="filter-group">
-        <button 
-          v-for="filter in filters" 
-          :key="filter.value"
-          class="filter-btn" 
-          :class="{ active: currentFilter === filter.value }"
-          @click="setFilter(filter.value)"
-        >
-          {{ filter.label }}
-        </button>
-      </div>
-      <div class="category-filter">
-        <select v-model="currentCategoryFilter" class="select" @change="filterTasks">
-          <option value="all">全部分类</option>
-          <option value="work">工作</option>
-          <option value="study">学习</option>
-          <option value="life">生活</option>
-        </select>
-      </div>
-    </nav>
-
-    <!-- 任务添加区域 -->
-    <div class="task-input-section">
-      <input 
-        type="text" 
-        v-model="newTaskText" 
-        placeholder="输入新的待办事项..."
-        @keyup.enter="addTask"
-      >
-      <select v-model="newTaskType" class="select">
-        <option value="today">仅今天</option>
-        <option value="daily">每天</option>
-        <option value="weekly">自定义</option>
-      </select>
-      <select v-model="newTaskCategory" class="select">
-        <option value="work">工作</option>
-        <option value="study">学习</option>
-        <option value="life">生活</option>
-      </select>
-      <select v-model="newTaskPriority" class="select">
-        <option value="medium">中</option>
-        <option value="high">高</option>
-        <option value="low">低</option>
-      </select>
-      <div v-if="newTaskType === 'weekly'" class="weekday-select">
-        <label>选择星期几 (可多选):</label>
-        <div class="weekday-checkboxes">
-          <label 
-            v-for="(day, index) in weekdays" 
-            :key="index"
-            class="weekday-checkbox-item"
-          >
-            <input 
-              type="checkbox" 
-              :value="index" 
-              v-model="selectedWeekdays"
-            > {{ day }}
-          </label>
-        </div>
-      </div>
-      <button class="btn btn-primary" @click="addTask">添加</button>
-    </div>
-
-    <!-- 任务列表 -->
-    <div class="task-list">
-      <ul v-if="filteredTasks.length > 0">
-        <li 
-          v-for="task in filteredTasks" 
-          :key="task.id"
-          class="task-item"
-          :class="{
-            'task-completed': task.status === TaskStatus.COMPLETED,
-            'task-overdue': task.status === TaskStatus.OVERDUE
-          }"
-        >
-          <input 
-            type="checkbox" 
-            class="task-checkbox" 
-            :checked="task.status === TaskStatus.COMPLETED"
-            @change="toggleTaskCompletion(task.id)"
-          >
-          <div class="task-content">
-            <span class="task-title">{{ task.text }}</span>
-            <div class="task-meta">
-              <span class="task-type">{{ getTaskTypeText(task) }}</span>
-              <span class="badge" :class="`priority-${task.priority}`">{{ getPriorityText(task.priority) }}</span>
-              <span class="badge" :class="`category-${task.category}`">{{ getCategoryText(task.category) }}</span>
-              <span v-if="task.type === 'today' && task.status !== TaskStatus.COMPLETED" class="task-countdown">
-                {{ getCountdown(task) }}
-              </span>
-            </div>
-          </div>
-          <button class="btn btn-danger" style="width: 35px; height: 35px; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;" @click="deleteTask(task.id)">
-            ×
-          </button>
-        </li>
-      </ul>
-      <p v-else class="empty-state">暂无任务</p>
     </div>
   </div>
 </template>
@@ -169,7 +229,9 @@ const selectedWeekdays = ref([])
 const currentFilter = ref('all')
 const currentCategoryFilter = ref('all')
 const countdownInterval = ref(null)
+const clockInterval = ref(null)
 const showTrash = ref(false)
+const timeNow = ref(new Date())
 
 // 筛选选项
 const filters = [
@@ -181,20 +243,35 @@ const filters = [
 // 星期几选项
 const weekdays = ['日', '一', '二', '三', '四', '五', '六']
 
-// 计算属性：当前日期
-const currentDate = computed(() => {
-  const now = new Date()
-  const options = {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    weekday: 'long',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  }
-  return now.toLocaleDateString('zh-CN', options)
+// 每日灵感
+const mottos = [
+  "种一棵树最好的时间是十年前，其次是现在。",
+  "不积跬步，无以至千里。",
+  "越努力，越幸运。",
+  "每一个不曾起舞的日子，都是对生命的辜负。",
+  "成功不是终点，失败也非末日。"
+]
+const randomMotto = mottos[Math.floor(Math.random() * mottos.length)]
+
+// 时间显示
+const currentTime = computed(() => {
+  return timeNow.value.toLocaleTimeString('zh-CN', { hour12: false })
 })
+const currentDay = computed(() => {
+  return timeNow.value.toLocaleDateString('zh-CN', { weekday: 'long', month: 'long', day: 'numeric' })
+})
+
+// 统计数据
+const completionPercentage = computed(() => {
+  const total = taskStore.tasks.length
+  if (total === 0) return 0
+  const completed = taskStore.tasks.filter(t => t.status === TaskStatus.COMPLETED).length
+  return Math.round((completed / total) * 100)
+})
+
+const pendingCount = computed(() => taskStore.tasks.filter(t => t.status !== TaskStatus.COMPLETED).length)
+const completedCount = computed(() => taskStore.tasks.filter(t => t.status === TaskStatus.COMPLETED).length)
+const overdueCount = computed(() => taskStore.tasks.filter(t => t.status === TaskStatus.OVERDUE).length)
 
 // 计算属性：筛选后的任务
 const filteredTasks = computed(() => {
@@ -204,7 +281,6 @@ const filteredTasks = computed(() => {
 // 方法：设置筛选条件
 const setFilter = (filter) => {
   currentFilter.value = filter
-  filterTasks()
 }
 
 // 方法：筛选任务
@@ -320,36 +396,35 @@ const getCountdown = (task) => {
     const hours = Math.floor(remainingTime / (1000 * 60 * 60))
     const minutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60))
     const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000)
-    return `剩余时间: ${hours}小时${minutes}分钟${seconds}秒`
+    return `剩余: ${hours}h ${minutes}m`
   } else {
     return '已过期'
   }
 }
 
 // 方法：显示通知
+const emit = defineEmits(['notify'])
 const showNotification = (message, type = 'info') => {
-  // 这里可以使用Element Plus的Notification组件
-  console.log(`${type}: ${message}`)
+  emit('notify', { message, type })
 }
 
 // 生命周期钩子：组件挂载时
 onMounted(() => {
-  // 加载任务
   taskStore.loadTasks()
   
-  // 启动倒计时定时器
   countdownInterval.value = setInterval(() => {
-    // 触发任务列表更新
     taskStore.checkOverdueTasks()
+  }, 1000)
+
+  clockInterval.value = setInterval(() => {
+    timeNow.value = new Date()
   }, 1000)
 })
 
 // 生命周期钩子：组件卸载时
 onUnmounted(() => {
-  // 清除定时器
-  if (countdownInterval.value) {
-    clearInterval(countdownInterval.value)
-  }
+  if (countdownInterval.value) clearInterval(countdownInterval.value)
+  if (clockInterval.value) clearInterval(clockInterval.value)
 })
 </script>
 
@@ -363,85 +438,51 @@ onUnmounted(() => {
   flex-wrap: wrap;
 }
 
-.filter-group {
-  display: flex;
-  gap: 1rem;
-}
-
-.category-filter {
-  display: flex;
-  align-items: center;
-}
-
 .weekday-select {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
   padding: 0.8rem;
-  border: 2px solid var(--border-color);
-  border-radius: var(--border-radius);
-  background: white;
-}
-
-.weekday-select label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  color: var(--text-light);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .weekday-checkboxes {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.4rem;
   flex-wrap: wrap;
 }
 
 .weekday-checkbox-item {
   display: flex;
   align-items: center;
-  padding: 0.5rem 0.8rem;
-  background: var(--background-light);
-  border: 2px solid var(--border-color);
-  border-radius: 20px;
+  padding: 0.3rem 0.6rem;
+  background: white;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s;
-  font-size: 0.9rem;
-}
-
-.weekday-checkbox-item:hover {
-  background: #e9ecef;
-  border-color: var(--primary-color);
-}
-
-.weekday-checkbox-item input[type="checkbox"] {
-  margin-right: 0.3rem;
-  transform: scale(1.1);
+  font-size: 0.8rem;
 }
 
 .weekday-checkbox-item:has(input:checked) {
   background: var(--primary-color);
   color: white;
-  border-color: var(--primary-color);
 }
 
 .task-checkbox {
-  margin-right: 1.25rem;
-  transform: scale(1.3);
+  margin-right: 1rem;
+  transform: scale(1.2);
   cursor: pointer;
-  accent-color: var(--primary-color);
 }
 
 .task-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
 }
 
 .task-title {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   font-weight: 600;
-  transition: color 0.3s;
 }
 
 .task-meta {
@@ -449,11 +490,12 @@ onUnmounted(() => {
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
+  margin-top: 0.3rem;
 }
 
 .header-actions {
   display: flex;
-  gap: 1rem;
+  gap: 0.8rem;
 }
 
 /* 模态框样式 */
@@ -463,23 +505,20 @@ onUnmounted(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(8px);
 }
 
 .modal-content {
-  background: white;
   padding: 2rem;
-  border-radius: 15px;
   width: 90%;
   max-width: 600px;
   max-height: 80vh;
   overflow-y: auto;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
 .modal-header {
@@ -514,7 +553,6 @@ onUnmounted(() => {
 
 .trash-title {
   font-weight: 600;
-  color: #333;
 }
 
 .trash-meta {
@@ -533,12 +571,27 @@ onUnmounted(() => {
 }
 
 .btn-success {
-  background-color: #28a745;
+  background-color: var(--success-color);
   color: white;
 }
 
 .btn-info {
-  background-color: #17a2b8;
+  background-color: var(--primary-color);
   color: white;
+  opacity: 0.9;
+}
+
+.btn-info:hover {
+  opacity: 1;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  color: var(--text-light);
+  text-align: center;
 }
 </style>

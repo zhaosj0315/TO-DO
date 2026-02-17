@@ -1,13 +1,14 @@
 <template>
   <div class="login-container">
-    <div class="login-box">
-      <h2>用户登录</h2>
+    <div class="glass-card login-box">
+      <h2>Welcome Back</h2>
       <div class="input-group">
         <label for="username">用户名</label>
         <input 
           type="text" 
           id="username" 
           v-model="username" 
+          class="input"
           placeholder="请输入用户名"
           @keyup.enter="handleLogin"
         >
@@ -18,6 +19,7 @@
           type="password" 
           id="password" 
           v-model="password" 
+          class="input"
           placeholder="请输入密码"
           @keyup.enter="handleLogin"
         >
@@ -35,6 +37,7 @@ import { useUserStore } from '../stores/userStore'
 
 const router = useRouter()
 const userStore = useUserStore()
+const emit = defineEmits(['notify'])
 
 const username = ref('')
 const password = ref('')
@@ -50,9 +53,11 @@ const handleLogin = async () => {
   
   const success = await userStore.login(username.value.trim(), password.value)
   if (success) {
+    emit('notify', { message: '登录成功！', type: 'success' })
     router.push('/todo')
   } else {
     error.value = '登录失败'
+    emit('notify', { message: '用户名或密码错误', type: 'error' })
   }
 }
 </script>
@@ -67,21 +72,19 @@ const handleLogin = async () => {
 }
 
 .login-box {
-  background: white;
-  padding: 2.5rem;
-  border-radius: 15px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  padding: 3rem;
   width: 100%;
   max-width: 450px;
-  backdrop-filter: blur(10px);
 }
 
 .login-box h2 {
   text-align: center;
-  margin-bottom: 2rem;
-  color: var(--primary-color);
-  font-size: 2rem;
-  font-weight: 600;
+  margin-bottom: 2.5rem;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-size: 2.2rem;
+  font-weight: 800;
 }
 
 .input-group {
@@ -91,39 +94,24 @@ const handleLogin = async () => {
 .input-group label {
   display: block;
   margin-bottom: 0.75rem;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-light);
-  font-size: 0.95rem;
-}
-
-.input-group input {
-  width: 100%;
-  padding: 1rem;
-  border: 2px solid var(--border-color);
-  border-radius: var(--border-radius);
-  font-size: 1rem;
-  transition: all 0.3s;
-  background: var(--background-light);
-}
-
-.input-group input:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  background: white;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  font-size: 0.9rem;
 }
 
 #login-btn {
   width: 100%;
   padding: 1rem;
   font-size: 1.1rem;
-  margin-top: 1rem;
+  margin-top: 1.5rem;
+  border-radius: 12px;
 }
 
 .error-message {
   color: var(--error-color);
   text-align: center;
-  margin-top: 1rem;
+  margin-top: 1.5rem;
   font-size: 0.9rem;
+  font-weight: 500;
 }
 </style>
