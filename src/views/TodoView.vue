@@ -136,8 +136,8 @@
               <span class="task-title" @click="openEditModal(task)" title="点击编辑详情">{{ task.text }}</span>
               <div v-if="task.description" class="task-description">{{ task.description }}</div>
               <div class="task-meta">
-                <span class="task-time" :title="'创建于 ' + new Date(task.created_at).toLocaleString()">🕒 {{ formatDateTime(task.created_at) }}</span>
-                <span class="task-type">{{ getTaskTypeText(task) }}</span>
+                <span class="task-time">🕒 {{ formatDateTime(task.created_at) }}</span>
+                <span class="task-type badge">{{ getTaskTypeText(task) }}</span>
                 <span class="badge" :class="`priority-${task.priority}`">{{ getPriorityText(task.priority) }}</span>
                 <span class="badge" :class="`category-${task.category}`">{{ getCategoryText(task.category) }}</span>
                 <span v-if="task.type === 'today' && task.status !== TaskStatus.COMPLETED" class="task-countdown">
@@ -425,10 +425,13 @@ const formatDateTime = (dateStr) => {
   if (!dateStr) return ''
   const date = new Date(dateStr)
   return date.toLocaleString('zh-CN', {
+    timeZone: 'Asia/Shanghai',
     month: 'numeric',
     day: 'numeric',
-    hour: '2-digit'
-  }) + '时'
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  })
 }
 
 // 方法：获取倒计时
@@ -678,10 +681,8 @@ onUnmounted(() => {
 .task-time {
   font-size: 0.75rem;
   color: var(--text-light);
-  background: rgba(0, 0, 0, 0.05);
-  padding: 0.1rem 0.4rem;
+  padding: 0.2rem 0.4rem;
   border-radius: 4px;
-  margin-right: 0.3rem;
 }
 
 .task-filters {
