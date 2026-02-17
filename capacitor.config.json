@@ -1,0 +1,9 @@
+{
+  "appId": "com.todo.app",
+  "appName": "TODO App",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  }
+}
