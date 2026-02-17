@@ -13,36 +13,68 @@
         </div>
       </header>
 
-      <!-- 数据概览仪表盘 -->
+      <!-- 数据概览与添加按钮 - 一体化 -->
       <section class="dashboard-area">
-        <div class="stats-main">
-          <div class="progress-ring-container">
-            <div class="progress-value">{{ completionPercentage }}%</div>
-            <div class="progress-label">今日进度</div>
+        <div class="stats-all-in-one">
+          <div class="progress-ring-mini">
+            <div class="progress-value-mini">{{ completionPercentage }}%</div>
           </div>
-          <div class="stats-grid">
-            <div class="stat-item">
-              <span class="stat-count">{{ pendingCount }}</span>
-              <span class="stat-label">待办</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-count success">{{ completedCount }}</span>
-              <span class="stat-label">已完成</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-count danger">{{ overdueCount }}</span>
-              <span class="stat-label">已逾期</span>
-            </div>
+          <div class="stat-item-inline">
+            <span class="stat-count-mini">{{ pendingCount }}</span>
+            <span class="stat-label-mini">待办</span>
           </div>
+          <div class="stat-item-inline">
+            <span class="stat-count-mini success">{{ completedCount }}</span>
+            <span class="stat-label-mini">已完成</span>
+          </div>
+          <div class="stat-item-inline">
+            <span class="stat-count-mini danger">{{ overdueCount }}</span>
+            <span class="stat-label-mini">已逾期</span>
+          </div>
+          <button class="add-btn-text" @click="showAddForm = !showAddForm">{{ showAddForm ? '收起' : '添加' }}</button>
         </div>
-        <div class="progress-bar-mini">
-          <div class="progress-fill" :style="{ width: completionPercentage + '%' }"></div>
+
+        <!-- 添加任务表单 - 折叠式 -->
+        <div v-if="showAddForm" class="add-form-inline">
+          <input 
+            type="text" 
+            v-model="newTaskText" 
+            class="input-inline"
+            placeholder="任务名称"
+            @keyup.enter="addTask"
+          >
+          <select v-model="newTaskType" class="select-inline">
+            <option value="today">仅今天</option>
+            <option value="daily">每天</option>
+            <option value="weekly">自定义</option>
+          </select>
+          <select v-model="newTaskCategory" class="select-inline">
+            <option value="work">工作</option>
+            <option value="study">学习</option>
+            <option value="life">生活</option>
+          </select>
+          <select v-model="newTaskPriority" class="select-inline">
+            <option value="high">高</option>
+            <option value="medium">中</option>
+            <option value="low">低</option>
+          </select>
+          <button class="btn-inline btn-add" @click="addTask">✓</button>
+          <button class="btn-inline btn-cancel" @click="showAddForm = false">×</button>
+        </div>
+        
+        <div v-if="showAddForm && newTaskType === 'weekly'" class="weekday-select-inline">
+          <label 
+            v-for="(day, index) in weekdays" 
+            :key="index"
+            class="weekday-checkbox-item"
+          >
+            <input type="checkbox" :value="index" v-model="selectedWeekdays"> {{ day }}
+          </label>
         </div>
       </section>
 
-      <!-- 筛选与添加区域容器 -->
+      <!-- 筛选工具栏 -->
       <div class="interaction-area">
-        <!-- 移动端 App 风格的单行筛选工具栏 -->
         <section class="filter-toolbar">
           <div class="filter-item">
             <select v-model="currentFilter" class="mobile-select">
@@ -68,51 +100,7 @@
             </div>
           </div>
         </section>
-
-        <!-- 任务添加区域 -->
-        <div class="task-input-section">
-        <div class="input-row">
-          <input 
-            type="text" 
-            v-model="newTaskText" 
-            class="input"
-            placeholder="有什么新计划吗？"
-            @keyup.enter="addTask"
-          >
-        </div>
-        <div class="input-row">
-          <select v-model="newTaskType" class="select">
-            <option value="today">仅今天</option>
-            <option value="daily">每天</option>
-            <option value="weekly">自定义</option>
-          </select>
-          <select v-model="newTaskCategory" class="select">
-            <option value="work">工作</option>
-            <option value="study">学习</option>
-            <option value="life">生活</option>
-          </select>
-          <select v-model="newTaskPriority" class="select">
-            <option value="medium">中优先级</option>
-            <option value="high">高优先级</option>
-            <option value="low">低优先级</option>
-          </select>
-          <button class="btn btn-primary" @click="addTask">添加任务</button>
-        </div>
-        
-        <div v-if="newTaskType === 'weekly'" class="weekday-select" style="margin-top: 0.5rem;">
-          <label style="font-size: 0.85rem; margin-bottom: 0.3rem;">选择重复周期:</label>
-          <div class="weekday-checkboxes">
-            <label 
-              v-for="(day, index) in weekdays" 
-              :key="index"
-              class="weekday-checkbox-item"
-            >
-              <input type="checkbox" :value="index" v-model="selectedWeekdays"> {{ day }}
-            </label>
-          </div>
-        </div>
       </div>
-    </div>
 
     <!-- 任务列表 -->
     <div class="task-list">
@@ -214,6 +202,8 @@
         </div>
       </div>
     </div>
+
+    <!-- 底部抽屉 - 添加任务 -->
   </div>
 </template>
 
@@ -249,6 +239,7 @@ const showTrash = ref(false)
 const editingTask = ref(null)
 const editDescription = ref('')
 const editText = ref('')
+const showAddForm = ref(true)
 
 // 筛选选项
 const filters = [
@@ -294,6 +285,14 @@ const clearDateFilter = () => {
 // 方法：筛选任务
 const filterTasks = () => {
   // 筛选逻辑已在taskStore中实现
+}
+
+// 方法：添加任务并关闭表单
+const addTaskAndClose = async () => {
+  await addTask()
+  if (newTaskText.value.trim()) {
+    showAddForm.value = false
+  }
 }
 
 // 方法：添加任务
@@ -485,77 +484,93 @@ onUnmounted(() => {
 
 .dashboard-area {
   background: rgba(255, 255, 255, 0.2);
-  border-radius: 16px;
-  padding: 1.2rem;
-  margin-bottom: 1.5rem;
+  border-radius: 12px;
+  padding: 0.8rem;
+  margin-bottom: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-.stats-main {
+.stats-all-in-one {
   display: flex;
   align-items: center;
-  gap: 2rem;
-  margin-bottom: 1rem;
+  gap: 0.8rem;
+  justify-content: space-between;
 }
 
-.progress-ring-container {
+.stat-item-inline {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.add-btn-text {
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  border: none;
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.add-btn-text:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+}
+
+.add-btn-text:active {
+  transform: scale(0.95);
+}
+
+.progress-ring-mini {
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 80px;
-  height: 80px;
+  width: 50px;
+  height: 50px;
   background: white;
   border-radius: 50%;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
 }
 
-.progress-value {
-  font-size: 1.2rem;
+.progress-value-mini {
+  font-size: 0.85rem;
   font-weight: 800;
   color: var(--primary-color);
 }
 
-.progress-label {
-  font-size: 0.65rem;
-  color: var(--text-light);
-}
-
-.stats-grid {
-  flex: 1;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-}
-
-.stat-item {
+.stats-vertical {
   display: flex;
   flex-direction: column;
+  gap: 0.3rem;
+  flex: 1;
+}
+
+.stat-item-mini {
+  display: flex;
   align-items: center;
+  gap: 0.5rem;
 }
 
-.stat-count {
-  font-size: 1.4rem;
-  font-weight: 800;
+.stat-count-mini {
+  font-size: 1rem;
+  font-weight: 700;
   color: var(--text-dark);
+  min-width: 20px;
 }
 
-.stat-count.success { color: var(--success-color); }
-.stat-count.danger { color: var(--error-color); }
+.stat-count-mini.success { color: var(--success-color); }
+.stat-count-mini.danger { color: var(--error-color); }
 
-.stat-label {
+.stat-label-mini {
   font-size: 0.75rem;
   color: var(--text-light);
 }
 
-.progress-bar-mini {
-  height: 6px;
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 3px;
-  overflow: hidden;
-  margin-top: 0.5rem;
-}
-
 .interaction-area {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 16px;
@@ -566,20 +581,16 @@ onUnmounted(() => {
 
 .interaction-area {
   background: rgba(255, 255, 255, 0.2);
-  border-radius: 16px;
-  padding: 1.2rem;
-  margin-bottom: 1.5rem;
+  border-radius: 12px;
+  padding: 0.8rem;
+  margin-bottom: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
 }
 
 .filter-toolbar {
   display: flex;
   align-items: center;
   gap: 0.8rem;
-  padding: 0 0 1rem 0;
-  margin-bottom: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
   overflow-x: auto;
   white-space: nowrap;
   scrollbar-width: none;
@@ -903,4 +914,102 @@ onUnmounted(() => {
 .btn-secondary:hover {
   background-color: #dee2e6;
 }
+
+/* 内联添加表单 */
+.add-form-inline {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.input-inline {
+  flex: 1;
+  min-width: 120px;
+  padding: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+}
+
+.input-inline:focus {
+  outline: none;
+  background: white;
+  border-color: var(--primary-color);
+}
+
+.select-inline {
+  padding: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.select-inline:focus {
+  outline: none;
+  background: white;
+  border-color: var(--primary-color);
+}
+
+.btn-inline {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-add {
+  background: var(--success-color);
+  color: white;
+}
+
+.btn-add:hover {
+  transform: scale(1.1);
+}
+
+.btn-cancel {
+  background: #e9ecef;
+  color: #666;
+}
+
+.btn-cancel:hover {
+  background: #dee2e6;
+}
+
+.weekday-select-inline {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.weekday-select-inline .weekday-checkbox-item {
+  padding: 0.3rem 0.6rem;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 0.8rem;
+}
+
+.weekday-select-inline .weekday-checkbox-item:has(input:checked) {
+  background: var(--primary-color);
+  color: white;
+}
+
+/* 悬浮添加按钮 - 已移除，改为顶部按钮 */
+
+/* 底部抽屉 - 已移除，改为内联表单 */
 </style>
