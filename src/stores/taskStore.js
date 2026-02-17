@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { useUserStore } from './userStore'
 import axios from 'axios'
 
-const API_URL = 'http://localhost:3000/api'
+const API_URL = 'http://localhost:3001/api'
 
 // 任务状态枚举
 const TaskStatus = {
@@ -129,10 +129,15 @@ export const useTaskStore = defineStore('task', {
           type: taskData.type,
           weekdays: taskData.weekdays
         })
-        this.tasks.push(response.data)
+        if (response.data) {
+          this.tasks.push(response.data)
+          return true
+        }
       } catch (error) {
         console.error('Error adding task:', error)
+        throw error
       }
+      return false
     },
     
     // 更新任务

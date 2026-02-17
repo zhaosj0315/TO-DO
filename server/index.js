@@ -6,13 +6,13 @@ import pool, { initDB } from './db.js';
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
 
 // 初始化数据库
-initDB();
+await initDB();
 
 // 用户登录/注册 (简化逻辑)
 app.post('/api/login', async (req, res) => {

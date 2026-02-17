@@ -50,14 +50,25 @@ export async function initDB() {
 export default {
   // 代理方法以适配原有代码
   query: async (sql, params = []) => {
+    if (!db) {
+      throw new Error('Database not initialized. Please wait a moment and try again.');
+    }
     const normalizedSql = sql.trim().toUpperCase();
-    if (normalizedSql.startsWith('SELECT')) {
-      const rows = await db.all(sql, params);
-      return [rows];
-    } else {
-      const result = await db.run(sql, params);
-      // 适配 mysql2 的 result.insertId
-      return [{ insertId: result.lastID, affectedRows: result.changes }];
+    try {
+      if (normalizedSql.startsWith('SELECT')) {
+        const rows = await db.all(sql, params);
+        return [rows || []];
+      } else {
+        const result = await db.run(sql, params);
+        // 适配 mysql2 的 result.insertId (SQLite 使用 lastID)
+        return [{ 
+          insertId: result.lastID, 
+          affectedRows: result.changes 
+        }];
+      }
+    } catch (error) {
+      console.error('SQL Error:', sql, error);
+      throw error;
     }
   }
 };
