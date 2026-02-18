@@ -8,8 +8,11 @@ dist/
 # Android构建产物
 android/
 
-# APK文件（可选：如果不想提交到Git）
-# *.apk
+# APK文件
+*.apk
+
+# 图标临时文件
+icon-*.png
 
 # 本地环境配置
 .env
@@ -23,7 +26,3 @@ android/
 
 # 系统文件
 Thumbs.db
-
-# 调试文件
-TODO-App-Debug.apk
-TODO-App-Offline.apk
