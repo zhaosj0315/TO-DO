@@ -13,25 +13,32 @@
         </div>
       </header>
 
-      <!-- 统计+筛选+添加 - 融合区域 -->
+      <!-- 统计+筛选+添加 - 融合区域 v1.2优化 -->
       <section class="dashboard-area">
         <!-- 第一行：统计数据（可点击筛选） + 添加按钮 -->
         <div class="stats-all-in-one">
+          <!-- 环形进度圈 -->
           <div class="progress-ring-mini" @click="currentFilter = 'all'" :class="{ active: currentFilter === 'all' }">
             <div class="progress-value-mini">{{ completionPercentage }}%</div>
           </div>
-          <div class="stat-item-inline clickable" @click="currentFilter = 'pending'" :class="{ active: currentFilter === 'pending' }">
+          
+          <!-- 统计数据横向排列 -->
+          <div class="stat-row clickable" @click="currentFilter = 'pending'" :class="{ active: currentFilter === 'pending' }">
+            <span class="stat-icon">⏳</span>
             <span class="stat-count-mini">{{ pendingCount }}</span>
             <span class="stat-label-mini">待办</span>
           </div>
-          <div class="stat-item-inline clickable" @click="currentFilter = 'completed'" :class="{ active: currentFilter === 'completed' }">
+          <div class="stat-row clickable" @click="currentFilter = 'completed'" :class="{ active: currentFilter === 'completed' }">
+            <span class="stat-icon">✅</span>
             <span class="stat-count-mini success">{{ completedCount }}</span>
             <span class="stat-label-mini">已完成</span>
           </div>
-          <div class="stat-item-inline clickable" @click="currentFilter = 'overdue'" :class="{ active: currentFilter === 'overdue' }">
+          <div class="stat-row clickable" @click="currentFilter = 'overdue'" :class="{ active: currentFilter === 'overdue' }">
+            <span class="stat-icon">⚠️</span>
             <span class="stat-count-mini danger">{{ overdueCount }}</span>
             <span class="stat-label-mini">已逾期</span>
           </div>
+          
           <button class="add-btn-text" @click="showAddForm = !showAddForm">{{ showAddForm ? '收起' : '添加' }}</button>
         </div>
 
@@ -107,26 +114,38 @@
               'task-overdue': task.status === TaskStatus.OVERDUE
             }"
           >
-            <input 
-              type="checkbox" 
-              class="task-checkbox" 
-              :checked="task.status === TaskStatus.COMPLETED"
-              @change="toggleTaskCompletion(task.id)"
-            >
+            <!-- v1.2: 增大点击热区 -->
+            <label class="checkbox-wrapper">
+              <input 
+                type="checkbox" 
+                class="task-checkbox" 
+                :checked="task.status === TaskStatus.COMPLETED"
+                @change="toggleTaskCompletion(task.id)"
+              >
+            </label>
             <div class="task-content">
               <span class="task-title" @click="openEditModal(task)" title="点击编辑详情">{{ task.text }}</span>
               <div v-if="task.description" class="task-description">{{ task.description }}</div>
               <div class="task-meta">
                 <span class="task-time">🕒 {{ formatDateTime(task.created_at) }}</span>
                 <span class="task-type badge">{{ getTaskTypeText(task) }}</span>
-                <span class="badge" :class="`priority-${task.priority}`">{{ getPriorityText(task.priority) }}</span>
-                <span class="badge" :class="`category-${task.category}`">{{ getCategoryText(task.category) }}</span>
-                <span v-if="task.type === 'today' && task.status !== TaskStatus.COMPLETED" class="task-countdown">
+                <span class="badge badge-icon" :class="`priority-${task.priority}`" :title="`优先级: ${getPriorityText(task.priority)}`">
+                  ⚡ {{ getPriorityText(task.priority) }}
+                </span>
+                <span class="badge badge-icon" :class="`category-${task.category}`" :title="`分类: ${getCategoryText(task.category)}`">
+                  🏷️ {{ getCategoryText(task.category) }}
+                </span>
+                <span 
+                  v-if="task.type === 'today' && task.status !== TaskStatus.COMPLETED" 
+                  class="task-countdown"
+                  :class="getCountdownClass(task)"
+                >
                   {{ getCountdown(task) }}
                 </span>
               </div>
             </div>
-            <button class="btn btn-danger" style="width: 32px; height: 32px; padding: 0; border-radius: 50%;" @click="deleteTask(task.id)">
+            <!-- v1.2: 增大删除按钮点击区域 -->
+            <button class="btn-delete-touch" @click="deleteTask(task.id)" title="删除任务">
               ×
             </button>
           </li>
@@ -441,11 +460,22 @@ const getCountdown = (task) => {
   if (remainingTime > 0) {
     const hours = Math.floor(remainingTime / (1000 * 60 * 60))
     const minutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60))
-    const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000)
     return `剩余: ${hours}h ${minutes}m`
   } else {
     return '已过期'
   }
+}
+
+// v1.2: 获取倒计时颜色类
+const getCountdownClass = (task) => {
+  const now = new Date()
+  const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
+  const remainingTime = endOfDay - now
+  const hours = remainingTime / (1000 * 60 * 60)
+  
+  if (hours <= 1) return 'countdown-urgent'      // 小于1小时：红色
+  if (hours <= 3) return 'countdown-warning'     // 小于3小时：橙色
+  return 'countdown-normal'                       // 正常：蓝色
 }
 
 // 方法：显示通知
@@ -484,46 +514,67 @@ onUnmounted(() => {
   padding: 1rem;
 }
 
+/* v1.2: 统计栏卡片感增强 */
 .dashboard-area {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.35);
   border-radius: 12px;
   padding: 0.8rem;
   margin-bottom: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
 
 .stats-all-in-one {
   display: flex;
   align-items: center;
-  gap: 0.8rem;
+  gap: 0.6rem;
   justify-content: space-between;
   margin-bottom: 0.8rem;
+  flex-wrap: wrap;
 }
 
-.stat-item-inline {
+/* v1.2: 统计数据横向紧凑排列 */
+.stat-row {
   display: flex;
   align-items: center;
   gap: 0.3rem;
-}
-
-.stat-item-inline.clickable,
-.progress-ring-mini {
-  cursor: pointer;
-  transition: all 0.3s;
   padding: 0.3rem 0.5rem;
   border-radius: 8px;
+  transition: all 0.3s;
 }
 
-.stat-item-inline.clickable:hover,
-.progress-ring-mini:hover {
+.stat-row.clickable {
+  cursor: pointer;
+}
+
+.stat-row.clickable:hover {
   background: rgba(255, 255, 255, 0.3);
   transform: scale(1.05);
 }
 
-.stat-item-inline.active,
-.progress-ring-mini.active {
+.stat-row.active {
   background: rgba(255, 255, 255, 0.5);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stat-icon {
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.stat-count-mini {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  min-width: 20px;
+}
+
+.stat-count-mini.success { color: var(--success-color); }
+.stat-count-mini.danger { color: var(--error-color); }
+
+.stat-label-mini {
+  font-size: 0.8rem;
+  color: var(--text-light);
 }
 
 /* 第二行：分类和时间筛选 */
@@ -607,40 +658,24 @@ onUnmounted(() => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   flex-shrink: 0;
   padding: 0;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.progress-ring-mini:hover {
+  background: rgba(255, 255, 255, 0.95);
+  transform: scale(1.05);
+}
+
+.progress-ring-mini.active {
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 0 2px 12px rgba(102, 126, 234, 0.3);
 }
 
 .progress-value-mini {
   font-size: 0.85rem;
   font-weight: 800;
   color: var(--primary-color);
-}
-
-.stats-vertical {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  flex: 1;
-}
-
-.stat-item-mini {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.stat-count-mini {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--text-dark);
-  min-width: 20px;
-}
-
-.stat-count-mini.success { color: var(--success-color); }
-.stat-count-mini.danger { color: var(--error-color); }
-
-.stat-label-mini {
-  font-size: 0.75rem;
-  color: var(--text-light);
 }
 
 .interaction-area {
@@ -801,10 +836,68 @@ onUnmounted(() => {
   color: white;
 }
 
-.task-checkbox {
-  margin-right: 1rem;
-  transform: scale(1.2);
+/* v1.2: 触摸优化 - 增大点击热区 */
+.checkbox-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  margin: -0.5rem 0.5rem -0.5rem -0.5rem;
   cursor: pointer;
+}
+
+/* v1.2: 任务卡片触摸反馈 */
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 12px;
+  margin-bottom: 0.8rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.task-item:active {
+  transform: scale(0.98);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.task-checkbox {
+  transform: scale(1.3);
+  cursor: pointer;
+}
+
+/* v1.2: 触摸优化 - 删除按钮 */
+.btn-delete-touch {
+  min-width: 44px;
+  min-height: 44px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, #f44336, #e91e63);
+  color: white;
+  font-size: 1.5rem;
+  font-weight: 300;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.btn-delete-touch:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
+}
+
+.btn-delete-touch:active {
+  transform: scale(0.95);
 }
 
 .task-content {
@@ -813,11 +906,13 @@ onUnmounted(() => {
   flex-direction: column;
 }
 
+/* v1.2: 字体比例优化 */
 .task-title {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
   transition: color 0.2s;
+  line-height: 1.4;
 }
 
 .task-title:hover {
@@ -836,9 +931,47 @@ onUnmounted(() => {
 .task-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.6rem;
   align-items: center;
-  margin-top: 0.3rem;
+  margin-top: 0.5rem;
+}
+
+/* v1.2: 图标化徽章 */
+.badge-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+/* v1.2: 倒计时颜色分级 */
+.task-countdown {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  transition: all 0.3s;
+}
+
+.countdown-normal {
+  background: rgba(102, 126, 234, 0.1);
+  color: var(--primary-color);
+}
+
+.countdown-warning {
+  background: rgba(255, 152, 0, 0.1);
+  color: #ff9800;
+  animation: pulse 2s infinite;
+}
+
+.countdown-urgent {
+  background: rgba(244, 67, 54, 0.1);
+  color: #f44336;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }
 
 .header-actions {
