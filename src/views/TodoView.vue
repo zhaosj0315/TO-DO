@@ -760,7 +760,8 @@ const formatDateTime = (dateStr) => {
 // 方法：获取倒计时
 const getCountdown = (task) => {
   const now = new Date()
-  const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
+  const created = new Date(task.created_at)
+  const endOfDay = new Date(created.getFullYear(), created.getMonth(), created.getDate(), 23, 59, 59)
   const remainingTime = endOfDay - now
   
   if (remainingTime > 0) {
@@ -768,7 +769,10 @@ const getCountdown = (task) => {
     const minutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60))
     return `剩余: ${hours}h ${minutes}m`
   } else {
-    return '已过期'
+    const overdueTime = Math.abs(remainingTime)
+    const hours = Math.floor(overdueTime / (1000 * 60 * 60))
+    const minutes = Math.floor((overdueTime % (1000 * 60 * 60)) / (1000 * 60))
+    return `逾期: ${hours}h ${minutes}m`
   }
 }
 

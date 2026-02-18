@@ -83,15 +83,20 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
 
     checkOverdueTasks() {
       const now = new Date()
+      let hasChanges = false
       this.tasks.forEach(task => {
         if (task.type === 'today' && task.status !== 'completed') {
           const created = new Date(task.created_at)
           const endOfDay = new Date(created.getFullYear(), created.getMonth(), created.getDate(), 23, 59, 59)
-          if (now > endOfDay) {
+          if (now > endOfDay && task.status !== 'overdue') {
             task.status = 'overdue'
+            hasChanges = true
           }
         }
       })
+      if (hasChanges) {
+        this.saveTasks()
+      }
     },
 
     getFilteredTasks(statusFilter, categoryFilter, dateRange) {
