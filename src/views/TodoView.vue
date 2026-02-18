@@ -5,7 +5,7 @@
       <!-- 顶部标题栏 -->
       <header class="header">
         <div class="user-info">
-          <h1>My Tasks</h1>
+          <h1>{{ taskTitle }}</h1>
         </div>
         <div class="header-actions">
           <button class="btn btn-info" @click="showTrash = true">回收站 ({{ taskStore.deletedTasks.length }})</button>
@@ -18,22 +18,22 @@
         <!-- 第一行：统计数据（可点击筛选） + 添加按钮 -->
         <div class="stats-all-in-one">
           <!-- 环形进度圈 -->
-          <div class="progress-ring-mini" @click="currentFilter = 'all'" :class="{ active: currentFilter === 'all' }">
+          <div class="progress-ring-mini" @click="setFilter('all')" :class="{ active: currentFilter === 'all' }">
             <div class="progress-value-mini">{{ completionPercentage }}%</div>
           </div>
           
           <!-- 统计数据横向排列 -->
-          <div class="stat-row clickable" @click="currentFilter = 'pending'" :class="{ active: currentFilter === 'pending' }">
+          <div class="stat-row clickable" @click="setFilter('pending')" :class="{ active: currentFilter === 'pending' }">
             <span class="stat-icon">⏳</span>
             <span class="stat-count-mini">{{ pendingCount }}</span>
             <span class="stat-label-mini">待办</span>
           </div>
-          <div class="stat-row clickable" @click="currentFilter = 'completed'" :class="{ active: currentFilter === 'completed' }">
+          <div class="stat-row clickable" @click="setFilter('completed')" :class="{ active: currentFilter === 'completed' }">
             <span class="stat-icon">✅</span>
             <span class="stat-count-mini success">{{ completedCount }}</span>
             <span class="stat-label-mini">已完成</span>
           </div>
-          <div class="stat-row clickable" @click="currentFilter = 'overdue'" :class="{ active: currentFilter === 'overdue' }">
+          <div class="stat-row clickable" @click="setFilter('overdue')" :class="{ active: currentFilter === 'overdue' }">
             <span class="stat-icon">⚠️</span>
             <span class="stat-count-mini danger">{{ overdueCount }}</span>
             <span class="stat-label-mini">已逾期</span>
@@ -50,16 +50,34 @@
               :key="cat.value"
               class="category-btn"
               :class="{ active: currentCategoryFilter === cat.value }"
-              @click="currentCategoryFilter = cat.value"
+              @click="setCategoryFilter(cat.value)"
             >
               {{ cat.label }}
             </button>
           </div>
           <div class="time-filter-compact">
-            <input type="datetime-local" v-model="startDate" step="3600" class="mini-date" title="开始">
-            <span class="range-sep">-</span>
-            <input type="datetime-local" v-model="endDate" step="3600" class="mini-date" title="结束">
-            <button v-if="startDate || endDate" class="clear-icon" @click="clearDateFilter">×</button>
+            <div class="date-input-wrapper" @click="$refs.startDateInput.showPicker()">
+              <input 
+                ref="startDateInput"
+                type="date" 
+                v-model="startDate" 
+                class="mini-date"
+                @click.stop
+              >
+              <span class="calendar-icon">📅</span>
+            </div>
+            <span class="range-sep">至</span>
+            <div class="date-input-wrapper" @click="$refs.endDateInput.showPicker()">
+              <input 
+                ref="endDateInput"
+                type="date" 
+                v-model="endDate" 
+                class="mini-date"
+                @click.stop
+              >
+              <span class="calendar-icon">📅</span>
+            </div>
+            <button v-if="startDate || endDate" class="clear-icon" @click="clearDateFilter">✕</button>
           </div>
         </div>
 
@@ -104,9 +122,9 @@
 
     <!-- 任务列表 -->
     <div class="task-list">
-        <ul v-if="filteredTasks.length > 0">
+        <ul v-if="paginatedTasks.length > 0">
           <li 
-            v-for="task in filteredTasks" 
+            v-for="task in paginatedTasks" 
             :key="task.id"
             class="task-item"
             :class="{
@@ -153,6 +171,25 @@
         <div v-else class="empty-state">
           <img src="https://illustrations.popsy.co/purple/taking-notes.svg" alt="empty" style="width: 150px; opacity: 0.5; margin-bottom: 1rem;">
           <p>任务清单空空如也，开启高效的一天吧！</p>
+        </div>
+        
+        <!-- 分页控件 -->
+        <div v-if="totalPages > 1" class="pagination">
+          <button 
+            class="page-btn" 
+            :disabled="currentPage === 1" 
+            @click="currentPage--"
+          >
+            ‹
+          </button>
+          <span class="page-info">{{ currentPage }} / {{ totalPages }}</span>
+          <button 
+            class="page-btn" 
+            :disabled="currentPage === totalPages" 
+            @click="currentPage++"
+          >
+            ›
+          </button>
         </div>
       </div>
     </main>
@@ -223,9 +260,11 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useOfflineTaskStore } from '../stores/offlineTaskStore'
+import { useOfflineUserStore } from '../stores/offlineUserStore'
 
 const router = useRouter()
 const taskStore = useOfflineTaskStore()
+const userStore = useOfflineUserStore()
 
 // 任务状态枚举
 const TaskStatus = {
@@ -252,6 +291,20 @@ const editingTask = ref(null)
 const editDescription = ref('')
 const editText = ref('')
 const showAddForm = ref(true)
+const currentPage = ref(1)
+const pageSize = 6
+
+// 获取当前用户名
+const currentUsername = computed(() => userStore.currentUser)
+
+// 智能生成标题
+const taskTitle = computed(() => {
+  const username = currentUsername.value
+  if (!username) return '我的任务'
+  // 判断是否为中文用户名
+  const isChinese = /[\u4e00-\u9fa5]/.test(username)
+  return isChinese ? `${username}的任务` : `${username}'s Tasks`
+})
 
 // 筛选选项
 const filters = [
@@ -292,15 +345,35 @@ const filteredTasks = computed(() => {
   })
 })
 
+// 计算属性：总页数
+const totalPages = computed(() => {
+  return Math.ceil(filteredTasks.value.length / pageSize)
+})
+
+// 计算属性：当前页的任务
+const paginatedTasks = computed(() => {
+  const start = (currentPage.value - 1) * pageSize
+  const end = start + pageSize
+  return filteredTasks.value.slice(start, end)
+})
+
 // 方法：设置筛选条件
 const setFilter = (filter) => {
   currentFilter.value = filter
+  currentPage.value = 1
+}
+
+// 方法：设置分类筛选
+const setCategoryFilter = (category) => {
+  currentCategoryFilter.value = category
+  currentPage.value = 1
 }
 
 // 方法：清除时间筛选
 const clearDateFilter = () => {
   startDate.value = ''
   endDate.value = ''
+  currentPage.value = 1
 }
 
 // 方法：筛选任务
@@ -485,7 +558,8 @@ const showNotification = (message, type = 'info') => {
 }
 
 // 生命周期钩子：组件挂载时
-onMounted(() => {
+onMounted(async () => {
+  await userStore.checkLogin()
   taskStore.loadTasks()
   
   countdownInterval.value = setInterval(() => {
@@ -618,11 +692,95 @@ onUnmounted(() => {
 .time-filter-compact {
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 20px;
+  padding: 0.4rem 0.8rem;
+  gap: 0.5rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s;
+}
+
+.time-filter-compact:hover {
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.date-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
   padding: 0.3rem 0.6rem;
-  gap: 0.3rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  min-width: 120px;
+}
+
+.date-input-wrapper:hover {
+  background: rgba(255, 255, 255, 0.8);
+  transform: translateY(-1px);
+}
+
+.date-input-wrapper:active {
+  transform: translateY(0);
+}
+
+.mini-date {
+  border: none;
+  background: transparent;
+  font-size: 0.8rem;
+  color: var(--text-dark);
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+}
+
+.mini-date::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
+.calendar-icon {
+  font-size: 1rem;
+  margin-left: 0.3rem;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.range-sep {
+  color: var(--text-light);
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 0 0.2rem;
+}
+
+.clear-icon {
+  background: var(--error-color);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.clear-icon:hover {
+  transform: scale(1.15);
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
+}
+
+.clear-icon:active {
+  transform: scale(0.95);
 }
 
 .add-btn-text {
@@ -733,15 +891,24 @@ onUnmounted(() => {
 .mini-date {
   border: none;
   background: transparent;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: var(--text-dark);
-  width: 135px;
+  font-weight: 500;
   outline: none;
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+}
+
+.mini-date::-webkit-calendar-picker-indicator {
+  display: none;
 }
 
 .range-sep {
   color: var(--text-light);
-  font-size: 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 0 0.2rem;
 }
 
 .clear-icon {
@@ -749,18 +916,25 @@ onUnmounted(() => {
   color: white;
   border: none;
   border-radius: 50%;
-  width: 18px;
-  height: 18px;
-  line-height: 16px;
-  text-align: center;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  font-size: 12px;
-  margin-left: 0.3rem;
-  transition: transform 0.2s;
+  font-size: 14px;
+  font-weight: bold;
+  transition: all 0.2s;
+  flex-shrink: 0;
 }
 
 .clear-icon:hover {
-  transform: scale(1.1);
+  transform: scale(1.15);
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
+}
+
+.clear-icon:active {
+  transform: scale(0.95);
 }
 
 .task-input-section {
@@ -1213,4 +1387,48 @@ onUnmounted(() => {
 /* 悬浮添加按钮 - 已移除，改为顶部按钮 */
 
 /* 底部抽屉 - 已移除，改为内联表单 */
+
+/* 分页控件 */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding: 1rem 0;
+}
+
+.page-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  background: white;
+  color: var(--primary-color);
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: var(--primary-color);
+  color: white;
+  transform: scale(1.1);
+}
+
+.page-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.page-info {
+  font-size: 0.9rem;
+  color: var(--text-dark);
+  font-weight: 600;
+  min-width: 60px;
+  text-align: center;
+}
 </style>
