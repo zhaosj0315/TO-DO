@@ -440,23 +440,40 @@ const categories = [
 // 星期几选项
 const weekdays = ['日', '一', '二', '三', '四', '五', '六']
 
-// 统计数据
+// 计算属性：按分类和时间筛选的任务（不按状态筛选，用于统计）
+const baseFilteredTasks = computed(() => {
+  return taskStore.getFilteredTasks('all', currentCategoryFilter.value, {
+    start: startDate.value,
+    end: endDate.value
+  })
+})
+
+// 计算属性：完全筛选后的任务（包括状态筛选，用于显示）
+const filteredTasks = computed(() => {
+  return taskStore.getFilteredTasks(currentFilter.value, currentCategoryFilter.value, {
+    start: startDate.value,
+    end: endDate.value
+  })
+})
+
+// 统计数据（基于baseFilteredTasks，不受状态筛选影响）
 const completionPercentage = computed(() => {
+  const total = baseFilteredTasks.value.length
+  if (total === 0) return 0
+  const completed = baseFilteredTasks.value.filter(t => t.status === TaskStatus.COMPLETED).length
+  return Math.round((completed / total) * 100)
+})
+
+const pendingCount = computed(() => baseFilteredTasks.value.filter(t => t.status !== TaskStatus.COMPLETED).length)
+const completedCount = computed(() => baseFilteredTasks.value.filter(t => t.status === TaskStatus.COMPLETED).length)
+const overdueCount = computed(() => baseFilteredTasks.value.filter(t => t.status === TaskStatus.OVERDUE).length)
+
+// 个人主页统计（基于所有任务）
+const completionRate = computed(() => {
   const total = taskStore.tasks.length
   if (total === 0) return 0
   const completed = taskStore.tasks.filter(t => t.status === TaskStatus.COMPLETED).length
   return Math.round((completed / total) * 100)
-})
-
-const pendingCount = computed(() => taskStore.tasks.filter(t => t.status !== TaskStatus.COMPLETED).length)
-const completedCount = computed(() => taskStore.tasks.filter(t => t.status === TaskStatus.COMPLETED).length)
-const overdueCount = computed(() => taskStore.tasks.filter(t => t.status === TaskStatus.OVERDUE).length)
-
-// 个人主页统计
-const completionRate = computed(() => {
-  const total = taskStore.tasks.length
-  if (total === 0) return 0
-  return Math.round((completedCount.value / total) * 100)
 })
 
 const usageDays = computed(() => {
@@ -466,14 +483,6 @@ const usageDays = computed(() => {
   const diffTime = Math.abs(today - registerDate)
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
   return diffDays
-})
-
-// 计算属性：筛选后的任务
-const filteredTasks = computed(() => {
-  return taskStore.getFilteredTasks(currentFilter.value, currentCategoryFilter.value, {
-    start: startDate.value,
-    end: endDate.value
-  })
 })
 
 // 计算属性：总页数

@@ -101,6 +101,8 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         filtered = filtered.filter(t => t.status !== 'completed')
       } else if (statusFilter === 'completed') {
         filtered = filtered.filter(t => t.status === 'completed')
+      } else if (statusFilter === 'overdue') {
+        filtered = filtered.filter(t => t.status === 'overdue')
       }
 
       if (categoryFilter !== 'all') {
@@ -109,12 +111,20 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
 
       if (dateRange.start) {
         const start = new Date(dateRange.start)
-        filtered = filtered.filter(t => new Date(t.created_at) >= start)
+        start.setHours(0, 0, 0, 0)
+        filtered = filtered.filter(t => {
+          const taskDate = new Date(t.created_at)
+          return taskDate >= start
+        })
       }
 
       if (dateRange.end) {
         const end = new Date(dateRange.end)
-        filtered = filtered.filter(t => new Date(t.created_at) <= end)
+        end.setHours(23, 59, 59, 999)
+        filtered = filtered.filter(t => {
+          const taskDate = new Date(t.created_at)
+          return taskDate <= end
+        })
       }
 
       return filtered.sort((a, b) => {
