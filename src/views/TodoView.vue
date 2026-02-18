@@ -912,8 +912,8 @@ onUnmounted(() => {
 .stat-row {
   display: flex;
   align-items: center;
-  gap: 0.2rem;
-  padding: 0.25rem 0.4rem;
+  gap: 0.15rem;
+  padding: 0.2rem 0.3rem;
   border-radius: 8px;
   transition: all 0.3s;
   flex-shrink: 1;
@@ -935,22 +935,22 @@ onUnmounted(() => {
 }
 
 .stat-icon {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   flex-shrink: 0;
 }
 
 .stat-count-mini {
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   font-weight: 700;
   color: var(--text-dark);
-  min-width: 18px;
+  min-width: 16px;
 }
 
 .stat-count-mini.success { color: var(--success-color); }
 .stat-count-mini.danger { color: var(--error-color); }
 
 .stat-label-mini {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   color: var(--text-light);
   white-space: nowrap;
 }
