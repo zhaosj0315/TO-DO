@@ -18,14 +18,22 @@
 
       <!-- 统计+筛选+添加 - 融合区域 v1.2优化 -->
       <section class="dashboard-area">
-        <!-- 第一行：统计数据（可点击筛选） + 添加按钮 -->
+        <!-- 第一行：状态统计 -->
         <div class="stats-all-in-one">
-          <!-- 环形进度圈 -->
-          <div class="progress-ring-mini" @click="setFilter('all')" :class="{ active: currentFilter === 'all' }">
-            <div class="progress-value-mini">{{ completionPercentage }}%</div>
+          <!-- 全部 -->
+          <div class="stat-row clickable" @click="setFilter('all')" :class="{ active: currentFilter === 'all' }">
+            <span class="stat-icon">📋</span>
+            <span class="stat-count-mini">{{ baseFilteredTasks.length }}</span>
+            <span class="stat-label-mini">全部</span>
+          </div>
+
+          <!-- 占比 (改为统一风格) -->
+          <div class="stat-row">
+            <span class="stat-icon">📊</span>
+            <span class="stat-count-mini">{{ completionPercentage }}%</span>
+            <span class="stat-label-mini">占比</span>
           </div>
           
-          <!-- 统计数据横向排列 -->
           <div class="stat-row clickable" @click="setFilter('pending')" :class="{ active: currentFilter === 'pending' }">
             <span class="stat-icon">⏳</span>
             <span class="stat-count-mini">{{ pendingCount }}</span>
@@ -47,16 +55,18 @@
 
         <!-- 第二行：分类和时间筛选 -->
         <div class="filter-row">
-          <div class="category-filters">
-            <button 
+          <div class="category-filters-unified">
+            <div 
               v-for="cat in categories" 
               :key="cat.value"
-              class="category-btn"
+              class="stat-row clickable"
               :class="{ active: currentCategoryFilter === cat.value }"
               @click="setCategoryFilter(cat.value)"
             >
-              {{ cat.label }} ({{ getCategoryCount(cat.value) }})
-            </button>
+              <span class="stat-icon">{{ cat.icon }}</span>
+              <span class="stat-count-mini">{{ getCategoryCount(cat.value) }}</span>
+              <span class="stat-label-mini">{{ cat.label }}</span>
+            </div>
           </div>
           <div class="time-filter-compact">
             <div class="date-input-wrapper">
@@ -513,10 +523,9 @@ const filters = [
 
 // 分类选项
 const categories = [
-  { label: '全部', value: 'all' },
-  { label: '工作', value: 'work' },
-  { label: '学习', value: 'study' },
-  { label: '生活', value: 'life' }
+  { label: '工作', value: 'work', icon: '💼' },
+  { label: '学习', value: 'study', icon: '📚' },
+  { label: '生活', value: 'life', icon: '🏠' }
 ]
 
 // 星期几选项
@@ -591,6 +600,9 @@ const paginatedTasks = computed(() => {
 // 方法：设置筛选条件
 const setFilter = (filter) => {
   currentFilter.value = filter
+  if (filter === 'all') {
+    currentCategoryFilter.value = 'all'
+  }
   currentPage.value = 1
 }
 
@@ -1341,39 +1353,23 @@ onUnmounted(() => {
   width: 100%;
 }
 
-.category-filters {
+.category-filters-unified {
   display: flex;
   gap: 0.5rem;
   flex-wrap: nowrap;
-  flex: 1;
   width: 100%;
 }
 
-.category-btn {
+.category-filters-unified .stat-row {
   flex: 1;
-  padding: 0.5rem 0.8rem;
-  border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.3);
-  color: var(--text-dark);
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.3s;
-  white-space: nowrap;
-  flex-shrink: 0;
-  text-align: center;
-  min-width: 0;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-.category-btn:hover {
-  background: rgba(255, 255, 255, 0.5);
-}
-
-.category-btn.active {
+.category-filters-unified .stat-row.active {
   background: white;
   border-color: var(--primary-color);
-  color: var(--primary-color);
-  font-weight: 600;
 }
 
 .time-filter-compact {
@@ -1513,37 +1509,6 @@ onUnmounted(() => {
 
 .add-btn-text:active {
   transform: scale(0.95);
-}
-
-.progress-ring-mini {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 50px;
-  height: 50px;
-  background: white;
-  border-radius: 50%;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  flex-shrink: 0;
-  padding: 0;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.progress-ring-mini:hover {
-  background: rgba(255, 255, 255, 0.95);
-  transform: scale(1.05);
-}
-
-.progress-ring-mini.active {
-  background: rgba(255, 255, 255, 1);
-  box-shadow: 0 2px 12px rgba(102, 126, 234, 0.3);
-}
-
-.progress-value-mini {
-  font-size: 0.85rem;
-  font-weight: 800;
-  color: var(--primary-color);
 }
 
 .interaction-area {
