@@ -205,7 +205,7 @@
                   🏷️ {{ getCategoryText(task.category) }}
                 </span>
                 <span class="badge badge-pomodoro" :class="`pomodoro-${task.priority}`" :title="`预估番茄数: ${getPomodoroCount(task.priority)}个`">
-                  🍅 x {{ getPomodoroCount(task.priority) }}
+                  <span v-for="n in getPomodoroCount(task.priority)" :key="n">🍅</span>
                 </span>
               </div>
             </div>
