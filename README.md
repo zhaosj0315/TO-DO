@@ -108,16 +108,11 @@ This is an **offline Android To-Do management application** built with **Vue 3**
 2. **运行开发服务器**: `npm run dev`
 3. **生产环境构建**: `npm run build`
 4. **同步到Android**: `npx cap sync android`
-5. **构建APK**: 
+5. **一键打包APK**: 
    ```bash
-   # 使用自动化脚本（推荐）
    ./build-apk.sh
-   
-   # 或手动构建
-   cd android
-   ./gradlew assembleDebug
    ```
-6. **APK位置**: `android/app/build/outputs/apk/debug/app-debug.apk`
+6. **APK位置**: `TODO-App.apk`（项目根目录）
 
 **详细打包流程**: 请查看 [APK打包指南](APK_BUILD_GUIDE.md) 或 [快速参考](APK_BUILD_QUICK.md)
 

@@ -57,27 +57,79 @@
             </button>
           </div>
           <div class="time-filter-compact">
-            <div class="date-input-wrapper" @click="$refs.startDateInput.showPicker()">
+            <div class="date-input-wrapper">
               <input 
-                ref="startDateInput"
-                type="date" 
-                v-model="startDate" 
-                class="mini-date"
-                @click.stop
+                ref="startYear"
+                type="text" 
+                inputmode="numeric"
+                maxlength="4"
+                placeholder="年"
+                class="date-segment year"
+                @input="handleYearInput($event, 'start')"
+                @click="$event.target.select()"
               >
-              <span class="calendar-icon">📅</span>
+              <span class="date-sep">/</span>
+              <input 
+                ref="startMonth"
+                type="text" 
+                inputmode="numeric"
+                maxlength="2"
+                placeholder="月"
+                class="date-segment month"
+                @input="handleMonthInput($event, 'start')"
+                @click="$event.target.select()"
+              >
+              <span class="date-sep">/</span>
+              <input 
+                ref="startDay"
+                type="text" 
+                inputmode="numeric"
+                maxlength="2"
+                placeholder="日"
+                class="date-segment day"
+                @input="handleDayInput($event, 'start')"
+                @click="$event.target.select()"
+              >
+              <span class="calendar-icon" @click="showDatePicker('start')">📅</span>
             </div>
             <span class="range-sep">至</span>
-            <div class="date-input-wrapper" @click="$refs.endDateInput.showPicker()">
+            <div class="date-input-wrapper">
               <input 
-                ref="endDateInput"
-                type="date" 
-                v-model="endDate" 
-                class="mini-date"
-                @click.stop
+                ref="endYear"
+                type="text" 
+                inputmode="numeric"
+                maxlength="4"
+                placeholder="年"
+                class="date-segment year"
+                @input="handleYearInput($event, 'end')"
+                @click="$event.target.select()"
               >
-              <span class="calendar-icon">📅</span>
+              <span class="date-sep">/</span>
+              <input 
+                ref="endMonth"
+                type="text" 
+                inputmode="numeric"
+                maxlength="2"
+                placeholder="月"
+                class="date-segment month"
+                @input="handleMonthInput($event, 'end')"
+                @click="$event.target.select()"
+              >
+              <span class="date-sep">/</span>
+              <input 
+                ref="endDay"
+                type="text" 
+                inputmode="numeric"
+                maxlength="2"
+                placeholder="日"
+                class="date-segment day"
+                @input="handleDayInput($event, 'end')"
+                @click="$event.target.select()"
+              >
+              <span class="calendar-icon" @click="showDatePicker('end')">📅</span>
             </div>
+            <input ref="hiddenStartDate" type="date" style="display:none" @change="syncFromPicker('start')">
+            <input ref="hiddenEndDate" type="date" style="display:none" @change="syncFromPicker('end')">
             <button v-if="startDate || endDate" class="clear-icon" @click="clearDateFilter">✕</button>
           </div>
         </div>
@@ -234,7 +286,18 @@
               <div class="avatar-circle">{{ currentUsername ? currentUsername.charAt(0).toUpperCase() : 'U' }}</div>
             </div>
             <div class="profile-info">
-              <h2>{{ currentUsername }}</h2>
+              <h2>
+                {{ editingUsername ? '' : currentUsername }}
+                <input 
+                  v-if="editingUsername"
+                  v-model="newUsername"
+                  class="username-edit-input"
+                  @blur="saveUsername"
+                  @keyup.enter="saveUsername"
+                  ref="usernameInput"
+                >
+                <span class="edit-icon" @click="startEditUsername">✏️</span>
+              </h2>
               <div class="profile-details">
                 <p class="profile-meta">📅 注册时间：{{ formatDate(userProfileInfo.registerTime) }}</p>
                 <p class="profile-meta">🕐 最后登录：{{ formatDate(userProfileInfo.lastLoginTime) }}</p>
@@ -263,38 +326,25 @@
             </div>
           </div>
 
-          <!-- 修改用户名 -->
+          <!-- 修改密码 -->
           <div class="profile-form">
             <div class="form-group">
-              <label>修改用户名</label>
-              <input 
-                v-model="newUsername" 
-                class="input" 
-                placeholder="输入新用户名"
-              >
-            </div>
-
-            <!-- 修改密码 -->
-            <div class="form-group">
               <label>修改密码</label>
-              <input 
-                v-model="oldPassword" 
-                type="password" 
-                class="input" 
-                placeholder="输入当前密码"
-              >
-              <input 
-                v-model="newPassword" 
-                type="password" 
-                class="input" 
-                placeholder="输入新密码"
-                style="margin-top: 0.5rem;"
-              >
-            </div>
-
-            <div class="modal-actions">
-              <button class="btn btn-secondary" @click="showProfile = false">取消</button>
-              <button class="btn btn-primary" @click="updateProfile">保存修改</button>
+              <div class="password-row">
+                <input 
+                  v-model="oldPassword" 
+                  type="password" 
+                  class="input" 
+                  placeholder="当前密码"
+                >
+                <input 
+                  v-model="newPassword" 
+                  type="password" 
+                  class="input" 
+                  placeholder="新密码"
+                >
+                <button class="btn btn-primary btn-compact" @click="updatePassword">保存</button>
+              </div>
             </div>
           </div>
 
@@ -388,7 +438,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useOfflineTaskStore } from '../stores/offlineTaskStore'
 import { useOfflineUserStore } from '../stores/offlineUserStore'
@@ -552,8 +602,123 @@ const setCategoryFilter = (category) => {
 const clearDateFilter = () => {
   startDate.value = ''
   endDate.value = ''
+  // 清空分段输入框
+  if (startYear.value) startYear.value.value = ''
+  if (startMonth.value) startMonth.value.value = ''
+  if (startDay.value) startDay.value.value = ''
+  if (endYear.value) endYear.value.value = ''
+  if (endMonth.value) endMonth.value.value = ''
+  if (endDay.value) endDay.value.value = ''
   currentPage.value = 1
 }
+
+// 年份输入处理
+const handleYearInput = (e, type) => {
+  let val = e.target.value.replace(/\D/g, '')
+  if (val.length > 4) val = val.slice(0, 4)
+  e.target.value = val
+  if (val.length === 4) {
+    const monthRef = type === 'start' ? startMonth : endMonth
+    monthRef.value?.focus()
+  }
+  updateDateValue(type)
+}
+
+// 月份输入处理
+const handleMonthInput = (e, type) => {
+  let val = e.target.value.replace(/\D/g, '')
+  if (val.length > 2) val = val.slice(0, 2)
+  if (val.length === 2 && parseInt(val) > 12) val = '12'
+  if (val.length === 1 && parseInt(val) > 1) {
+    val = '0' + val
+    e.target.value = val
+    const dayRef = type === 'start' ? startDay : endDay
+    dayRef.value?.focus()
+  } else {
+    e.target.value = val
+    if (val.length === 2) {
+      const dayRef = type === 'start' ? startDay : endDay
+      dayRef.value?.focus()
+    }
+  }
+  updateDateValue(type)
+}
+
+// 日期输入处理
+const handleDayInput = (e, type) => {
+  let val = e.target.value.replace(/\D/g, '')
+  if (val.length > 2) val = val.slice(0, 2)
+  if (val.length === 2 && parseInt(val) > 31) val = '31'
+  if (val.length === 1 && parseInt(val) > 3) {
+    val = '0' + val
+  }
+  e.target.value = val
+  updateDateValue(type)
+}
+
+// 更新日期值
+const updateDateValue = (type) => {
+  const yearRef = type === 'start' ? startYear : endYear
+  const monthRef = type === 'start' ? startMonth : endMonth
+  const dayRef = type === 'start' ? startDay : endDay
+  
+  const y = yearRef.value?.value
+  const m = monthRef.value?.value
+  const d = dayRef.value?.value
+  
+  if (y && y.length === 4 && m && m.length === 2 && d && d.length === 2) {
+    const dateStr = `${y}-${m}-${d}`
+    if (type === 'start') {
+      startDate.value = dateStr
+    } else {
+      endDate.value = dateStr
+    }
+  } else {
+    if (type === 'start') {
+      startDate.value = ''
+    } else {
+      endDate.value = ''
+    }
+  }
+}
+
+// 显示日期选择器
+const showDatePicker = (type) => {
+  const pickerRef = type === 'start' ? hiddenStartDate : hiddenEndDate
+  pickerRef.value?.showPicker()
+}
+
+// 从选择器同步日期
+const syncFromPicker = (type) => {
+  const pickerRef = type === 'start' ? hiddenStartDate : hiddenEndDate
+  const dateStr = pickerRef.value?.value
+  if (dateStr) {
+    const [y, m, d] = dateStr.split('-')
+    const yearRef = type === 'start' ? startYear : endYear
+    const monthRef = type === 'start' ? startMonth : endMonth
+    const dayRef = type === 'start' ? startDay : endDay
+    
+    if (yearRef.value) yearRef.value.value = y
+    if (monthRef.value) monthRef.value.value = m
+    if (dayRef.value) dayRef.value.value = d
+    
+    if (type === 'start') {
+      startDate.value = dateStr
+    } else {
+      endDate.value = dateStr
+    }
+  }
+}
+
+// refs
+const startYear = ref(null)
+const startMonth = ref(null)
+const startDay = ref(null)
+const endYear = ref(null)
+const endMonth = ref(null)
+const endDay = ref(null)
+const hiddenStartDate = ref(null)
+const hiddenEndDate = ref(null)
 
 // 方法：筛选任务
 const filterTasks = () => {
@@ -677,71 +842,83 @@ const loadUserInfo = async () => {
 const formatDate = (dateString) => {
   if (!dateString) return '未知'
   const date = new Date(dateString)
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hour = String(date.getHours()).padStart(2, '0')
+  const minute = String(date.getMinutes()).padStart(2, '0')
+  return `${year}/${month}/${day} ${hour}:${minute}`
+}
+
+// 方法：编辑用户名
+const editingUsername = ref(false)
+const usernameInput = ref(null)
+
+const startEditUsername = () => {
+  newUsername.value = currentUsername.value
+  editingUsername.value = true
+  nextTick(() => {
+    usernameInput.value?.focus()
   })
 }
 
-// 方法：更新个人信息
-const updateProfile = async () => {
+const saveUsername = async () => {
+  if (!newUsername.value || newUsername.value === currentUsername.value) {
+    editingUsername.value = false
+    return
+  }
+  
+  const username = currentUsername.value
+  const { value: usersData } = await Preferences.get({ key: 'users' })
+  const users = usersData ? JSON.parse(usersData) : {}
+  
+  if (users[newUsername.value]) {
+    alert('用户名已存在')
+    editingUsername.value = false
+    return
+  }
+  
+  const password = users[username]
+  delete users[username]
+  users[newUsername.value] = password
+  
+  await Preferences.set({ key: 'users', value: JSON.stringify(users) })
+  await Preferences.set({ key: 'currentUser', value: newUsername.value })
+  
+  taskStore.tasks.forEach(task => {
+    if (task.user_id === username) {
+      task.user_id = newUsername.value
+    }
+  })
+  await taskStore.saveTasks()
+  
+  userStore.currentUser = newUsername.value
+  editingUsername.value = false
+  alert('用户名修改成功')
+}
+
+// 方法：修改密码
+const updatePassword = async () => {
+  if (!oldPassword.value || !newPassword.value) {
+    alert('请输入当前密码和新密码')
+    return
+  }
+  
+  const { value: usersData } = await Preferences.get({ key: 'users' })
+  const users = usersData ? JSON.parse(usersData) : {}
   const username = currentUsername.value
   
-  // 修改用户名
-  if (newUsername.value && newUsername.value !== username) {
-    // 检查新用户名是否已存在
-    const { value: usersData } = await Preferences.get({ key: 'users' })
-    const users = usersData ? JSON.parse(usersData) : {}
-    
-    if (users[newUsername.value]) {
-      alert('用户名已存在，请选择其他用户名')
-      return
-    }
-    
-    // 更新用户名
-    const password = users[username]
-    delete users[username]
-    users[newUsername.value] = password
-    
-    await Preferences.set({ key: 'users', value: JSON.stringify(users) })
-    await Preferences.set({ key: 'currentUser', value: newUsername.value })
-    
-    // 更新任务的user_id
-    taskStore.tasks.forEach(task => {
-      if (task.user_id === username) {
-        task.user_id = newUsername.value
-      }
-    })
-    await taskStore.saveTasks()
-    
-    userStore.currentUser = newUsername.value
-    alert('用户名修改成功')
+  if (users[username] !== oldPassword.value) {
+    alert('当前密码错误')
+    return
   }
   
-  // 修改密码
-  if (oldPassword.value && newPassword.value) {
-    const { value: usersData } = await Preferences.get({ key: 'users' })
-    const users = usersData ? JSON.parse(usersData) : {}
-    const currentUser = newUsername.value || username
-    
-    if (users[currentUser] !== oldPassword.value) {
-      alert('当前密码错误')
-      return
-    }
-    
-    users[currentUser] = newPassword.value
-    await Preferences.set({ key: 'users', value: JSON.stringify(users) })
-    alert('密码修改成功')
-  }
+  users[username] = newPassword.value
+  await Preferences.set({ key: 'users', value: JSON.stringify(users) })
   
-  // 重置表单
-  newUsername.value = ''
   oldPassword.value = ''
   newPassword.value = ''
-  showProfile.value = false
+  alert('密码修改成功')
 }
 
 // 方法：导出任务到Excel
@@ -986,14 +1163,12 @@ const parseDateTime = (text) => {
 const formatDateTime = (dateStr) => {
   if (!dateStr) return ''
   const date = new Date(dateStr)
-  return date.toLocaleString('zh-CN', {
-    timeZone: 'Asia/Shanghai',
-    month: 'numeric',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
-  })
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hour = String(date.getHours()).padStart(2, '0')
+  const minute = String(date.getMinutes()).padStart(2, '0')
+  return `${year}/${month}/${day} ${hour}:${minute}`
 }
 
 // 方法：获取倒计时
@@ -1221,28 +1396,44 @@ onUnmounted(() => {
   transform: translateY(0);
 }
 
-.mini-date {
+.date-segment {
   border: none;
   background: transparent;
   font-size: 0.8rem;
   color: var(--text-dark);
   font-weight: 500;
   outline: none;
-  cursor: pointer;
-  flex: 1;
-  min-width: 0;
+  text-align: center;
+  padding: 0;
 }
 
-.mini-date::-webkit-calendar-picker-indicator {
-  display: none;
+.date-segment.year {
+  width: 2.5rem;
+}
+
+.date-segment.month,
+.date-segment.day {
+  width: 1.5rem;
+}
+
+.date-segment::placeholder {
+  color: rgba(0, 0, 0, 0.3);
+  font-size: 0.75rem;
+}
+
+.date-sep {
+  color: var(--text-dark);
+  opacity: 0.5;
+  margin: 0 0.1rem;
+  font-size: 0.8rem;
 }
 
 .calendar-icon {
   font-size: 0.9rem;
   margin-left: 0.25rem;
-  pointer-events: none;
   opacity: 0.7;
   flex-shrink: 0;
+  cursor: pointer;
 }
 
 .range-sep {
@@ -1382,22 +1573,6 @@ onUnmounted(() => {
   border-radius: 8px;
   padding: 0.3rem 0.6rem;
   gap: 0.3rem;
-}
-
-.mini-date {
-  border: none;
-  background: transparent;
-  font-size: 0.8rem;
-  color: var(--text-dark);
-  font-weight: 500;
-  outline: none;
-  cursor: pointer;
-  flex: 1;
-  min-width: 0;
-}
-
-.mini-date::-webkit-calendar-picker-indicator {
-  display: none;
 }
 
 .range-sep {
@@ -1709,6 +1884,45 @@ onUnmounted(() => {
   margin: 0 0 0.8rem 0;
   font-size: 1.5rem;
   color: var(--text-dark);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.username-edit-input {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 0.3rem 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  width: 200px;
+}
+
+.edit-icon {
+  font-size: 1rem;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.edit-icon:hover {
+  opacity: 1;
+}
+
+.password-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.password-row .input {
+  flex: 1;
+  margin: 0;
+}
+
+.btn-compact {
+  padding: 0.6rem 1rem;
+  white-space: nowrap;
 }
 
 .profile-details {
