@@ -69,81 +69,19 @@
               <span class="stat-count-bracket danger">({{ overdueCount }})</span>
             </div>
           </div>
-          <div class="time-filter-compact">
-            <div class="date-input-wrapper">
-              <input 
-                ref="startYear"
-                type="text" 
-                inputmode="numeric"
-                maxlength="4"
-                placeholder="年"
-                class="date-segment year"
-                @input="handleYearInput($event, 'start')"
-                @click="$event.target.select()"
-              >
-              <span class="date-sep">/</span>
-              <input 
-                ref="startMonth"
-                type="text" 
-                inputmode="numeric"
-                maxlength="2"
-                placeholder="月"
-                class="date-segment month"
-                @input="handleMonthInput($event, 'start')"
-                @click="$event.target.select()"
-              >
-              <span class="date-sep">/</span>
-              <input 
-                ref="startDay"
-                type="text" 
-                inputmode="numeric"
-                maxlength="2"
-                placeholder="日"
-                class="date-segment day"
-                @input="handleDayInput($event, 'start')"
-                @click="$event.target.select()"
-              >
-              <span class="calendar-icon" @click="showDatePicker('start')">📅</span>
+          
+          <div class="time-filter-compact-unified">
+            <div class="date-range-display" @click="showDatePicker('start')">
+              <span class="calendar-icon">📅</span>
+              <div class="range-values">
+                <span :class="{ 'placeholder': !startDate }">{{ startDate ? formatDisplayDate(startDate) : '起始日期' }}</span>
+                <span class="range-sep">-</span>
+                <span :class="{ 'placeholder': !endDate }">{{ endDate ? formatDisplayDate(endDate) : '结束日期' }}</span>
+              </div>
+              <button v-if="startDate || endDate" class="clear-date-icon" @click.stop="clearDateFilter">✕</button>
             </div>
-            <span class="range-sep">至</span>
-            <div class="date-input-wrapper">
-              <input 
-                ref="endYear"
-                type="text" 
-                inputmode="numeric"
-                maxlength="4"
-                placeholder="年"
-                class="date-segment year"
-                @input="handleYearInput($event, 'end')"
-                @click="$event.target.select()"
-              >
-              <span class="date-sep">/</span>
-              <input 
-                ref="endMonth"
-                type="text" 
-                inputmode="numeric"
-                maxlength="2"
-                placeholder="月"
-                class="date-segment month"
-                @input="handleMonthInput($event, 'end')"
-                @click="$event.target.select()"
-              >
-              <span class="date-sep">/</span>
-              <input 
-                ref="endDay"
-                type="text" 
-                inputmode="numeric"
-                maxlength="2"
-                placeholder="日"
-                class="date-segment day"
-                @input="handleDayInput($event, 'end')"
-                @click="$event.target.select()"
-              >
-              <span class="calendar-icon" @click="showDatePicker('end')">📅</span>
-            </div>
-            <input ref="hiddenStartDate" type="date" style="display:none" @change="syncFromPicker('start')">
-            <input ref="hiddenEndDate" type="date" style="display:none" @change="syncFromPicker('end')">
-            <button v-if="startDate || endDate" class="clear-icon" @click="clearDateFilter">✕</button>
+            <input ref="hiddenStartDate" type="date" style="display:none" @change="handleStartDateChange">
+            <input ref="hiddenEndDate" type="date" style="display:none" @change="handleEndDateChange">
           </div>
         </div>
 
@@ -607,6 +545,12 @@ const setFilter = (filter) => {
   currentPage.value = 1
 }
 
+// 格式化显示日期
+const formatDisplayDate = (dateStr) => {
+  if (!dateStr) return ''
+  return dateStr.replace(/-/g, '/')
+}
+
 // 方法：设置分类筛选
 const setCategoryFilter = (category) => {
   currentCategoryFilter.value = category
@@ -617,84 +561,7 @@ const setCategoryFilter = (category) => {
 const clearDateFilter = () => {
   startDate.value = ''
   endDate.value = ''
-  // 清空分段输入框
-  if (startYear.value) startYear.value.value = ''
-  if (startMonth.value) startMonth.value.value = ''
-  if (startDay.value) startDay.value.value = ''
-  if (endYear.value) endYear.value.value = ''
-  if (endMonth.value) endMonth.value.value = ''
-  if (endDay.value) endDay.value.value = ''
   currentPage.value = 1
-}
-
-// 年份输入处理
-const handleYearInput = (e, type) => {
-  let val = e.target.value.replace(/\D/g, '')
-  if (val.length > 4) val = val.slice(0, 4)
-  e.target.value = val
-  if (val.length === 4) {
-    const monthRef = type === 'start' ? startMonth : endMonth
-    monthRef.value?.focus()
-  }
-  updateDateValue(type)
-}
-
-// 月份输入处理
-const handleMonthInput = (e, type) => {
-  let val = e.target.value.replace(/\D/g, '')
-  if (val.length > 2) val = val.slice(0, 2)
-  if (val.length === 2 && parseInt(val) > 12) val = '12'
-  if (val.length === 1 && parseInt(val) > 1) {
-    val = '0' + val
-    e.target.value = val
-    const dayRef = type === 'start' ? startDay : endDay
-    dayRef.value?.focus()
-  } else {
-    e.target.value = val
-    if (val.length === 2) {
-      const dayRef = type === 'start' ? startDay : endDay
-      dayRef.value?.focus()
-    }
-  }
-  updateDateValue(type)
-}
-
-// 日期输入处理
-const handleDayInput = (e, type) => {
-  let val = e.target.value.replace(/\D/g, '')
-  if (val.length > 2) val = val.slice(0, 2)
-  if (val.length === 2 && parseInt(val) > 31) val = '31'
-  if (val.length === 1 && parseInt(val) > 3) {
-    val = '0' + val
-  }
-  e.target.value = val
-  updateDateValue(type)
-}
-
-// 更新日期值
-const updateDateValue = (type) => {
-  const yearRef = type === 'start' ? startYear : endYear
-  const monthRef = type === 'start' ? startMonth : endMonth
-  const dayRef = type === 'start' ? startDay : endDay
-  
-  const y = yearRef.value?.value
-  const m = monthRef.value?.value
-  const d = dayRef.value?.value
-  
-  if (y && y.length === 4 && m && m.length === 2 && d && d.length === 2) {
-    const dateStr = `${y}-${m}-${d}`
-    if (type === 'start') {
-      startDate.value = dateStr
-    } else {
-      endDate.value = dateStr
-    }
-  } else {
-    if (type === 'start') {
-      startDate.value = ''
-    } else {
-      endDate.value = ''
-    }
-  }
 }
 
 // 显示日期选择器
@@ -703,35 +570,29 @@ const showDatePicker = (type) => {
   pickerRef.value?.showPicker()
 }
 
-// 从选择器同步日期
-const syncFromPicker = (type) => {
-  const pickerRef = type === 'start' ? hiddenStartDate : hiddenEndDate
-  const dateStr = pickerRef.value?.value
+// 处理起始日期变更
+const handleStartDateChange = (e) => {
+  const dateStr = e.target.value
   if (dateStr) {
-    const [y, m, d] = dateStr.split('-')
-    const yearRef = type === 'start' ? startYear : endYear
-    const monthRef = type === 'start' ? startMonth : endMonth
-    const dayRef = type === 'start' ? startDay : endDay
-    
-    if (yearRef.value) yearRef.value.value = y
-    if (monthRef.value) monthRef.value.value = m
-    if (dayRef.value) dayRef.value.value = d
-    
-    if (type === 'start') {
-      startDate.value = dateStr
-    } else {
-      endDate.value = dateStr
-    }
+    startDate.value = dateStr
+    currentPage.value = 1
+    // 自动触发选择结束日期
+    setTimeout(() => {
+      showDatePicker('end')
+    }, 300)
+  }
+}
+
+// 处理结束日期变更
+const handleEndDateChange = (e) => {
+  const dateStr = e.target.value
+  if (dateStr) {
+    endDate.value = dateStr
+    currentPage.value = 1
   }
 }
 
 // refs
-const startYear = ref(null)
-const startMonth = ref(null)
-const startDay = ref(null)
-const endYear = ref(null)
-const endMonth = ref(null)
-const endDay = ref(null)
 const hiddenStartDate = ref(null)
 const hiddenEndDate = ref(null)
 
@@ -1372,121 +1233,71 @@ onUnmounted(() => {
   border-color: var(--primary-color);
 }
 
-.time-filter-compact {
+.time-filter-compact-unified {
+  display: flex;
+  width: 100%;
+  margin-top: 0.2rem;
+}
+
+.date-range-display {
   display: flex;
   align-items: center;
   background: rgba(255, 255, 255, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 20px;
-  padding: 0.4rem 0.6rem;
-  gap: 0.4rem;
+  border-radius: 12px;
+  padding: 0.4rem 0.8rem;
+  gap: 0.6rem;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
   transition: all 0.3s;
-  flex-wrap: nowrap;
-  justify-content: center;
-  max-width: 100%;
-}
-
-.time-filter-compact:hover {
-  background: rgba(255, 255, 255, 0.5);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.date-input-wrapper {
+  cursor: pointer;
+  flex: 1;
   position: relative;
+}
+
+.date-range-display:hover {
+  background: rgba(255, 255, 255, 0.6);
+  border-color: var(--primary-color);
+}
+
+.range-values {
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.6);
-  border-radius: 12px;
-  padding: 0.35rem 0.5rem;
-  cursor: pointer;
-  transition: all 0.3s;
-  min-width: 100px;
-  flex: 1;
-  max-width: 130px;
-}
-
-.date-input-wrapper:hover {
-  background: rgba(255, 255, 255, 0.8);
-  transform: translateY(-1px);
-}
-
-.date-input-wrapper:active {
-  transform: translateY(0);
-}
-
-.date-segment {
-  border: none;
-  background: transparent;
-  font-size: 0.8rem;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
   color: var(--text-dark);
-  font-weight: 500;
-  outline: none;
-  text-align: center;
-  padding: 0;
 }
 
-.date-segment.year {
-  width: 2.5rem;
-}
-
-.date-segment.month,
-.date-segment.day {
-  width: 1.5rem;
-}
-
-.date-segment::placeholder {
-  color: rgba(0, 0, 0, 0.3);
-  font-size: 0.75rem;
-}
-
-.date-sep {
-  color: var(--text-dark);
-  opacity: 0.5;
-  margin: 0 0.1rem;
-  font-size: 0.8rem;
-}
-
-.calendar-icon {
-  font-size: 0.9rem;
-  margin-left: 0.25rem;
-  opacity: 0.7;
-  flex-shrink: 0;
-  cursor: pointer;
+.range-values .placeholder {
+  color: var(--text-light);
+  font-weight: 400;
+  opacity: 0.6;
 }
 
 .range-sep {
   color: var(--text-light);
-  font-size: 0.8rem;
-  font-weight: 500;
-  padding: 0 0.1rem;
-  flex-shrink: 0;
+  opacity: 0.5;
 }
 
-.clear-icon {
+.clear-date-icon {
   background: var(--error-color);
   color: white;
   border: none;
   border-radius: 50%;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: bold;
-  transition: all 0.2s;
-  flex-shrink: 0;
+  margin-left: auto;
 }
 
-.clear-icon:hover {
-  transform: scale(1.15);
-  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
-}
-
-.clear-icon:active {
-  transform: scale(0.95);
+.calendar-icon {
+  font-size: 1rem;
+  opacity: 0.7;
 }
 
 .add-btn-text {
