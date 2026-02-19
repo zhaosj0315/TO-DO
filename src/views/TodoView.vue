@@ -18,7 +18,7 @@
 
       <!-- 统计+筛选+添加 - 融合区域 v1.2优化 -->
       <section class="dashboard-area">
-        <!-- 第一行：状态统计 -->
+        <!-- 第一行：全局统计 + 分类筛选 -->
         <div class="stats-all-in-one">
           <!-- 全部 -->
           <div class="stat-row clickable" @click="setFilter('all')" :class="{ active: currentFilter === 'all' }">
@@ -27,45 +27,46 @@
             <span class="stat-label-mini">全部</span>
           </div>
 
-          <!-- 占比 (改为统一风格) -->
+          <!-- 占比 -->
           <div class="stat-row">
             <span class="stat-icon">📊</span>
             <span class="stat-count-mini">{{ completionPercentage }}%</span>
             <span class="stat-label-mini">占比</span>
           </div>
-          
-          <div class="stat-row clickable" @click="setFilter('pending')" :class="{ active: currentFilter === 'pending' }">
-            <span class="stat-icon">⏳</span>
-            <span class="stat-count-mini">{{ pendingCount }}</span>
-            <span class="stat-label-mini">待办</span>
-          </div>
-          <div class="stat-row clickable" @click="setFilter('completed')" :class="{ active: currentFilter === 'completed' }">
-            <span class="stat-icon">✅</span>
-            <span class="stat-count-mini success">{{ completedCount }}</span>
-            <span class="stat-label-mini">已完成</span>
-          </div>
-          <div class="stat-row clickable" @click="setFilter('overdue')" :class="{ active: currentFilter === 'overdue' }">
-            <span class="stat-icon">⚠️</span>
-            <span class="stat-count-mini danger">{{ overdueCount }}</span>
-            <span class="stat-label-mini">已逾期</span>
+
+          <!-- 分类统计 (移动到第一行) -->
+          <div 
+            v-for="cat in categories" 
+            :key="cat.value"
+            class="stat-row clickable"
+            :class="{ active: currentCategoryFilter === cat.value }"
+            @click="setCategoryFilter(cat.value)"
+          >
+            <span class="stat-icon">{{ cat.icon }}</span>
+            <span class="stat-count-mini">{{ getCategoryCount(cat.value) }}</span>
+            <span class="stat-label-mini">{{ cat.label }}</span>
           </div>
           
           <button class="add-btn-text" @click="showAddForm = !showAddForm">{{ showAddForm ? '收起' : '添加' }}</button>
         </div>
 
-        <!-- 第二行：分类和时间筛选 -->
+        <!-- 第二行：状态筛选和时间筛选 -->
         <div class="filter-row">
           <div class="category-filters-unified">
-            <div 
-              v-for="cat in categories" 
-              :key="cat.value"
-              class="stat-row clickable"
-              :class="{ active: currentCategoryFilter === cat.value }"
-              @click="setCategoryFilter(cat.value)"
-            >
-              <span class="stat-icon">{{ cat.icon }}</span>
-              <span class="stat-count-mini">{{ getCategoryCount(cat.value) }}</span>
-              <span class="stat-label-mini">{{ cat.label }}</span>
+            <div class="stat-row clickable" @click="setFilter('pending')" :class="{ active: currentFilter === 'pending' }">
+              <span class="stat-icon">⏳</span>
+              <span class="stat-count-mini">{{ pendingCount }}</span>
+              <span class="stat-label-mini">待办</span>
+            </div>
+            <div class="stat-row clickable" @click="setFilter('completed')" :class="{ active: currentFilter === 'completed' }">
+              <span class="stat-icon">✅</span>
+              <span class="stat-count-mini success">{{ completedCount }}</span>
+              <span class="stat-label-mini">已完成</span>
+            </div>
+            <div class="stat-row clickable" @click="setFilter('overdue')" :class="{ active: currentFilter === 'overdue' }">
+              <span class="stat-icon">⚠️</span>
+              <span class="stat-count-mini danger">{{ overdueCount }}</span>
+              <span class="stat-label-mini">已逾期</span>
             </div>
           </div>
           <div class="time-filter-compact">
