@@ -10,10 +10,14 @@
 This is an **offline Android To-Do management application** built with **Vue 3** and **Capacitor**. All data is stored locally on the device using Capacitor Preferences API, requiring **no internet connection or backend server**.
 
 ### 🌟 Key Features
-- **User Registration & Login**: Free registration with username and password stored locally.
+- **User Registration & Login**: Dynamic avatar based on username initials.
 - **Offline Operation**: Fully functional without internet connection.
+- **Dashboard & Stats (v1.3.1)**:
+  - Unified **Icon + Number + Label** structure for all stats.
+  - Hierarchical layout: Global & Categories on Row 1, Task Status on Row 2.
+  - Interactive filtering by clicking any stat item.
 - **Task Management**:
-  - Category support (Work, Study, Life).
+  - Category support (Work 💼, Study 📚, Life 🏠).
   - Priority levels (High, Medium, Low).
   - Recurrence types: Today, Daily, and custom Weekly cycles.
   - Task descriptions with inline display.
@@ -69,10 +73,14 @@ This is an **offline Android To-Do management application** built with **Vue 3**
 这是一个基于 **Vue 3** 和 **Capacitor** 构建的 **Android离线待办事项管理应用**。所有数据使用 Capacitor Preferences API 存储在设备本地，**无需网络连接或后端服务器**。
 
 ### 🌟 核心功能
-- **用户注册与登录**: 自由注册，用户名和密码存储在本地设备。
+- **用户注册与登录**: 动态首字母渐变头像，替代旧版 Emoji。
 - **完全离线运行**: 无需网络连接即可使用全部功能。
+- **任务看板 (v1.3.1)**:
+  - 统一 **图标 + 数字 + 标签** 结构，视觉高度一致。
+  - 逻辑层级重构：第一行展示"全部"、"占比"及"分类"；第二行展示"状态分布"与"时间筛选"。
+  - 交互式筛选：点击任何统计项直接筛选列表。
 - **任务管理**:
-  - 支持任务分类（工作、学习、生活）。
+  - 支持任务分类（💼工作、📚学习、🏠生活）。
   - 支持优先级设置（高、中、低）。
   - 支持周期类型：仅今天、每天、自定义每周周期。
   - 任务详细描述，直接在列表中显示。
@@ -207,7 +215,13 @@ TO-DO/
 
 ## 📝 版本历史 | Version History
 
-### v1.3.0 (2026-02-19)
+### v1.3.1 (2026-02-19)
+- ✅ **UI 重构与层级调整**: 重新排列统计区域（分类统计上移，状态下移）
+- ✅ **全站视觉标准化**: 所有统计项统一为 `图标 + 数字 + 标签` 结构，移除环形进度条
+- ✅ **现代感头像**: 动态首字母渐变头像，替代旧版 Emoji
+- ✅ **分类专属图标**: 为工作、学习、生活添加专属图标
+
+## v1.3.0 (2026-02-19)
 - ✅ 新增任务批量导入功能
 - ✅ 支持从Excel导入任务（任务名称、描述、分类、优先级、类型、状态、创建时间）
 - ✅ 数据管理区域新增"下载模板"按钮（三按钮布局）
