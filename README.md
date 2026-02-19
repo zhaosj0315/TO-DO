@@ -21,6 +21,7 @@ This is an **offline Android To-Do management application** built with **Vue 3**
 - **Data Import/Export**: 
   - Export tasks to Excel for backup.
   - Import tasks from Excel in batch (supports task status, priority, category, creation time, etc.).
+  - Download import template: [TODO导入模板示例.xlsx](./TODO导入模板示例.xlsx) (100 sample tasks for testing).
 - **Soft Delete (Recycle Bin)**: 
   - Deleted tasks are moved to the trash first.
   - Supports restoring or permanent deletion from the trash.
@@ -78,6 +79,7 @@ This is an **offline Android To-Do management application** built with **Vue 3**
 - **数据导入导出**:
   - 导出任务到Excel文件进行备份。
   - 从Excel批量导入任务（支持任务状态、优先级、分类、创建时间等）。
+  - 下载导入模板：[TODO导入模板示例.xlsx](./TODO导入模板示例.xlsx)（内含100条示例任务供测试使用）。
 - **逻辑删除 (回收站)**: 
   - 删除的任务会先移入回收站。
   - 支持从回收站中一键恢复或彻底删除任务。
