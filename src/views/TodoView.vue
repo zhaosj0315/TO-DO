@@ -256,7 +256,8 @@
             <p class="footer-copyright">© 2026 TO-DO App. All rights reserved.</p>
             <p class="footer-license">
               MIT License | 离线存储，数据安全 | 
-              <span class="privacy-link" @click="showPrivacyPolicy = true">隐私政策</span>
+              <span class="privacy-link" @click="showPrivacyPolicy = true">隐私政策</span> | 
+              <span class="privacy-link" @click="showSupport = true">联系与支持</span>
             </p>
           </div>
         </footer>
@@ -377,9 +378,10 @@
                 <span class="edit-icon" @click="startEditUsername">✏️</span>
               </h2>
               <div class="profile-details">
-                <p class="profile-meta">📅 注册时间：{{ formatDate(userProfileInfo.registerTime) }}</p>
-                <p class="profile-meta">🕐 最后登录：{{ formatDate(userProfileInfo.lastLoginTime) }}</p>
-                <p class="profile-meta">📊 使用天数：{{ usageDays }}天</p>
+                <p class="profile-meta">📅 {{ formatDate(userProfileInfo.registerTime) }}</p>
+                <p class="profile-meta" v-if="userProfileInfo.usernameModifiedTime">✏️ {{ formatDate(userProfileInfo.usernameModifiedTime) }}</p>
+                <p class="profile-meta">🕐 {{ formatDate(userProfileInfo.lastLoginTime) }}</p>
+                <p class="profile-meta">📊 使用{{ usageDays }}天</p>
               </div>
             </div>
           </div>
@@ -502,25 +504,51 @@
           </div>
 
           <!-- 联系与支持 -->
-          <div class="support-section">
-            <h4 class="support-title">💝 联系与支持</h4>
-            <p class="support-desc">遇到bug别慌，扫码找我唠唠；用得爽了，请我喝杯奶茶呗 ☕</p>
-            
-            <div class="qr-codes">
-              <div class="qr-item">
-                <img src="../assets/images/wechat-qr.png" alt="微信二维码" class="qr-image">
-                <p class="qr-label">💬 添加微信</p>
-              </div>
-              <div class="qr-item">
-                <img src="../assets/images/payment-qr.png" alt="打赏二维码" class="qr-image">
-                <p class="qr-label">💰 打赏支持</p>
+          <!-- 联系与支持入口 -->
+          <div class="support-entry" @click="showSupport = true">
+            <div class="entry-icon">💝</div>
+            <div class="entry-content">
+              <div class="entry-title">联系与支持</div>
+              <div class="entry-summary">
+                遇到bug或想打赏？点击查看联系方式
               </div>
             </div>
+            <div class="entry-arrow">›</div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-            <div class="contact-info">
-              <span class="contact-icon">📞</span>
-              <span class="contact-text">联系电话：17858441076</span>
+    <!-- 联系与支持详情弹窗 -->
+    <div v-if="showSupport" class="modal-overlay" @click.self="showSupport = false">
+      <div class="modal-content glass-card" style="background: white; max-width: 500px;">
+        <div class="modal-header">
+          <h3>💝 联系与支持</h3>
+          <button class="close-btn" @click="showSupport = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="support-desc">遇到bug别慌，扫码找我唠唠；用得爽了，请我喝杯奶茶呗 ☕</p>
+          
+          <div class="qr-codes">
+            <div class="qr-item">
+              <img src="../assets/images/wechat-qr.png" alt="微信二维码" class="qr-image">
+              <p class="qr-label">💬 添加微信</p>
             </div>
+            <div class="qr-item">
+              <img src="../assets/images/payment-qr.png" alt="打赏二维码" class="qr-image">
+              <p class="qr-label">💰 打赏支持</p>
+            </div>
+          </div>
+
+          <div class="contact-info">
+            <span class="contact-icon">📞</span>
+            <span class="contact-text">联系电话：17858441076</span>
+          </div>
+
+          <div class="app-footer">
+            <p class="app-version">TO-DO App v1.4.0</p>
+            <p class="copyright">© 2026 TO-DO App. All rights reserved.</p>
+            <p class="footer-links">MIT License | 离线存储，数据安全 | 隐私政策</p>
           </div>
         </div>
       </div>
@@ -847,6 +875,7 @@ const countdownInterval = ref(null)
 const showTrash = ref(false)
 const showProfile = ref(false)
 const showPomodoroStats = ref(false)
+const showSupport = ref(false)
 const showPrivacyPolicy = ref(false)
 const editingTask = ref(null)
 const editDescription = ref('')
@@ -1549,6 +1578,23 @@ const saveUsername = async () => {
   
   await Preferences.set({ key: 'users', value: JSON.stringify(users) })
   await Preferences.set({ key: 'currentUser', value: newUsername.value })
+  
+  // 更新用户信息，保留注册时间，添加修改时间
+  const { value: userInfoData } = await Preferences.get({ key: 'userInfo' })
+  const userInfo = userInfoData ? JSON.parse(userInfoData) : {}
+  
+  if (userInfo[username]) {
+    const oldInfo = userInfo[username]
+    delete userInfo[username]
+    userInfo[newUsername.value] = {
+      ...oldInfo,
+      username: newUsername.value,
+      usernameModifiedTime: new Date().toISOString(), // 记录修改时间
+      lastLoginTime: new Date().toISOString()
+    }
+    await Preferences.set({ key: 'userInfo', value: JSON.stringify(userInfo) })
+    userProfileInfo.value = userInfo[newUsername.value]
+  }
   
   taskStore.tasks.forEach(task => {
     if (task.user_id === username) {
@@ -2970,11 +3016,11 @@ onUnmounted(() => {
 .profile-section {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
-  padding: 1.5rem;
+  gap: 0.8rem;
+  padding: 0.8rem;
   background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
   border-radius: 12px;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .profile-avatar {
@@ -2982,22 +3028,22 @@ onUnmounted(() => {
 }
 
 .avatar-circle {
-  width: 80px;
-  height: 80px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2rem;
+  font-size: 1.3rem;
   font-weight: bold;
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .profile-info h2 {
-  margin: 0 0 0.8rem 0;
-  font-size: 1.5rem;
+  margin: 0 0 0.4rem 0;
+  font-size: 1.1rem;
   color: var(--text-dark);
   display: flex;
   align-items: center;
@@ -3008,13 +3054,13 @@ onUnmounted(() => {
   border: 1px solid #ddd;
   border-radius: 4px;
   padding: 0.3rem 0.5rem;
-  font-size: 1.5rem;
+  font-size: 1.1rem;
   font-weight: 600;
   width: 200px;
 }
 
 .edit-icon {
-  font-size: 1rem;
+  font-size: 0.85rem;
   cursor: pointer;
   opacity: 0.6;
   transition: opacity 0.2s;
@@ -3072,25 +3118,26 @@ onUnmounted(() => {
 .profile-details {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.15rem;
 }
 
 .profile-meta {
   margin: 0;
   color: var(--text-light);
-  font-size: 0.85rem;
+  font-size: 0.7rem;
   display: flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.2rem;
+  line-height: 1.3;
 }
 
 .profile-stats {
   display: flex;
   justify-content: space-around;
-  padding: 1.5rem;
+  padding: 0.5rem 0.8rem;
   background: rgba(255, 255, 255, 0.5);
   border-radius: 12px;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .stat-item {
@@ -3098,26 +3145,28 @@ onUnmounted(() => {
 }
 
 .stat-value {
-  font-size: 2rem;
+  font-size: 1.3rem;
   font-weight: bold;
   color: var(--primary-color);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.2rem;
+  line-height: 1;
 }
 
 .stat-label {
-  font-size: 0.85rem;
+  font-size: 0.7rem;
   color: var(--text-light);
+  line-height: 1;
 }
 
 /* 番茄统计入口 */
 .pomodoro-entry {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1.2rem;
+  gap: 0.8rem;
+  padding: 0.7rem 0.9rem;
   background: linear-gradient(135deg, rgba(255, 107, 107, 0.1) 0%, rgba(255, 193, 7, 0.1) 100%);
   border-radius: 12px;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   cursor: pointer;
   transition: all 0.3s;
 }
@@ -3128,7 +3177,7 @@ onUnmounted(() => {
 }
 
 .entry-icon {
-  font-size: 2.5rem;
+  font-size: 2rem;
   flex-shrink: 0;
 }
 
@@ -3137,19 +3186,20 @@ onUnmounted(() => {
 }
 
 .entry-title {
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: var(--text-dark);
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.2rem;
 }
 
 .entry-summary {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   color: var(--text-light);
+  line-height: 1.3;
 }
 
 .entry-arrow {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   color: var(--text-light);
 }
 
@@ -3441,13 +3491,14 @@ onUnmounted(() => {
 }
 
 .form-group {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.4rem;
   font-weight: 600;
+  font-size: 0.9rem;
   color: var(--text-dark);
 }
 
@@ -3538,30 +3589,32 @@ onUnmounted(() => {
 }
 
 /* 支持与联系区域 */
-.support-section {
-  margin-top: 1.5rem;
-  padding: 1rem;
-  background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 152, 0, 0.1));
+/* 联系与支持入口 */
+.support-entry {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.8rem 1rem;
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 152, 0, 0.1) 100%);
   border-radius: 12px;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
   border: 2px dashed rgba(255, 193, 7, 0.3);
 }
 
-.support-title {
-  margin: 0 0 0.3rem 0;
-  font-size: 0.95rem;
-  color: var(--text-dark);
-  text-align: center;
+.support-entry:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.2);
 }
 
 .support-desc {
   margin: 0 0 1rem 0;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: var(--text-light);
   text-align: center;
-  line-height: 1.3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.5;
+  word-break: break-word;
 }
 
 .qr-codes {
@@ -3604,6 +3657,7 @@ onUnmounted(() => {
   padding: 0.6rem;
   background: rgba(255, 255, 255, 0.6);
   border-radius: 8px;
+  margin-bottom: 1rem;
 }
 
 .contact-icon {
@@ -3614,6 +3668,31 @@ onUnmounted(() => {
   font-size: 0.8rem;
   color: var(--text-dark);
   font-weight: 600;
+}
+
+.app-footer {
+  text-align: center;
+  padding: 1rem 0 0 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.app-version {
+  margin: 0 0 0.3rem 0;
+  font-size: 0.85rem;
+  color: var(--text-dark);
+  font-weight: 600;
+}
+
+.copyright {
+  margin: 0 0 0.3rem 0;
+  font-size: 0.7rem;
+  color: var(--text-light);
+}
+
+.footer-links {
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--text-light);
 }
 
 /* 模态框样式 */
