@@ -8,6 +8,15 @@ dist/
 # Android构建产物
 android/
 
+# iOS构建产物
+ios/
+
+# Electron构建产物
+electron/
+
+# 发布产物
+release/
+
 # APK文件
 *.apk
 

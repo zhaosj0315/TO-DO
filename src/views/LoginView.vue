@@ -61,11 +61,12 @@
           <label for="code">验证码</label>
           <div class="code-input-wrapper">
             <input 
-              type="number" 
+              type="text" 
               id="code" 
               v-model="verificationCode" 
               class="input"
               placeholder="6位验证码"
+              maxlength="6"
               @keyup.enter="handleSubmit"
             >
             <button 
@@ -255,7 +256,8 @@ const handlePhoneLogin = async () => {
     error.value = '请输入手机号'
     return
   }
-  if (verificationCode.value !== generatedCode.value || !generatedCode.value) {
+  // 统一转为字符串比较
+  if (String(verificationCode.value) !== String(generatedCode.value) || !generatedCode.value) {
     error.value = '验证码错误或已失效'
     return
   }

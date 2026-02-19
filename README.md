@@ -135,12 +135,21 @@ This is an **offline Android To-Do management application** built with **Vue 3**
 - **构建工具**: Vite
 - **目标平台**: Android (APK)
 
-### 📱 安装使用（最终用户）
+## 📱 安装使用（最终用户）
+
+### Android 版本
 1. 下载 `TODO-App.apk` 安装包
 2. 在Android设备上开启"允许安装未知来源应用"
 3. 安装APK文件
 4. 打开应用并注册新账号
 5. 开始离线管理您的任务！
+
+### Windows 版本
+1. 下载 `TODO App Setup 1.4.0.exe` 安装程序
+2. 双击运行安装程序
+3. 选择安装目录并完成安装
+4. 从桌面快捷方式启动应用
+5. 开始管理您的任务！
 
 ### 🚀 开发环境搭建
 1. **安装依赖**: `npm install`

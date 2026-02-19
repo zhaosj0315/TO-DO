@@ -19,10 +19,26 @@ echo ""
 echo "🔄 [2/5] 同步到Android项目..."
 npx cap sync android
 
-# 3. 修复Java版本配置（确保使用Java 17）
+# 3. 修复Java版本配置（确保全局使用Java 17）
 echo ""
 echo "🔧 [3/5] 修复Java版本配置..."
-sed -i '' 's/JavaVersion.VERSION_21/JavaVersion.VERSION_17/g' android/app/capacitor.build.gradle
+# 修复 Capacitor 自动生成的配置文件
+if [ -f "android/app/capacitor.build.gradle" ]; then
+    sed -i '' 's/JavaVersion.VERSION_21/JavaVersion.VERSION_17/g' android/app/capacitor.build.gradle
+fi
+if [ -f "android/capacitor-cordova-android-plugins/build.gradle" ]; then
+    sed -i '' 's/JavaVersion.VERSION_21/JavaVersion.VERSION_17/g' android/capacitor-cordova-android-plugins/build.gradle
+fi
+# 修复 Capacitor 插件的 Java 版本
+if [ -f "node_modules/@capacitor/local-notifications/android/build.gradle" ]; then
+    sed -i '' 's/JavaVersion.VERSION_21/JavaVersion.VERSION_17/g' node_modules/@capacitor/local-notifications/android/build.gradle
+fi
+if [ -f "node_modules/@capacitor/filesystem/android/build.gradle" ]; then
+    sed -i '' 's/JavaVersion.VERSION_21/JavaVersion.VERSION_17/g' node_modules/@capacitor/filesystem/android/build.gradle
+fi
+if [ -f "node_modules/@capacitor/preferences/android/build.gradle" ]; then
+    sed -i '' 's/JavaVersion.VERSION_21/JavaVersion.VERSION_17/g' node_modules/@capacitor/preferences/android/build.gradle
+fi
 
 # 4. 构建APK
 echo ""
