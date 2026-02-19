@@ -24,16 +24,16 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
 
     async addTask(taskData) {
       const task = {
-        id: Date.now(),
+        id: taskData.id || Date.now(),
         text: taskData.text,
         type: taskData.type,
         category: taskData.category,
         priority: taskData.priority,
-        weekdays: taskData.weekdays,
-        description: '',
-        status: 'pending',
-        created_at: new Date().toISOString(),
-        user_id: this.currentUser
+        weekdays: taskData.weekdays || [],
+        description: taskData.description || '',
+        status: taskData.status || 'pending',
+        created_at: taskData.created_at || new Date().toISOString(),
+        user_id: taskData.user_id || this.currentUser
       }
       this.tasks.push(task)
       await this.saveTasks()

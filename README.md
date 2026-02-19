@@ -18,6 +18,9 @@ This is an **offline Android To-Do management application** built with **Vue 3**
   - Recurrence types: Today, Daily, and custom Weekly cycles.
   - Task descriptions with inline display.
 - **Local Storage**: All data persists on device using Capacitor Preferences API.
+- **Data Import/Export**: 
+  - Export tasks to Excel for backup.
+  - Import tasks from Excel in batch (supports task status, priority, category, creation time, etc.).
 - **Soft Delete (Recycle Bin)**: 
   - Deleted tasks are moved to the trash first.
   - Supports restoring or permanent deletion from the trash.
@@ -72,6 +75,9 @@ This is an **offline Android To-Do management application** built with **Vue 3**
   - 支持周期类型：仅今天、每天、自定义每周周期。
   - 任务详细描述，直接在列表中显示。
 - **本地存储**: 所有数据持久化存储在设备本地。
+- **数据导入导出**:
+  - 导出任务到Excel文件进行备份。
+  - 从Excel批量导入任务（支持任务状态、优先级、分类、创建时间等）。
 - **逻辑删除 (回收站)**: 
   - 删除的任务会先移入回收站。
   - 支持从回收站中一键恢复或彻底删除任务。
@@ -198,6 +204,14 @@ TO-DO/
 - ✅ 通知提示
 
 ## 📝 版本历史 | Version History
+
+### v1.3.0 (2026-02-18)
+- ✅ 新增任务批量导入功能
+- ✅ 支持从Excel导入任务（任务名称、描述、分类、优先级、类型、状态、创建时间）
+- ✅ 数据管理区域整合（导出+导入）
+- ✅ 智能解析Excel数据格式
+- ✅ 导入结果统计（成功/失败数量）
+- 📄 新增导入模板说明文档
 
 ### v1.2.1 (2026-02-18)
 - 🐛 修复小屏手机上统计数字被截断的问题

@@ -298,14 +298,27 @@
             </div>
           </div>
 
-          <!-- 数据导出 -->
+          <!-- 数据导出与导入 -->
           <div class="export-section">
-            <h4 class="export-title">📊 数据导出</h4>
-            <p class="export-desc">导出您的所有任务数据为Excel文件，随时备份您的信息</p>
-            <button class="btn btn-export" @click="exportToExcel">
-              <span class="export-icon">📥</span>
-              导出任务数据
-            </button>
+            <h4 class="export-title">📊 数据管理</h4>
+            <p class="export-desc">导出或导入您的任务数据，轻松备份与迁移</p>
+            <div class="data-buttons">
+              <button class="btn btn-export" @click="exportToExcel">
+                <span class="export-icon">📥</span>
+                导出任务
+              </button>
+              <button class="btn btn-import" @click="triggerImport">
+                <span class="export-icon">📤</span>
+                导入任务
+              </button>
+            </div>
+            <input 
+              ref="fileInput" 
+              type="file" 
+              accept=".xlsx,.xls" 
+              style="display: none" 
+              @change="importFromExcel"
+            />
           </div>
 
           <!-- 联系与支持 -->
@@ -411,6 +424,7 @@ const editText = ref('')
 const showAddForm = ref(true)
 const currentPage = ref(1)
 const pageSize = 6
+const fileInput = ref(null)
 
 // 个人主页相关
 const newUsername = ref('')
@@ -476,7 +490,7 @@ const completionPercentage = computed(() => {
   return Math.round((completed / total) * 100)
 })
 
-const pendingCount = computed(() => baseFilteredTasks.value.filter(t => t.status !== TaskStatus.COMPLETED).length)
+const pendingCount = computed(() => baseFilteredTasks.value.filter(t => t.status === TaskStatus.PENDING).length)
 const completedCount = computed(() => baseFilteredTasks.value.filter(t => t.status === TaskStatus.COMPLETED).length)
 const overdueCount = computed(() => baseFilteredTasks.value.filter(t => t.status === TaskStatus.OVERDUE).length)
 
@@ -800,6 +814,149 @@ const getCategoryText = (category) => {
     life: '生活'
   }
   return categoryMap[category] || category
+}
+
+// 方法：触发文件选择
+const triggerImport = () => {
+  fileInput.value?.click()
+}
+
+// 方法：导入任务
+const importFromExcel = async (event) => {
+  const file = event.target.files?.[0]
+  if (!file) return
+  
+  try {
+    const reader = new FileReader()
+    reader.onload = async (e) => {
+      try {
+        const data = new Uint8Array(e.target.result)
+        const workbook = XLSX.read(data, { type: 'array' })
+        const sheet = workbook.Sheets[workbook.SheetNames[0]]
+        const rows = XLSX.utils.sheet_to_json(sheet)
+        
+        if (rows.length === 0) {
+          showNotification('文件中没有数据', 'error')
+          return
+        }
+        
+        let successCount = 0
+        let errorCount = 0
+        
+        for (const row of rows) {
+          try {
+            const taskName = row['任务名称']?.trim()
+            if (!taskName) {
+              errorCount++
+              continue
+            }
+            
+            const category = parseCategoryText(row['分类'])
+            const priority = parsePriorityText(row['优先级'])
+            const type = parseTypeText(row['类型'])
+            const status = parseStatusText(row['状态'])
+            const createdAt = parseDateTime(row['创建时间'])
+            
+            const newTask = {
+              id: Date.now() + successCount,
+              text: taskName,
+              description: row['详细描述'] || '',
+              type: type,
+              category: category,
+              priority: priority,
+              weekdays: type === 'weekly' ? parseWeekdays(row['类型']) : [],
+              status: status,
+              created_at: createdAt,
+              user_id: currentUsername.value
+            }
+            
+            await taskStore.addTask(newTask)
+            successCount++
+          } catch (err) {
+            console.error('导入单条任务失败:', err)
+            errorCount++
+          }
+        }
+        
+        showNotification(`导入完成：成功 ${successCount} 条，失败 ${errorCount} 条`, 'success')
+        fileInput.value.value = ''
+      } catch (error) {
+        console.error('解析文件失败:', error)
+        showNotification('文件格式错误，请使用导出的模板', 'error')
+      }
+    }
+    reader.readAsArrayBuffer(file)
+  } catch (error) {
+    console.error('读取文件失败:', error)
+    showNotification('读取文件失败', 'error')
+  }
+}
+
+// 解析分类文本
+const parseCategoryText = (text) => {
+  const map = { '工作': 'work', '学习': 'study', '生活': 'life' }
+  return map[text] || 'work'
+}
+
+// 解析优先级文本
+const parsePriorityText = (text) => {
+  const map = { '高': 'high', '中': 'medium', '低': 'low' }
+  return map[text] || 'medium'
+}
+
+// 解析类型文本
+const parseTypeText = (text) => {
+  if (!text) return 'today'
+  if (text === '仅今天') return 'today'
+  if (text === '每天') return 'daily'
+  if (text.includes('每周')) return 'weekly'
+  return 'today'
+}
+
+// 解析状态文本
+const parseStatusText = (text) => {
+  if (text === '已完成') return 'completed'
+  if (text === '已逾期') return 'overdue'
+  return 'pending'
+}
+
+// 解析周期（从类型字段提取）
+const parseWeekdays = (text) => {
+  if (!text || !text.includes('每周')) return []
+  const dayMap = { '周一': 1, '周二': 2, '周三': 3, '周四': 4, '周五': 5, '周六': 6, '周日': 0 }
+  const days = []
+  for (const [key, value] of Object.entries(dayMap)) {
+    if (text.includes(key)) days.push(value)
+  }
+  return days
+}
+
+// 解析日期时间
+const parseDateTime = (text) => {
+  if (!text) return new Date().toISOString()
+  try {
+    // 处理字符串格式
+    if (typeof text === 'string') {
+      // 替换斜杠为横杠，统一格式
+      const normalized = text.replace(/\//g, '-')
+      const date = new Date(normalized)
+      if (!isNaN(date.getTime())) {
+        return date.toISOString()
+      }
+    }
+    // 处理Excel日期数字格式
+    if (typeof text === 'number') {
+      // Excel日期是从1900-01-01开始的天数
+      const excelEpoch = new Date(1900, 0, 1)
+      const date = new Date(excelEpoch.getTime() + (text - 2) * 86400000)
+      return date.toISOString()
+    }
+    // 直接尝试转换
+    const date = new Date(text)
+    return isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString()
+  } catch {
+    return new Date().toISOString()
+  }
 }
 
 // 方法：格式化日期时间
@@ -1620,7 +1777,13 @@ onUnmounted(() => {
   line-height: 1.4;
 }
 
-.btn-export {
+.data-buttons {
+  display: flex;
+  gap: 0.8rem;
+  justify-content: center;
+}
+
+.btn-export, .btn-import {
   background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
   color: white;
   border: none;
@@ -1633,14 +1796,24 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  flex: 1;
+  justify-content: center;
 }
 
-.btn-export:hover {
+.btn-import {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.btn-export:hover, .btn-import:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
-.btn-export:active {
+.btn-import:hover {
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.btn-export:active, .btn-import:active {
   transform: translateY(0);
 }
 
