@@ -127,11 +127,24 @@
             placeholder="任务名称"
             @keyup.enter="addTask"
           >
-          <select v-model="newTaskType" class="select-inline">
-            <option value="today">仅今天</option>
-            <option value="daily">每天</option>
-            <option value="weekly">自定义</option>
+          <select v-model="newTaskType" class="select-inline" @change="handleTaskTypeChange">
+            <option value="today">今天</option>
+            <option value="tomorrow">明天</option>
+            <option value="this_week">本周内</option>
+            <option value="custom_date">指定日期</option>
+            <option value="daily">每天重复</option>
+            <option value="weekday">工作日重复</option>
+            <option value="weekly">每周重复</option>
           </select>
+          <div 
+            v-if="newTaskType === 'custom_date'" 
+            class="date-picker-inline"
+            :class="{ 'placeholder': !customDateTime }"
+            @click="showCustomDateTimePicker"
+          >
+            {{ customDateTime ? formatDisplayDateTime(customDateTime) : '选择日期时间' }}
+          </div>
+          <input ref="hiddenCustomDateTime" type="datetime-local" style="display:none" :min="getTodayDateTime()" @change="handleCustomDateTimeChange">
           <select v-model="newTaskCategory" class="select-inline">
             <option value="work">工作</option>
             <option value="study">学习</option>
@@ -427,11 +440,19 @@
           </div>
           <div class="edit-field">
             <label>任务类型</label>
-            <select v-model="editType" class="input">
-              <option value="today">仅今天</option>
-              <option value="daily">每天</option>
-              <option value="weekly">每周</option>
+            <select v-model="editType" class="input" @change="handleEditTypeChange">
+              <option value="today">今天</option>
+              <option value="tomorrow">明天</option>
+              <option value="this_week">本周内</option>
+              <option value="custom_date">指定日期</option>
+              <option value="daily">每天重复</option>
+              <option value="weekday">工作日重复</option>
+              <option value="weekly">每周重复</option>
             </select>
+          </div>
+          <div v-if="editType === 'custom_date'" class="edit-field">
+            <label>指定日期时间</label>
+            <input v-model="editCustomDateTime" type="datetime-local" class="input" :min="getTodayDateTime()">
           </div>
           <div v-if="editType === 'weekly'" class="edit-field">
             <label>重复周期</label>
@@ -479,6 +500,7 @@ const TaskStatus = {
 // 响应式数据
 const newTaskText = ref('')
 const newTaskType = ref('today')
+const customDateTime = ref('')
 const newTaskCategory = ref('work')
 const newTaskPriority = ref('medium')
 const selectedWeekdays = ref([])
@@ -497,6 +519,7 @@ const editText = ref('')
 const editCategory = ref('work')
 const editPriority = ref('medium')
 const editType = ref('today')
+const editCustomDateTime = ref('')
 const editWeekdays = ref([])
 const showAddForm = ref(true)
 const currentPage = ref(1)
@@ -680,6 +703,38 @@ const showDatePicker = (type) => {
   pickerRef.value?.showPicker()
 }
 
+// 显示自定义日期时间选择器
+const showCustomDateTimePicker = () => {
+  hiddenCustomDateTime.value?.showPicker()
+}
+
+// 处理自定义日期时间变更
+const handleCustomDateTimeChange = (e) => {
+  customDateTime.value = e.target.value
+}
+
+// 方法：获取今天的日期时间（YYYY-MM-DDTHH:MM格式）
+const getTodayDateTime = () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  const hours = String(now.getHours()).padStart(2, '0')
+  const minutes = String(now.getMinutes()).padStart(2, '0')
+  return `${year}-${month}-${day}T${hours}:${minutes}`
+}
+
+// 方法：格式化显示日期时间
+const formatDisplayDateTime = (dateTimeStr) => {
+  if (!dateTimeStr) return ''
+  const dt = new Date(dateTimeStr)
+  const month = dt.getMonth() + 1
+  const day = dt.getDate()
+  const hours = String(dt.getHours()).padStart(2, '0')
+  const minutes = String(dt.getMinutes()).padStart(2, '0')
+  return `${month}/${day} ${hours}:${minutes}`
+}
+
 // 处理起始日期变更
 const handleStartDateChange = (e) => {
   const dateStr = e.target.value
@@ -705,6 +760,7 @@ const handleEndDateChange = (e) => {
 // refs
 const hiddenStartDate = ref(null)
 const hiddenEndDate = ref(null)
+const hiddenCustomDateTime = ref(null)
 
 // 方法：筛选任务
 const filterTasks = () => {
@@ -723,9 +779,25 @@ const addTaskAndClose = async () => {
 const addTask = async () => {
   if (!newTaskText.value.trim()) return
   
+  // 验证指定日期
+  if (newTaskType.value === 'custom_date' && !customDateTime.value) {
+    showNotification('请选择任务日期时间！', 'error')
+    return
+  }
+  
+  // 验证每周重复
   if (newTaskType.value === 'weekly' && selectedWeekdays.value.length === 0) {
     showNotification('请至少选择一个星期几！', 'error')
     return
+  }
+  
+  // 解析日期时间
+  let customDate = null
+  let customTime = null
+  if (newTaskType.value === 'custom_date' && customDateTime.value) {
+    const dt = new Date(customDateTime.value)
+    customDate = customDateTime.value.split('T')[0]
+    customTime = `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`
   }
   
   const task = {
@@ -733,7 +805,9 @@ const addTask = async () => {
     type: newTaskType.value,
     category: newTaskCategory.value,
     priority: newTaskPriority.value,
-    weekdays: newTaskType.value === 'weekly' ? selectedWeekdays.value : null
+    weekdays: newTaskType.value === 'weekly' ? selectedWeekdays.value : null,
+    customDate: customDate,
+    customTime: customTime
   }
   
   await taskStore.addTask(task)
@@ -741,11 +815,29 @@ const addTask = async () => {
   // 清空输入
   newTaskText.value = ''
   newTaskType.value = 'today'
+  customDateTime.value = ''
   newTaskCategory.value = 'work'
   newTaskPriority.value = 'medium'
   selectedWeekdays.value = []
   
   showNotification('任务添加成功！', 'success')
+}
+
+// 方法：处理任务类型变化
+const handleTaskTypeChange = () => {
+  // 切换类型时清空相关数据
+  if (newTaskType.value !== 'custom_date') {
+    customDateTime.value = ''
+  }
+  if (newTaskType.value !== 'weekly') {
+    selectedWeekdays.value = []
+  }
+}
+
+// 方法：获取今天日期（YYYY-MM-DD格式）
+const getTodayDate = () => {
+  const today = new Date()
+  return today.toISOString().split('T')[0]
 }
 
 // 方法：切换任务完成状态
@@ -781,7 +873,25 @@ const openEditModal = (task) => {
   editCategory.value = task.category
   editPriority.value = task.priority
   editType.value = task.type
+  
+  // 组合日期和时间为datetime-local格式
+  if (task.customDate) {
+    editCustomDateTime.value = task.customDate + (task.customTime ? `T${task.customTime}` : 'T00:00')
+  } else {
+    editCustomDateTime.value = ''
+  }
+  
   editWeekdays.value = task.weekdays ? [...task.weekdays] : []
+}
+
+// 方法：处理编辑类型变化
+const handleEditTypeChange = () => {
+  if (editType.value !== 'custom_date') {
+    editCustomDateTime.value = ''
+  }
+  if (editType.value !== 'weekly') {
+    editWeekdays.value = []
+  }
 }
 
 // 方法：保存任务编辑
@@ -792,10 +902,25 @@ const saveTaskEdit = async () => {
     return
   }
   
+  // 验证指定日期
+  if (editType.value === 'custom_date' && !editCustomDateTime.value) {
+    showNotification('请选择任务日期时间！', 'error')
+    return
+  }
+  
   // 如果是每周类型，必须选择至少一天
   if (editType.value === 'weekly' && editWeekdays.value.length === 0) {
     showNotification('每周任务至少选择一天！', 'error')
     return
+  }
+  
+  // 解析日期时间
+  let customDate = null
+  let customTime = null
+  if (editType.value === 'custom_date' && editCustomDateTime.value) {
+    const dt = new Date(editCustomDateTime.value)
+    customDate = editCustomDateTime.value.split('T')[0]
+    customTime = `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`
   }
   
   await taskStore.updateTask(editingTask.value.id, {
@@ -804,6 +929,8 @@ const saveTaskEdit = async () => {
     category: editCategory.value,
     priority: editPriority.value,
     type: editType.value,
+    customDate: customDate,
+    customTime: customTime,
     weekdays: editType.value === 'weekly' ? editWeekdays.value : []
   })
   
@@ -971,20 +1098,49 @@ const exportToExcel = async () => {
 
 // 方法：获取任务类型文本
 const getTaskTypeText = (task) => {
+  let typeText = ''
   switch (task.type) {
     case 'today':
-      return '仅今天'
+      typeText = '今天'
+      break
+    case 'tomorrow':
+      typeText = '明天'
+      break
+    case 'this_week':
+      typeText = '本周内'
+      break
+    case 'custom_date':
+      if (task.customDate) {
+        const date = new Date(task.customDate)
+        typeText = `${date.getMonth() + 1}/${date.getDate()}`
+      } else {
+        typeText = '指定日期'
+      }
+      break
     case 'daily':
-      return '每天'
+      typeText = '每天'
+      break
+    case 'weekday':
+      typeText = '工作日'
+      break
     case 'weekly':
       if (task.weekdays) {
-        const selectedDays = task.weekdays.map(day => weekdays[day]).join(', ')
-        return `每周: ${selectedDays}`
+        const selectedDays = task.weekdays.map(day => weekdays[day]).join(',')
+        typeText = `每周${selectedDays}`
+      } else {
+        typeText = '每周'
       }
-      return '每周'
+      break
     default:
-      return ''
+      typeText = ''
   }
+  
+  // 添加时间信息
+  if (task.customTime) {
+    typeText += ` ${task.customTime}`
+  }
+  
+  return typeText
 }
 
 // 方法：获取优先级文本
@@ -2336,6 +2492,52 @@ onUnmounted(() => {
   outline: none;
   background: white;
   border-color: var(--primary-color);
+}
+
+.date-picker-inline {
+  padding: 0.4rem 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.6);
+  font-size: 0.8rem;
+  cursor: pointer;
+  min-width: 80px;
+  text-align: center;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.date-picker-inline:hover {
+  background: white;
+  border-color: var(--primary-color);
+}
+
+.date-picker-inline.placeholder {
+  color: var(--text-light);
+  opacity: 0.7;
+}
+
+.time-picker-inline {
+  padding: 0.4rem 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.6);
+  font-size: 0.8rem;
+  cursor: pointer;
+  min-width: 70px;
+  text-align: center;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.time-picker-inline:hover {
+  background: white;
+  border-color: var(--primary-color);
+}
+
+.time-picker-inline.placeholder {
+  color: var(--text-light);
+  opacity: 0.7;
 }
 
 .btn-inline {
