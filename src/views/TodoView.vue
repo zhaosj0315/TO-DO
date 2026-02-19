@@ -1737,30 +1737,37 @@ const getDeadlineText = (task) => {
   
   if (diff < 0) {
     // 已逾期
-    const hours = Math.floor(Math.abs(diff) / (1000 * 60 * 60))
+    const absDiff = Math.abs(diff)
+    const hours = Math.floor(absDiff / (1000 * 60 * 60))
     const days = Math.floor(hours / 24)
-    if (days > 0) return `逾期${days}天`
-    return `逾期${hours}小时`
+    const remainingHours = hours % 24
+    
+    if (days > 0) return `逾期 ${days}天 ${remainingHours}小时`
+    return `逾期 ${hours}小时`
   } else {
     // 未逾期
+    const hours = Math.floor(diff / (1000 * 60 * 60))
+    const days = Math.floor(hours / 24)
+    const remainingHours = hours % 24
+    
     const date = new Date(deadline)
+    const year = date.getFullYear()
     const month = date.getMonth() + 1
     const day = date.getDate()
     const hour = String(date.getHours()).padStart(2, '0')
     const minute = String(date.getMinutes()).padStart(2, '0')
     
-    // 如果是今天，显示时间
+    // 基础日期格式
+    let dateStr = `${year}/${month}/${day} ${hour}:${minute}`
     if (date.toDateString() === now.toDateString()) {
-      return `今天 ${hour}:${minute}`
+      dateStr = `今天 ${hour}:${minute}`
+    } else if (new Date(now.getTime() + 86400000).toDateString() === date.toDateString()) {
+      dateStr = `明天 ${hour}:${minute}`
     }
-    // 如果是明天
-    const tomorrow = new Date(now)
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    if (date.toDateString() === tomorrow.toDateString()) {
-      return `明天 ${hour}:${minute}`
-    }
-    // 其他日期
-    return `${month}/${day} ${hour}:${minute}`
+    
+    // 添加剩余时间提醒
+    if (days > 0) return `${dateStr} (还剩 ${days}天)`
+    return `${dateStr} (仅剩 ${hours}小时)`
   }
 }
 
@@ -1770,17 +1777,14 @@ const calculateDeadline = (task) => {
   
   switch (task.type) {
     case 'today':
-      // 今天24点前
       return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
     
     case 'tomorrow':
-      // 明天24点前
       const tomorrow = new Date(now)
       tomorrow.setDate(tomorrow.getDate() + 1)
       return new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 23, 59, 59)
     
     case 'this_week':
-      // 本周日24点前
       const endOfWeek = new Date(now)
       const dayOfWeek = now.getDay()
       const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek
@@ -1788,7 +1792,6 @@ const calculateDeadline = (task) => {
       return new Date(endOfWeek.getFullYear(), endOfWeek.getMonth(), endOfWeek.getDate(), 23, 59, 59)
     
     case 'custom_date':
-      // 指定日期时间
       if (task.customDate) {
         const date = new Date(task.customDate)
         if (task.customTime) {
@@ -1802,9 +1805,31 @@ const calculateDeadline = (task) => {
       return null
     
     case 'daily':
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
+      
     case 'weekday':
+      const isWeekend = now.getDay() === 0 || now.getDay() === 6
+      if (isWeekend) {
+        // 如果是周末看工作日任务，截止日期应该是上周五
+        const lastFriday = new Date(now)
+        const diff = now.getDay() === 0 ? 2 : 1
+        lastFriday.setDate(now.getDate() - diff)
+        return new Date(lastFriday.getFullYear(), lastFriday.getMonth(), lastFriday.getDate(), 23, 59, 59)
+      }
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
+
     case 'weekly':
-      // 重复任务：今天24点前
+      if (task.weekdays && task.weekdays.length > 0) {
+        const currentDay = now.getDay()
+        // 找到最近的一个设定的星期几（过去或今天）
+        const pastDays = task.weekdays
+          .map(d => (currentDay >= d ? currentDay - d : currentDay + 7 - d))
+          .sort((a, b) => a - b)
+        
+        const lastOccurrence = new Date(now)
+        lastOccurrence.setDate(now.getDate() - pastDays[0])
+        return new Date(lastOccurrence.getFullYear(), lastOccurrence.getMonth(), lastOccurrence.getDate(), 23, 59, 59)
+      }
       return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
     
     default:
