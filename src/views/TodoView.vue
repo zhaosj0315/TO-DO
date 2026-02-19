@@ -311,6 +311,10 @@
                 <span class="export-icon">📤</span>
                 导入任务
               </button>
+              <button class="btn btn-template" @click="downloadTemplate">
+                <span class="export-icon">📋</span>
+                下载模板
+              </button>
             </div>
             <input 
               ref="fileInput" 
@@ -819,6 +823,16 @@ const getCategoryText = (category) => {
 // 方法：触发文件选择
 const triggerImport = () => {
   fileInput.value?.click()
+}
+
+// 方法：下载导入模板
+const downloadTemplate = () => {
+  const templateUrl = 'https://github.com/zhaosj0315/TO-DO/raw/main/TODO%E5%AF%BC%E5%85%A5%E6%A8%A1%E6%9D%BF%E7%A4%BA%E4%BE%8B.xlsx'
+  const link = document.createElement('a')
+  link.href = templateUrl
+  link.download = 'TODO导入模板示例.xlsx'
+  link.click()
+  showNotification('开始下载导入模板...', 'success')
 }
 
 // 方法：导入任务
@@ -1783,7 +1797,7 @@ onUnmounted(() => {
   justify-content: center;
 }
 
-.btn-export, .btn-import {
+.btn-export, .btn-import, .btn-template {
   background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
   color: white;
   border: none;
@@ -1804,7 +1818,11 @@ onUnmounted(() => {
   background: linear-gradient(135deg, #10b981, #059669);
 }
 
-.btn-export:hover, .btn-import:hover {
+.btn-template {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.btn-export:hover, .btn-import:hover, .btn-template:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
@@ -1813,7 +1831,11 @@ onUnmounted(() => {
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
 }
 
-.btn-export:active, .btn-import:active {
+.btn-template:hover {
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+}
+
+.btn-export:active, .btn-import:active, .btn-template:active {
   transform: translateY(0);
 }
 
