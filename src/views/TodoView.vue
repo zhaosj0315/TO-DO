@@ -50,51 +50,48 @@
           <button class="add-btn-text" @click="showAddForm = !showAddForm">{{ showAddForm ? '收起' : '添加' }}</button>
         </div>
 
-        <!-- 第二行：状态筛选和时间筛选 -->
-        <div class="filter-row">
-          <div class="category-filters-unified">
-            <div class="stat-row clickable" @click="setFilter('pending')" :class="{ active: currentFilter === 'pending' }">
-              <span class="stat-icon">⏳</span>
-              <span class="stat-label-mini">待办</span>
-              <span class="stat-count-bracket">({{ pendingCount }})</span>
-            </div>
-            <div class="stat-row clickable" @click="setFilter('completed')" :class="{ active: currentFilter === 'completed' }">
-              <span class="stat-icon">✅</span>
-              <span class="stat-label-mini">已完成</span>
-              <span class="stat-count-bracket success">({{ completedCount }})</span>
-            </div>
-            <div class="stat-row clickable" @click="setFilter('overdue')" :class="{ active: currentFilter === 'overdue' }">
-              <span class="stat-icon">⚠️</span>
-              <span class="stat-label-mini">已逾期</span>
-              <span class="stat-count-bracket danger">({{ overdueCount }})</span>
-            </div>
+        <!-- 第二行：状态筛选和时间筛选 (合并为一行) -->
+        <div class="filter-row-unified">
+          <div class="stat-row clickable" @click="setFilter('pending')" :class="{ active: currentFilter === 'pending' }">
+            <span class="stat-icon">⏳</span>
+            <span class="stat-label-mini">待办</span>
+            <span class="stat-count-bracket">({{ pendingCount }})</span>
+          </div>
+          <div class="stat-row clickable" @click="setFilter('completed')" :class="{ active: currentFilter === 'completed' }">
+            <span class="stat-icon">✅</span>
+            <span class="stat-label-mini">已完成</span>
+            <span class="stat-count-bracket success">({{ completedCount }})</span>
+          </div>
+          <div class="stat-row clickable" @click="setFilter('overdue')" :class="{ active: currentFilter === 'overdue' }">
+            <span class="stat-icon">⚠️</span>
+            <span class="stat-label-mini">已逾期</span>
+            <span class="stat-count-bracket danger">({{ overdueCount }})</span>
           </div>
           
-          <div class="time-filter-compact-unified">
-            <div class="date-range-display">
-              <span class="calendar-icon">📅</span>
-              <div class="range-values">
-                <div 
-                  class="date-clickable-area" 
-                  :class="{ 'placeholder': !startDate }" 
-                  @click="showDatePicker('start')"
-                >
-                  {{ startDate ? formatDisplayDate(startDate) : '起始日期' }}
-                </div>
-                <span class="range-sep">-</span>
-                <div 
-                  class="date-clickable-area" 
-                  :class="{ 'placeholder': !endDate }" 
-                  @click="showDatePicker('end')"
-                >
-                  {{ endDate ? formatDisplayDate(endDate) : '结束日期' }}
-                </div>
+          <!-- 二合一日期区间选择器 (合并到状态行) -->
+          <div class="date-range-display">
+            <span class="calendar-icon">📅</span>
+            <div class="range-values">
+              <div 
+                class="date-clickable-area" 
+                :class="{ 'placeholder': !startDate }" 
+                @click="showDatePicker('start')"
+              >
+                {{ startDate ? formatDisplayDate(startDate) : '始' }}
               </div>
-              <button v-if="startDate || endDate" class="clear-date-icon" @click.stop="clearDateFilter">✕</button>
+              <span class="range-sep">-</span>
+              <div 
+                class="date-clickable-area" 
+                :class="{ 'placeholder': !endDate }" 
+                @click="showDatePicker('end')"
+              >
+                {{ endDate ? formatDisplayDate(endDate) : '止' }}
+              </div>
             </div>
-            <input ref="hiddenStartDate" type="date" style="display:none" @change="handleStartDateChange">
-            <input ref="hiddenEndDate" type="date" style="display:none" @change="handleEndDateChange">
+            <button v-if="startDate || endDate" class="clear-date-icon" @click.stop="clearDateFilter">✕</button>
           </div>
+          <input ref="hiddenStartDate" type="date" style="display:none" @change="handleStartDateChange">
+          <input ref="hiddenEndDate" type="date" style="display:none" @change="handleEndDateChange">
         </div>
 
         <!-- 添加任务表单 -->
@@ -1218,37 +1215,21 @@ onUnmounted(() => {
   white-space: nowrap;
 }
 
-/* 第二行：分类和时间筛选 */
-.filter-row {
+/* 第二行：状态和时间筛选 (合并为一行) */
+.filter-row-unified {
   display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
+  align-items: center;
+  gap: 0.3rem;
   width: 100%;
-}
-
-.category-filters-unified {
-  display: flex;
-  gap: 0.5rem;
+  margin-top: 0.4rem;
   flex-wrap: nowrap;
-  width: 100%;
 }
 
-.category-filters-unified .stat-row {
+.filter-row-unified .stat-row {
   flex: 1;
   justify-content: center;
   background: rgba(255, 255, 255, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.category-filters-unified .stat-row.active {
-  background: white;
-  border-color: var(--primary-color);
-}
-
-.time-filter-compact-unified {
-  display: flex;
-  width: 100%;
-  margin-top: 0.2rem;
 }
 
 .date-range-display {
@@ -1256,14 +1237,15 @@ onUnmounted(() => {
   align-items: center;
   background: rgba(255, 255, 255, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 0;
   gap: 0;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
   transition: all 0.3s;
-  flex: 1;
+  flex: 2.2; /* 给日期区间更多空间 */
   position: relative;
   overflow: hidden;
+  height: 34px; /* 稍微压缩高度以对齐 stat-row */
 }
 
 .date-range-display:hover {
@@ -1281,11 +1263,11 @@ onUnmounted(() => {
 .date-clickable-area {
   flex: 1;
   height: 100%;
-  padding: 0.5rem 0.4rem;
+  padding: 0 0.3rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.85rem;
+  font-size: 0.75rem; /* 缩小字号以适应单行 */
   font-weight: 600;
   color: var(--text-dark);
   cursor: pointer;
