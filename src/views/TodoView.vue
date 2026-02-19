@@ -690,7 +690,8 @@ const saveDescription = async () => {
 }
 
 // 方法：退出登录
-const handleLogout = () => {
+const handleLogout = async () => {
+  await userStore.logout()
   router.push('/')
 }
 

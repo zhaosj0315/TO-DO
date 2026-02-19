@@ -29,16 +29,16 @@
       
       <template v-if="isRegister">
         <div class="input-group">
-          <label for="securityQuestion">安全问题</label>
+          <label for="securityQuestion">安全问题（可选）</label>
           <select v-model="securityQuestion" class="input">
-            <option value="">请选择安全问题</option>
+            <option value="">不设置安全问题</option>
             <option value="pet">你的第一只宠物叫什么？</option>
             <option value="city">你出生在哪个城市？</option>
             <option value="school">你的小学名称是什么？</option>
             <option value="food">你最喜欢的食物是什么？</option>
           </select>
         </div>
-        <div class="input-group">
+        <div v-if="securityQuestion" class="input-group">
           <label for="securityAnswer">安全问题答案</label>
           <input 
             type="text" 
@@ -48,6 +48,9 @@
             placeholder="请输入答案"
             @keyup.enter="handleSubmit"
           >
+        </div>
+        <div v-if="!securityQuestion" class="security-tip">
+          💡 提示：不设置安全问题将无法通过安全问题找回密码
         </div>
       </template>
       
@@ -146,9 +149,10 @@ const handleRegister = async () => {
     return
   }
   
-  if (!securityQuestion.value || !securityAnswer.value.trim()) {
-    error.value = '请选择安全问题并填写答案'
-    emit('notify', { message: '请选择安全问题并填写答案', type: 'error' })
+  // 如果选择了安全问题，必须填写答案
+  if (securityQuestion.value && !securityAnswer.value.trim()) {
+    error.value = '请填写安全问题答案'
+    emit('notify', { message: '请填写安全问题答案', type: 'error' })
     return
   }
   
@@ -173,13 +177,16 @@ const handleRegister = async () => {
   }
   await Preferences.set({ key: 'userInfo', value: JSON.stringify(userInfo) })
   
-  const { value: securityData } = await Preferences.get({ key: 'security' })
-  const security = securityData ? JSON.parse(securityData) : {}
-  security[username.value] = {
-    question: securityQuestion.value,
-    answer: securityAnswer.value.toLowerCase().trim()
+  // 只有设置了安全问题才保存
+  if (securityQuestion.value && securityAnswer.value.trim()) {
+    const { value: securityData } = await Preferences.get({ key: 'security' })
+    const security = securityData ? JSON.parse(securityData) : {}
+    security[username.value] = {
+      question: securityQuestion.value,
+      answer: securityAnswer.value.toLowerCase().trim()
+    }
+    await Preferences.set({ key: 'security', value: JSON.stringify(security) })
   }
-  await Preferences.set({ key: 'security', value: JSON.stringify(security) })
   
   emit('notify', { message: '注册成功！', type: 'success' })
   resetForm()
@@ -342,6 +349,16 @@ const resetForm = () => {
   font-size: 1rem;
   margin-top: 1rem;
   border-radius: 12px;
+}
+
+.security-tip {
+  background: rgba(255, 193, 7, 0.1);
+  border-left: 3px solid #ffc107;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: #856404;
 }
 
 .error-message {
