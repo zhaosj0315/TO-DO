@@ -18,48 +18,63 @@
         </div>
       </header>
 
-      <!-- 统计+筛选+添加 - 极简版 v1.5 -->
+      <!-- 统计+筛选+添加 - 两行布局 v1.5.2 -->
       <section class="dashboard-area">
-        <!-- 单行布局：核心状态 + 操作按钮 -->
-        <div class="stats-compact">
+        <!-- 第一行：统计数据（Grid均匀分布） -->
+        <div class="stats-grid">
           <!-- 完成占比 -->
-          <div class="stat-row">
-            <span class="stat-label-mini">完成占比</span>
-            <span class="stat-count-plain">{{ completionPercentage }}%</span>
+          <div class="stat-card">
+            <span class="stat-label">完成占比</span>
+            <span class="stat-value">{{ completionPercentage }}%</span>
           </div>
 
           <!-- 全部 -->
-          <div class="stat-row clickable" @click="setFilter('all')" :class="{ active: currentFilter === 'all' }">
-            <span class="stat-label-mini">全部</span>
-            <span class="stat-count">{{ baseFilteredTasks.length }}</span>
+          <div class="stat-card clickable" @click="setFilter('all')" :class="{ active: currentFilter === 'all' }">
+            <span class="stat-label">全部</span>
+            <span class="stat-value">{{ baseFilteredTasks.length }}</span>
           </div>
 
           <!-- 已完成 -->
-          <div class="stat-row clickable" @click="setFilter('completed')" :class="{ active: currentFilter === 'completed' }">
-            <span class="stat-label-mini">已完成</span>
-            <span class="stat-count success">{{ completedCount }}</span>
+          <div class="stat-card clickable" @click="setFilter('completed')" :class="{ active: currentFilter === 'completed' }">
+            <span class="stat-label">已完成</span>
+            <span class="stat-value success">{{ completedCount }}</span>
           </div>
 
           <!-- 待办 -->
-          <div class="stat-row clickable" @click="setFilter('pending')" :class="{ active: currentFilter === 'pending' }">
-            <span class="stat-label-mini">待办</span>
-            <span class="stat-count">{{ pendingCount }}</span>
+          <div class="stat-card clickable" @click="setFilter('pending')" :class="{ active: currentFilter === 'pending' }">
+            <span class="stat-label">待办</span>
+            <span class="stat-value">{{ pendingCount }}</span>
           </div>
 
           <!-- 已逾期 -->
-          <div class="stat-row clickable" @click="setFilter('overdue')" :class="{ active: currentFilter === 'overdue' }">
-            <span class="stat-label-mini">已逾期</span>
-            <span class="stat-count danger">{{ overdueCount }}</span>
+          <div class="stat-card clickable" @click="setFilter('overdue')" :class="{ active: currentFilter === 'overdue' }">
+            <span class="stat-label">已逾期</span>
+            <span class="stat-value danger">{{ overdueCount }}</span>
+          </div>
+        </div>
+
+        <!-- 第二行：搜索框 + 筛选 + 添加 -->
+        <div class="action-bar">
+          <!-- 搜索框 -->
+          <div class="search-container">
+            <input 
+              v-model="searchKeyword" 
+              type="text" 
+              class="search-input-main" 
+              placeholder="🔍 搜索任务名称或描述..."
+              @input="handleSearch"
+            >
+            <button v-if="searchKeyword" class="clear-search-btn" @click="clearSearch">✕</button>
           </div>
 
-          <!-- 筛选按钮（仅图标） -->
-          <button class="icon-btn" @click="showFilterModal = true" title="高级筛选">
-            🔍
+          <!-- 筛选按钮 -->
+          <button class="action-btn filter-btn-main" @click="showFilterModal = true" title="高级筛选">
+            🔍 筛选
           </button>
 
-          <!-- 添加/收起按钮（仅图标） -->
-          <button class="icon-btn" @click="showAddForm = !showAddForm" :title="showAddForm ? '收起' : '添加任务'">
-            {{ showAddForm ? '✕' : '➕' }}
+          <!-- 添加/收起按钮 -->
+          <button class="action-btn add-btn-main" @click="showAddForm = !showAddForm" :title="showAddForm ? '收起' : '添加任务'">
+            {{ showAddForm ? '✕ 收起' : '➕ 添加' }}
           </button>
         </div>
 
@@ -2460,6 +2475,203 @@ onUnmounted(() => {
   transform: scale(0.95);
 }
 
+/* v1.5.2: Grid统计卡片布局 - 紧凑版 */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem 0.3rem;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  transition: all 0.3s;
+  min-height: 48px;
+}
+
+.stat-card.clickable {
+  cursor: pointer;
+}
+
+.stat-card.clickable:hover {
+  background: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.stat-card.active {
+  background: white;
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.stat-card .stat-label {
+  font-size: 0.7rem;
+  color: #666;
+  margin-bottom: 0.2rem;
+  font-weight: 500;
+}
+
+.stat-card .stat-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #333;
+}
+
+.stat-card .stat-value.success {
+  color: #43e97b;
+}
+
+.stat-card .stat-value.danger {
+  color: #f5576c;
+}
+
+/* 第二行：操作栏 - 紧凑版 */
+.action-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+
+.search-container {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-input-main {
+  width: 100%;
+  padding: 0.5rem 2.5rem 0.5rem 0.8rem;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 0.85rem;
+  color: #333;
+  transition: all 0.3s;
+}
+
+.search-input-main::placeholder {
+  color: #999;
+}
+
+.search-input-main:focus {
+  outline: none;
+  background: white;
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 0.5rem;
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: #e0e0e0;
+  color: #666;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  transition: all 0.3s;
+}
+
+.clear-search-btn:hover {
+  background: #ccc;
+  transform: scale(1.1);
+}
+
+.action-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.filter-btn-main {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.filter-btn-main:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+}
+
+.add-btn-main {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(118, 75, 162, 0.3);
+}
+
+.add-btn-main:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(118, 75, 162, 0.5);
+}
+
+.action-btn:active {
+  transform: scale(0.95);
+}
+
+/* 旧版样式保留（兼容） */
+/* v1.5: 极简状态栏 */
+.stats-compact {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  justify-content: flex-start;
+  margin-bottom: 0.8rem;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding: 0.2rem 0;
+}
+
+/* 图标按钮 */
+.icon-btn {
+  width: 16px;
+  height: 16px;
+  border: none;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 3px;
+  font-size: 0.55rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
+}
+
+.icon-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+}
+
+.icon-btn:active {
+  transform: scale(0.95);
+}
+
 /* 第二行：操作按钮 */
 .action-buttons {
   display: flex;
@@ -2881,10 +3093,10 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 0.8rem;
-  padding: 0.8rem; /* 与 dashboard-area 保持一致 */
+  padding: 0.8rem;
   background: white;
   border-radius: 12px;
-  margin: 0 0 0.8rem 0 !important; /* 强制覆盖全局 1.5rem margin */
+  margin: 0 0 1rem 0 !important; /* 增加底部间距 */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   transition: all 0.3s;
   -webkit-tap-highlight-color: transparent;
