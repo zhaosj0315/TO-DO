@@ -122,7 +122,7 @@ This is an **offline Android To-Do management application** built with **Vue 3**
    ```
 6. **APK位置**: `TODO-App.apk`（项目根目录）
 
-**详细打包流程**: 请查看 [APK打包指南](APK_BUILD_GUIDE.md) 或 [快速参考](APK_BUILD_QUICK.md)
+**详细打包流程**: 请查看 [APK打包快速指南](APK_BUILD_QUICK.md) 或 [完整指南](APK_BUILD_GUIDE.md)
 
 ### ⚙️ 配置要求
 - **Java版本**: 需要 Java 17

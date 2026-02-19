@@ -1,98 +1,58 @@
-# APK打包快速参考 | Quick Reference
+# APK打包快速指南
 
-**适用项目**: TO-DO App  
-**验证状态**: ✅ 已验证成功
-
----
-
-## ⚡ 快速打包（5步）
-
-### 1️⃣ 构建Vue
-```bash
-npm run build
-```
-
-### 2️⃣ 同步Android
-```bash
-npx cap sync android
-```
-
-### 3️⃣ 修复Java版本 ⚠️ 必须执行
-```bash
-sed -i '' 's/VERSION_21/VERSION_17/g' android/app/capacitor.build.gradle
-sed -i '' 's/VERSION_21/VERSION_17/g' android/capacitor-cordova-android-plugins/build.gradle
-sed -i '' 's/VERSION_21/VERSION_17/g' node_modules/@capacitor/android/capacitor/build.gradle
-sed -i '' 's/VERSION_21/VERSION_17/g' node_modules/@capacitor/preferences/android/build.gradle
-```
-
-### 4️⃣ 构建APK
-```bash
-export JAVA_HOME=$(/usr/libexec/java_home -v 17)
-cd android
-./gradlew assembleDebug
-cd ..
-```
-
-### 5️⃣ 获取APK
-```bash
-cp android/app/build/outputs/apk/debug/app-debug.apk ./TODO-App.apk
-ls -lh TODO-App.apk
-```
-
----
-
-## 🤖 一键打包
+## 一键打包（推荐）
 
 ```bash
 ./build-apk.sh
 ```
 
-或单行命令：
-```bash
-npm run build && npx cap sync android && sed -i '' 's/VERSION_21/VERSION_17/g' android/app/capacitor.build.gradle android/capacitor-cordova-android-plugins/build.gradle node_modules/@capacitor/android/capacitor/build.gradle node_modules/@capacitor/preferences/android/build.gradle && export JAVA_HOME=$(/usr/libexec/java_home -v 17) && cd android && ./gradlew assembleDebug && cd .. && cp android/app/build/outputs/apk/debug/app-debug.apk ./TODO-App.apk
-```
+**就这么简单！** 脚本会自动完成以下步骤：
+1. 构建Vue项目
+2. 同步到Android
+3. 修复Java版本配置
+4. 构建APK
+5. 复制到项目根目录
+
+打包完成后，APK文件位于：`TODO-App.apk`
 
 ---
 
-## ⚠️ 关键注意事项
+## 环境要求
 
-1. **必须使用Java 17**（不能是11或21）
-2. **每次sync后必须执行步骤3**（修复Java版本）
-3. **4个文件都要修改**（android/、node_modules/下各2个）
-4. **APK大小约4.4MB**（如果差异很大说明有问题）
-
----
-
-## 🔍 快速排查
-
-**构建失败？**
-```bash
-# 检查Java版本
-java -version  # 必须是17.x.x
-
-# 检查配置
-grep "VERSION_" android/app/capacitor.build.gradle
-
-# 清理重建
-cd android && rm -rf .gradle build && ./gradlew clean && cd ..
-```
-
-**APK位置？**
-```bash
-android/app/build/outputs/apk/debug/app-debug.apk
-```
+- **Node.js**: 已安装
+- **Java 17**: 已配置在 `android/gradle.properties`
+- **Android SDK**: 已安装
 
 ---
 
-## 📱 安装测试
+## 常见问题
 
-```bash
-# USB安装
-adb install TODO-App.apk
+### Q: 提示 Java 版本错误？
+A: 脚本会自动修复。如果仍有问题，检查 `android/gradle.properties` 中的 `org.gradle.java.home` 配置。
 
-# 或传输到手机手动安装
-```
+### Q: 构建失败？
+A: 运行 `cd android && ./gradlew clean` 清理后重试。
+
+### Q: 想手动打包？
+A: 参考 [APK_BUILD_GUIDE.md](APK_BUILD_GUIDE.md) 详细文档。
 
 ---
 
-详细文档请查看: `APK_BUILD_GUIDE.md`
+## 输出文件
+
+- **APK文件**: `TODO-App.apk` (约4.6M)
+- **位置**: 项目根目录
+- **类型**: Debug版本
+
+---
+
+## 版本记录
+
+每次打包后建议：
+1. 测试APK功能
+2. 更新版本号（如需要）
+3. 提交代码（不包含APK）
+
+---
+
+**提示**: APK是构建产物，遵循"非必要不推送"原则，不提交到Git。
