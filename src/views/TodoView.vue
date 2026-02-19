@@ -1238,14 +1238,13 @@ onUnmounted(() => {
   background: rgba(255, 255, 255, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 8px;
-  padding: 0;
+  padding: 0.2rem 0;
   gap: 0;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
   transition: all 0.3s;
   flex: 2.2; /* 给日期区间更多空间 */
   position: relative;
   overflow: hidden;
-  height: 34px; /* 稍微压缩高度以对齐 stat-row */
 }
 
 .date-range-display:hover {
@@ -1267,7 +1266,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem; /* 缩小字号以适应单行 */
+  font-size: 0.7rem;
   font-weight: 600;
   color: var(--text-dark);
   cursor: pointer;
