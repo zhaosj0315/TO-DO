@@ -22,14 +22,12 @@
         <div class="stats-all-in-one">
           <!-- 全部 -->
           <div class="stat-row clickable" @click="setFilter('all')" :class="{ active: currentFilter === 'all' }">
-            <span class="stat-icon">📋</span>
             <span class="stat-label-mini">全部</span>
             <span class="stat-count-bracket">({{ baseFilteredTasks.length }})</span>
           </div>
 
           <!-- 占比 -->
           <div class="stat-row">
-            <span class="stat-icon">📊</span>
             <span class="stat-label-mini">占比</span>
             <span class="stat-count-bracket">({{ completionPercentage }}%)</span>
           </div>
@@ -42,7 +40,6 @@
             :class="{ active: currentCategoryFilter === cat.value }"
             @click="setCategoryFilter(cat.value)"
           >
-            <span class="stat-icon">{{ cat.icon }}</span>
             <span class="stat-label-mini">{{ cat.label }}</span>
             <span class="stat-count-bracket">({{ getCategoryCount(cat.value) }})</span>
           </div>
@@ -53,24 +50,20 @@
         <!-- 第二行：状态筛选和时间筛选 (合并为一行) -->
         <div class="filter-row-unified">
           <div class="stat-row clickable" @click="setFilter('pending')" :class="{ active: currentFilter === 'pending' }">
-            <span class="stat-icon">⏳</span>
             <span class="stat-label-mini">待办</span>
             <span class="stat-count-bracket">({{ pendingCount }})</span>
           </div>
           <div class="stat-row clickable" @click="setFilter('completed')" :class="{ active: currentFilter === 'completed' }">
-            <span class="stat-icon">✅</span>
             <span class="stat-label-mini">已完成</span>
             <span class="stat-count-bracket success">({{ completedCount }})</span>
           </div>
           <div class="stat-row clickable" @click="setFilter('overdue')" :class="{ active: currentFilter === 'overdue' }">
-            <span class="stat-icon">⚠️</span>
             <span class="stat-label-mini">已逾期</span>
             <span class="stat-count-bracket danger">({{ overdueCount }})</span>
           </div>
           
           <!-- 二合一日期区间选择器 (合并到状态行) -->
           <div class="date-range-display">
-            <span class="calendar-icon">📅</span>
             <div class="range-values">
               <div 
                 class="date-clickable-area" 
@@ -1210,7 +1203,7 @@ onUnmounted(() => {
 .stat-count-bracket.danger { color: var(--error-color); }
 
 .stat-label-mini {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--text-light);
   white-space: nowrap;
 }
