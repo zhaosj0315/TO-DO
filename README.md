@@ -10,28 +10,44 @@
 This is an **offline Android To-Do management application** built with **Vue 3** and **Capacitor**. All data is stored locally on the device using Capacitor Preferences API, requiring **no internet connection or backend server**.
 
 ### 🌟 Key Features
-- **User Registration & Login**: Dynamic avatar based on username initials.
-- **Offline Operation**: Fully functional without internet connection.
-- **Dashboard & Stats (v1.3.1)**:
-  - Unified **Icon + Number + Label** structure for all stats.
-  - Hierarchical layout: Global & Categories on Row 1, Task Status on Row 2.
-  - Interactive filtering by clicking any stat item.
+- **User Registration & Login**: 
+  - Dynamic gradient avatar based on username initials
+  - Auto-login with session persistence
+  - Optional security questions for password recovery
+- **Offline Operation**: Fully functional without internet connection
+- **Dashboard & Stats**:
+  - Unified **Icon + Number + Label** structure for all stats
+  - Three-row layout: Percentage & Categories / Task Status & Date Filter / Priority Filter & Search
+  - Interactive filtering by clicking any stat item
 - **Task Management**:
-  - Category support (Work 💼, Study 📚, Life 🏠).
-  - Priority levels (High, Medium, Low).
-  - Recurrence types: Today, Daily, and custom Weekly cycles.
-  - Task descriptions with inline display.
-- **Local Storage**: All data persists on device using Capacitor Preferences API.
+  - **7 Task Types**: Today, Tomorrow, This Week, Custom Date, Daily Repeat, Weekday Repeat, Weekly Repeat
+  - **Custom Date & Time**: Specify exact date and time for tasks
+  - **Category support**: Work 💼, Study 📚, Life 🏠
+  - **Priority levels**: High, Medium, Low
+  - **Task descriptions**: Inline display with full editing support
+  - **Deadline Display**: Auto-calculated deadline with color-coded urgency
+  - **Pomodoro System**: Visual tomato count based on priority (🍅🍅🍅🍅)
+- **Advanced Filtering**:
+  - Filter by status (All, Pending, Completed, Overdue)
+  - Filter by category (Work, Study, Life)
+  - Filter by priority (High, Medium, Low)
+  - Filter by date range
+  - Keyword search (fuzzy match on title and description)
+  - All filters can be combined
+- **Pomodoro Statistics**:
+  - Earned pomodoros from completed tasks
+  - Pending pomodoros from active tasks
+  - Lost pomodoros from overdue tasks
+  - Net pomodoro achievement tracking
+- **Local Storage**: All data persists on device using Capacitor Preferences API
 - **Data Import/Export**: 
-  - Export tasks to Excel for backup.
-  - Import tasks from Excel in batch (supports task status, priority, category, creation time, etc.).
-  - Download import template directly in app or from repository: [TODO导入模板示例.xlsx](./TODO导入模板示例.xlsx) (100 sample tasks for testing).
-  - Three-button data management: Export, Import, and Download Template.
+  - Export tasks to Excel for backup
+  - Import tasks from Excel in batch
+  - Download import template with 100 sample tasks
 - **Soft Delete (Recycle Bin)**: 
-  - Deleted tasks are moved to the trash first.
-  - Supports restoring or permanent deletion from the trash.
-- **Mobile Optimized**: Full-width layout optimized for mobile screens.
-- **Real-time Updates**: Live countdown for today's tasks.
+  - Deleted tasks are moved to the trash first
+  - Supports restoring or permanent deletion
+- **Mobile Optimized**: Full-width layout optimized for mobile screens
 
 ### 🛠️ Tech Stack
 - **Frontend**: Vue 3 (Composition API), Pinia, Vue Router
@@ -73,29 +89,44 @@ This is an **offline Android To-Do management application** built with **Vue 3**
 这是一个基于 **Vue 3** 和 **Capacitor** 构建的 **Android离线待办事项管理应用**。所有数据使用 Capacitor Preferences API 存储在设备本地，**无需网络连接或后端服务器**。
 
 ### 🌟 核心功能
-- **用户注册与登录**: 动态首字母渐变头像，替代旧版 Emoji。
-- **完全离线运行**: 无需网络连接即可使用全部功能。
-- **任务看板 (v1.3.1)**:
-  - 统一 **图标 + 数字 + 标签** 结构，视觉高度一致。
-  - 逻辑层级重构：第一行展示"全部"、"占比"及"分类"；第二行展示"状态分布"与"时间筛选"。
-  - 交互式筛选：点击任何统计项直接筛选列表。
+- **用户注册与登录**: 
+  - 动态首字母渐变头像
+  - 自动登录和会话保持
+  - 可选的密保问题（用于密码找回）
+- **完全离线运行**: 无需网络连接即可使用全部功能
+- **任务看板**:
+  - 统一 **图标 + 数字 + 标签** 结构，视觉高度一致
+  - 三行布局：占比&分类 / 状态&日期 / 优先级&搜索
+  - 交互式筛选：点击任何统计项直接筛选列表
 - **任务管理**:
-  - 支持任务分类（💼工作、📚学习、🏠生活）。
-  - 支持优先级设置（高、中、低）。
-  - 支持周期类型：仅今天、每天、自定义每周周期。
-  - 任务详细描述，直接在列表中显示。
-- **本地存储**: 所有数据持久化存储在设备本地。
+  - **7种任务类型**: 今天、明天、本周内、指定日期、每天重复、工作日重复、每周重复
+  - **自定义日期时间**: 可指定具体日期和时间
+  - 支持任务分类（💼工作、📚学习、🏠生活）
+  - 支持优先级设置（高、中、低）
+  - 任务详细描述，直接在列表中显示
+  - **截止时间显示**: 自动计算截止时间，颜色分级提醒
+  - **番茄钟系统**: 根据优先级显示番茄数（🍅🍅🍅🍅）
+- **高级筛选**:
+  - 按状态筛选（全部、待办、已完成、已逾期）
+  - 按分类筛选（工作、学习、生活）
+  - 按优先级筛选（高、中、低）
+  - 按日期范围筛选
+  - 关键字搜索（模糊匹配任务名称和描述）
+  - 所有筛选条件可组合使用
+- **番茄钟统计**:
+  - 已获得番茄（完成任务获得）
+  - 待获得番茄（待完成任务）
+  - 逾期扣除（逾期任务扣除）
+  - 净获得番茄（成就追踪）
+- **本地存储**: 所有数据持久化存储在设备本地
 - **数据导入导出**:
-  - 导出任务到Excel文件进行备份。
-  - 从Excel批量导入任务（支持任务状态、优先级、分类、创建时间等）。
-  - 下载导入模板：[TODO导入模板示例.xlsx](./TODO导入模板示例.xlsx)（内含100条示例任务供测试使用）。
+  - 导出任务到Excel文件进行备份
+  - 从Excel批量导入任务
+  - 下载导入模板（内含100条示例任务）
 - **逻辑删除 (回收站)**: 
-  - 删除的任务会先移入回收站。
-  - 支持从回收站中一键恢复或彻底删除任务。
-- **移动端优化**: 全屏宽度布局，完美适配手机屏幕。
-- **实时更新**: 今日任务实时倒计时显示。
-- **交互式筛选**: 点击统计数据直接筛选任务（v1.1新增）。
-- **融合式UI**: 统计、筛选、添加融合在一个区域（v1.1新增）。
+  - 删除的任务会先移入回收站
+  - 支持从回收站中一键恢复或彻底删除任务
+- **移动端优化**: 全屏宽度布局，完美适配手机屏幕
 
 ### 🛠️ 技术栈
 - **前端框架**: Vue 3 (Composition API), Pinia, Vue Router
@@ -175,10 +206,12 @@ TO-DO/
   id: Number,              // 任务ID（时间戳）
   text: String,            // 任务标题
   description: String,     // 任务描述
-  type: String,            // 类型: 'today' | 'daily' | 'weekly'
+  type: String,            // 类型: 'today' | 'tomorrow' | 'this_week' | 'custom_date' | 'daily' | 'weekday' | 'weekly'
   category: String,        // 分类: 'work' | 'study' | 'life'
   priority: String,        // 优先级: 'high' | 'medium' | 'low'
   weekdays: Array,         // 周期（仅weekly类型）
+  customDate: String,      // 指定日期（YYYY-MM-DD格式，仅custom_date类型）
+  customTime: String,      // 指定时间（HH:MM格式，仅custom_date类型）
   status: String,          // 状态: 'pending' | 'completed' | 'overdue'
   created_at: String,      // 创建时间（ISO格式）
   user_id: String          // 所属用户
@@ -214,6 +247,27 @@ TO-DO/
 - ✅ 通知提示
 
 ## 📝 版本历史 | Version History
+
+### v1.4.0 (2026-02-19)
+- ✅ **任务类型扩展**: 新增明天、本周内、指定日期、工作日重复类型
+- ✅ **日期时间选择**: 指定日期支持同时选择日期和时间（datetime-local）
+- ✅ **任务截止时间系统**: 
+  - 根据任务类型自动计算截止时间
+  - 颜色分级：正常/警告/紧急/已逾期/已完成
+  - 显示格式：今天 23:59 / 明天 23:59 / 2/25 14:30
+- ✅ **番茄钟激励系统**:
+  - 任务卡片显示预估番茄数（🍅🍅🍅🍅）
+  - 根据优先级自动建议：高4/中2/低1
+  - 个人主页番茄统计：已获得/待获得/逾期扣除/净获得
+- ✅ **增强筛选功能**:
+  - 新增优先级筛选（全部/高/中/低）
+  - 新增关键字搜索（模糊匹配任务名称和描述）
+  - 所有筛选条件可组合使用
+- ✅ **任务编辑增强**: 支持编辑所有字段（分类、优先级、类型、周期、日期时间）
+- ✅ **会话管理**: 自动登录、路由守卫、会话保持
+- ✅ **密保问题优化**: 密保问题改为可选项
+- ✅ **一键打包**: 新增 build-apk.sh 脚本
+- ✅ **UI优化**: 多项布局和样式优化
 
 ### v1.3.1 (2026-02-19)
 - ✅ **UI 重构与层级调整**: 重新排列统计区域（分类统计上移，状态下移）
