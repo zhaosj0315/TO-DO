@@ -10,7 +10,9 @@
         <div class="header-actions">
           <button class="btn btn-info" @click="showTrash = true">回收站 ({{ taskStore.deletedTasks.length }})</button>
           <button class="btn btn-danger" @click="handleLogout">退出登录</button>
-          <button class="btn-icon" @click="showProfile = true" title="个人主页">👨‍💼</button>
+          <button class="btn-avatar" @click="showProfile = true" title="个人主页">
+            <div class="avatar-mini">{{ currentUsername ? currentUsername.charAt(0).toUpperCase() : 'U' }}</div>
+          </button>
         </div>
       </header>
 
@@ -1862,29 +1864,43 @@ onUnmounted(() => {
   margin: 0;
 }
 
-.btn-icon {
+.btn-avatar {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  border: 2px solid rgba(102, 126, 234, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.8);
   background: white;
-  font-size: 1.5rem;
   cursor: pointer;
   transition: all 0.3s;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
+  padding: 2px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
 }
 
-.btn-icon:hover {
+.avatar-mini {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
   background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-  border-color: transparent;
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 800;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-.btn-icon:active {
+.btn-avatar:hover {
+  transform: translateY(-2px) scale(1.05);
+  border-color: var(--primary-color);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-avatar:active {
   transform: scale(0.95);
 }
 
