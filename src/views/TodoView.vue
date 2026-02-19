@@ -71,12 +71,24 @@
           </div>
           
           <div class="time-filter-compact-unified">
-            <div class="date-range-display" @click="showDatePicker('start')">
+            <div class="date-range-display">
               <span class="calendar-icon">📅</span>
               <div class="range-values">
-                <span :class="{ 'placeholder': !startDate }">{{ startDate ? formatDisplayDate(startDate) : '起始日期' }}</span>
+                <div 
+                  class="date-clickable-area" 
+                  :class="{ 'placeholder': !startDate }" 
+                  @click="showDatePicker('start')"
+                >
+                  {{ startDate ? formatDisplayDate(startDate) : '起始日期' }}
+                </div>
                 <span class="range-sep">-</span>
-                <span :class="{ 'placeholder': !endDate }">{{ endDate ? formatDisplayDate(endDate) : '结束日期' }}</span>
+                <div 
+                  class="date-clickable-area" 
+                  :class="{ 'placeholder': !endDate }" 
+                  @click="showDatePicker('end')"
+                >
+                  {{ endDate ? formatDisplayDate(endDate) : '结束日期' }}
+                </div>
               </div>
               <button v-if="startDate || endDate" class="clear-date-icon" @click.stop="clearDateFilter">✕</button>
             </div>
@@ -1245,13 +1257,13 @@ onUnmounted(() => {
   background: rgba(255, 255, 255, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 12px;
-  padding: 0.4rem 0.8rem;
-  gap: 0.6rem;
+  padding: 0;
+  gap: 0;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
   transition: all 0.3s;
-  cursor: pointer;
   flex: 1;
   position: relative;
+  overflow: hidden;
 }
 
 .date-range-display:hover {
@@ -1262,13 +1274,30 @@ onUnmounted(() => {
 .range-values {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  flex: 1;
+  height: 100%;
+}
+
+.date-clickable-area {
+  flex: 1;
+  height: 100%;
+  padding: 0.5rem 0.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--text-dark);
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
 }
 
-.range-values .placeholder {
+.date-clickable-area:hover {
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.date-clickable-area.placeholder {
   color: var(--text-light);
   font-weight: 400;
   opacity: 0.6;
