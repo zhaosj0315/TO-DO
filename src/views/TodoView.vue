@@ -60,8 +60,7 @@
 
           <!-- 添加/收起按钮 - 融入统计栏 -->
           <div class="stat-card clickable add-toggle-card" @click="showAddForm = !showAddForm" :class="{ active: showAddForm }">
-            <span class="stat-label">{{ showAddForm ? '收起' : '添加' }}</span>
-            <span class="stat-value primary">{{ showAddForm ? '✕' : '➕' }}</span>
+            <span class="stat-value primary">{{ showAddForm ? '▲' : '▼' }}</span>
           </div>
         </div>
 
@@ -87,7 +86,7 @@
 
         <!-- 添加任务表单 - 两行布局 -->
         <div v-if="showAddForm" class="add-form-two-row">
-          <!-- 第一行：任务名称 + 提交按钮 -->
+          <!-- 第一行：任务名称 -->
           <div class="add-form-row-main">
             <input 
               type="text" 
@@ -96,7 +95,6 @@
               placeholder="输入任务名称..."
               @keyup.enter="addTask"
             >
-            <button class="btn-submit-main" @click="addTask" title="添加任务">✓</button>
           </div>
 
           <!-- 第二行：属性配置 -->
@@ -134,8 +132,8 @@
               </select>
             </div>
 
-            <!-- 取消按钮 -->
-            <button class="btn-cancel-attr" @click="showAddForm = false" title="取消">✕</button>
+            <!-- 提交按钮 -->
+            <button class="btn-submit-main" @click="addTask" title="添加任务">✓</button>
           </div>
         </div>
       </section>
@@ -324,14 +322,6 @@
             <label class="filter-label">🏷️ 分类</label>
             <div class="filter-buttons">
               <button 
-                class="filter-chip" 
-                :class="{ active: currentCategoryFilter === 'all' }"
-                @click="setCategoryFilter('all')"
-              >
-                <span class="chip-label">全部</span>
-                <span class="chip-count">{{ baseFilteredTasks.length }}</span>
-              </button>
-              <button 
                 v-for="cat in categories" 
                 :key="cat.value"
                 class="filter-chip" 
@@ -348,13 +338,6 @@
           <div class="filter-section">
             <label class="filter-label">⚡ 优先级</label>
             <div class="filter-buttons">
-              <button 
-                class="filter-chip" 
-                :class="{ active: currentPriorityFilter === 'all' }"
-                @click="setPriorityFilter('all')"
-              >
-                <span class="chip-label">全部</span>
-              </button>
               <button 
                 class="filter-chip priority-high" 
                 :class="{ active: currentPriorityFilter === 'high' }"
@@ -2537,11 +2520,14 @@ onUnmounted(() => {
 
 /* v1.5.6: Grid统计卡片 - 扁平化，直接浮在背景上 */
 .stats-grid {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr); /* 变更为 6 列 */
+  display: flex;
   gap: 0.3rem;
   margin-bottom: 0.5rem;
   width: 100%;
+}
+
+.stats-grid > .stat-card:not(.add-toggle-card) {
+  flex: 1;
 }
 
 .stat-card {
@@ -2560,8 +2546,15 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
+.stat-card.add-toggle-card {
+  max-width: 50px;
+  min-width: 50px;
+  padding: 0.2rem 0.3rem;
+}
+
 .stat-card.add-toggle-card .stat-value.primary {
   color: #667eea;
+  font-size: 1.2rem;
 }
 
 /* 移除激活时的蓝色背景，保持纯白一致性 */
@@ -4295,6 +4288,32 @@ onUnmounted(() => {
   margin-bottom: 0.8rem;
 }
 
+/* 合并行布局 */
+.filter-row-combined {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.filter-group-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.filter-label-inline {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+}
+
+.filter-buttons-inline {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 /* 日期范围 - 撑满宽度并实现左右完美对齐 */
 .date-range-picker {
   display: flex; /* 改为 flex 布局以更好地控制拉伸 */
@@ -4729,6 +4748,10 @@ onUnmounted(() => {
   background: transparent;
   border-radius: 0;
   box-shadow: none;
+}
+
+.add-form-row-attrs .btn-submit-main {
+  margin-left: auto;
 }
 
 .attr-group {
