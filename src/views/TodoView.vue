@@ -4219,24 +4219,24 @@ onUnmounted(() => {
   overflow-y: auto;
 }
 
-/* v1.5.6: 筛选弹窗 - 增加宽度，彻底释放空间，消除巨大Padding */
+/* v1.5.6: 筛选弹窗 - 极致空间利用，边距压缩至极限 */
 .filter-modal {
-  max-width: 560px;
-  width: 95%;
+  max-width: 600px; /* 放宽上限 */
+  width: 98%;      /* 进一步贴合屏幕边缘 */
   background: white;
   border-radius: 12px;
-  padding: 0 !important; /* 强制覆盖 .modal-content 的默认 2rem padding */
+  padding: 0 !important;
 }
 
 .filter-body {
-  padding: 1.5rem 1.2rem; /* 增加上下，减少左右，实现横向对齐 */
+  padding: 1.5rem 0.6rem; /* 左右边距压缩至 0.6rem */
 }
 
 .filter-section {
   margin-bottom: 1.8rem;
   padding-bottom: 1.5rem;
   border-bottom: 1px solid #f0f0f0;
-  width: 100%; /* 确保百分百撑满 */
+  width: 100%;
 }
 
 .filter-section:last-child {
@@ -4419,13 +4419,13 @@ onUnmounted(() => {
   color: #333;
 }
 
-/* 底部按钮 - 减少左右padding */
+/* 底部按钮 - 极致压缩左右padding */
 .modal-footer {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
   margin-top: 0;
-  padding: 1.2rem 1rem;
+  padding: 1.2rem 0.6rem;
   border-top: 1px solid #f0f0f0;
   background: #fafafa;
   border-radius: 0 0 12px 12px;
@@ -4490,7 +4490,7 @@ onUnmounted(() => {
   align-items: center;
   margin-bottom: 0;
   border-bottom: 1px solid #eee;
-  padding: 1.2rem; /* 增加内边距并与 body 保持一致 */
+  padding: 1rem 0.6rem; /* 极致压缩左右内边距 */
 }
 
 .close-btn {
