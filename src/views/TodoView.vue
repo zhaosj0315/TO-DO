@@ -29,25 +29,25 @@
         <!-- 第一行：统计数据（Grid均匀分布） -->
         <div class="stats-grid">
           <!-- 全部 -->
-          <div class="stat-card clickable" @click="setFilter('all')" :class="{ active: currentFilter === 'all' }">
+          <div class="stat-card stat-card-all clickable" @click="setFilter('all')" :class="{ active: currentFilter === 'all' }">
             <span class="stat-label">全部</span>
             <span class="stat-value">{{ baseFilteredTasks.length }}</span>
           </div>
 
           <!-- 已完成 -->
-          <div class="stat-card clickable" @click="setFilter('completed')" :class="{ active: currentFilter === 'completed' }">
+          <div class="stat-card stat-card-completed clickable" @click="setFilter('completed')" :class="{ active: currentFilter === 'completed' }">
             <span class="stat-label">已完成</span>
             <span class="stat-value success">{{ completedCount }}</span>
           </div>
 
           <!-- 待办 -->
-          <div class="stat-card clickable" @click="setFilter('pending')" :class="{ active: currentFilter === 'pending' }">
+          <div class="stat-card stat-card-pending clickable" @click="setFilter('pending')" :class="{ active: currentFilter === 'pending' }">
             <span class="stat-label">待办</span>
             <span class="stat-value">{{ pendingCount }}</span>
           </div>
 
           <!-- 已逾期 -->
-          <div class="stat-card clickable" @click="setFilter('overdue')" :class="{ active: currentFilter === 'overdue' }">
+          <div class="stat-card stat-card-overdue clickable" @click="setFilter('overdue')" :class="{ active: currentFilter === 'overdue' }">
             <span class="stat-label">已逾期</span>
             <span class="stat-value danger">{{ overdueCount }}</span>
           </div>
@@ -2522,7 +2522,7 @@ onUnmounted(() => {
   width: 100%;
 }
 
-.stats-grid > .stat-card:not(.add-toggle-card) {
+.stats-grid > .stat-card:not(.add-toggle-card):not(.filter-card) {
   flex: 1;
 }
 
@@ -2535,11 +2535,51 @@ onUnmounted(() => {
   background: rgba(255, 255, 255, 0.95);
   border: 1px solid rgba(0, 0, 0, 0.05);
   border-radius: 8px;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
   height: 44px;
   box-sizing: border-box;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
   overflow: hidden;
+}
+
+/* 核心指标突出 - 全部和已逾期 */
+.stat-card-all,
+.stat-card-overdue {
+  flex: 1.2 !important;  /* 比其他卡片宽20% */
+  font-weight: 600;
+}
+
+/* 色彩语义化 - 已完成（淡绿色背景） */
+.stat-card-completed {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.08) 0%, rgba(129, 199, 132, 0.05) 100%);
+  border: 1px solid rgba(76, 175, 80, 0.15);
+}
+
+.stat-card-completed:hover {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.12) 0%, rgba(129, 199, 132, 0.08) 100%);
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.15);
+}
+
+/* 色彩语义化 - 待办（淡蓝色背景） */
+.stat-card-pending {
+  background: linear-gradient(135deg, rgba(33, 150, 243, 0.08) 0%, rgba(100, 181, 246, 0.05) 100%);
+  border: 1px solid rgba(33, 150, 243, 0.15);
+}
+
+.stat-card-pending:hover {
+  background: linear-gradient(135deg, rgba(33, 150, 243, 0.12) 0%, rgba(100, 181, 246, 0.08) 100%);
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.15);
+}
+
+/* 色彩语义化 - 已逾期（淡红色背景） */
+.stat-card-overdue {
+  background: linear-gradient(135deg, rgba(244, 67, 54, 0.08) 0%, rgba(239, 83, 80, 0.05) 100%);
+  border: 1px solid rgba(244, 67, 54, 0.15);
+}
+
+.stat-card-overdue:hover {
+  background: linear-gradient(135deg, rgba(244, 67, 54, 0.12) 0%, rgba(239, 83, 80, 0.08) 100%);
+  box-shadow: 0 2px 8px rgba(244, 67, 54, 0.15);
 }
 
 .stat-card.add-toggle-card {
@@ -2615,9 +2655,11 @@ onUnmounted(() => {
   cursor: pointer;
 }
 
+/* 微交互 - 悬停效果增强 */
 .stat-card.clickable:hover {
   background: white;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .stat-card.active {
@@ -3152,10 +3194,32 @@ onUnmounted(() => {
 }
 
 .task-time {
-  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
   color: var(--text-light);
-  padding: 0.2rem 0.4rem;
-  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.04);
+  line-height: 1;
+  height: 24px;
+  box-sizing: border-box;
+}
+
+/* 任务类型徽章 */
+.task-type.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  background: rgba(102, 126, 234, 0.1);
+  color: var(--primary-color);
+  line-height: 1;
+  height: 24px;
+  box-sizing: border-box;
 }
 
 .task-filters {
@@ -3296,26 +3360,37 @@ onUnmounted(() => {
   gap: 0.6rem;
   align-items: center;
   margin-top: 0.5rem;
+  line-height: 1;  /* 统一行高 */
 }
 
 /* v1.2: 图标化徽章 */
 .badge-icon {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.2rem;
   font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;  /* 统一内边距 */
+  border-radius: 12px;
+  line-height: 1;  /* 统一行高 */
+  height: 24px;  /* 固定高度 */
+  box-sizing: border-box;
 }
 
 /* 番茄数徽章 */
 .badge-pomodoro {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.2rem;
   font-size: 0.75rem;
   font-weight: 600;
-  padding: 0.2rem 0.5rem;
+  padding: 0.25rem 0.5rem;  /* 统一内边距 */
   border-radius: 12px;
   transition: all 0.3s;
+  line-height: 1;  /* 统一行高 */
+  height: 24px;  /* 固定高度 */
+  box-sizing: border-box;
 }
 
 .pomodoro-high {
@@ -3335,11 +3410,17 @@ onUnmounted(() => {
 
 /* 任务截止时间显示 */
 .task-deadline {
-  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
   font-weight: 600;
-  padding: 0.2rem 0.5rem;
+  padding: 0.25rem 0.5rem;  /* 统一内边距 */
   border-radius: 12px;
   transition: all 0.3s;
+  line-height: 1;  /* 统一行高 */
+  height: 24px;  /* 固定高度 */
+  box-sizing: border-box;
 }
 
 .deadline-normal {
@@ -3378,9 +3459,15 @@ onUnmounted(() => {
 
 .header-actions {
   display: flex;
-  gap: 0.6rem;
+  gap: 0.5rem;
   align-items: center;
-  margin-right: 0.2rem;
+  /* 胶囊化封装 - iOS风格 */
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  padding: 0.4rem 0.6rem;
+  border-radius: 25px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .header {
@@ -3400,26 +3487,26 @@ onUnmounted(() => {
 
 /* 统一的圆形图标按钮 */
 .btn-icon-circle {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   border: none;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.25);
   color: white;
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   cursor: pointer;
   transition: all 0.3s;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 .btn-icon-circle:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.4);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
 }
 
 .btn-icon-circle:active {
@@ -3439,12 +3526,12 @@ onUnmounted(() => {
 
 /* 刷新按钮特殊尺寸 */
 .btn-refresh-icon {
-  font-size: 2.5rem;
+  font-size: 2.2rem;
 }
 
 /* 回收站按钮 */
 .btn-trash {
-  font-size: 1.5rem;
+  font-size: 1.4rem;
 }
 
 /* 数字气泡 */
@@ -3468,10 +3555,10 @@ onUnmounted(() => {
 }
 
 .btn-avatar {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.8);
+  border: 2px solid rgba(255, 255, 255, 0.9);
   background: white;
   cursor: pointer;
   transition: all 0.3s;
@@ -3479,8 +3566,13 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   padding: 2px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   overflow: hidden;
+}
+
+.btn-avatar:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
 }
 
 .avatar-mini {
@@ -3492,7 +3584,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 800;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
@@ -4734,7 +4826,8 @@ onUnmounted(() => {
   font-size: 0.85rem;
   color: #333;
   transition: all 0.3s;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  /* 内阴影 - 凹陷感 */
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.05);
   line-height: 1.5;
   height: 36px;
   box-sizing: border-box;
@@ -4748,7 +4841,8 @@ onUnmounted(() => {
   outline: none;
   border-color: #667eea;
   background: white;
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.15); /* 聚焦时更强的悬浮感 */
+  /* 聚焦时去掉内阴影，增加外阴影 */
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1), 0 4px 12px rgba(102, 126, 234, 0.15);
 }
 
 .btn-submit-main {
@@ -4777,7 +4871,7 @@ onUnmounted(() => {
   transform: scale(0.95);
 }
 
-/* 第二行：属性配置区 - 优化悬浮感 */
+/* 第二行：属性配置区 - 胶囊样式 */
 .add-form-row-attrs {
   display: flex;
   gap: 0.6rem;
@@ -4798,20 +4892,20 @@ onUnmounted(() => {
   align-items: center;
   gap: 0.3rem;
   padding: 0 0.5rem;
-  background: white;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 12px;
+  /* 胶囊样式 - 浅灰色背景，无边框 */
+  background: rgba(0, 0, 0, 0.04);
+  border: none;
+  border-radius: 18px;
   transition: all 0.3s;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  box-shadow: none;
   height: 36px;
   box-sizing: border-box;
 }
 
 .attr-group:hover {
-  background: white;
-  border-color: #667eea;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(102, 126, 234, 0.12);
+  background: rgba(102, 126, 234, 0.08);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
 }
 
 .attr-icon {
@@ -4823,11 +4917,11 @@ onUnmounted(() => {
   border: none;
   background: transparent;
   font-size: 0.85rem;
-  color: #888;
+  color: #666;
   cursor: pointer;
   padding: 0;
   outline: none;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .attr-select-date {
