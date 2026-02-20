@@ -388,7 +388,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" @click="showFilterModal = false">关闭</button>
+          <button class="btn btn-reset" @click="resetFilters">重置</button>
+          <button class="btn btn-confirm" @click="showFilterModal = false">确定</button>
         </div>
       </div>
     </div>
@@ -1374,6 +1375,17 @@ const handleSearch = () => {
 // 方法：清除搜索
 const clearSearch = () => {
   searchKeyword.value = ''
+  currentPage.value = 1
+}
+
+// 方法：重置所有筛选
+const resetFilters = () => {
+  currentFilter.value = 'all'
+  currentCategoryFilter.value = 'all'
+  currentPriorityFilter.value = 'all'
+  searchKeyword.value = ''
+  startDate.value = ''
+  endDate.value = ''
   currentPage.value = 1
 }
 
@@ -4136,148 +4148,173 @@ onUnmounted(() => {
   overflow-y: auto;
 }
 
-/* 筛选弹窗样式 */
+/* 筛选弹窗样式 - 优化版 */
 .filter-modal {
-  max-width: 500px;
+  max-width: 520px;
   background: white;
-  border-radius: 16px;
+  border-radius: 12px;
 }
 
 .filter-body {
-  padding: 1rem 0;
+  padding: 1.2rem 1.5rem;
 }
 
 .filter-section {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.8rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.filter-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
 }
 
 .filter-label {
   display: block;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 600;
   color: #333;
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.8rem;
 }
 
 .date-range-picker {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto;
   align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+  gap: 0.6rem;
 }
 
 .date-input-box {
-  flex: 1;
-  min-width: 120px;
-  padding: 0.6rem 0.8rem;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
+  padding: 0.7rem 1rem;
+  border: 2px solid #d0d0d0;
+  border-radius: 10px;
   font-size: 0.9rem;
   color: #999;
   cursor: pointer;
   transition: all 0.3s;
   text-align: center;
+  background: #fafafa;
 }
 
 .date-input-box.has-value {
   color: #333;
   border-color: #667eea;
   background: rgba(102, 126, 234, 0.05);
+  font-weight: 500;
 }
 
 .date-input-box:hover {
   border-color: #667eea;
+  background: rgba(102, 126, 234, 0.03);
 }
 
 .date-separator {
   color: #999;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 500;
 }
 
 .filter-buttons {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 0.6rem;
 }
 
 .filter-chip {
-  padding: 0.5rem 1rem;
-  border: 2px solid #e0e0e0;
-  background: white;
-  border-radius: 20px;
+  padding: 0.65rem 1rem;
+  border: 2px solid #d0d0d0;
+  background: #fafafa;
+  border-radius: 10px;
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.3s;
   white-space: nowrap;
   display: flex;
   align-items: center;
-  gap: 0.2rem;
+  justify-content: center;
+  gap: 0.25rem;
 }
 
 .filter-chip .chip-label {
   font-weight: 500;
+  color: #555;
 }
 
 .filter-chip .chip-count {
   font-weight: 700;
   font-size: 0.85rem;
+  color: #666;
 }
 
 .filter-chip:hover {
   border-color: #667eea;
-  background: rgba(102, 126, 234, 0.05);
+  background: rgba(102, 126, 234, 0.08);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
 }
 
 .filter-chip.active {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border-color: transparent;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
+}
+
+.filter-chip.active .chip-label,
+.filter-chip.active .chip-count {
+  color: white;
 }
 
 .filter-chip.priority-high.active {
   background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3);
+  box-shadow: 0 4px 12px rgba(245, 87, 108, 0.35);
 }
 
 .filter-chip.priority-medium.active {
   background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);
+  box-shadow: 0 4px 12px rgba(79, 172, 254, 0.35);
 }
 
 .filter-chip.priority-low.active {
   background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-  box-shadow: 0 4px 12px rgba(67, 233, 123, 0.3);
+  box-shadow: 0 4px 12px rgba(67, 233, 123, 0.35);
 }
 
 .search-input-wrapper {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.6rem;
   align-items: center;
 }
 
 .search-input-modal {
   flex: 1;
-  padding: 0.6rem 0.8rem;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
+  padding: 0.7rem 1rem;
+  border: 2px solid #d0d0d0;
+  border-radius: 10px;
   font-size: 0.9rem;
   transition: all 0.3s;
+  background: #fafafa;
+  color: #333;
+}
+
+.search-input-modal::placeholder {
+  color: #999;
 }
 
 .search-input-modal:focus {
   outline: none;
   border-color: #667eea;
   background: rgba(102, 126, 234, 0.05);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .clear-btn-small {
-  padding: 0.4rem 0.8rem;
-  background: #f5f5f5;
+  padding: 0.5rem 1rem;
+  background: #e8e8e8;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 0.85rem;
   color: #666;
   cursor: pointer;
@@ -4292,11 +4329,56 @@ onUnmounted(() => {
 
 .modal-footer {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   gap: 1rem;
-  margin-top: 1.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid #eee;
+  margin-top: 0;
+  padding: 1.2rem 1.5rem;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+  border-radius: 0 0 12px 12px;
+}
+
+.btn-reset {
+  flex: 1;
+  padding: 0.7rem 1.5rem;
+  background: white;
+  color: #666;
+  border: 2px solid #d0d0d0;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-reset:hover {
+  background: #f5f5f5;
+  border-color: #999;
+  color: #333;
+}
+
+.btn-confirm {
+  flex: 1;
+  padding: 0.7rem 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.btn-confirm:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+}
+
+.btn-confirm:active,
+.btn-reset:active {
+  transform: scale(0.98);
 }
 
 .profile-modal {
