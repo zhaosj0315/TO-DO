@@ -3364,7 +3364,7 @@ onUnmounted(() => {
 
 /* 刷新按钮特殊尺寸 */
 .btn-refresh-icon {
-  font-size: 3rem;
+  font-size: 2.5rem;
 }
 
 /* 回收站按钮 */
