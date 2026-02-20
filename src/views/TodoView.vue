@@ -4574,7 +4574,7 @@ onUnmounted(() => {
   background-color: #dee2e6;
 }
 
-/* v1.5.6: 两行布局添加表单 - 扁平化，去掉外壳 */
+/* v1.5.6: 两行布局添加表单 - 完全扁平化 */
 .add-form-two-row {
   margin-top: 0;
   padding: 0;
@@ -4583,27 +4583,28 @@ onUnmounted(() => {
   border: none;
 }
 
-/* 第一行：主输入区 - 独立卡片 */
+/* 第一行：主输入区 - 去掉外层卡片，让输入框直接呼吸 */
 .add-form-row-main {
   display: flex;
   gap: 0.5rem;
   align-items: center;
   margin-bottom: 0.5rem;
-  padding: 0.6rem;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .task-input-main {
   flex: 1;
-  padding: 0.6rem 0.9rem;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  background: white;
+  padding: 0.65rem 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.95);
   font-size: 0.9rem;
   color: #333;
   transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .task-input-main::placeholder {
@@ -4642,32 +4643,35 @@ onUnmounted(() => {
   transform: scale(0.95);
 }
 
-/* 第二行：属性配置区 - 独立卡片 */
+/* 第二行：属性配置区 - 去掉外层卡片，让属性组直接呼吸 */
 .add-form-row-attrs {
   display: flex;
   gap: 0.5rem;
   align-items: center;
   flex-wrap: wrap;
-  padding: 0.5rem 0.6rem;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .attr-group {
   display: flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.4rem 0.6rem;
-  background: #fafafa;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
+  padding: 0.5rem 0.7rem;
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 10px;
   transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .attr-group:hover {
   background: white;
   border-color: #667eea;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
 }
 
 .attr-icon {
@@ -4694,24 +4698,28 @@ onUnmounted(() => {
 }
 
 .btn-cancel-attr {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  border: none;
-  background: #f5f5f5;
-  color: #999;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.95);
+  color: #ef4444;
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.3s;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   margin-left: auto;
 }
 
 .btn-cancel-attr:hover {
-  background: #e0e0e0;
-  color: #666;
+  background: white;
+  border-color: #ef4444;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
 /* 周期选择行 */
