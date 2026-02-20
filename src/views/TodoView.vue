@@ -4217,7 +4217,7 @@ onUnmounted(() => {
   overflow-y: auto;
 }
 
-/* v1.5.6: 筛选弹窗 - 横向空间充分利用 */
+/* v1.5.6: 筛选弹窗 - 最大化横向空间利用 */
 .filter-modal {
   max-width: 520px;
   background: white;
@@ -4225,7 +4225,7 @@ onUnmounted(() => {
 }
 
 .filter-body {
-  padding: 1.2rem 1.5rem;
+  padding: 1.2rem 1rem;
 }
 
 .filter-section {
@@ -4403,13 +4403,13 @@ onUnmounted(() => {
   color: #333;
 }
 
-/* 底部按钮 - 撑满宽度 */
+/* 底部按钮 - 减少左右padding */
 .modal-footer {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
   margin-top: 0;
-  padding: 1.2rem 1.5rem;
+  padding: 1.2rem 1rem;
   border-top: 1px solid #f0f0f0;
   background: #fafafa;
   border-radius: 0 0 12px 12px;
