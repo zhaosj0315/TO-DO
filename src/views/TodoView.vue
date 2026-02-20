@@ -4217,7 +4217,7 @@ onUnmounted(() => {
   overflow-y: auto;
 }
 
-/* 筛选弹窗样式 - 优化版 */
+/* v1.5.6: 筛选弹窗 - 横向空间充分利用 */
 .filter-modal {
   max-width: 520px;
   background: white;
@@ -4248,6 +4248,7 @@ onUnmounted(() => {
   margin-bottom: 0.8rem;
 }
 
+/* 日期范围 - 撑满宽度 */
 .date-range-picker {
   display: grid;
   grid-template-columns: 1fr auto 1fr auto;
@@ -4256,7 +4257,7 @@ onUnmounted(() => {
 }
 
 .date-input-box {
-  padding: 0.7rem 1rem;
+  padding: 0.8rem 1rem;
   border: 2px solid #d0d0d0;
   border-radius: 10px;
   font-size: 0.9rem;
@@ -4265,6 +4266,7 @@ onUnmounted(() => {
   transition: all 0.3s;
   text-align: center;
   background: #fafafa;
+  width: 100%;
 }
 
 .date-input-box.has-value {
@@ -4285,14 +4287,15 @@ onUnmounted(() => {
   font-weight: 500;
 }
 
+/* 分类/优先级按钮 - 固定3列，撑满宽度 */
 .filter-buttons {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.6rem;
 }
 
 .filter-chip {
-  padding: 0.65rem 1rem;
+  padding: 0.8rem 1.2rem;
   border: 2px solid #d0d0d0;
   background: #fafafa;
   border-radius: 10px;
@@ -4303,7 +4306,8 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.25rem;
+  gap: 0.3rem;
+  width: 100%;
 }
 
 .filter-chip .chip-label {
@@ -4351,21 +4355,24 @@ onUnmounted(() => {
   box-shadow: 0 4px 12px rgba(67, 233, 123, 0.35);
 }
 
+/* 搜索框 - 撑满宽度 */
 .search-input-wrapper {
   display: flex;
   gap: 0.6rem;
   align-items: center;
+  width: 100%;
 }
 
 .search-input-modal {
   flex: 1;
-  padding: 0.7rem 1rem;
+  padding: 0.8rem 1rem;
   border: 2px solid #d0d0d0;
   border-radius: 10px;
   font-size: 0.9rem;
   transition: all 0.3s;
   background: #fafafa;
   color: #333;
+  width: 100%;
 }
 
 .search-input-modal::placeholder {
@@ -4396,6 +4403,7 @@ onUnmounted(() => {
   color: #333;
 }
 
+/* 底部按钮 - 撑满宽度 */
 .modal-footer {
   display: flex;
   justify-content: space-between;
@@ -4409,12 +4417,12 @@ onUnmounted(() => {
 
 .btn-reset {
   flex: 1;
-  padding: 0.7rem 1.5rem;
+  padding: 0.8rem 1.5rem;
   background: white;
   color: #666;
   border: 2px solid #d0d0d0;
   border-radius: 10px;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s;
@@ -4428,12 +4436,12 @@ onUnmounted(() => {
 
 .btn-confirm {
   flex: 1;
-  padding: 0.7rem 1.5rem;
+  padding: 0.8rem 1.5rem;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
   border-radius: 10px;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s;
