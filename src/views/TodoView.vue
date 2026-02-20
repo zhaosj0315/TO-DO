@@ -110,8 +110,8 @@
                 <option value="this_week">本周内</option>
                 <option value="daily">每天重复</option>
                 <option value="weekday">工作日重复</option>
-                <option value="custom_date">{{ customDateTime ? '📅 ' + formatDisplayDateTime(customDateTime) : '指定日期' }}</option>
-                <option value="weekly">{{ selectedWeekdays.length > 0 ? '🔄 ' + formatSelectedWeekdays(selectedWeekdays) : '每周重复' }}</option>
+                <option value="custom_date">{{ customDateTime ? formatDisplayDateTime(customDateTime) : '指定日期' }}</option>
+                <option value="weekly">{{ selectedWeekdays.length > 0 ? formatSelectedWeekdays(selectedWeekdays) : '每周重复' }}</option>
               </select>
             </div>
 
