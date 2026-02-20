@@ -2314,6 +2314,17 @@ const handleRefresh = async () => {
   if (isRefreshing.value) return
   
   isRefreshing.value = true
+  
+  // 重置所有筛选条件到初始状态
+  currentFilter.value = 'all'
+  currentCategoryFilter.value = 'all'
+  currentPriorityFilter.value = 'all'
+  searchKeyword.value = ''
+  startDate.value = ''
+  endDate.value = ''
+  currentPage.value = 1
+  
+  // 重新加载数据
   await taskStore.setCurrentUser(userStore.currentUser)
   await loadUserInfo()
   taskStore.checkOverdueTasks()
@@ -3524,9 +3535,17 @@ onUnmounted(() => {
   to { transform: rotate(360deg); }
 }
 
-/* 刷新按钮特殊尺寸 */
+/* 刷新按钮特殊尺寸和样式 */
 .btn-refresh-icon {
   font-size: 2.2rem;
+  background: rgba(102, 126, 234, 0.25) !important; /* 紫色背景 */
+  color: white !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.btn-refresh-icon:hover {
+  background: rgba(102, 126, 234, 0.4) !important; /* 悬停更深 */
+  color: white !important;
 }
 
 /* 回收站按钮 */
@@ -4395,12 +4414,12 @@ onUnmounted(() => {
 }
 
 .filter-body {
-  padding: 1.5rem 0.6rem; /* 左右边距压缩至 0.6rem */
+  padding: 1rem 0.6rem; /* 从1.5rem减至1rem */
 }
 
 .filter-section {
-  margin-bottom: 1.8rem;
-  padding-bottom: 1.5rem;
+  margin-bottom: 1rem; /* 从1.8rem减至1rem，压缩44% */
+  padding-bottom: 0.8rem; /* 从1.5rem减至0.8rem */
   border-bottom: 1px solid #f0f0f0;
   width: 100%;
 }
@@ -4413,27 +4432,27 @@ onUnmounted(() => {
 
 .filter-label {
   display: block;
-  font-size: 0.9rem;
+  font-size: 0.85rem; /* 从0.9rem减至0.85rem */
   font-weight: 600;
   color: #333;
-  margin-bottom: 0.8rem;
+  margin-bottom: 0.5rem; /* 从0.8rem减至0.5rem，收紧标题距离 */
 }
 
 /* 合并行布局 */
 .filter-row-combined {
   display: flex;
-  gap: 1.5rem;
+  gap: 1rem; /* 从1.5rem减至1rem */
   align-items: flex-start;
 }
 
 .filter-group-inline {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.5rem; /* 从0.6rem减至0.5rem */
 }
 
 .filter-label-inline {
-  font-size: 0.9rem;
+  font-size: 0.85rem; /* 从0.9rem减至0.85rem */
   font-weight: 600;
   color: #333;
   white-space: nowrap;
@@ -4441,24 +4460,24 @@ onUnmounted(() => {
 
 .filter-buttons-inline {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.4rem; /* 从0.5rem减至0.4rem */
   flex-wrap: wrap;
 }
 
 /* 日期范围 - 撑满宽度并实现左右完美对齐 */
 .date-range-picker {
-  display: flex; /* 改为 flex 布局以更好地控制拉伸 */
+  display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.5rem; /* 从0.6rem减至0.5rem */
   width: 100%;
 }
 
 .date-input-box {
-  flex: 1; /* 强制左右两个输入框平分剩余空间 */
-  padding: 0.8rem 1rem;
+  flex: 1;
+  padding: 0.6rem 0.8rem; /* 从0.8rem 1rem减至0.6rem 0.8rem，压缩高度 */
   border: 2px solid #d0d0d0;
   border-radius: 10px;
-  font-size: 0.9rem;
+  font-size: 0.85rem; /* 从0.9rem减至0.85rem */
   color: #999;
   cursor: pointer;
   transition: all 0.3s;
@@ -4480,7 +4499,7 @@ onUnmounted(() => {
 
 .date-separator {
   color: #999;
-  font-size: 0.85rem;
+  font-size: 0.8rem; /* 从0.85rem减至0.8rem */
   font-weight: 500;
   flex-shrink: 0;
 }
@@ -4489,50 +4508,50 @@ onUnmounted(() => {
 .filter-buttons {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.8rem; /* 恢复标准间距，确保紧凑 */
+  gap: 0.6rem; /* 从0.8rem减至0.6rem */
   width: 100%;
 }
 
 .filter-chip {
   flex: 1;
-  min-width: calc(25% - 0.8rem); 
-  padding: 0.3rem 0.5rem; /* 再次微缩垂直内边距 */
+  min-width: calc(25% - 0.6rem); /* 调整为新的gap */
+  padding: 0.25rem 0.4rem; /* 从0.3rem 0.5rem减至0.25rem 0.4rem，更扁平 */
   border: 2px solid #d0d0d0;
   background: #fafafa;
-  border-radius: 12px;
-  font-size: 0.9rem;
+  border-radius: 10px; /* 从12px减至10px */
+  font-size: 0.85rem; /* 从0.9rem减至0.85rem */
   cursor: pointer;
   transition: all 0.3s;
   white-space: nowrap;
   display: flex;
-  flex-direction: column-reverse; /* 数字在上，标签在下 */
+  flex-direction: column-reverse;
   align-items: center;
   justify-content: center;
-  gap: 0.1rem;
+  gap: 0.15rem; /* 从0.1rem增至0.15rem，数字和文字间距4px */
   box-sizing: border-box;
-  min-height: 52px; /* 极致紧凑高度，让方框精准包裹文字 */
+  min-height: 42px; /* 从52px减至42px，压缩19% */
 }
 
 /* 针对分类（4个按钮：全部+3个分类）和优先级（4个按钮：全部+3个优先级）的特殊处理 */
-/* 当容器宽度不足以容纳4个 120px 的按钮时，会自动换行为 2+2 分布，且依然撑满 */
 @media (max-width: 480px) {
   .filter-chip {
-    min-width: calc(50% - 0.8rem);
+    min-width: calc(50% - 0.6rem);
   }
 }
 
 .filter-chip .chip-label {
   font-weight: 600;
   color: #888;
-  font-size: 0.8rem; /* 适度调大标签字号 */
+  font-size: 0.75rem; /* 从0.8rem减至0.75rem */
   letter-spacing: 0.3px;
+  line-height: 1;
 }
 
 .filter-chip .chip-count {
   font-weight: 800;
-  font-size: 1.25rem; /* 维持清晰的数字大小 */
+  font-size: 1.1rem; /* 从1.25rem减至1.1rem */
   color: #333;
-  line-height: 1.1;
+  line-height: 1;
 }
 
 .filter-chip:hover {
@@ -4579,10 +4598,10 @@ onUnmounted(() => {
 
 .search-input-modal {
   flex: 1;
-  padding: 0.8rem 1rem;
+  padding: 0.6rem 0.8rem; /* 从0.8rem 1rem减至0.6rem 0.8rem */
   border: 2px solid #d0d0d0;
   border-radius: 10px;
-  font-size: 0.9rem;
+  font-size: 0.85rem; /* 从0.9rem减至0.85rem */
   transition: all 0.3s;
   background: #fafafa;
   color: #333;
@@ -4601,11 +4620,11 @@ onUnmounted(() => {
 }
 
 .clear-btn-small {
-  padding: 0.5rem 1rem;
+  padding: 0.4rem 0.8rem; /* 从0.5rem 1rem减至0.4rem 0.8rem */
   background: #e8e8e8;
   border: none;
   border-radius: 8px;
-  font-size: 0.85rem;
+  font-size: 0.8rem; /* 从0.85rem减至0.8rem */
   color: #666;
   cursor: pointer;
   transition: all 0.3s;
