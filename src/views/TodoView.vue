@@ -103,8 +103,7 @@
           <div class="add-form-row-attrs">
             <!-- 日期类型 -->
             <div class="attr-group">
-              <span class="attr-icon">📅</span>
-              <select v-model="newTaskType" class="attr-select" @change="handleTaskTypeChange">
+              <select v-model="newTaskType" class="attr-select attr-select-date" @change="handleTaskTypeChange">
                 <option value="today">今天</option>
                 <option value="tomorrow">明天</option>
                 <option value="this_week">本周内</option>
@@ -119,8 +118,7 @@
 
             <!-- 分类 -->
             <div class="attr-group">
-              <span class="attr-icon">🏷️</span>
-              <select v-model="newTaskCategory" class="attr-select">
+              <select v-model="newTaskCategory" class="attr-select attr-select-short">
                 <option value="work">工作</option>
                 <option value="study">学习</option>
                 <option value="life">生活</option>
@@ -129,8 +127,7 @@
 
             <!-- 优先级 -->
             <div class="attr-group">
-              <span class="attr-icon">⚡</span>
-              <select v-model="newTaskPriority" class="attr-select">
+              <select v-model="newTaskPriority" class="attr-select attr-select-short">
                 <option value="high">高</option>
                 <option value="medium">中</option>
                 <option value="low">低</option>
@@ -2637,7 +2634,7 @@ onUnmounted(() => {
 
 .search-input-main {
   width: 100%;
-  padding: 0.7rem 2.5rem 0.7rem 0.9rem;
+  padding: 0.5rem 2.5rem 0.5rem 0.9rem;
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 10px;
   background: white;
@@ -2645,7 +2642,7 @@ onUnmounted(() => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   color: #333;
   transition: all 0.3s;
-  height: 44px;
+  height: 36px;
   box-sizing: border-box;
 }
 
@@ -4672,16 +4669,16 @@ onUnmounted(() => {
 
 .task-input-main {
   flex: 1;
-  padding: 0.7rem 1.2rem;
+  padding: 0.5rem 1.2rem;
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 12px;
   background: white;
-  font-size: 1rem;
+  font-size: 0.85rem;
   color: #333;
   transition: all 0.3s;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
   line-height: 1.5;
-  height: 44px;
+  height: 36px;
   box-sizing: border-box;
 }
 
@@ -4697,8 +4694,8 @@ onUnmounted(() => {
 }
 
 .btn-submit-main {
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   border-radius: 12px;
   border: none;
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
@@ -4738,13 +4735,13 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0 0.9rem;
+  padding: 0 0.5rem;
   background: white;
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 12px;
   transition: all 0.3s;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
-  height: 44px;
+  height: 36px;
   box-sizing: border-box;
 }
 
@@ -4764,12 +4761,19 @@ onUnmounted(() => {
   border: none;
   background: transparent;
   font-size: 0.85rem;
-  color: #555;
+  color: #888;
   cursor: pointer;
   padding: 0;
   outline: none;
-  font-weight: 500;
-  min-width: 140px;
+  font-weight: 600;
+}
+
+.attr-select-date {
+  min-width: 110px;
+}
+
+.attr-select-short {
+  min-width: 42px;
 }
 
 .attr-text {
@@ -4780,8 +4784,8 @@ onUnmounted(() => {
 }
 
 .btn-cancel-attr {
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   border-radius: 10px;
   border: 2px solid rgba(255, 255, 255, 0.5);
   background: rgba(255, 255, 255, 0.95);
