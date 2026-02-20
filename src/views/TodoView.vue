@@ -754,7 +754,7 @@
           <!-- 时间维度统计 -->
           <div class="stats-section">
             <h4 class="section-title">📅 时间统计</h4>
-            <div class="stats-grid">
+            <div class="detail-stats-grid">
               <div class="stats-card time-today">
                 <div class="stats-icon">☀️</div>
                 <div class="stats-info">
@@ -816,7 +816,7 @@
           <!-- 按分类统计 -->
           <div class="stats-section">
             <h4 class="section-title">🏷️ 分类明细</h4>
-            <div class="stats-grid">
+            <div class="detail-stats-grid">
               <div class="stats-card">
                 <div class="stats-icon">💼</div>
                 <div class="stats-info">
@@ -844,7 +844,7 @@
           <!-- 按优先级统计 -->
           <div class="stats-section">
             <h4 class="section-title">⚡ 按优先级统计</h4>
-            <div class="stats-grid">
+            <div class="detail-stats-grid">
               <div class="stats-card priority-high">
                 <div class="stats-icon">🔴</div>
                 <div class="stats-info">
@@ -2539,23 +2539,25 @@ onUnmounted(() => {
 /* v1.5.6: Grid统计卡片 - 扁平化，直接浮在背景上 */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 0.5rem;
-  margin-bottom: 0.6rem;
+  grid-template-columns: repeat(5, 1fr); /* 强行平分5列 */
+  gap: 0.3rem; /* 缩小间距确保不溢出 */
+  margin-bottom: 0.5rem;
+  width: 100%;
 }
 
 .stat-card {
   display: flex;
-  flex-direction: column-reverse; /* 标签在下，数字在上 */
+  flex-direction: column-reverse; /* 数字在上，标签在下 */
   align-items: center;
   justify-content: center;
-  padding: 0.8rem 0.3rem; /* 增加上下内边距 */
+  padding: 0.2rem 0.1rem; /* 极窄内边距 */
   background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
   transition: all 0.3s;
-  min-height: 80px; /* 增加最小高度，填满纵向空间 */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  min-height: 42px; /* 紧凑高度 */
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  overflow: hidden; /* 防止溢出 */
 }
 
 .stat-card.clickable {
@@ -2564,26 +2566,26 @@ onUnmounted(() => {
 
 .stat-card.clickable:hover {
   background: white;
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
 }
 
 .stat-card.active {
   background: white;
   border-color: #667eea;
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.25);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
 }
 
 .stat-card .stat-label {
-  font-size: 0.75rem; /* 增大标签字号 */
-  color: #888;       /* 调淡标签颜色 */
-  margin-top: 0.4rem; /* 增加与数字的间距 */
-  font-weight: 500;
+  font-size: 0.6rem; /* 极小标签 */
+  color: #888;
+  margin-top: 1px;
+  font-weight: 600;
+  white-space: nowrap; /* 强制不换行 */
 }
 
 .stat-card .stat-value {
-  font-size: 1.6rem;  /* 大幅增加数字字号 */
-  font-weight: 800;  /* 极致加粗 */
+  font-size: 0.9rem; /* 适中数字 */
+  font-weight: 800;
   color: #222;
   line-height: 1;
 }
@@ -2601,7 +2603,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.4rem; /* 减少底部边距 */
 }
 
 .search-container {
@@ -2613,12 +2615,12 @@ onUnmounted(() => {
 
 .search-input-main {
   width: 100%;
-  padding: 0.55rem 2.5rem 0.55rem 0.9rem;
-  border: 2px solid rgba(255, 255, 255, 0.5);
+  padding: 0.45rem 2.5rem 0.45rem 0.9rem; /* 压缩上下 padding */
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.95);
+  background: white;
   font-size: 0.85rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   color: #333;
   transition: all 0.3s;
 }
@@ -3926,7 +3928,8 @@ onUnmounted(() => {
   color: var(--text-dark);
 }
 
-.stats-grid {
+/* 侧边栏/详情页内的统计网格 - 保持3列 */
+.detail-stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
