@@ -88,7 +88,7 @@
               type="text" 
               v-model="newTaskText" 
               class="task-input-main"
-              placeholder="输入任务名称..."
+              placeholder="➕ 新建任务：输入任务名称..."
               @keyup.enter="addTask"
             >
           </div>
