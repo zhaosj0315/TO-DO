@@ -93,6 +93,16 @@
             >
           </div>
 
+          <!-- 任务描述（可选） -->
+          <div class="add-form-row-desc" v-if="newTaskText.trim()">
+            <textarea 
+              v-model="newTaskDescription" 
+              class="task-textarea-desc"
+              placeholder="📝 任务描述（可选）..."
+              rows="2"
+            ></textarea>
+          </div>
+
           <!-- 第二行：属性配置 -->
           <div class="add-form-row-attrs">
             <!-- 日期类型 -->
@@ -1001,6 +1011,7 @@ const TaskStatus = {
 
 // 响应式数据
 const newTaskText = ref('')
+const newTaskDescription = ref('')
 const newTaskType = ref('today')
 const customDateTime = ref('')
 const newTaskCategory = ref('work')
@@ -1513,6 +1524,7 @@ const addTask = async () => {
   
   const task = {
     text: newTaskText.value.trim(),
+    description: newTaskDescription.value.trim(),
     type: newTaskType.value,
     category: newTaskCategory.value,
     priority: newTaskPriority.value,
@@ -1525,6 +1537,7 @@ const addTask = async () => {
   
   // 清空输入
   newTaskText.value = ''
+  newTaskDescription.value = ''
   newTaskType.value = 'today'
   customDateTime.value = ''
   newTaskCategory.value = 'work'
@@ -4861,6 +4874,38 @@ onUnmounted(() => {
   border-color: #667eea;
   background: white;
   /* 聚焦时去掉内阴影，增加外阴影 */
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1), 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+/* 任务描述输入框 */
+.add-form-row-desc {
+  margin-top: 0.5rem;
+}
+
+.task-textarea-desc {
+  width: 100%;
+  padding: 0.5rem 1.2rem;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  background: white;
+  font-size: 0.85rem;
+  color: #333;
+  transition: all 0.3s;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.05);
+  line-height: 1.5;
+  box-sizing: border-box;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.task-textarea-desc::placeholder {
+  color: #bbb;
+}
+
+.task-textarea-desc:focus {
+  outline: none;
+  border-color: #667eea;
+  background: white;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1), 0 4px 12px rgba(102, 126, 234, 0.15);
 }
 
