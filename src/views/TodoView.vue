@@ -107,21 +107,13 @@
                 <option value="today">今天</option>
                 <option value="tomorrow">明天</option>
                 <option value="this_week">本周内</option>
-                <option value="custom_date">指定日期</option>
                 <option value="daily">每天重复</option>
                 <option value="weekday">工作日重复</option>
-                <option value="weekly">每周重复</option>
+                <option value="custom_date">{{ customDateTime ? '📅 ' + formatDisplayDateTime(customDateTime) : '指定日期' }}</option>
+                <option value="weekly">{{ selectedWeekdays.length > 0 ? '🔄 ' + formatSelectedWeekdays(selectedWeekdays) : '每周重复' }}</option>
               </select>
             </div>
 
-            <!-- 自定义日期时间 -->
-            <div 
-              v-if="newTaskType === 'custom_date'" 
-              class="attr-group"
-              @click="showCustomDateTimePicker"
-            >
-              <span class="attr-text">{{ customDateTime ? formatDisplayDateTime(customDateTime) : '选择时间' }}</span>
-            </div>
             <input ref="hiddenCustomDateTime" type="datetime-local" style="display:none" :min="getTodayDateTime()" @change="handleCustomDateTimeChange">
 
             <!-- 分类 -->
@@ -146,17 +138,6 @@
 
             <!-- 取消按钮 -->
             <button class="btn-cancel-attr" @click="showAddForm = false" title="取消">✕</button>
-          </div>
-
-          <!-- 周期选择（每周重复） -->
-          <div v-if="newTaskType === 'weekly'" class="weekday-select-row">
-            <label 
-              v-for="(day, index) in weekdays" 
-              :key="index"
-              class="weekday-label"
-            >
-              <input type="checkbox" :value="index" v-model="selectedWeekdays"> {{ day }}
-            </label>
           </div>
         </div>
       </section>
@@ -919,6 +900,27 @@
       </div>
     </div>
 
+    <!-- 星期选择模态框 - 每周重复 -->
+    <div v-if="showWeeklyModal" class="modal-overlay" @click.self="showWeeklyModal = false">
+      <div class="modal-content glass-card" style="background: white; max-width: 400px; padding: 1.5rem;">
+        <div class="modal-header">
+          <h3>选择重复日期</h3>
+          <button class="close-btn" @click="showWeeklyModal = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="weekly-selector-grid">
+            <label v-for="(day, index) in weekdays" :key="index" class="weekday-checkbox-item">
+              <input type="checkbox" :value="index" v-model="selectedWeekdays">
+              <span class="weekday-name">{{ day }}</span>
+            </label>
+          </div>
+          <div class="modal-actions" style="margin-top: 2rem;">
+            <button class="btn btn-primary" style="width: 100%;" @click="showWeeklyModal = false">确定</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 任务详情编辑模态框 -->
     <div v-if="editingTask" class="modal-overlay" @click.self="editingTask = null">
       <div class="modal-content glass-card" style="background: white; max-width: 500px;">
@@ -1041,6 +1043,7 @@ const showSupport = ref(false)
 const showPrivacyPolicy = ref(false)
 const showPasswordModal = ref(false)
 const showPhoneModal = ref(false)
+const showWeeklyModal = ref(false)
 const editingTask = ref(null)
 const editDescription = ref('')
 const editText = ref('')
@@ -1553,14 +1556,28 @@ const addTask = async () => {
   showNotification('任务添加成功！', 'success')
 }
 
+// 方法：格式化显示的星期几
+const formatSelectedWeekdays = (selected) => {
+  if (!selected || selected.length === 0) return ''
+  const names = ['一', '二', '三', '四', '五', '六', '日']
+  return selected.sort((a, b) => a - b).map(i => names[i]).join(',')
+}
+
 // 方法：处理任务类型变化
 const handleTaskTypeChange = () => {
   // 切换类型时清空相关数据
   if (newTaskType.value !== 'custom_date') {
     customDateTime.value = ''
+  } else {
+    // 如果选择了指定日期，自动弹出选择器
+    showCustomDateTimePicker()
   }
+  
   if (newTaskType.value !== 'weekly') {
     selectedWeekdays.value = []
+  } else {
+    // 如果选择了每周重复，弹出星期选择模态框
+    showWeeklyModal.value = true
   }
 }
 
@@ -5087,6 +5104,38 @@ onUnmounted(() => {
 
 .contact-box p {
   margin: 0.5rem 0;
+}
+
+.weekly-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.8rem;
+}
+
+.weekday-checkbox-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.8rem 0.4rem;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.weekday-checkbox-item:has(input:checked) {
+  background: rgba(102, 126, 234, 0.1);
+  border-color: #667eea;
+}
+
+.weekday-checkbox-item input {
+  width: 18px;
+  height: 18px;
+}
+
+.weekday-name {
+  font-size: 0.85rem;
+  color: #333;
 }
 
 /* 编辑模态框周期选择器 */
