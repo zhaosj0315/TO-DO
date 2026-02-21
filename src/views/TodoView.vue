@@ -662,31 +662,31 @@
     <div v-if="showPasswordModal" class="modal-overlay" @click.self="showPasswordModal = false">
       <div class="modal-content glass-card" style="background: white; max-width: 450px; width: 96%; padding: 1rem;">
         <div class="modal-header">
-          <h3>🔒 修改密码</h3>
+          <h3>🔒 {{ t('changePassword') }}</h3>
           <button class="close-btn" @click="showPasswordModal = false">&times;</button>
         </div>
         <div class="modal-body">
           <div class="form-group">
-            <label>当前密码</label>
+            <label>{{ t('currentPassword') }}</label>
             <input 
               v-model="oldPassword" 
               type="password" 
               class="input" 
-              placeholder="请输入当前密码"
+              :placeholder="t('currentPasswordPlaceholder')"
             >
           </div>
           <div class="form-group">
-            <label>新密码</label>
+            <label>{{ t('newPassword') }}</label>
             <input 
               v-model="newPassword" 
               type="password" 
               class="input" 
-              placeholder="请输入新密码"
+              :placeholder="t('newPasswordPlaceholder')"
             >
           </div>
           <div class="form-actions">
-            <button class="btn btn-secondary" @click="showPasswordModal = false">取消</button>
-            <button class="btn btn-primary" @click="updatePassword">确认修改</button>
+            <button class="btn btn-secondary" @click="showPasswordModal = false">{{ t('cancel') }}</button>
+            <button class="btn btn-primary" @click="updatePassword">{{ t('confirmChange') }}</button>
           </div>
         </div>
       </div>
@@ -696,7 +696,7 @@
     <div v-if="showPhoneModal" class="modal-overlay" @click.self="showPhoneModal = false">
       <div class="modal-content glass-card" style="background: white; max-width: 450px; width: 96%; padding: 1rem;">
         <div class="modal-header">
-          <h3>📱 绑定手机号</h3>
+          <h3>📱 {{ t('bindPhone') }}</h3>
           <button class="close-btn" @click="showPhoneModal = false">&times;</button>
         </div>
         <div class="modal-body">
@@ -1122,6 +1122,15 @@ const i18n = {
     refresh: '刷新',
     trash: '回收站',
     profile: '个人主页',
+    // 弹窗标题
+    changePassword: '修改密码',
+    bindPhone: '绑定手机号',
+    // 表单标签
+    currentPassword: '当前密码',
+    newPassword: '新密码',
+    currentPasswordPlaceholder: '请输入当前密码',
+    newPasswordPlaceholder: '请输入新密码',
+    confirmChange: '确认修改',
   },
   en: {
     // 标题
@@ -1167,6 +1176,15 @@ const i18n = {
     refresh: 'Refresh',
     trash: 'Trash',
     profile: 'Profile',
+    // 弹窗标题
+    changePassword: 'Change Password',
+    bindPhone: 'Bind Phone',
+    // 表单标签
+    currentPassword: 'Current Password',
+    newPassword: 'New Password',
+    currentPasswordPlaceholder: 'Enter current password',
+    newPasswordPlaceholder: 'Enter new password',
+    confirmChange: 'Confirm',
   }
 }
 
