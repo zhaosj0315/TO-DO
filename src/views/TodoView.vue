@@ -1424,7 +1424,7 @@
           </div>
         </div>
         <div class="modal-footer" style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem;">
-          <button class="btn btn-secondary" @click="exportPoster">{{ currentLanguage === 'zh' ? '📸 保存海报' : '📸 Save Poster' }}</button>
+          <button class="btn btn-secondary" @click="exportHTML">{{ currentLanguage === 'zh' ? '📄 导出HTML' : '📄 Export HTML' }}</button>
           <button class="btn btn-secondary" @click="copyReportText">{{ t('copyText') }}</button>
           <button class="btn btn-secondary" @click="exportMarkdown">{{ t('exportMarkdown') }}</button>
           <button class="btn btn-primary" @click="showReportModal = false">{{ t('close') }}</button>
@@ -3783,29 +3783,50 @@ const exportMarkdown = () => {
 // 方法：导出数据海报
 const exportPoster = async () => {
   try {
-    const reportElement = document.querySelector('.report-modal-content')
+    const reportElement = document.querySelector('.report-preview-cards')
     if (!reportElement) {
-      alert(currentLanguage.value === 'zh' ? '未找到报告内容' : 'Report content not found')
+      alert(currentLanguage.value === 'zh' ? '未找到报告内容，请先生成报告' : 'Report content not found, please generate report first')
       return
     }
     
     // 显示加载提示
     const loadingMsg = currentLanguage.value === 'zh' ? '正在生成海报...' : 'Generating poster...'
-    const originalText = event.target.textContent
-    event.target.textContent = loadingMsg
-    event.target.disabled = true
+    const button = event.target
+    const originalText = button.textContent
+    button.textContent = loadingMsg
+    button.disabled = true
     
-    // 等待一帧，确保 DOM 更新
-    await new Promise(resolve => setTimeout(resolve, 100))
+    // 保存原始滚动位置和样式
+    const modalBody = document.querySelector('.modal-body')
+    const originalOverflow = modalBody.style.overflow
+    const originalMaxHeight = modalBody.style.maxHeight
+    const originalScrollTop = modalBody.scrollTop
     
-    // 生成海报
+    // 临时移除滚动限制，显示完整内容
+    modalBody.style.overflow = 'visible'
+    modalBody.style.maxHeight = 'none'
+    
+    // 等待 DOM 更新
+    await new Promise(resolve => setTimeout(resolve, 200))
+    
+    // 生成海报（完整内容）
     const canvas = await html2canvas(reportElement, {
       backgroundColor: '#f5f5f5',
-      scale: 2, // 提高清晰度
+      scale: 3, // 提高清晰度（3倍分辨率）
       logging: false,
       useCORS: true,
-      allowTaint: true
+      allowTaint: true,
+      windowHeight: reportElement.scrollHeight, // 关键：设置为完整高度
+      height: reportElement.scrollHeight,
+      width: reportElement.scrollWidth,
+      scrollX: 0,
+      scrollY: 0
     })
+    
+    // 恢复原始样式
+    modalBody.style.overflow = originalOverflow
+    modalBody.style.maxHeight = originalMaxHeight
+    modalBody.scrollTop = originalScrollTop
     
     // 转换为图片并下载
     canvas.toBlob((blob) => {
@@ -3820,15 +3841,121 @@ const exportPoster = async () => {
       URL.revokeObjectURL(url)
       
       // 恢复按钮状态
-      event.target.textContent = originalText
-      event.target.disabled = false
+      button.textContent = originalText
+      button.disabled = false
       
-      alert(currentLanguage.value === 'zh' ? '海报已保存' : 'Poster saved')
-    }, 'image/png')
+      alert(currentLanguage.value === 'zh' ? '海报已保存（高清版）' : 'Poster saved (HD)')
+    }, 'image/png', 1.0) // 最高质量
   } catch (err) {
     console.error('导出海报失败:', err)
+    // 确保恢复样式
+    const modalBody = document.querySelector('.modal-body')
+    if (modalBody) {
+      modalBody.style.overflow = ''
+      modalBody.style.maxHeight = ''
+    }
     alert(currentLanguage.value === 'zh' ? '导出失败，请重试' : 'Export failed, please try again')
-    event.target.disabled = false
+    // 恢复按钮状态
+    if (event.target) {
+      event.target.disabled = false
+    }
+  }
+}
+
+const exportHTML = async () => {
+  try {
+    const reportElement = document.querySelector('.report-preview-cards')
+    if (!reportElement) {
+      alert(currentLanguage.value === 'zh' ? '未找到报告内容，请先生成报告' : 'Report content not found, please generate report first')
+      return
+    }
+    
+    // 显示加载提示
+    const loadingMsg = currentLanguage.value === 'zh' ? '正在生成HTML...' : 'Generating HTML...'
+    alert(loadingMsg)
+    
+    // 克隆报告内容
+    const clonedElement = reportElement.cloneNode(true)
+    
+    // 获取所有计算后的样式
+    const styles = window.getComputedStyle(reportElement)
+    const inlineStyles = Array.from(styles).reduce((acc, key) => {
+      acc += `${key}:${styles.getPropertyValue(key)};`
+      return acc
+    }, '')
+    
+    // 将所有 ECharts 图表转换为图片
+    const chartElements = reportElement.querySelectorAll('canvas')
+    const clonedCharts = clonedElement.querySelectorAll('canvas')
+    
+    for (let i = 0; i < chartElements.length; i++) {
+      const canvas = chartElements[i]
+      const clonedCanvas = clonedCharts[i]
+      
+      // 将 canvas 转换为 img
+      const img = document.createElement('img')
+      img.src = canvas.toDataURL('image/png')
+      img.style.width = canvas.style.width || canvas.width + 'px'
+      img.style.height = canvas.style.height || canvas.height + 'px'
+      
+      // 替换 canvas
+      clonedCanvas.parentNode.replaceChild(img, clonedCanvas)
+    }
+    
+    // 内联所有样式
+    const allElements = clonedElement.querySelectorAll('*')
+    allElements.forEach(el => {
+      const computedStyle = window.getComputedStyle(el)
+      let styleStr = ''
+      for (let i = 0; i < computedStyle.length; i++) {
+        const key = computedStyle[i]
+        styleStr += `${key}:${computedStyle.getPropertyValue(key)};`
+      }
+      el.setAttribute('style', styleStr)
+    })
+    
+    // 生成完整的 HTML 文档
+    const htmlContent = '<!DOCTYPE html>\n' +
+'<html lang="' + currentLanguage.value + '">\n' +
+'<head>\n' +
+'  <meta charset="UTF-8">\n' +
+'  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
+'  <title>' + reportData.value.title + '</title>\n' +
+'  <style>\n' +
+'    body {\n' +
+'      margin: 0;\n' +
+'      padding: 20px;\n' +
+'      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;\n' +
+'      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n' +
+'    }\n' +
+'    @media print {\n' +
+'      body { background: white; padding: 0; }\n' +
+'    }\n' +
+'  </style>\n' +
+'</head>\n' +
+'<body>\n' +
+clonedElement.outerHTML + '\n' +
+'</body>\n' +
+'</html>'
+    
+    // 创建下载
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    const filename = `${reportData.value.title}_${new Date().getTime()}.html`
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    
+    alert(currentLanguage.value === 'zh' 
+      ? 'HTML文件已下载！\n\n💡 提示：\n1. 用浏览器打开文件\n2. 按 Cmd+P (Mac) 或 Ctrl+P (Windows)\n3. 选择"另存为PDF"即可保存为PDF' 
+      : 'HTML file downloaded!\n\n💡 Tip:\n1. Open with browser\n2. Press Cmd+P (Mac) or Ctrl+P (Windows)\n3. Select "Save as PDF"')
+  } catch (err) {
+    console.error('导出HTML失败:', err)
+    alert(currentLanguage.value === 'zh' ? '导出失败：' + err.message : 'Export failed: ' + err.message)
   }
 }
 
