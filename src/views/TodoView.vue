@@ -1222,18 +1222,20 @@
               </div>
             </div>
 
-            <!-- 高频任务（聚合去重） -->
+            <!-- 年度习惯（聚合去重，按番茄数排序） -->
             <div class="report-section" v-if="reportData.aggregatedTasks && reportData.aggregatedTasks.length > 0">
-              <h3 class="section-title">{{ currentLanguage === 'zh' ? '🔥 高频任务 Top 10' : '🔥 Most Frequent Tasks' }}</h3>
+              <h3 class="section-title">{{ currentLanguage === 'zh' ? '🏆 年度习惯 Top 10' : '🏆 Top 10 Habits' }}</h3>
               <div class="aggregated-tasks">
                 <div v-for="(task, index) in reportData.aggregatedTasks" :key="index" class="aggregated-task-item">
                   <div class="task-rank">{{ index + 1 }}</div>
                   <div class="task-info">
-                    <div class="task-name">{{ task.text }}</div>
+                    <div class="task-name">
+                      {{ task.categoryIcon }} {{ task.text }}
+                    </div>
                     <div class="task-stats">
-                      <span class="task-frequency">{{ currentLanguage === 'zh' ? '完成' : 'Done' }} {{ task.count }} {{ currentLanguage === 'zh' ? '次' : 'times' }}</span>
-                      <span class="task-pomodoros">🍅 {{ task.pomodoros }}</span>
-                      <span class="task-persistence">{{ currentLanguage === 'zh' ? '坚持度' : 'Persistence' }} {{ Math.min(100, task.count * 20) }}%</span>
+                      <span class="task-frequency">{{ currentLanguage === 'zh' ? '累计' : 'Total' }} {{ task.count }} {{ currentLanguage === 'zh' ? '次' : 'times' }}</span>
+                      <span class="task-pomodoros">{{ currentLanguage === 'zh' ? '消耗' : 'Consumed' }} {{ task.pomodoros }} 🍅</span>
+                      <span class="task-persistence">{{ currentLanguage === 'zh' ? '坚持度' : 'Persistence' }} {{ task.persistence }}%</span>
                     </div>
                   </div>
                 </div>
@@ -2790,7 +2792,7 @@ const generateReportContent = () => {
     byCategory
   })
   
-  // 任务聚合（去重统计）
+  // 任务聚合（去重统计）- 修复：过滤碎态数据
   const taskFrequency = {}
   completedTasksList.forEach(task => {
     const key = task.text.trim().toLowerCase()
@@ -2800,17 +2802,56 @@ const generateReportContent = () => {
         count: 0,
         pomodoros: 0,
         category: task.category,
-        priority: task.priority
+        priority: task.priority,
+        categoryIcon: task.category === 'work' ? '💼' : task.category === 'study' ? '📚' : '🏠'
       }
     }
     taskFrequency[key].count++
     taskFrequency[key].pomodoros += getPomodoroCount(task.priority)
   })
   
-  // 转换为数组并按频次排序
+  // 转换为数组，过滤碎态数据，按总番茄数排序
+  const minExecutions = reportType.value === 'yearly' ? 3 : reportType.value === 'quarterly' ? 2 : 1
+  const minPomodoros = reportType.value === 'yearly' ? 2 : reportType.value === 'quarterly' ? 2 : 1
+  
   const aggregatedTasks = Object.values(taskFrequency)
-    .sort((a, b) => b.count - a.count)
+    .filter(task => task.count >= minExecutions || task.pomodoros >= minPomodoros) // 过滤零碎任务
+    .sort((a, b) => b.pomodoros - a.pomodoros) // 按总番茄数排序（而非频次）
     .slice(0, 10)
+    .map(task => ({
+      ...task,
+      persistence: Math.min(100, task.count * 10) // 坚持度：每次10%，最高100%
+    }))
+  
+  // 月度趋势数据（用于年报/季报的趋势图）
+  const monthlyTrend = []
+  if (reportType.value === 'yearly' || reportType.value === 'quarterly') {
+    const monthsInPeriod = reportType.value === 'yearly' ? 12 : 3
+    const startMonth = startDate.getMonth()
+    const startYear = startDate.getFullYear()
+    
+    for (let i = 0; i < monthsInPeriod; i++) {
+      const month = (startMonth + i) % 12
+      const year = startYear + Math.floor((startMonth + i) / 12)
+      const monthStart = new Date(year, month, 1)
+      const monthEnd = new Date(year, month + 1, 0, 23, 59, 59)
+      
+      const monthTasks = periodTasks.filter(t => {
+        const taskDate = new Date(t.created_at)
+        return taskDate >= monthStart && taskDate <= monthEnd && t.status === TaskStatus.COMPLETED
+      })
+      
+      const monthPomodoros = monthTasks.reduce((sum, t) => sum + getPomodoroCount(t.priority), 0)
+      
+      monthlyTrend.push({
+        month: `${month + 1}${currentLanguage.value === 'zh' ? '月' : ''}`,
+        count: monthTasks.length,
+        pomodoros: monthPomodoros
+      })
+    }
+  }
+  
+  // 年度总专注时长（番茄钟转小时）
   
   reportData.value = {
     title: reportTitle.replace(/【|】/g, ''),
@@ -2824,9 +2865,12 @@ const generateReportContent = () => {
     highValueRatio,
     avgTasksPerDay,
     workDays,
+    totalFocusHours: (totalPomodoros * 0.5).toFixed(1), // 番茄钟转小时（1番茄=30分钟）
+    bestMonth: monthlyTrend.length > 0 ? monthlyTrend.reduce((max, m) => m.count > max.count ? m : max, monthlyTrend[0]) : null,
     categories,
     priorities,
     dailyTrend,
+    monthlyTrend,
     maxDaily: maxDaily || 1,
     keyTasks,
     aggregatedTasks,
