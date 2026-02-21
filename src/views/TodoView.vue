@@ -1091,15 +1091,56 @@
 
           <!-- 报告预览 - 卡片式UI -->
           <div class="report-preview-cards">
-            <!-- 报告头部 -->
-            <div class="report-header">
-              <h2>{{ reportData.title }}</h2>
-              <p class="report-period">{{ reportData.period }}</p>
-              <p class="report-meta">{{ currentLanguage === 'zh' ? '汇报人' : 'Reporter' }}: {{ currentUsername }} | {{ currentLanguage === 'zh' ? '生成时间' : 'Generated' }}: {{ reportData.generatedTime }}</p>
+            <!-- 🌌 顶部封面页 Hero Section -->
+            <div class="report-hero">
+              <div class="hero-avatar">{{ currentUsername.charAt(0).toUpperCase() }}</div>
+              <h1 class="hero-title">{{ currentUsername }} {{ currentLanguage === 'zh' ? '的' : "'s" }} {{ reportData.title }}</h1>
+              <p class="hero-subtitle">{{ currentLanguage === 'zh' ? '你的时间，看得见。' : 'Your time, visualized.' }}</p>
             </div>
 
-            <!-- 核心数据卡片 -->
-            <div class="report-stats-grid">
+            <!-- 执行官摘要（AI智能摘要） -->
+            <div class="executive-summary-hero" v-if="reportData.executiveSummary">
+              <div class="summary-badge">🤖 {{ currentLanguage === 'zh' ? 'AI 智能摘要' : 'AI Summary' }}</div>
+              <p class="summary-text-hero">{{ reportData.executiveSummary }}</p>
+            </div>
+
+            <!-- 三大核心数字 -->
+            <div class="hero-stats">
+              <div class="hero-stat-card">
+                <div class="hero-stat-icon">🍅</div>
+                <div class="hero-stat-value">{{ reportData.totalPomodoros }}</div>
+                <div class="hero-stat-label">{{ currentLanguage === 'zh' ? '番茄钟' : 'Pomodoros' }}</div>
+              </div>
+              <div class="hero-stat-card">
+                <div class="hero-stat-icon">✅</div>
+                <div class="hero-stat-value">{{ reportData.completedTasks }}</div>
+                <div class="hero-stat-label">{{ currentLanguage === 'zh' ? '项已完成' : 'Completed' }}</div>
+              </div>
+              <div class="hero-stat-card">
+                <div class="hero-stat-icon">📈</div>
+                <div class="hero-stat-value">{{ reportData.completionRate }}%</div>
+                <div class="hero-stat-label">{{ currentLanguage === 'zh' ? '战胜了拖延' : 'Beat Procrastination' }}</div>
+              </div>
+            </div>
+
+            <!-- 📊 模块一：精力的天平 -->
+            <div class="report-card">
+              <h3 class="card-title">⚖️ {{ currentLanguage === 'zh' ? '你的精力去哪了？' : 'Where Did Your Energy Go?' }}</h3>
+              <div class="energy-allocation">
+                <div class="energy-chart">
+                  <EChart :option="pieChartOption" height="280px" />
+                </div>
+                <div class="energy-insight">
+                  <div class="insight-badge">💡 {{ currentLanguage === 'zh' ? '洞察' : 'Insight' }}</div>
+                  <p class="insight-text-large" v-if="reportData.categories && reportData.categories.length > 0">
+                    {{ generateEnergyInsight() }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 旧的核心数据卡片（删除） -->
+            <div class="report-stats-grid" style="display: none;">
               <div class="stat-card-report">
                 <div class="stat-icon">📝</div>
                 <div class="stat-value">{{ reportData.totalTasks }}</div>
@@ -1689,6 +1730,59 @@ const editCustomDateTime = ref('')
 const editWeekdays = ref([])
 const showAddForm = ref(true)
 const currentPage = ref(1)
+
+// 饼图配置（精力分配）
+const pieChartOption = computed(() => {
+  if (!reportData.value.categories) return {}
+  
+  const categories = reportData.value.categories
+  
+  return {
+    backgroundColor: 'transparent',
+    tooltip: {
+      trigger: 'item',
+      formatter: '{b}: {c} 🍅 ({d}%)'
+    },
+    legend: {
+      show: false
+    },
+    series: [{
+      type: 'pie',
+      radius: ['40%', '70%'],
+      avoidLabelOverlap: false,
+      itemStyle: {
+        borderRadius: 10,
+        borderColor: '#fff',
+        borderWidth: 2
+      },
+      label: {
+        show: true,
+        formatter: '{b}\n{d}%',
+        fontSize: 13,
+        fontWeight: 600
+      },
+      emphasis: {
+        label: {
+          show: true,
+          fontSize: 16,
+          fontWeight: 'bold'
+        }
+      },
+      data: categories.map(cat => ({
+        name: `${cat.icon} ${cat.name}`,
+        value: cat.pomodoros,
+        itemStyle: {
+          color: cat.color.includes('gradient') 
+            ? { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [
+                { offset: 0, color: cat.color.match(/#[0-9a-f]{6}/gi)?.[0] || '#667eea' },
+                { offset: 1, color: cat.color.match(/#[0-9a-f]{6}/gi)?.[1] || '#764ba2' }
+              ]}
+            : cat.color
+        }
+      }))
+    }]
+  }
+})
 
 // 雷达图配置
 const radarChartOption = computed(() => {
@@ -3786,6 +3880,26 @@ const togglePriorityMode = () => {
   priorityMode.value = priorityMode.value === 'traditional' ? 'eisenhower' : 'traditional'
   // 保存优先级模式到本地存储
   Preferences.set({ key: 'priorityMode', value: priorityMode.value })
+}
+
+// 生成精力洞察文案
+const generateEnergyInsight = () => {
+  if (!reportData.value.categories || reportData.value.categories.length === 0) return ''
+  
+  const lang = currentLanguage.value
+  const categories = reportData.value.categories
+  const topCategory = categories.reduce((max, cat) => cat.pomodoros > max.pomodoros ? cat : max, categories[0])
+  const lifeCategory = categories.find(c => c.name.includes('生活') || c.name.includes('Life'))
+  
+  if (topCategory.rate > 60) {
+    return lang === 'zh'
+      ? `${topCategory.icon} ${topCategory.name}绝对是本期的主旋律（占比 ${topCategory.rate}%）。但值得开心的是，你在极高强度下，依然为"${lifeCategory?.name || '生活'}"留出了 ${lifeCategory?.pomodoros || 0} 个番茄钟的时间。生活与工作的平衡，你做得比想象中好。`
+      : `${topCategory.icon} ${topCategory.name} was absolutely the main theme this period (${topCategory.rate}%). But happily, you still reserved ${lifeCategory?.pomodoros || 0} pomodoros for "${lifeCategory?.name || 'Life'}". You balanced work and life better than expected.`
+  } else {
+    return lang === 'zh'
+      ? `精力分配相当均衡！${topCategory.icon} ${topCategory.name}占比 ${topCategory.rate}%，${categories[1]?.icon} ${categories[1]?.name}占比 ${categories[1]?.rate}%，${categories[2]?.icon} ${categories[2]?.name}占比 ${categories[2]?.rate}%。这是一个全面发展的周期。`
+      : `Energy allocation is well balanced! ${topCategory.icon} ${topCategory.name} ${topCategory.rate}%, ${categories[1]?.icon} ${categories[1]?.name} ${categories[1]?.rate}%, ${categories[2]?.icon} ${categories[2]?.name} ${categories[2]?.rate}%. A well-rounded period.`
+  }
 }
 
 // 刷新方法
@@ -6660,6 +6774,155 @@ onUnmounted(() => {
 .time-picker-inline:hover {
   background: white;
   border-color: var(--primary-color);
+}
+
+.time-picker-inline.placeholder {
+  color: var(--text-light);
+}
+
+/* 报告Hero Section样式 */
+.report-hero {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  color: white;
+  margin-bottom: 2rem;
+}
+
+.hero-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  font-weight: 600;
+  margin: 0 auto 1.5rem;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+.hero-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.hero-subtitle {
+  font-size: 1rem;
+  opacity: 0.9;
+  margin-bottom: 0;
+}
+
+.executive-summary-hero {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.summary-badge {
+  display: inline-block;
+  padding: 0.4rem 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.summary-text-hero {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: #333;
+  margin: 0;
+}
+
+.hero-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.hero-stat-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.hero-stat-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.hero-stat-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #667eea;
+  font-family: 'DIN Alternate', 'Roboto Mono', monospace;
+  margin-bottom: 0.3rem;
+}
+
+.hero-stat-label {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.report-card {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.card-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 1.5rem;
+}
+
+.energy-allocation {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: center;
+}
+
+.energy-chart {
+  min-height: 280px;
+}
+
+.energy-insight {
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border-radius: 12px;
+}
+
+.insight-badge {
+  display: inline-block;
+  padding: 0.3rem 0.8rem;
+  background: #667eea;
+  color: white;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.insight-text-large {
+  font-size: 0.95rem;
+  line-height: 1.8;
+  color: #333;
+  margin: 0;
 }
 
 .time-picker-inline.placeholder {
