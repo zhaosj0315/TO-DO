@@ -1152,6 +1152,12 @@
               </div>
             </div>
 
+            <!-- 精力分配雷达图 -->
+            <div class="report-section">
+              <h3 class="section-title">{{ currentLanguage === 'zh' ? '🎯 精力分配' : '🎯 Energy Distribution' }}</h3>
+              <EChart :option="radarChartOption" height="320px" />
+            </div>
+
             <!-- 分类统计 -->
             <div class="report-section">
               <h3 class="section-title">{{ currentLanguage === 'zh' ? '📊 分类统计' : '📊 By Category' }}</h3>
@@ -1276,6 +1282,7 @@ import { Preferences } from '@capacitor/preferences'
 import { Filesystem, Directory } from '@capacitor/filesystem'
 import { LocalNotifications } from '@capacitor/local-notifications'
 import * as XLSX from 'xlsx'
+import EChart from '../components/EChart.vue'
 
 const router = useRouter()
 const taskStore = useOfflineTaskStore()
@@ -1671,6 +1678,60 @@ const editCustomDateTime = ref('')
 const editWeekdays = ref([])
 const showAddForm = ref(true)
 const currentPage = ref(1)
+
+// 雷达图配置
+const radarChartOption = computed(() => {
+  if (!reportData.value.categories) return {}
+  
+  const categories = reportData.value.categories
+  const maxValue = Math.max(...categories.map(c => c.pomodoros), 10)
+  
+  return {
+    backgroundColor: 'transparent',
+    radar: {
+      indicator: categories.map(cat => ({
+        name: `${cat.icon} ${cat.name}`,
+        max: maxValue
+      })),
+      shape: 'polygon',
+      splitNumber: 4,
+      axisName: {
+        color: '#666',
+        fontSize: 12
+      },
+      splitLine: {
+        lineStyle: {
+          color: 'rgba(102, 126, 234, 0.1)'
+        }
+      },
+      splitArea: {
+        show: false
+      },
+      axisLine: {
+        lineStyle: {
+          color: 'rgba(102, 126, 234, 0.2)'
+        }
+      }
+    },
+    series: [{
+      type: 'radar',
+      data: [{
+        value: categories.map(c => c.pomodoros),
+        name: currentLanguage.value === 'zh' ? '番茄钟投入' : 'Pomodoro Investment',
+        areaStyle: {
+          color: 'rgba(102, 126, 234, 0.2)'
+        },
+        lineStyle: {
+          color: '#667eea',
+          width: 2
+        },
+        itemStyle: {
+          color: '#667eea'
+        }
+      }]
+    }]
+  }
+})
 const currentLanguage = ref('zh') // 语言切换：zh 中文, en 英文
 const priorityMode = ref('traditional') // 优先级模式：traditional 传统三级, eisenhower 时间象限法
 const showChangelog = ref(false) // 更新日志弹窗
