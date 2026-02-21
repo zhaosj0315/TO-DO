@@ -703,32 +703,32 @@
           <div v-if="userProfileInfo.boundPhone">
             <div class="bound-phone-display">
               <p class="phone-number">{{ userProfileInfo.boundPhone }}</p>
-              <p class="phone-hint">已绑定手机号</p>
+              <p class="phone-hint">{{ t('boundPhoneHint') }}</p>
             </div>
             <div class="form-actions">
-              <button class="btn btn-secondary" @click="showPhoneModal = false">关闭</button>
-              <button class="btn btn-danger" @click="unbindPhone">解绑</button>
+              <button class="btn btn-secondary" @click="showPhoneModal = false">{{ t('close') }}</button>
+              <button class="btn btn-danger" @click="unbindPhone">{{ t('unbind') }}</button>
             </div>
           </div>
           <div v-else>
             <div class="form-group">
-              <label>手机号</label>
+              <label>{{ t('phoneNumber') }}</label>
               <input 
                 v-model="bindPhoneNumber" 
                 type="tel" 
                 class="input" 
-                placeholder="请输入手机号"
+                :placeholder="t('phoneNumberPlaceholder')"
                 maxlength="11"
               >
             </div>
             <div class="form-group">
-              <label>验证码</label>
+              <label>{{ t('verificationCode') }}</label>
               <div class="verification-row">
                 <input 
                   v-model="bindVerificationCode" 
                   type="text" 
                   class="input" 
-                  placeholder="请输入验证码"
+                  :placeholder="t('verificationCodePlaceholder')"
                   maxlength="6"
                 >
                 <button 
@@ -736,14 +736,14 @@
                   :disabled="bindCountdown > 0"
                   @click="sendBindSMS"
                 >
-                  {{ bindCountdown > 0 ? `${bindCountdown}s` : '获取验证码' }}
+                  {{ bindCountdown > 0 ? `${bindCountdown}s` : t('getVerificationCode') }}
                 </button>
               </div>
             </div>
-            <p class="bind-hint">绑定后可使用手机号+验证码登录此账号</p>
+            <p class="bind-hint">{{ t('bindHint') }}</p>
             <div class="form-actions">
-              <button class="btn btn-secondary" @click="showPhoneModal = false">取消</button>
-              <button class="btn btn-primary" @click="confirmBindPhone">确认绑定</button>
+              <button class="btn btn-secondary" @click="showPhoneModal = false">{{ t('cancel') }}</button>
+              <button class="btn btn-primary" @click="confirmBindPhone">{{ t('confirmBind') }}</button>
             </div>
           </div>
         </div>
@@ -1194,6 +1194,17 @@ const i18n = {
     maxDaily: '单日最高',
     completionRateLabel: '完成率',
     selectRepeatDays: '选择重复日期',
+    // 绑定手机号
+    phoneNumber: '手机号',
+    phoneNumberPlaceholder: '请输入手机号',
+    verificationCode: '验证码',
+    verificationCodePlaceholder: '请输入验证码',
+    getVerificationCode: '获取验证码',
+    boundPhoneHint: '已绑定手机号',
+    close: '关闭',
+    unbind: '解绑',
+    bindHint: '绑定后可使用手机号+验证码登录此账号',
+    confirmBind: '确认绑定',
   },
   en: {
     // 标题
@@ -1311,6 +1322,17 @@ const i18n = {
     maxDaily: 'Max Daily',
     completionRateLabel: 'Rate',
     selectRepeatDays: 'Select Repeat Days',
+    // 绑定手机号
+    phoneNumber: 'Phone Number',
+    phoneNumberPlaceholder: 'Enter phone number',
+    verificationCode: 'Verification Code',
+    verificationCodePlaceholder: 'Enter code',
+    getVerificationCode: 'Get Code',
+    boundPhoneHint: 'Phone number bound',
+    close: 'Close',
+    unbind: 'Unbind',
+    bindHint: 'You can login with phone number after binding',
+    confirmBind: 'Confirm',
   }
 }
 
