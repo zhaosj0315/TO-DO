@@ -1258,7 +1258,7 @@
             </div>
 
             <!-- 每日趋势（按完成数降序） -->
-            <div class="report-section" v-if="reportData.dailyTrend && reportData.dailyTrend.length > 0">
+            <div class="report-section" v-if="reportData.dailyTrend && reportData.dailyTrend.length > 0" style="display: none;">
               <h3 class="section-title">{{ currentLanguage === 'zh' ? '📈 高效工作日排行' : '📈 Most Productive Days' }}</h3>
               <div class="daily-trend">
                 <div v-for="day in reportData.dailyTrend" :key="day.date" class="trend-item">
@@ -1272,8 +1272,34 @@
               </div>
             </div>
 
-            <!-- 年度习惯（聚合去重，按番茄数排序） -->
-            <div class="report-section" v-if="reportData.aggregatedTasks && reportData.aggregatedTasks.length > 0">
+            <!-- 🏆 模块三：年度高光习惯（进度条卡片） -->
+            <div class="report-card" v-if="reportData.aggregatedTasks && reportData.aggregatedTasks.length > 0">
+              <h3 class="card-title">🔁 {{ currentLanguage === 'zh' ? '你的年度执念 Top 5' : 'Your Top 5 Habits' }}</h3>
+              <div class="habits-hall-of-fame">
+                <div v-for="(task, index) in reportData.aggregatedTasks.slice(0, 5)" :key="index" class="habit-card">
+                  <div class="habit-header">
+                    <div class="habit-rank-badge" :class="`rank-${index + 1}`">
+                      {{ index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1 }}
+                    </div>
+                    <div class="habit-info">
+                      <div class="habit-name">{{ task.text }}</div>
+                      <div class="habit-category">{{ currentLanguage === 'zh' ? '分类' : 'Category' }}: {{ task.categoryIcon }} {{ getCategoryText(task.category) }}</div>
+                    </div>
+                    <div class="habit-flame">🔥</div>
+                  </div>
+                  <div class="habit-progress-bar">
+                    <div class="habit-progress-fill" :style="{ width: Math.min(100, (task.pomodoros / (reportData.aggregatedTasks[0]?.pomodoros || 1)) * 100) + '%' }"></div>
+                  </div>
+                  <div class="habit-stats">
+                    <span>{{ currentLanguage === 'zh' ? '开展' : 'Done' }} {{ task.count }} {{ currentLanguage === 'zh' ? '次' : 'times' }}</span>
+                    <span>{{ currentLanguage === 'zh' ? '累计' : 'Total' }} {{ task.pomodoros }} 🍅</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 旧的年度习惯（隐藏） -->
+            <div class="report-section" v-if="false">
               <h3 class="section-title">{{ currentLanguage === 'zh' ? '🏆 年度习惯 Top 10' : '🏆 Top 10 Habits' }}</h3>
               <div class="aggregated-tasks">
                 <div v-for="(task, index) in reportData.aggregatedTasks" :key="index" class="aggregated-task-item">
@@ -6916,6 +6942,115 @@ onUnmounted(() => {
   font-size: 0.8rem;
   font-weight: 600;
   margin-bottom: 1rem;
+}
+
+.insight-text-large {
+  font-size: 0.95rem;
+  line-height: 1.8;
+  color: #333;
+}
+
+/* 年度习惯进度条卡片 */
+.habits-hall-of-fame {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.habit-card {
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #f8f9fc 0%, #ffffff 100%);
+  border-radius: 12px;
+  border-left: 4px solid #667eea;
+  transition: all 0.3s;
+}
+
+.habit-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(102, 126, 234, 0.15);
+}
+
+.habit-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.habit-rank-badge {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.habit-rank-badge.rank-1 {
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+}
+
+.habit-rank-badge.rank-2 {
+  background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%);
+}
+
+.habit-rank-badge.rank-3 {
+  background: linear-gradient(135deg, #cd7f32 0%, #e6a85c 100%);
+}
+
+.habit-info {
+  flex: 1;
+}
+
+.habit-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.3rem;
+}
+
+.habit-category {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.habit-flame {
+  font-size: 2rem;
+  animation: flame 1.5s ease-in-out infinite;
+}
+
+@keyframes flame {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.habit-progress-bar {
+  width: 100%;
+  height: 12px;
+  background: rgba(102, 126, 234, 0.1);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 0.8rem;
+}
+
+.habit-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  border-radius: 6px;
+  transition: width 1s ease-out;
+}
+
+.habit-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: #666;
+  font-weight: 500;
 }
 
 .insight-text-large {
