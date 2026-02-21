@@ -2515,8 +2515,10 @@ const generateReportContent = () => {
     low: periodTasks.filter(t => t.priority === 'low')
   }
   
-  // 工作日数
+  // 工作日数和日均数据
   const workDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1
+  const avgTasksPerDay = workDays > 0 ? (completedTasks / workDays).toFixed(1) : 0
+  const avgPomodorosPerDay = workDays > 0 ? (totalPomodoros / workDays).toFixed(1) : 0
   
   // 生成报告文本
   const reportTitle = currentLanguage.value === 'zh' 
@@ -2551,8 +2553,8 @@ const generateReportContent = () => {
   report += `│   ${String(totalTasks).padStart(3)}    │    ${String(completedTasks).padStart(3)}   │   ${String(totalPomodoros).padStart(3)}    │   ${String(completionRate).padStart(2)}%    │\n`
   report += `└──────────┴──────────┴──────────┴──────────┘\n\n`
   report += currentLanguage.value === 'zh'
-    ? `工作日：${workDays}天  |  日均完成：${avgTasksPerDay}任务  |  日均番茄：${(totalPomodoros / workDays).toFixed(1)}个\n\n\n`
-    : `Work Days: ${workDays}  |  Avg Tasks: ${avgTasksPerDay}/day  |  Avg Pomodoros: ${(totalPomodoros / workDays).toFixed(1)}/day\n\n\n`
+    ? `工作日：${workDays}天  |  日均完成：${avgTasksPerDay}任务  |  日均番茄：${avgPomodorosPerDay}个\n\n\n`
+    : `Work Days: ${workDays}  |  Avg Tasks: ${avgTasksPerDay}/day  |  Avg Pomodoros: ${avgPomodorosPerDay}/day\n\n\n`
   
   // 第二部分：分类统计
   report += `${doubleSeparator}\n`
@@ -2772,11 +2774,10 @@ const generateReportContent = () => {
   const summary = generateSmartSummary(reportType.value, completedTasksList)
   
   // 新增KPI指标
-  const focusEfficiency = workDays > 0 ? (totalPomodoros / workDays).toFixed(1) : 0 // 专注力效率
+  const focusEfficiency = avgPomodorosPerDay // 专注力效率（复用已定义的变量）
   const highValueRatio = completedTasks > 0 
     ? Math.round((byPriority.high.filter(t => t.status === TaskStatus.COMPLETED).length / completedTasks) * 100) 
     : 0 // 高价值任务占比
-  const avgTasksPerDay = workDays > 0 ? (completedTasks / workDays).toFixed(1) : 0
   
   // 智能洞察引擎
   const insights = generateInsights({
