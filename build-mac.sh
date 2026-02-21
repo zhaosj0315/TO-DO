@@ -34,12 +34,18 @@ echo ""
 
 # 4. 打包 DMG
 echo "📦 步骤 4/5: 打包 macOS DMG..."
-CSC_IDENTITY_AUTO_DISCOVERY=false npm run electron:build-mac || true
+CSC_IDENTITY_AUTO_DISCOVERY=false npm run electron:build-mac 2>&1 | tee /tmp/build-mac.log || true
+
+# 获取版本号
+VERSION=$(node -p "require('./package.json').version")
+
 # 检查 x64 版本是否成功
 if [ ! -f "release/TODO App-${VERSION}.dmg" ]; then
     echo "❌ 错误: DMG 打包失败"
+    echo "查看日志: /tmp/build-mac.log"
     exit 1
 fi
+
 echo "✅ DMG 打包完成 (x64)"
 echo "⚠️  注意: arm64 版本构建失败（已知问题），但 x64 版本可通过 Rosetta 2 在 M 芯片 Mac 上运行"
 echo ""
