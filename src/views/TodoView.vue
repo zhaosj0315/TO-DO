@@ -2495,6 +2495,107 @@ const generateReportContent = () => {
   report += `${separator}\n`
   
   reportContent.value = report
+  
+  // 生成结构化数据用于UI展示
+  const categories = [
+    {
+      name: t('work'),
+      icon: '💼',
+      color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      total: byCategory.work.length,
+      completed: workCompleted,
+      rate: workRate,
+      pomodoros: workPomodoros
+    },
+    {
+      name: t('study'),
+      icon: '📚',
+      color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+      total: byCategory.study.length,
+      completed: studyCompleted,
+      rate: studyRate,
+      pomodoros: studyPomodoros
+    },
+    {
+      name: t('life'),
+      icon: '🏠',
+      color: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+      total: byCategory.life.length,
+      completed: lifeCompleted,
+      rate: lifeRate,
+      pomodoros: lifePomodoros
+    }
+  ]
+  
+  const priorities = [
+    {
+      name: getPriorityLabel('high'),
+      color: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+      total: byPriority.high.length,
+      percentage: totalTasks > 0 ? Math.round((byPriority.high.length / totalTasks) * 100) : 0
+    },
+    {
+      name: getPriorityLabel('medium'),
+      color: 'linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%)',
+      total: byPriority.medium.length,
+      percentage: totalTasks > 0 ? Math.round((byPriority.medium.length / totalTasks) * 100) : 0
+    },
+    {
+      name: getPriorityLabel('low'),
+      color: 'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)',
+      total: byPriority.low.length,
+      percentage: totalTasks > 0 ? Math.round((byPriority.low.length / totalTasks) * 100) : 0
+    }
+  ]
+  
+  // 每日趋势
+  const dailyTrend = []
+  let maxDaily = 0
+  for (let i = 0; i < Math.min(workDays, 7); i++) {
+    const date = new Date(startDate)
+    date.setDate(startDate.getDate() + i)
+    const dateStr = date.toDateString()
+    
+    const count = periodTasks.filter(t => {
+      const taskDate = new Date(t.created_at)
+      return taskDate.toDateString() === dateStr && t.status === TaskStatus.COMPLETED
+    }).length
+    
+    maxDaily = Math.max(maxDaily, count)
+    
+    const label = i === workDays - 1 ? t('todayLabel') : 
+                  i === workDays - 2 ? t('yesterdayLabel') :
+                  `${date.getMonth() + 1}/${date.getDate()}`
+    
+    dailyTrend.push({ date: dateStr, label, count })
+  }
+  
+  // 重点任务
+  const keyTasks = completedTasksList.slice(0, 10).map(task => ({
+    id: task.id,
+    text: task.text,
+    description: task.description,
+    categoryIcon: task.category === 'work' ? '💼' : task.category === 'study' ? '📚' : '🏠',
+    categoryText: getCategoryText(task.category),
+    priorityText: getPriorityText(task.priority),
+    pomodoros: getPomodoroCount(task.priority),
+    time: formatDateTime(task.created_at)
+  }))
+  
+  reportData.value = {
+    title: reportTitle.replace(/【|】/g, ''),
+    period: `${formatDate(startDate)} - ${formatDate(endDate)}`,
+    generatedTime: formatDateTime(now),
+    totalTasks,
+    completedTasks,
+    totalPomodoros,
+    completionRate,
+    categories,
+    priorities,
+    dailyTrend,
+    maxDaily: maxDaily || 1,
+    keyTasks
+  }
 }
 
 // 方法：复制报告文本
@@ -6397,5 +6498,249 @@ onUnmounted(() => {
 .weekday-label input[type="checkbox"] {
   margin: 0;
   cursor: pointer;
+}
+
+/* 数据报告样式 */
+.report-preview-cards {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.report-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.report-header h2 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.report-period {
+  font-size: 0.9rem;
+  opacity: 0.9;
+  margin: 0.3rem 0;
+}
+
+.report-meta {
+  font-size: 0.75rem;
+  opacity: 0.8;
+  margin: 0.3rem 0 0 0;
+}
+
+.report-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.stat-card-report {
+  background: white;
+  border-radius: 10px;
+  padding: 1rem;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+}
+
+.stat-card-report:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.stat-card-report.highlight {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.stat-card-report .stat-icon {
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.stat-card-report .stat-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0.3rem 0;
+}
+
+.stat-card-report .stat-label {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.report-section {
+  background: white;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+  color: #333;
+}
+
+.category-stats, .priority-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.category-item, .priority-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.category-header, .priority-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.category-name, .priority-name {
+  font-weight: 600;
+  color: #333;
+}
+
+.category-value, .priority-value {
+  color: #666;
+  font-size: 0.8rem;
+}
+
+.progress-bar {
+  height: 8px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+  border-radius: 4px;
+}
+
+.category-detail {
+  font-size: 0.75rem;
+  color: #999;
+}
+
+.daily-trend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.trend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.trend-label {
+  width: 60px;
+  font-size: 0.8rem;
+  color: #666;
+  text-align: right;
+}
+
+.trend-bar-container {
+  flex: 1;
+  height: 28px;
+  background: #f5f5f5;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.trend-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 0.5rem;
+  transition: width 0.3s ease;
+  min-width: 30px;
+}
+
+.trend-value {
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.key-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.task-item-report {
+  display: flex;
+  gap: 0.8rem;
+  padding: 0.8rem;
+  background: #f9f9f9;
+  border-radius: 8px;
+  border-left: 3px solid #667eea;
+}
+
+.task-number {
+  width: 24px;
+  height: 24px;
+  background: #667eea;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.task-content-report {
+  flex: 1;
+}
+
+.task-title-report {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.3rem;
+}
+
+.task-meta-report {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: #666;
+  margin-bottom: 0.3rem;
+}
+
+.task-meta-report span {
+  background: white;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+.task-desc-report {
+  font-size: 0.75rem;
+  color: #999;
+  line-height: 1.4;
+  margin-top: 0.3rem;
 }
 </style>
