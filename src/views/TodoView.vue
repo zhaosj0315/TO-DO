@@ -112,13 +112,13 @@
             <!-- 日期类型 -->
             <div class="attr-group">
               <select v-model="newTaskType" class="attr-select attr-select-date" @change="handleTaskTypeChange">
-                <option value="today">今天</option>
-                <option value="tomorrow">明天</option>
-                <option value="this_week">本周内</option>
-                <option value="daily">每天重复</option>
-                <option value="weekday">工作日重复</option>
-                <option value="custom_date">{{ customDateTime ? formatDisplayDateTime(customDateTime) : '指定日期' }}</option>
-                <option value="weekly">{{ selectedWeekdays.length > 0 ? formatSelectedWeekdays(selectedWeekdays) : '每周重复' }}</option>
+                <option value="today">{{ t('today') }}</option>
+                <option value="tomorrow">{{ t('tomorrow') }}</option>
+                <option value="this_week">{{ t('thisWeek') }}</option>
+                <option value="daily">{{ t('daily') }}</option>
+                <option value="weekday">{{ t('weekday') }}</option>
+                <option value="custom_date">{{ customDateTime ? formatDisplayDateTime(customDateTime) : t('customDate') }}</option>
+                <option value="weekly">{{ selectedWeekdays.length > 0 ? formatSelectedWeekdays(selectedWeekdays) : t('weekly') }}</option>
               </select>
             </div>
 
@@ -127,18 +127,18 @@
             <!-- 分类 -->
             <div class="attr-group">
               <select v-model="newTaskCategory" class="attr-select attr-select-short">
-                <option value="work">工作</option>
-                <option value="study">学习</option>
-                <option value="life">生活</option>
+                <option value="work">{{ t('work') }}</option>
+                <option value="study">{{ t('study') }}</option>
+                <option value="life">{{ t('life') }}</option>
               </select>
             </div>
 
             <!-- 优先级 -->
             <div class="attr-group">
               <select v-model="newTaskPriority" class="attr-select attr-select-short">
-                <option value="high">高</option>
-                <option value="medium">中</option>
-                <option value="low">低</option>
+                <option value="high">{{ t('high') }}</option>
+                <option value="medium">{{ t('medium') }}</option>
+                <option value="low">{{ t('low') }}</option>
               </select>
             </div>
 
@@ -1001,58 +1001,58 @@
     <div v-if="editingTask" class="modal-overlay" @click.self="editingTask = null">
       <div class="modal-content glass-card" style="background: white; max-width: 550px; width: 96%; padding: 1rem;">
         <div class="modal-header">
-          <h3>编辑任务详情</h3>
+          <h3>{{ t('edit') }}{{ currentLanguage === 'zh' ? '任务详情' : ' Task' }}</h3>
           <button class="close-btn" @click="editingTask = null">&times;</button>
         </div>
         <div class="modal-body">
           <div class="edit-field">
-            <label>任务名称</label>
+            <label>{{ currentLanguage === 'zh' ? '任务名称' : 'Task Name' }}</label>
             <input 
               v-model="editText" 
               class="input" 
-              placeholder="任务名称"
+              :placeholder="currentLanguage === 'zh' ? '任务名称' : 'Task name'"
             >
           </div>
           <div class="edit-field">
-            <label>详细描述</label>
+            <label>{{ currentLanguage === 'zh' ? '详细描述' : 'Description' }}</label>
             <textarea 
               v-model="editDescription" 
               class="input textarea" 
-              placeholder="添加更多细节描述..."
+              :placeholder="currentLanguage === 'zh' ? '添加更多细节描述...' : 'Add more details...'"
               rows="4"
             ></textarea>
           </div>
           <div class="edit-field">
-            <label>任务分类</label>
+            <label>{{ currentLanguage === 'zh' ? '任务分类' : 'Category' }}</label>
             <select v-model="editCategory" class="input">
-              <option value="work">💼 工作</option>
-              <option value="study">📚 学习</option>
-              <option value="life">🏠 生活</option>
+              <option value="work">💼 {{ t('work') }}</option>
+              <option value="study">📚 {{ t('study') }}</option>
+              <option value="life">🏠 {{ t('life') }}</option>
             </select>
           </div>
           <div class="edit-field">
-            <label>优先级</label>
+            <label>{{ currentLanguage === 'zh' ? '优先级' : 'Priority' }}</label>
             <select v-model="editPriority" class="input">
-              <option value="high">高</option>
-              <option value="medium">中</option>
-              <option value="low">低</option>
+              <option value="high">{{ t('high') }}</option>
+              <option value="medium">{{ t('medium') }}</option>
+              <option value="low">{{ t('low') }}</option>
             </select>
           </div>
           <div class="edit-field">
-            <label>任务类型</label>
+            <label>{{ currentLanguage === 'zh' ? '任务类型' : 'Type' }}</label>
             <select v-model="editType" class="input" @change="handleEditTypeChange">
-              <option value="today">今天</option>
-              <option value="tomorrow">明天</option>
-              <option value="this_week">本周内</option>
-              <option value="daily">每天重复</option>
-              <option value="weekday">工作日重复</option>
-              <option value="custom_date">{{ editCustomDateTime ? formatDisplayDateTime(editCustomDateTime) : '指定日期' }}</option>
-              <option value="weekly">{{ editWeekdays.length > 0 ? formatSelectedWeekdays(editWeekdays) : '每周重复' }}</option>
+              <option value="today">{{ t('today') }}</option>
+              <option value="tomorrow">{{ t('tomorrow') }}</option>
+              <option value="this_week">{{ t('thisWeek') }}</option>
+              <option value="daily">{{ t('daily') }}</option>
+              <option value="weekday">{{ t('weekday') }}</option>
+              <option value="custom_date">{{ editCustomDateTime ? formatDisplayDateTime(editCustomDateTime) : t('customDate') }}</option>
+              <option value="weekly">{{ editWeekdays.length > 0 ? formatSelectedWeekdays(editWeekdays) : t('weekly') }}</option>
             </select>
           </div>
           <div class="modal-actions">
-            <button class="btn btn-secondary" @click="editingTask = null">取消</button>
-            <button class="btn btn-primary" @click="saveTaskEdit">保存更改</button>
+            <button class="btn btn-secondary" @click="editingTask = null">{{ t('cancel') }}</button>
+            <button class="btn btn-primary" @click="saveTaskEdit">{{ t('save') }}{{ currentLanguage === 'zh' ? '更改' : ' Changes' }}</button>
           </div>
         </div>
       </div>
