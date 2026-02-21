@@ -1172,6 +1172,20 @@
               </div>
             </div>
 
+            <!-- 智能总结 -->
+            <div class="report-section" v-if="reportData.summary">
+              <h3 class="section-title">{{ currentLanguage === 'zh' ? '💡 智能总结' : '💡 Smart Summary' }}</h3>
+              <div class="summary-content">
+                <div v-for="(item, index) in reportData.summary" :key="index" class="summary-item">
+                  <div class="summary-icon">{{ item.icon }}</div>
+                  <div class="summary-text">
+                    <div class="summary-title">{{ item.title }}</div>
+                    <div class="summary-desc">{{ item.description }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- 重点任务 -->
             <div class="report-section">
               <h3 class="section-title">{{ currentLanguage === 'zh' ? '🎯 重点任务 (Top 10)' : '🎯 Key Tasks (Top 10)' }}</h3>
@@ -2583,6 +2597,19 @@ const generateReportContent = () => {
     time: formatDateTime(task.created_at)
   }))
   
+  // 智能总结（根据报告类型生成不同内容）
+  const summary = generateSmartSummary(reportType.value, {
+    totalTasks,
+    completedTasks,
+    completionRate,
+    totalPomodoros,
+    workDays,
+    categories,
+    priorities,
+    dailyTrend,
+    maxDaily
+  })
+  
   reportData.value = {
     title: reportTitle.replace(/【|】/g, ''),
     period: `${formatDate(startDate)} - ${formatDate(endDate)}`,
@@ -2595,8 +2622,126 @@ const generateReportContent = () => {
     priorities,
     dailyTrend,
     maxDaily: maxDaily || 1,
-    keyTasks
+    keyTasks,
+    summary
   }
+}
+
+// 生成智能总结
+const generateSmartSummary = (type, data) => {
+  const summary = []
+  const lang = currentLanguage.value
+  
+  if (type === 'weekly') {
+    // 周报：执行细节
+    summary.push({
+      icon: '📊',
+      title: lang === 'zh' ? '本周完成情况' : 'Weekly Progress',
+      description: lang === 'zh' 
+        ? `本周完成${data.completedTasks}个任务，完成率${data.completionRate}%，日均完成${(data.completedTasks / data.workDays).toFixed(1)}个任务。`
+        : `Completed ${data.completedTasks} tasks this week with ${data.completionRate}% completion rate, averaging ${(data.completedTasks / data.workDays).toFixed(1)} tasks per day.`
+    })
+    
+    const bestDay = data.dailyTrend.reduce((max, day) => day.count > max.count ? day : max, data.dailyTrend[0])
+    summary.push({
+      icon: '⭐',
+      title: lang === 'zh' ? '最佳工作日' : 'Best Day',
+      description: lang === 'zh'
+        ? `${bestDay.label}完成了${bestDay.count}个任务，是本周效率最高的一天。`
+        : `${bestDay.label} was the most productive day with ${bestDay.count} tasks completed.`
+    })
+    
+    const topCategory = data.categories.reduce((max, cat) => cat.completed > max.completed ? cat : max, data.categories[0])
+    summary.push({
+      icon: '🎯',
+      title: lang === 'zh' ? '重点领域' : 'Focus Area',
+      description: lang === 'zh'
+        ? `${topCategory.icon} ${topCategory.name}完成${topCategory.completed}个任务，占比最高。`
+        : `${topCategory.icon} ${topCategory.name} had the most completions with ${topCategory.completed} tasks.`
+    })
+    
+  } else if (type === 'monthly') {
+    // 月报：阶段成果
+    summary.push({
+      icon: '📈',
+      title: lang === 'zh' ? '月度成果' : 'Monthly Achievement',
+      description: lang === 'zh'
+        ? `本月累计完成${data.completedTasks}个任务，获得${data.totalPomodoros}个番茄，完成率达${data.completionRate}%。`
+        : `Completed ${data.completedTasks} tasks and earned ${data.totalPomodoros} pomodoros this month with ${data.completionRate}% completion rate.`
+    })
+    
+    summary.push({
+      icon: '💼',
+      title: lang === 'zh' ? '工作投入' : 'Work Investment',
+      description: lang === 'zh'
+        ? `工作类任务完成${data.categories[0].completed}个，学习类${data.categories[1].completed}个，生活类${data.categories[2].completed}个。`
+        : `Work: ${data.categories[0].completed}, Study: ${data.categories[1].completed}, Life: ${data.categories[2].completed} tasks completed.`
+    })
+    
+    summary.push({
+      icon: '🎖️',
+      title: lang === 'zh' ? '效率评价' : 'Efficiency Rating',
+      description: data.completionRate >= 80 
+        ? (lang === 'zh' ? '优秀！本月完成率超过80%，保持了高效的工作节奏。' : 'Excellent! Over 80% completion rate shows great productivity.')
+        : data.completionRate >= 60
+        ? (lang === 'zh' ? '良好！本月完成率超过60%，继续保持。' : 'Good! Over 60% completion rate, keep it up.')
+        : (lang === 'zh' ? '需改进。建议优化任务规划，提升完成率。' : 'Needs improvement. Consider optimizing task planning.')
+    })
+    
+  } else if (type === 'quarterly') {
+    // 季报：战略回顾
+    summary.push({
+      icon: '🏆',
+      title: lang === 'zh' ? '季度成就' : 'Quarterly Achievement',
+      description: lang === 'zh'
+        ? `本季度完成${data.completedTasks}个任务，累计投入${data.totalPomodoros}个番茄钟，展现了持续的执行力。`
+        : `Completed ${data.completedTasks} tasks with ${data.totalPomodoros} pomodoros invested, showing consistent execution.`
+    })
+    
+    summary.push({
+      icon: '📊',
+      title: lang === 'zh' ? '工作分布' : 'Work Distribution',
+      description: lang === 'zh'
+        ? `工作占比${data.categories[0].rate}%，学习占比${data.categories[1].rate}%，生活占比${data.categories[2].rate}%，整体较为均衡。`
+        : `Work ${data.categories[0].rate}%, Study ${data.categories[1].rate}%, Life ${data.categories[2].rate}% - well balanced.`
+    })
+    
+    summary.push({
+      icon: '💡',
+      title: lang === 'zh' ? '季度洞察' : 'Quarterly Insight',
+      description: lang === 'zh'
+        ? `重要且紧急任务占比${data.priorities[0].percentage}%，建议增加重要但不紧急任务的投入，提升长期价值。`
+        : `Urgent & Important tasks: ${data.priorities[0].percentage}%. Consider investing more in Important but Not Urgent tasks for long-term value.`
+    })
+    
+  } else if (type === 'yearly') {
+    // 年报：全年回顾
+    summary.push({
+      icon: '🎊',
+      title: lang === 'zh' ? '年度回顾' : 'Annual Review',
+      description: lang === 'zh'
+        ? `${new Date().getFullYear()}年累计完成${data.completedTasks}个任务，获得${data.totalPomodoros}个番茄，这是充实而有意义的一年。`
+        : `Completed ${data.completedTasks} tasks and earned ${data.totalPomodoros} pomodoros in ${new Date().getFullYear()}. A fulfilling year!`
+    })
+    
+    summary.push({
+      icon: '📈',
+      title: lang === 'zh' ? '成长轨迹' : 'Growth Track',
+      description: lang === 'zh'
+        ? `全年完成率${data.completionRate}%，日均完成${(data.completedTasks / data.workDays).toFixed(1)}个任务，展现了稳定的成长曲线。`
+        : `${data.completionRate}% completion rate with ${(data.completedTasks / data.workDays).toFixed(1)} tasks per day on average shows steady growth.`
+    })
+    
+    summary.push({
+      icon: '🌟',
+      title: lang === 'zh' ? '年度寄语' : 'Annual Message',
+      description: lang === 'zh'
+        ? '每一个完成的任务都是成长的足迹。新的一年，继续保持热情，追求卓越！'
+        : 'Every completed task is a step forward. Keep the passion and pursue excellence in the new year!'
+    })
+  }
+  
+  return summary
 }
 
 // 方法：复制报告文本
@@ -2645,6 +2790,15 @@ const exportMarkdown = () => {
       markdown += `- **${pri.name}**: ${pri.total}${currentLanguage.value === 'zh' ? '项' : ''} (${pri.percentage}%)\n`
     })
     markdown += `\n`
+    
+    // 智能总结
+    if (data.summary && data.summary.length > 0) {
+      markdown += `## ${currentLanguage.value === 'zh' ? '💡 智能总结' : '💡 Smart Summary'}\n\n`
+      data.summary.forEach(item => {
+        markdown += `### ${item.icon} ${item.title}\n\n`
+        markdown += `${item.description}\n\n`
+      })
+    }
     
     // 每日趋势
     if (data.dailyTrend && data.dailyTrend.length > 0) {
@@ -6792,6 +6946,43 @@ onUnmounted(() => {
   font-size: 0.75rem;
   font-weight: 600;
   flex-shrink: 0;
+}
+
+.summary-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.summary-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+}
+
+.summary-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.summary-text {
+  flex: 1;
+}
+
+.summary-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.3rem;
+}
+
+.summary-desc {
+  font-size: 0.85rem;
+  color: #666;
+  line-height: 1.5;
 }
 
 .task-content-report {
