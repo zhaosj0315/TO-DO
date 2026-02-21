@@ -1298,12 +1298,17 @@
               </div>
             </div>
 
-            <!-- 旧的年度习惯（隐藏） -->
-            <div class="report-section" v-if="false">
+            <!-- 年度习惯 Top 10 -->
+            <div class="report-section" v-if="reportData.aggregatedTasks && reportData.aggregatedTasks.length > 0">
               <h3 class="section-title">{{ currentLanguage === 'zh' ? '🏆 年度习惯 Top 10' : '🏆 Top 10 Habits' }}</h3>
               <div class="aggregated-tasks">
                 <div v-for="(task, index) in reportData.aggregatedTasks" :key="index" class="aggregated-task-item">
-                  <div class="task-rank">{{ index + 1 }}</div>
+                  <div class="task-rank">
+                    <span v-if="index === 0">🥇</span>
+                    <span v-else-if="index === 1">🥈</span>
+                    <span v-else-if="index === 2">🥉</span>
+                    <span v-else>{{ index + 1 }}</span>
+                  </div>
                   <div class="task-info">
                     <div class="task-name">
                       {{ task.categoryIcon }} {{ task.text }}
@@ -1313,13 +1318,38 @@
                       <span class="task-pomodoros">{{ currentLanguage === 'zh' ? '消耗' : 'Consumed' }} {{ task.pomodoros }} 🍅</span>
                       <span class="task-persistence">{{ currentLanguage === 'zh' ? '坚持度' : 'Persistence' }} {{ task.persistence }}%</span>
                     </div>
+                    <div class="progress-bar">
+                      <div class="progress-fill" :style="{ width: task.persistence + '%', background: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)' }"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 闪光的里程碑 (Milestones) -->
+            <div class="report-section" v-if="reportData.milestones && reportData.milestones.length > 0 && (reportType === 'yearly' || reportType === 'quarterly')">
+              <h3 class="section-title">{{ currentLanguage === 'zh' ? '✨ 闪光的里程碑' : '✨ Key Milestones' }}</h3>
+              <div class="milestones-timeline">
+                <div v-for="(milestone, index) in reportData.milestones" :key="milestone.id" class="milestone-item">
+                  <div class="milestone-marker">
+                    <div class="milestone-dot"></div>
+                    <div class="milestone-line" v-if="index < reportData.milestones.length - 1"></div>
+                  </div>
+                  <div class="milestone-content">
+                    <div class="milestone-date">📅 {{ milestone.date }}</div>
+                    <div class="milestone-title">{{ milestone.categoryIcon }} {{ milestone.text }}</div>
+                    <div class="milestone-meta">
+                      <span>⚡ {{ milestone.priorityText }}</span>
+                      <span>🍅 {{ milestone.pomodoros }}</span>
+                    </div>
+                    <div v-if="milestone.description" class="milestone-description">{{ milestone.description }}</div>
                   </div>
                 </div>
               </div>
             </div>
 
             <!-- 重点任务 -->
-            <div class="report-section">
+            <div class="report-section" v-if="reportType === 'weekly' || reportType === 'monthly'">
               <h3 class="section-title">{{ currentLanguage === 'zh' ? '🎯 重点任务 (Top 10)' : '🎯 Key Tasks (Top 10)' }}</h3>
               <div class="key-tasks">
                 <div v-for="(task, index) in reportData.keyTasks" :key="task.id" class="task-item-report">
@@ -2670,6 +2700,77 @@ const generateReportContent = () => {
     : `Period: ${formatDate(startDate)} - ${formatDate(endDate)}\n`
   report += `${separator}\n\n\n`
   
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 提前计算分类统计数据（用于AI摘要）
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  const workCompleted = byCategory.work.filter(t => t.status === TaskStatus.COMPLETED).length
+  const workTotal = byCategory.work.length
+  const workRate = workTotal > 0 ? Math.round((workCompleted / workTotal) * 100) : 0
+  const workPomodoros = byCategory.work.filter(t => t.status === TaskStatus.COMPLETED).reduce((sum, t) => sum + getPomodoroCount(t.priority), 0)
+  
+  const studyCompleted = byCategory.study.filter(t => t.status === TaskStatus.COMPLETED).length
+  const studyTotal = byCategory.study.length
+  const studyRate = studyTotal > 0 ? Math.round((studyCompleted / studyTotal) * 100) : 0
+  const studyPomodoros = byCategory.study.filter(t => t.status === TaskStatus.COMPLETED).reduce((sum, t) => sum + getPomodoroCount(t.priority), 0)
+  
+  const lifeCompleted = byCategory.life.filter(t => t.status === TaskStatus.COMPLETED).length
+  const lifeTotal = byCategory.life.length
+  const lifeRate = lifeTotal > 0 ? Math.round((lifeCompleted / lifeTotal) * 100) : 0
+  const lifePomodoros = byCategory.life.filter(t => t.status === TaskStatus.COMPLETED).reduce((sum, t) => sum + getPomodoroCount(t.priority), 0)
+  
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 轨道1：高频习惯聚合 (用于文本报告)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  const completedTasksList = periodTasks.filter(t => t.status === TaskStatus.COMPLETED)
+  const textTaskFrequency = {}
+  completedTasksList.forEach(task => {
+    const key = task.text.trim().toLowerCase()
+    if (!textTaskFrequency[key]) {
+      textTaskFrequency[key] = {
+        text: task.text,
+        count: 0,
+        pomodoros: 0,
+        category: task.category,
+        priority: task.priority,
+        description: task.description || '',
+        created_at: task.created_at
+      }
+    }
+    textTaskFrequency[key].count++
+    textTaskFrequency[key].pomodoros += getPomodoroCount(task.priority)
+  })
+  
+  const textMinExecutions = reportType.value === 'yearly' ? 3 : reportType.value === 'quarterly' ? 2 : 1
+  const textAggregatedTasks = Object.values(textTaskFrequency)
+    .filter(task => task.count >= textMinExecutions)
+    .sort((a, b) => b.pomodoros - a.pomodoros)
+    .slice(0, 10)
+  
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 轨道2：里程碑提取 (用于文本报告) - 去重处理
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  const textMilestonesRaw = completedTasksList.filter(task => {
+    let score = 0
+    const hasRichDescription = task.description && task.description.trim().length > 10
+    if (hasRichDescription) score++
+    const isHighValueTask = (task.priority === 'high' || task.priority === 'urgent') && getPomodoroCount(task.priority) >= 4
+    if (isHighValueTask) score++
+    const taskKey = task.text.trim().toLowerCase()
+    const isRareEvent = textTaskFrequency[taskKey] && textTaskFrequency[taskKey].count < 3
+    if (isRareEvent) score++
+    return score >= 2
+  }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+  
+  // 去重：按任务名称去重，只保留最新的一条
+  const textMilestonesMap = {}
+  textMilestonesRaw.forEach(task => {
+    const key = task.text.trim().toLowerCase()
+    if (!textMilestonesMap[key]) {
+      textMilestonesMap[key] = task
+    }
+  })
+  const textMilestones = Object.values(textMilestonesMap).slice(0, 5)
+  
   // 第一部分：执行摘要
   report += `${doubleSeparator}\n`
   report += currentLanguage.value === 'zh' ? '【第一部分】执行摘要 - Executive Summary\n' : '【Part 1】Executive Summary\n'
@@ -2684,8 +2785,41 @@ const generateReportContent = () => {
   report += `│   ${String(totalTasks).padStart(3)}    │    ${String(completedTasks).padStart(3)}   │   ${String(totalPomodoros).padStart(3)}    │   ${String(completionRate).padStart(2)}%    │\n`
   report += `└──────────┴──────────┴──────────┴──────────┘\n\n`
   report += currentLanguage.value === 'zh'
-    ? `工作日：${workDays}天  |  日均完成：${avgTasksPerDay}任务  |  日均番茄：${avgPomodorosPerDay}个\n\n\n`
-    : `Work Days: ${workDays}  |  Avg Tasks: ${avgTasksPerDay}/day  |  Avg Pomodoros: ${avgPomodorosPerDay}/day\n\n\n`
+    ? `工作日：${workDays}天  |  日均完成：${avgTasksPerDay}任务  |  日均番茄：${avgPomodorosPerDay}个\n\n`
+    : `Work Days: ${workDays}  |  Avg Tasks: ${avgTasksPerDay}/day  |  Avg Pomodoros: ${avgPomodorosPerDay}/day\n\n`
+  
+  // AI 执行官摘要
+  const topCategory = [
+    { name: t('work'), rate: workRate, icon: '💼', pomodoros: workPomodoros },
+    { name: t('study'), rate: studyRate, icon: '📚', pomodoros: studyPomodoros },
+    { name: t('life'), rate: lifeRate, icon: '🏠', pomodoros: lifePomodoros }
+  ].reduce((max, cat) => cat.pomodoros > max.pomodoros ? cat : max)
+  
+  const topHabit = textAggregatedTasks.length > 0 ? textAggregatedTasks[0] : null
+  const topMilestone = textMilestones.length > 0 ? textMilestones[0] : null
+  const totalFocusHours = (totalPomodoros * 0.5).toFixed(1)
+  
+  report += currentLanguage.value === 'zh' ? '二、AI 执行官摘要\n' : '2. AI Executive Summary\n'
+  report += `${separator}\n`
+  
+  if (reportType.value === 'yearly') {
+    report += currentLanguage.value === 'zh'
+      ? `在过去的 ${now.getFullYear()} 年，你共计专注了 ${totalFocusHours} 个小时（${totalPomodoros} 个番茄钟）。其中，${topCategory.icon} ${topCategory.name}占据了你 ${topCategory.rate}% 的精力。你保持了${completionRate >= 80 ? '极高' : completionRate >= 60 ? '良好' : '稳定'}的执行力（${completionRate}% 完成率）${topHabit ? `，并且将「${topHabit.text}」培养成了贯穿全年的坚实习惯（累计 ${topHabit.count} 次）` : ''}${topMilestone ? `。最值得铭记的是「${topMilestone.text}」这一里程碑时刻` : ''}。\n\n\n`
+      : `In ${now.getFullYear()}, you focused for ${totalFocusHours} hours (${totalPomodoros} pomodoros). ${topCategory.icon} ${topCategory.name} took ${topCategory.rate}% of your energy. You maintained ${completionRate >= 80 ? 'excellent' : completionRate >= 60 ? 'good' : 'steady'} execution (${completionRate}% completion rate)${topHabit ? `, and cultivated "${topHabit.text}" as a solid habit (${topHabit.count} times)` : ''}${topMilestone ? `. The most memorable milestone was "${topMilestone.text}"` : ''}.\n\n\n`
+  } else if (reportType.value === 'quarterly') {
+    report += currentLanguage.value === 'zh'
+      ? `本季度你完成了 ${completedTasks} 个任务，累计投入 ${totalFocusHours} 小时。${topCategory.icon} ${topCategory.name}是你的主战场（${topCategory.rate}%）${topMilestone ? `。本季最大突破是完成了「${topMilestone.text}」` : ''}。\n\n\n`
+      : `This quarter you completed ${completedTasks} tasks with ${totalFocusHours} hours invested. ${topCategory.icon} ${topCategory.name} was your main focus (${topCategory.rate}%)${topMilestone ? `. The biggest breakthrough was completing "${topMilestone.text}"` : ''}.\n\n\n`
+  } else if (reportType.value === 'monthly') {
+    report += currentLanguage.value === 'zh'
+      ? `本月你完成了 ${completedTasks} 个任务，日均 ${avgTasksPerDay} 个，完成率 ${completionRate}%。${topCategory.icon} ${topCategory.name}是你投入最多的领域（${topCategory.rate}%）${topMilestone ? `，其中「${topMilestone.text}」最为关键` : ''}。\n\n\n`
+      : `This month you completed ${completedTasks} tasks, averaging ${avgTasksPerDay} per day with ${completionRate}% completion rate. ${topCategory.icon} ${topCategory.name} received the most attention (${topCategory.rate}%)${topMilestone ? `, with "${topMilestone.text}" being the most critical` : ''}.\n\n\n`
+  } else {
+    const highValueRatio = completedTasks > 0 ? Math.round((byPriority.high.filter(t => t.status === TaskStatus.COMPLETED).length / completedTasks) * 100) : 0
+    report += currentLanguage.value === 'zh'
+      ? `本周你完成了 ${completedTasks} 个任务，完成率 ${completionRate}%，日均专注 ${avgPomodorosPerDay} 个番茄钟。${highValueRatio >= 50 ? '高优先级任务占比超过50%，执行力优秀！' : '继续保持专注！'}${topMilestone ? ` 本周最大亮点是「${topMilestone.text}」。` : ''}\n\n\n`
+      : `This week you completed ${completedTasks} tasks with ${completionRate}% completion rate, averaging ${avgPomodorosPerDay} pomodoros per day. ${highValueRatio >= 50 ? 'High-priority tasks exceeded 50%, excellent execution!' : 'Keep focused!'}${topMilestone ? ` The highlight of the week was "${topMilestone.text}".` : ''}\n\n\n`
+  }
   
   // 第二部分：分类统计
   report += `${doubleSeparator}\n`
@@ -2695,95 +2829,84 @@ const generateReportContent = () => {
   report += currentLanguage.value === 'zh' ? '一、按工作分类统计\n' : '1. By Category\n'
   report += `${separator}\n\n`
   
-  // 工作类任务
-  const workCompleted = byCategory.work.filter(t => t.status === TaskStatus.COMPLETED).length
-  const workTotal = byCategory.work.length
-  const workRate = workTotal > 0 ? Math.round((workCompleted / workTotal) * 100) : 0
-  const workPomodoros = byCategory.work.filter(t => t.status === TaskStatus.COMPLETED).reduce((sum, t) => sum + getPomodoroCount(t.priority), 0)
-  
   report += `💼 ${t('work')} (${workTotal}${currentLanguage.value === 'zh' ? '项' : ' tasks'})\n`
   report += `${currentLanguage.value === 'zh' ? '已完成' : 'Completed'}: ${workCompleted}${currentLanguage.value === 'zh' ? '项' : ''} (${workRate}%)  |  ${currentLanguage.value === 'zh' ? '番茄' : 'Pomodoros'}: ${workPomodoros}${currentLanguage.value === 'zh' ? '个' : ''}\n\n`
-  
-  // 学习类任务
-  const studyCompleted = byCategory.study.filter(t => t.status === TaskStatus.COMPLETED).length
-  const studyTotal = byCategory.study.length
-  const studyRate = studyTotal > 0 ? Math.round((studyCompleted / studyTotal) * 100) : 0
-  const studyPomodoros = byCategory.study.filter(t => t.status === TaskStatus.COMPLETED).reduce((sum, t) => sum + getPomodoroCount(t.priority), 0)
   
   report += `📚 ${t('study')} (${studyTotal}${currentLanguage.value === 'zh' ? '项' : ' tasks'})\n`
   report += `${currentLanguage.value === 'zh' ? '已完成' : 'Completed'}: ${studyCompleted}${currentLanguage.value === 'zh' ? '项' : ''} (${studyRate}%)  |  ${currentLanguage.value === 'zh' ? '番茄' : 'Pomodoros'}: ${studyPomodoros}${currentLanguage.value === 'zh' ? '个' : ''}\n\n`
   
-  // 生活类任务
-  const lifeCompleted = byCategory.life.filter(t => t.status === TaskStatus.COMPLETED).length
-  const lifeTotal = byCategory.life.length
-  const lifeRate = lifeTotal > 0 ? Math.round((lifeCompleted / lifeTotal) * 100) : 0
-  const lifePomodoros = byCategory.life.filter(t => t.status === TaskStatus.COMPLETED).reduce((sum, t) => sum + getPomodoroCount(t.priority), 0)
-  
   report += `🏠 ${t('life')} (${lifeTotal}${currentLanguage.value === 'zh' ? '项' : ' tasks'})\n`
   report += `${currentLanguage.value === 'zh' ? '已完成' : 'Completed'}: ${lifeCompleted}${currentLanguage.value === 'zh' ? '项' : ''} (${lifeRate}%)  |  ${currentLanguage.value === 'zh' ? '番茄' : 'Pomodoros'}: ${lifePomodoros}${currentLanguage.value === 'zh' ? '个' : ''}\n\n\n`
   
-  // 第三部分：本期重点事项
-  report += `${doubleSeparator}\n`
-  report += currentLanguage.value === 'zh' ? '【第三部分】本期重点事项 - Key Activities\n' : '【Part 3】Key Activities\n'
-  report += `${doubleSeparator}\n\n`
-  
-  // 按分类归纳任务
-  const workTasks = periodTasks.filter(t => t.status === TaskStatus.COMPLETED && t.category === 'work')
-  const studyTasks = periodTasks.filter(t => t.status === TaskStatus.COMPLETED && t.category === 'study')
-  const lifeTasks = periodTasks.filter(t => t.status === TaskStatus.COMPLETED && t.category === 'life')
-  
-  if (workTasks.length > 0) {
-    report += `💼 ${currentLanguage.value === 'zh' ? '工作' : 'Work'} (${workTasks.length}${currentLanguage.value === 'zh' ? '项' : ''})\n`
-    workTasks.slice(0, 10).forEach(t => {
-      report += `  • ${t.text}\n`
+  // 第三部分：年度习惯 Top 10（仅季报/年报显示）或 里程碑（所有报告显示）
+  if (reportType.value === 'yearly' || reportType.value === 'quarterly') {
+    report += `${doubleSeparator}\n`
+    report += currentLanguage.value === 'zh' ? '【第三部分】年度习惯 Top 10 - Top 10 Habits\n' : '【Part 3】Top 10 Habits\n'
+    report += `${doubleSeparator}\n\n`
+    
+    textAggregatedTasks.forEach((task, index) => {
+      const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`
+      report += `${medal} ${task.text}\n`
+      report += `   ${currentLanguage.value === 'zh' ? '累计' : 'Total'}: ${task.count} ${currentLanguage.value === 'zh' ? '次' : 'times'}  |  ${currentLanguage.value === 'zh' ? '消耗' : 'Consumed'}: ${task.pomodoros} 🍅  |  ${currentLanguage.value === 'zh' ? '分类' : 'Category'}: ${getCategoryText(task.category)}\n\n`
     })
-    report += `\n`
-  }
-  
-  if (studyTasks.length > 0) {
-    report += `📚 ${currentLanguage.value === 'zh' ? '学习' : 'Study'} (${studyTasks.length}${currentLanguage.value === 'zh' ? '项' : ''})\n`
-    studyTasks.slice(0, 10).forEach(t => {
-      report += `  • ${t.text}\n`
-    })
-    report += `\n`
-  }
-  
-  if (lifeTasks.length > 0) {
-    report += `🏠 ${currentLanguage.value === 'zh' ? '生活' : 'Life'} (${lifeTasks.length}${currentLanguage.value === 'zh' ? '项' : ''})\n`
-    lifeTasks.slice(0, 10).forEach(t => {
-      report += `  • ${t.text}\n`
-    })
-    report += `\n`
-  }
-  
-  // 第四部分：重点任务（按优先级排序）
-  report += `${doubleSeparator}\n`
-  report += currentLanguage.value === 'zh' ? '【第四部分】重点任务 Top 10 - Key Tasks\n' : '【Part 4】Key Tasks Top 10\n'
-  report += `${doubleSeparator}\n\n`
-  
-  const completedTasksList = periodTasks
-    .filter(t => t.status === TaskStatus.COMPLETED)
-    .sort((a, b) => {
-      const priorityWeight = (p) => {
-        if (p === 'high' || p === 'urgent') return 3
-        if (p === 'medium') return 2
-        return 1
-      }
-      const weightA = priorityWeight(a.priority)
-      const weightB = priorityWeight(b.priority)
-      if (weightB !== weightA) return weightB - weightA
-      return getPomodoroCount(b.priority) - getPomodoroCount(a.priority)
-    })
-    .slice(0, 10)
-  
-  completedTasksList.forEach((task, index) => {
-    report += `${index + 1}. ${task.text}\n`
-    report += `   ${currentLanguage.value === 'zh' ? '分类' : 'Category'}: ${getCategoryText(task.category)}  |  ${currentLanguage.value === 'zh' ? '优先级' : 'Priority'}: ${getPriorityText(task.priority)}  |  ${currentLanguage.value === 'zh' ? '番茄' : 'Pomodoros'}: ${getPomodoroCount(task.priority)}\n`
-    if (task.description) {
-      report += `   ${currentLanguage.value === 'zh' ? '说明' : 'Description'}: ${task.description}\n`
+    
+    // 里程碑
+    if (textMilestones.length > 0) {
+      report += `${doubleSeparator}\n`
+      report += currentLanguage.value === 'zh' ? '【第四部分】闪光的里程碑 - Key Milestones\n' : '【Part 4】Key Milestones\n'
+      report += `${doubleSeparator}\n\n`
+      
+      textMilestones.forEach((milestone, index) => {
+        report += `${index + 1}. ${milestone.text}\n`
+        report += `   📅 ${formatDate(new Date(milestone.created_at))}  |  ${getCategoryText(milestone.category)}  |  ⚡ ${getPriorityText(milestone.priority)}  |  🍅 ${getPomodoroCount(milestone.priority)}\n`
+        if (milestone.description) {
+          report += `   💬 ${milestone.description}\n`
+        }
+        report += `\n`
+      })
     }
-    report += `\n`
-  })
+  } else if (reportType.value === 'monthly') {
+    // 月报：显示高频任务 Top 10
+    report += `${doubleSeparator}\n`
+    report += currentLanguage.value === 'zh' ? '【第三部分】高频任务 Top 10 - Top 10 Tasks\n' : '【Part 3】Top 10 Tasks\n'
+    report += `${doubleSeparator}\n\n`
+    
+    if (textAggregatedTasks.length > 0) {
+      textAggregatedTasks.forEach((task, index) => {
+        const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`
+        report += `${medal} ${task.text}\n`
+        report += `   ${currentLanguage.value === 'zh' ? '累计' : 'Total'}: ${task.count} ${currentLanguage.value === 'zh' ? '次' : 'times'}  |  ${currentLanguage.value === 'zh' ? '消耗' : 'Consumed'}: ${task.pomodoros} 🍅  |  ${currentLanguage.value === 'zh' ? '分类' : 'Category'}: ${getCategoryText(task.category)}\n\n`
+      })
+    } else {
+      report += currentLanguage.value === 'zh' ? '暂无高频任务数据\n\n' : 'No frequent tasks data\n\n'
+    }
+  } else {
+    // 周报：显示里程碑（如果有）
+    if (textMilestones.length > 0) {
+      report += `${doubleSeparator}\n`
+      report += currentLanguage.value === 'zh' ? '【第三部分】本期亮点 - Highlights\n' : '【Part 3】Highlights\n'
+      report += `${doubleSeparator}\n\n`
+      
+      textMilestones.forEach((milestone, index) => {
+        report += `${index + 1}. ${milestone.text}\n`
+        report += `   📅 ${formatDate(new Date(milestone.created_at))}  |  ${getCategoryText(milestone.category)}  |  ⚡ ${getPriorityText(milestone.priority)}  |  🍅 ${getPomodoroCount(milestone.priority)}\n`
+        if (milestone.description) {
+          report += `   💬 ${milestone.description}\n`
+        }
+        report += `\n`
+      })
+    } else {
+      // 如果没有里程碑，显示聚合习惯
+      report += `${doubleSeparator}\n`
+      report += currentLanguage.value === 'zh' ? '【第三部分】高频任务 Top 10 - Top 10 Tasks\n' : '【Part 3】Top 10 Tasks\n'
+      report += `${doubleSeparator}\n\n`
+      
+      textAggregatedTasks.forEach((task, index) => {
+        report += `${index + 1}. ${task.text}\n`
+        report += `   ${currentLanguage.value === 'zh' ? '累计' : 'Total'}: ${task.count} ${currentLanguage.value === 'zh' ? '次' : 'times'}  |  ${currentLanguage.value === 'zh' ? '消耗' : 'Consumed'}: ${task.pomodoros} 🍅  |  ${currentLanguage.value === 'zh' ? '分类' : 'Category'}: ${getCategoryText(task.category)}\n\n`
+      })
+    }
+  }
   
   report += `\n${separator}\n`
   report += currentLanguage.value === 'zh' 
@@ -2921,7 +3044,9 @@ const generateReportContent = () => {
     byCategory
   })
   
-  // 任务聚合（去重统计）- 修复：过滤碎态数据
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 轨道1：高频习惯聚合 (Habit Aggregation) - 用于生成【年度/月度习惯 Top 5】
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   const taskFrequency = {}
   completedTasksList.forEach(task => {
     const key = task.text.trim().toLowerCase()
@@ -2939,17 +3064,63 @@ const generateReportContent = () => {
     taskFrequency[key].pomodoros += getPomodoroCount(task.priority)
   })
   
-  // 转换为数组，过滤碎态数据，按总番茄数排序
+  // 转换为数组，过滤碎态数据（频次<3的偶然事件），按总番茄数排序
   const minExecutions = reportType.value === 'yearly' ? 3 : reportType.value === 'quarterly' ? 2 : 1
   const minPomodoros = reportType.value === 'yearly' ? 2 : reportType.value === 'quarterly' ? 2 : 1
   
   const aggregatedTasks = Object.values(taskFrequency)
-    .filter(task => task.count >= minExecutions || task.pomodoros >= minPomodoros) // 过滤零碎任务
-    .sort((a, b) => b.pomodoros - a.pomodoros) // 按总番茄数排序（而非频次）
+    .filter(task => task.count >= minExecutions || task.pomodoros >= minPomodoros)
+    .sort((a, b) => b.pomodoros - a.pomodoros)
     .slice(0, 10)
     .map(task => ({
       ...task,
-      persistence: Math.min(100, task.count * 10) // 坚持度：每次10%，最高100%
+      persistence: Math.min(100, task.count * 10)
+    }))
+  
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 轨道2：年度大事提取 (Milestone Extraction) - 用于生成【闪光的里程碑】时间轴 - 去重处理
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  const milestonesRaw = completedTasksList.filter(task => {
+    let score = 0
+    
+    // 条件1：强备注特征（有详细描述）
+    const hasRichDescription = task.description && task.description.trim().length > 10
+    if (hasRichDescription) score++
+    
+    // 条件2：高优且耗时（优先级=高 且 番茄钟≥4）
+    const isHighValueTask = (task.priority === 'high' || task.priority === 'urgent') && getPomodoroCount(task.priority) >= 4
+    if (isHighValueTask) score++
+    
+    // 条件3：低频独立特征（该任务名称在周期内出现次数<3）
+    const taskKey = task.text.trim().toLowerCase()
+    const isRareEvent = taskFrequency[taskKey] && taskFrequency[taskKey].count < 3
+    if (isRareEvent) score++
+    
+    // 满足任意2个条件即为里程碑
+    return score >= 2
+  }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at)) // 按时间倒序
+  
+  // 去重：按任务名称去重，只保留最新的一条
+  const milestonesMap = {}
+  milestonesRaw.forEach(task => {
+    const key = task.text.trim().toLowerCase()
+    if (!milestonesMap[key]) {
+      milestonesMap[key] = task
+    }
+  })
+  
+  const milestones = Object.values(milestonesMap)
+    .slice(0, 10)
+    .map(task => ({
+      id: task.id,
+      text: task.text,
+      description: task.description || '',
+      categoryIcon: task.category === 'work' ? '💼' : task.category === 'study' ? '📚' : '🏠',
+      categoryText: getCategoryText(task.category),
+      priorityText: getPriorityText(task.priority),
+      pomodoros: getPomodoroCount(task.priority),
+      time: formatDateTime(task.created_at),
+      date: formatDate(new Date(task.created_at))
     }))
   
   // 月度趋势数据（用于年报/季报的趋势图）
@@ -2994,7 +3165,7 @@ const generateReportContent = () => {
     highValueRatio,
     avgTasksPerDay,
     workDays,
-    totalFocusHours: (totalPomodoros * 0.5).toFixed(1), // 番茄钟转小时（1番茄=30分钟）
+    totalFocusHours: (totalPomodoros * 0.5).toFixed(1),
     bestMonth: monthlyTrend.length > 0 ? monthlyTrend.reduce((max, m) => m.count > max.count ? m : max, monthlyTrend[0]) : null,
     categories,
     priorities,
@@ -3003,6 +3174,7 @@ const generateReportContent = () => {
     maxDaily: maxDaily || 1,
     keyTasks,
     aggregatedTasks,
+    milestones, // 新增：里程碑数据
     summary,
     insights
   }
@@ -3011,7 +3183,7 @@ const generateReportContent = () => {
   reportData.value.executiveSummary = generateExecutiveSummary(reportData.value, reportType.value)
 }
 
-// 生成执行官摘要（Executive Summary）
+// 生成执行官摘要（Executive Summary）- 结合里程碑数据生成更有温度的摘要
 const generateExecutiveSummary = (data, reportType) => {
   const lang = currentLanguage.value
   const year = new Date().getFullYear()
@@ -3020,29 +3192,33 @@ const generateExecutiveSummary = (data, reportType) => {
     // 年度摘要
     const topCategory = data.categories.reduce((max, cat) => cat.pomodoros > max.pomodoros ? cat : max, data.categories[0])
     const topHabit = data.aggregatedTasks && data.aggregatedTasks.length > 0 ? data.aggregatedTasks[0] : null
+    const topMilestone = data.milestones && data.milestones.length > 0 ? data.milestones[0] : null
     
     return lang === 'zh'
-      ? `在过去的 ${year} 年，你共计专注了 ${data.totalFocusHours} 个小时（${data.totalPomodoros} 个番茄钟）。其中，${topCategory.icon} ${topCategory.name}占据了你 ${topCategory.rate}% 的精力。你保持了${data.completionRate >= 80 ? '极高' : data.completionRate >= 60 ? '良好' : '稳定'}的执行力（${data.completionRate}% 完成率）${topHabit ? `，并且将「${topHabit.text}」培养成了贯穿全年的坚实习惯（累计 ${topHabit.count} 次）` : ''}。`
-      : `In ${year}, you focused for ${data.totalFocusHours} hours (${data.totalPomodoros} pomodoros). ${topCategory.icon} ${topCategory.name} took ${topCategory.rate}% of your energy. You maintained ${data.completionRate >= 80 ? 'excellent' : data.completionRate >= 60 ? 'good' : 'steady'} execution (${data.completionRate}% completion rate)${topHabit ? `, and cultivated "${topHabit.text}" as a solid habit (${topHabit.count} times)` : ''}.`
+      ? `在过去的 ${year} 年，你共计专注了 ${data.totalFocusHours} 个小时（${data.totalPomodoros} 个番茄钟）。其中，${topCategory.icon} ${topCategory.name}占据了你 ${topCategory.rate}% 的精力。你保持了${data.completionRate >= 80 ? '极高' : data.completionRate >= 60 ? '良好' : '稳定'}的执行力（${data.completionRate}% 完成率）${topHabit ? `，并且将「${topHabit.text}」培养成了贯穿全年的坚实习惯（累计 ${topHabit.count} 次）` : ''}${topMilestone ? `。最值得铭记的是「${topMilestone.text}」这一里程碑时刻` : ''}。`
+      : `In ${year}, you focused for ${data.totalFocusHours} hours (${data.totalPomodoros} pomodoros). ${topCategory.icon} ${topCategory.name} took ${topCategory.rate}% of your energy. You maintained ${data.completionRate >= 80 ? 'excellent' : data.completionRate >= 60 ? 'good' : 'steady'} execution (${data.completionRate}% completion rate)${topHabit ? `, and cultivated "${topHabit.text}" as a solid habit (${topHabit.count} times)` : ''}${topMilestone ? `. The most memorable milestone was "${topMilestone.text}"` : ''}.`
   } else if (reportType === 'quarterly') {
     // 季度摘要
     const topCategory = data.categories.reduce((max, cat) => cat.pomodoros > max.pomodoros ? cat : max, data.categories[0])
+    const topMilestone = data.milestones && data.milestones.length > 0 ? data.milestones[0] : null
     
     return lang === 'zh'
-      ? `本季度你完成了 ${data.completedTasks} 个任务，累计投入 ${data.totalFocusHours} 小时。${topCategory.icon} ${topCategory.name}是你的主战场（${topCategory.rate}%），${data.bestMonth ? `其中 ${data.bestMonth.month}是最高产的月份（${data.bestMonth.count} 个任务）` : ''}。`
-      : `This quarter you completed ${data.completedTasks} tasks with ${data.totalFocusHours} hours invested. ${topCategory.icon} ${topCategory.name} was your main focus (${topCategory.rate}%)${data.bestMonth ? `, with ${data.bestMonth.month} being the most productive month (${data.bestMonth.count} tasks)` : ''}.`
+      ? `本季度你完成了 ${data.completedTasks} 个任务，累计投入 ${data.totalFocusHours} 小时。${topCategory.icon} ${topCategory.name}是你的主战场（${topCategory.rate}%），${data.bestMonth ? `其中 ${data.bestMonth.month}是最高产的月份（${data.bestMonth.count} 个任务）` : ''}${topMilestone ? `。本季最大突破是完成了「${topMilestone.text}」` : ''}。`
+      : `This quarter you completed ${data.completedTasks} tasks with ${data.totalFocusHours} hours invested. ${topCategory.icon} ${topCategory.name} was your main focus (${topCategory.rate}%)${data.bestMonth ? `, with ${data.bestMonth.month} being the most productive month (${data.bestMonth.count} tasks)` : ''}${topMilestone ? `. The biggest breakthrough was completing "${topMilestone.text}"` : ''}.`
   } else if (reportType === 'monthly') {
     // 月度摘要
     const topCategory = data.categories.reduce((max, cat) => cat.completed > max.completed ? cat : max, data.categories[0])
+    const topMilestone = data.milestones && data.milestones.length > 0 ? data.milestones[0] : null
     
     return lang === 'zh'
-      ? `本月你完成了 ${data.completedTasks} 个任务，日均 ${data.avgTasksPerDay} 个，完成率 ${data.completionRate}%。${topCategory.icon} ${topCategory.name}是你投入最多的领域（${topCategory.completed} 个任务）。`
-      : `This month you completed ${data.completedTasks} tasks, averaging ${data.avgTasksPerDay} per day with ${data.completionRate}% completion rate. ${topCategory.icon} ${topCategory.name} received the most attention (${topCategory.completed} tasks).`
+      ? `本月你完成了 ${data.completedTasks} 个任务，日均 ${data.avgTasksPerDay} 个，完成率 ${data.completionRate}%。${topCategory.icon} ${topCategory.name}是你投入最多的领域（${topCategory.completed} 个任务）${topMilestone ? `，其中「${topMilestone.text}」最为关键` : ''}。`
+      : `This month you completed ${data.completedTasks} tasks, averaging ${data.avgTasksPerDay} per day with ${data.completionRate}% completion rate. ${topCategory.icon} ${topCategory.name} received the most attention (${topCategory.completed} tasks)${topMilestone ? `, with "${topMilestone.text}" being the most critical` : ''}.`
   } else {
     // 周报摘要
+    const topMilestone = data.milestones && data.milestones.length > 0 ? data.milestones[0] : null
     return lang === 'zh'
-      ? `本周你完成了 ${data.completedTasks} 个任务，完成率 ${data.completionRate}%，日均专注 ${data.focusEfficiency} 个番茄钟。${data.highValueRatio >= 50 ? '高优先级任务占比超过50%，执行力优秀！' : '继续保持专注！'}`
-      : `This week you completed ${data.completedTasks} tasks with ${data.completionRate}% completion rate, averaging ${data.focusEfficiency} pomodoros per day. ${data.highValueRatio >= 50 ? 'High-priority tasks exceeded 50%, excellent execution!' : 'Keep focused!'}`
+      ? `本周你完成了 ${data.completedTasks} 个任务，完成率 ${data.completionRate}%，日均专注 ${data.focusEfficiency} 个番茄钟。${data.highValueRatio >= 50 ? '高优先级任务占比超过50%，执行力优秀！' : '继续保持专注！'}${topMilestone ? ` 本周最大亮点是「${topMilestone.text}」。` : ''}`
+      : `This week you completed ${data.completedTasks} tasks with ${data.completionRate}% completion rate, averaging ${data.focusEfficiency} pomodoros per day. ${data.highValueRatio >= 50 ? 'High-priority tasks exceeded 50%, excellent execution!' : 'Keep focused!'}${topMilestone ? ` The highlight of the week was "${topMilestone.text}".` : ''}`
   }
 }
 
@@ -7754,12 +7930,12 @@ onUnmounted(() => {
   background: linear-gradient(135deg, #fff 0%, #f9f9f9 100%);
   border-radius: 8px;
   border-left: 4px solid #667eea;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .task-rank {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border-radius: 50%;
@@ -7767,7 +7943,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 1.2rem;
   flex-shrink: 0;
 }
 
@@ -7787,6 +7963,7 @@ onUnmounted(() => {
   gap: 1rem;
   font-size: 0.8rem;
   color: #666;
+  margin-bottom: 0.5rem;
 }
 
 .task-frequency {
@@ -7797,6 +7974,96 @@ onUnmounted(() => {
 .task-persistence {
   color: #f5576c;
   font-weight: 600;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: #e0e0e0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+/* 里程碑时间轴样式 */
+.milestones-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-left: 1rem;
+}
+
+.milestone-item {
+  display: flex;
+  gap: 1rem;
+  position: relative;
+}
+
+.milestone-marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.milestone-dot {
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50%;
+  border: 3px solid white;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+  flex-shrink: 0;
+  z-index: 2;
+}
+
+.milestone-line {
+  width: 2px;
+  flex: 1;
+  background: linear-gradient(180deg, #667eea 0%, #e0e0e0 100%);
+  margin-top: 4px;
+  min-height: 40px;
+}
+
+.milestone-content {
+  flex: 1;
+  padding: 0.5rem 1rem 1.5rem 0;
+}
+
+.milestone-date {
+  font-size: 0.75rem;
+  color: #999;
+  margin-bottom: 0.3rem;
+}
+
+.milestone-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.4rem;
+}
+
+.milestone-meta {
+  display: flex;
+  gap: 0.8rem;
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
+.milestone-description {
+  font-size: 0.85rem;
+  color: #666;
+  line-height: 1.5;
+  padding: 0.6rem;
+  background: #f9f9f9;
+  border-radius: 6px;
+  border-left: 3px solid #667eea;
+  font-style: italic;
 }
 
 .key-tasks {
