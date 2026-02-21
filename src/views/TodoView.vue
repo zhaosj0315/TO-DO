@@ -5453,8 +5453,9 @@ onUnmounted(() => {
   justify-content: center;
   align-items: center;
   gap: 1rem;
-  margin-top: 0.15rem;
-  padding: 0.15rem 0;
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+  padding: 0;
 }
 
 .page-btn {
@@ -5493,7 +5494,7 @@ onUnmounted(() => {
 
 /* 页脚版权信息 */
 .app-footer {
-  margin-top: 1rem;
+  margin-top: 0.25rem;
   padding: 0.5rem 0;
   border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
