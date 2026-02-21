@@ -1212,6 +1212,12 @@ const i18n = {
     important: '重要但不紧急',
     urgent: '紧急但不重要',
     notUrgentNotImportant: '不紧急也不重要',
+    // 番茄等级
+    pomodoroMaster: '番茄大师',
+    pomodoroExpert: '番茄专家',
+    pomodoroTalent: '番茄达人',
+    pomodoroRising: '番茄新星',
+    pomodoroNovice: '番茄新手',
   },
   en: {
     // 标题
@@ -1349,6 +1355,12 @@ const i18n = {
     important: 'Important',
     urgent: 'Urgent',
     notUrgentNotImportant: 'Low Priority',
+    // 番茄等级
+    pomodoroMaster: 'Pomodoro Master',
+    pomodoroExpert: 'Pomodoro Expert',
+    pomodoroTalent: 'Pomodoro Talent',
+    pomodoroRising: 'Pomodoro Rising',
+    pomodoroNovice: 'Pomodoro Novice',
   }
 }
 
@@ -1734,11 +1746,11 @@ const getCategoryPercent = (category) => {
 // 等级徽章
 const getLevelBadge = () => {
   const total = earnedPomodoros.value
-  if (total >= 500) return { icon: '👑', title: '番茄大师' }
-  if (total >= 300) return { icon: '🏆', title: '番茄专家' }
-  if (total >= 150) return { icon: '⭐', title: '番茄达人' }
-  if (total >= 50) return { icon: '🌟', title: '番茄新星' }
-  return { icon: '🌱', title: '番茄新手' }
+  if (total >= 500) return { icon: '👑', title: t('pomodoroMaster') }
+  if (total >= 300) return { icon: '🏆', title: t('pomodoroExpert') }
+  if (total >= 150) return { icon: '⭐', title: t('pomodoroTalent') }
+  if (total >= 50) return { icon: '🌟', title: t('pomodoroRising') }
+  return { icon: '🌱', title: t('pomodoroNovice') }
 }
 
 // 计算属性：总页数
