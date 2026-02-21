@@ -1218,6 +1218,9 @@ const i18n = {
     pomodoroTalent: '番茄达人',
     pomodoroRising: '番茄新星',
     pomodoroNovice: '番茄新手',
+    // 日期标签
+    todayLabel: '今天',
+    yesterdayLabel: '昨天',
   },
   en: {
     // 标题
@@ -1361,6 +1364,9 @@ const i18n = {
     pomodoroTalent: 'Pomodoro Talent',
     pomodoroRising: 'Pomodoro Rising',
     pomodoroNovice: 'Pomodoro Novice',
+    // 日期标签
+    todayLabel: 'Today',
+    yesterdayLabel: 'Yesterday',
   }
 }
 
@@ -1721,7 +1727,7 @@ const getLast7DaysTrend = () => {
       })
       .reduce((sum, t) => sum + getPomodoroCount(t.priority), 0)
     
-    const label = i === 0 ? '今天' : i === 1 ? '昨天' : `${date.getMonth() + 1}/${date.getDate()}`
+    const label = i === 0 ? t('todayLabel') : i === 1 ? t('yesterdayLabel') : `${date.getMonth() + 1}/${date.getDate()}`
     trend.push({ label, count, date: dateStr })
   }
   
