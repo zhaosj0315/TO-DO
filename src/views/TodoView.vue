@@ -868,27 +868,27 @@
 
           <!-- 按分类统计 -->
           <div class="stats-section">
-            <h4 class="section-title">🏷️ 分类明细</h4>
+            <h4 class="section-title">🏷️ {{ t('categoryDetails') }}</h4>
             <div class="detail-stats-grid">
               <div class="stats-card">
                 <div class="stats-icon">💼</div>
                 <div class="stats-info">
                   <div class="stats-value">{{ getPomodorosByCategory('work') }}</div>
-                  <div class="stats-label">工作</div>
+                  <div class="stats-label">{{ t('work') }}</div>
                 </div>
               </div>
               <div class="stats-card">
                 <div class="stats-icon">📚</div>
                 <div class="stats-info">
                   <div class="stats-value">{{ getPomodorosByCategory('study') }}</div>
-                  <div class="stats-label">学习</div>
+                  <div class="stats-label">{{ t('study') }}</div>
                 </div>
               </div>
               <div class="stats-card">
                 <div class="stats-icon">🏠</div>
                 <div class="stats-info">
                   <div class="stats-value">{{ getPomodorosByCategory('life') }}</div>
-                  <div class="stats-label">生活</div>
+                  <div class="stats-label">{{ t('life') }}</div>
                 </div>
               </div>
             </div>
@@ -896,27 +896,27 @@
 
           <!-- 按优先级统计 -->
           <div class="stats-section">
-            <h4 class="section-title">⚡ 按优先级统计</h4>
+            <h4 class="section-title">⚡ {{ t('priorityStats') }}</h4>
             <div class="detail-stats-grid">
               <div class="stats-card priority-high">
                 <div class="stats-icon">🔴</div>
                 <div class="stats-info">
                   <div class="stats-value">{{ getPomodorosByPriority('high') }}</div>
-                  <div class="stats-label">高优先级</div>
+                  <div class="stats-label">{{ t('highPriority') }}</div>
                 </div>
               </div>
               <div class="stats-card priority-medium">
                 <div class="stats-icon">🟠</div>
                 <div class="stats-info">
                   <div class="stats-value">{{ getPomodorosByPriority('medium') }}</div>
-                  <div class="stats-label">中优先级</div>
+                  <div class="stats-label">{{ t('mediumPriority') }}</div>
                 </div>
               </div>
               <div class="stats-card priority-low">
                 <div class="stats-icon">🔵</div>
                 <div class="stats-info">
                   <div class="stats-value">{{ getPomodorosByPriority('low') }}</div>
-                  <div class="stats-label">低优先级</div>
+                  <div class="stats-label">{{ t('lowPriority') }}</div>
                 </div>
               </div>
             </div>
@@ -924,27 +924,27 @@
 
           <!-- 成就统计 -->
           <div class="stats-section">
-            <h4 class="section-title">🎯 成就统计</h4>
+            <h4 class="section-title">🎯 {{ t('achievementStats') }}</h4>
             <div class="achievement-grid">
               <div class="achievement-card">
                 <div class="achievement-icon">🔥</div>
                 <div class="achievement-info">
                   <div class="achievement-value">{{ getConsecutiveDays() }}</div>
-                  <div class="achievement-label">连续打卡</div>
+                  <div class="achievement-label">{{ t('consecutiveDays') }}</div>
                 </div>
               </div>
               <div class="achievement-card">
                 <div class="achievement-icon">⭐</div>
                 <div class="achievement-info">
                   <div class="achievement-value">{{ getMaxDailyPomodoros() }}</div>
-                  <div class="achievement-label">单日最高</div>
+                  <div class="achievement-label">{{ t('maxDaily') }}</div>
                 </div>
               </div>
               <div class="achievement-card">
                 <div class="achievement-icon">📊</div>
                 <div class="achievement-info">
                   <div class="achievement-value">{{ getCompletionRate() }}%</div>
-                  <div class="achievement-label">完成率</div>
+                  <div class="achievement-label">{{ t('completionRateLabel') }}</div>
                 </div>
               </div>
             </div>
@@ -957,7 +957,7 @@
     <div v-if="showWeeklyModal" class="modal-overlay" @click.self="showWeeklyModal = false" style="z-index: 1100;">
       <div class="modal-content glass-card" style="background: white; max-width: 450px; width: 96%; padding: 1rem;">
         <div class="modal-header">
-          <h3>选择重复日期</h3>
+          <h3>{{ t('selectRepeatDays') }}</h3>
           <button class="close-btn" @click="showWeeklyModal = false">&times;</button>
         </div>
         <div class="modal-body">
@@ -1184,6 +1184,16 @@ const i18n = {
     thisWeek: '本周',
     thisMonth: '本月',
     categoryDistribution: '分类占比',
+    categoryDetails: '分类明细',
+    priorityStats: '按优先级统计',
+    highPriority: '高优先级',
+    mediumPriority: '中优先级',
+    lowPriority: '低优先级',
+    achievementStats: '成就统计',
+    consecutiveDays: '连续打卡',
+    maxDaily: '单日最高',
+    completionRateLabel: '完成率',
+    selectRepeatDays: '选择重复日期',
   },
   en: {
     // 标题
@@ -1291,6 +1301,16 @@ const i18n = {
     thisWeek: 'This Week',
     thisMonth: 'This Month',
     categoryDistribution: 'By Category',
+    categoryDetails: 'Category Details',
+    priorityStats: 'By Priority',
+    highPriority: 'High',
+    mediumPriority: 'Medium',
+    lowPriority: 'Low',
+    achievementStats: 'Achievements',
+    consecutiveDays: 'Streak',
+    maxDaily: 'Max Daily',
+    completionRateLabel: 'Rate',
+    selectRepeatDays: 'Select Repeat Days',
   }
 }
 
