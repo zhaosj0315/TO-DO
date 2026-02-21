@@ -5453,8 +5453,8 @@ onUnmounted(() => {
   justify-content: center;
   align-items: center;
   gap: 1rem;
-  margin-top: 0.5rem;
-  padding: 0.5rem 0;
+  margin-top: 0.3rem;
+  padding: 0.3rem 0;
 }
 
 .page-btn {
