@@ -1187,19 +1187,6 @@
             </div>
 
             <!-- 重点任务 -->
-            <div class="report-section">
-              <h3 class="section-title">{{ currentLanguage === 'zh' ? '🎯 重点任务 (Top 10)' : '🎯 Key Tasks (Top 10)' }}</h3>
-              <div class="key-tasks">
-                <div v-for="(task, index) in reportData.keyTasks" :key="task.id" class="task-item-report">
-                  <div class="task-number">{{ index + 1 }}</div>
-                  <div class="summary-text">
-                    <div class="summary-title">{{ item.title }}</div>
-                    <div class="summary-desc">{{ item.description }}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             <!-- 重点任务 -->
             <div class="report-section">
               <h3 class="section-title">{{ currentLanguage === 'zh' ? '🎯 重点任务 (Top 10)' : '🎯 Key Tasks (Top 10)' }}</h3>
