@@ -1195,6 +1195,7 @@
         </div>
         <div class="modal-footer" style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem;">
           <button class="btn btn-secondary" @click="copyReportText">{{ t('copyText') }}</button>
+          <button class="btn btn-secondary" @click="exportMarkdown">{{ t('exportMarkdown') }}</button>
           <button class="btn btn-primary" @click="showReportModal = false">{{ t('close') }}</button>
         </div>
       </div>
@@ -2605,6 +2606,88 @@ const copyReportText = async () => {
     alert(currentLanguage.value === 'zh' ? '报告已复制到剪贴板' : 'Report copied to clipboard')
   } catch (err) {
     alert(currentLanguage.value === 'zh' ? '复制失败，请手动复制' : 'Copy failed, please copy manually')
+  }
+}
+
+// 方法：导出Markdown
+const exportMarkdown = () => {
+  try {
+    // 生成Markdown格式
+    const data = reportData.value
+    let markdown = `# ${data.title}\n\n`
+    markdown += `**${currentLanguage.value === 'zh' ? '周期' : 'Period'}**: ${data.period}  \n`
+    markdown += `**${currentLanguage.value === 'zh' ? '汇报人' : 'Reporter'}**: ${currentUsername.value}  \n`
+    markdown += `**${currentLanguage.value === 'zh' ? '生成时间' : 'Generated'}**: ${data.generatedTime}\n\n`
+    
+    markdown += `---\n\n`
+    
+    // 核心数据
+    markdown += `## ${currentLanguage.value === 'zh' ? '📊 核心数据' : '📊 Core Data'}\n\n`
+    markdown += `| ${currentLanguage.value === 'zh' ? '指标' : 'Metric'} | ${currentLanguage.value === 'zh' ? '数值' : 'Value'} |\n`
+    markdown += `|------|------|\n`
+    markdown += `| 📝 ${currentLanguage.value === 'zh' ? '总任务' : 'Total Tasks'} | ${data.totalTasks} |\n`
+    markdown += `| ✅ ${currentLanguage.value === 'zh' ? '已完成' : 'Completed'} | ${data.completedTasks} |\n`
+    markdown += `| 🍅 ${currentLanguage.value === 'zh' ? '番茄钟' : 'Pomodoros'} | ${data.totalPomodoros} |\n`
+    markdown += `| 📈 ${currentLanguage.value === 'zh' ? '完成率' : 'Completion Rate'} | ${data.completionRate}% |\n\n`
+    
+    // 分类统计
+    markdown += `## ${currentLanguage.value === 'zh' ? '📊 分类统计' : '📊 By Category'}\n\n`
+    data.categories.forEach(cat => {
+      markdown += `### ${cat.icon} ${cat.name}\n\n`
+      markdown += `- ${currentLanguage.value === 'zh' ? '总任务' : 'Total'}: ${cat.total}\n`
+      markdown += `- ${currentLanguage.value === 'zh' ? '已完成' : 'Completed'}: ${cat.completed} (${cat.rate}%)\n`
+      markdown += `- ${currentLanguage.value === 'zh' ? '番茄钟' : 'Pomodoros'}: ${cat.pomodoros}\n\n`
+    })
+    
+    // 优先级分布
+    markdown += `## ${currentLanguage.value === 'zh' ? '⚡ 优先级分布' : '⚡ By Priority'}\n\n`
+    data.priorities.forEach(pri => {
+      markdown += `- **${pri.name}**: ${pri.total}${currentLanguage.value === 'zh' ? '项' : ''} (${pri.percentage}%)\n`
+    })
+    markdown += `\n`
+    
+    // 每日趋势
+    if (data.dailyTrend && data.dailyTrend.length > 0) {
+      markdown += `## ${currentLanguage.value === 'zh' ? '📈 每日完成趋势' : '📈 Daily Trend'}\n\n`
+      data.dailyTrend.forEach(day => {
+        markdown += `- **${day.label}**: ${day.count}${currentLanguage.value === 'zh' ? '个任务' : ' tasks'}\n`
+      })
+      markdown += `\n`
+    }
+    
+    // 重点任务
+    markdown += `## ${currentLanguage.value === 'zh' ? '🎯 重点任务' : '🎯 Key Tasks'}\n\n`
+    data.keyTasks.forEach((task, index) => {
+      markdown += `### ${index + 1}. ${task.text}\n\n`
+      markdown += `- ${currentLanguage.value === 'zh' ? '分类' : 'Category'}: ${task.categoryIcon} ${task.categoryText}\n`
+      markdown += `- ${currentLanguage.value === 'zh' ? '优先级' : 'Priority'}: ⚡ ${task.priorityText}\n`
+      markdown += `- ${currentLanguage.value === 'zh' ? '番茄数' : 'Pomodoros'}: 🍅 ${task.pomodoros}\n`
+      markdown += `- ${currentLanguage.value === 'zh' ? '完成时间' : 'Time'}: 📅 ${task.time}\n`
+      if (task.description) {
+        markdown += `- ${currentLanguage.value === 'zh' ? '说明' : 'Description'}: ${task.description}\n`
+      }
+      markdown += `\n`
+    })
+    
+    markdown += `---\n\n`
+    markdown += `*${currentLanguage.value === 'zh' ? '报告生成时间' : 'Generated'}: ${data.generatedTime}*  \n`
+    markdown += `*${currentLanguage.value === 'zh' ? '数据来源' : 'Data Source'}: TODO App*\n`
+    
+    // 创建下载
+    const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${data.title.replace(/\s+/g, '_')}.md`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    
+    alert(currentLanguage.value === 'zh' ? 'Markdown文件已下载' : 'Markdown file downloaded')
+  } catch (err) {
+    console.error(err)
+    alert(currentLanguage.value === 'zh' ? '导出失败' : 'Export failed')
   }
 }
 
