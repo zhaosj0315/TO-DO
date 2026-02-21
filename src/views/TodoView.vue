@@ -1081,9 +1081,11 @@
             <div class="config-row">
               <label>{{ t('reportType') }}:</label>
               <select v-model="reportType" class="input" style="width: 150px;" @change="generateReportContent">
+                <option value="daily">{{ t('dailyReport') }}</option>
                 <option value="weekly">{{ t('weeklyReport') }}</option>
                 <option value="monthly">{{ t('monthlyReport') }}</option>
                 <option value="quarterly">{{ t('quarterlyReport') }}</option>
+                <option value="halfyearly">{{ t('halfyearlyReport') }}</option>
                 <option value="yearly">{{ t('yearlyReport') }}</option>
               </select>
             </div>
@@ -1606,12 +1608,14 @@ const i18n = {
     hours: '小时',
     // 数据报告
     dataReport: '数据报告',
-    dataReportDesc: '生成周报、月报、年报',
+    dataReportDesc: '生成日报、周报、月报、季报、半年报、年报',
     generateReport: '生成报告',
     reportType: '报告类型',
+    dailyReport: '日报',
     weeklyReport: '周报',
     monthlyReport: '月报',
     quarterlyReport: '季报',
+    halfyearlyReport: '半年报',
     yearlyReport: '年报',
     customReport: '自定义',
     reportTitle: '报告标题',
@@ -1777,9 +1781,11 @@ const i18n = {
     dataReportDesc: 'Generate weekly, monthly, yearly reports',
     generateReport: 'Generate',
     reportType: 'Report Type',
+    dailyReport: 'Daily',
     weeklyReport: 'Weekly',
     monthlyReport: 'Monthly',
     quarterlyReport: 'Quarterly',
+    halfyearlyReport: 'Half-Yearly',
     yearlyReport: 'Yearly',
     customReport: 'Custom',
     reportTitle: 'Report Title',
@@ -1827,7 +1833,7 @@ const showPhoneModal = ref(false)
 const showWeeklyModal = ref(false)
 const showCustomDateModal = ref(false)
 const showReportModal = ref(false) // 数据报告弹窗
-const reportType = ref('weekly') // 报告类型
+const reportType = ref('weekly') // 报告类型（默认：周报）
 const reportContent = ref('') // 报告内容（文本格式）
 const reportData = ref({}) // 报告数据（结构化）
 const editingTask = ref(null)
@@ -2753,11 +2759,20 @@ const handleLogout = async () => {
 
 // 方法：生成报告内容
 const generateReportContent = () => {
+  console.log('🚀 generateReportContent 开始 - reportType:', reportType.value)
   const now = new Date()
   let startDate, endDate, periodName
   
   // 计算时间范围
   switch (reportType.value) {
+    case 'daily':
+      // 今天：0点到现在
+      startDate = new Date(now)
+      startDate.setHours(0, 0, 0, 0)
+      endDate = new Date(now)
+      endDate.setHours(23, 59, 59, 999)
+      periodName = currentLanguage.value === 'zh' ? `${now.getMonth() + 1}月${now.getDate()}日` : `${now.toLocaleString('en', { month: 'short' })} ${now.getDate()}`
+      break
     case 'weekly':
       // 本周：周一到今天
       const dayOfWeek = now.getDay()
@@ -2783,6 +2798,14 @@ const generateReportContent = () => {
       endDate = new Date(now)
       endDate.setHours(23, 59, 59, 999)
       periodName = currentLanguage.value === 'zh' ? `第${quarter + 1}季度` : `Q${quarter + 1}`
+      break
+    case 'halfyearly':
+      // 半年：上半年或下半年
+      const halfYear = now.getMonth() < 6 ? 0 : 1
+      startDate = new Date(now.getFullYear(), halfYear * 6, 1, 0, 0, 0, 0)
+      endDate = new Date(now)
+      endDate.setHours(23, 59, 59, 999)
+      periodName = currentLanguage.value === 'zh' ? `${halfYear === 0 ? '上' : '下'}半年` : `${halfYear === 0 ? 'H1' : 'H2'}`
       break
     case 'yearly':
       // 本年：1月1日到今天
@@ -2829,9 +2852,28 @@ const generateReportContent = () => {
   const avgPomodorosPerDay = workDays > 0 ? (totalPomodoros / workDays).toFixed(1) : 0
   
   // 生成报告文本
+  const reportTitleMap = {
+    zh: {
+      daily: '工作日报',
+      weekly: '工作周报',
+      monthly: '月度总结',
+      quarterly: '季度报告',
+      halfyearly: '半年度报告',
+      yearly: '年度总结'
+    },
+    en: {
+      daily: 'Daily Report',
+      weekly: 'Weekly Report',
+      monthly: 'Monthly Summary',
+      quarterly: 'Quarterly Report',
+      halfyearly: 'Half-Yearly Report',
+      yearly: 'Annual Summary'
+    }
+  }
+  
   const reportTitle = currentLanguage.value === 'zh' 
-    ? `【${reportType.value === 'weekly' ? '工作周报' : reportType.value === 'monthly' ? '月度总结' : reportType.value === 'quarterly' ? '季度报告' : '年度总结'}】${periodName}`
-    : `【${reportType.value === 'weekly' ? 'Weekly Report' : reportType.value === 'monthly' ? 'Monthly Summary' : reportType.value === 'quarterly' ? 'Quarterly Report' : 'Annual Summary'}】${periodName}`
+    ? `【${reportTitleMap.zh[reportType.value]}】${periodName}`
+    : `【${reportTitleMap.en[reportType.value]}】${periodName}`
   
   const separator = '━'.repeat(60)
   const doubleSeparator = '═'.repeat(60)
@@ -2953,6 +2995,10 @@ const generateReportContent = () => {
     report += currentLanguage.value === 'zh'
       ? `在过去的 ${now.getFullYear()} 年，你共计专注了 ${totalFocusHours} 个小时（${totalPomodoros} 个番茄钟）。其中，${topCategory.icon} ${topCategory.name}占据了你 ${topCategory.rate}% 的精力。你保持了${completionRate >= 80 ? '极高' : completionRate >= 60 ? '良好' : '稳定'}的执行力（${completionRate}% 完成率）${topHabit ? `，并且将「${topHabit.text}」培养成了贯穿全年的坚实习惯（累计 ${topHabit.count} 次）` : ''}${topMilestone ? `。最值得铭记的是「${topMilestone.text}」这一里程碑时刻` : ''}。\n\n\n`
       : `In ${now.getFullYear()}, you focused for ${totalFocusHours} hours (${totalPomodoros} pomodoros). ${topCategory.icon} ${topCategory.name} took ${topCategory.rate}% of your energy. You maintained ${completionRate >= 80 ? 'excellent' : completionRate >= 60 ? 'good' : 'steady'} execution (${completionRate}% completion rate)${topHabit ? `, and cultivated "${topHabit.text}" as a solid habit (${topHabit.count} times)` : ''}${topMilestone ? `. The most memorable milestone was "${topMilestone.text}"` : ''}.\n\n\n`
+  } else if (reportType.value === 'halfyearly') {
+    report += currentLanguage.value === 'zh'
+      ? `本半年你完成了 ${completedTasks} 个任务，累计投入 ${totalFocusHours} 小时。${topCategory.icon} ${topCategory.name}是你的主战场（${topCategory.rate}%）${topMilestone ? `。本半年最大突破是完成了「${topMilestone.text}」` : ''}。\n\n\n`
+      : `This half-year you completed ${completedTasks} tasks with ${totalFocusHours} hours invested. ${topCategory.icon} ${topCategory.name} was your main focus (${topCategory.rate}%)${topMilestone ? `. The biggest breakthrough was completing "${topMilestone.text}"` : ''}.\n\n\n`
   } else if (reportType.value === 'quarterly') {
     report += currentLanguage.value === 'zh'
       ? `本季度你完成了 ${completedTasks} 个任务，累计投入 ${totalFocusHours} 小时。${topCategory.icon} ${topCategory.name}是你的主战场（${topCategory.rate}%）${topMilestone ? `。本季最大突破是完成了「${topMilestone.text}」` : ''}。\n\n\n`
@@ -2961,6 +3007,11 @@ const generateReportContent = () => {
     report += currentLanguage.value === 'zh'
       ? `本月你完成了 ${completedTasks} 个任务，日均 ${avgTasksPerDay} 个，完成率 ${completionRate}%。${topCategory.icon} ${topCategory.name}是你投入最多的领域（${topCategory.rate}%）${topMilestone ? `，其中「${topMilestone.text}」最为关键` : ''}。\n\n\n`
       : `This month you completed ${completedTasks} tasks, averaging ${avgTasksPerDay} per day with ${completionRate}% completion rate. ${topCategory.icon} ${topCategory.name} received the most attention (${topCategory.rate}%)${topMilestone ? `, with "${topMilestone.text}" being the most critical` : ''}.\n\n\n`
+  } else if (reportType.value === 'daily') {
+    const highValueRatio = completedTasks > 0 ? Math.round((byPriority.high.filter(t => t.status === TaskStatus.COMPLETED).length / completedTasks) * 100) : 0
+    report += currentLanguage.value === 'zh'
+      ? `今天你完成了 ${completedTasks} 个任务，完成率 ${completionRate}%，专注 ${totalPomodoros} 个番茄钟。${topCategory.icon} ${topCategory.name}是今日主要投入（${topCategory.rate}%）。${highValueRatio >= 50 ? '高优先级任务占比超过50%，执行力优秀！' : '继续保持专注！'}\n\n\n`
+      : `Today you completed ${completedTasks} tasks with ${completionRate}% completion rate, focusing ${totalPomodoros} pomodoros. ${topCategory.icon} ${topCategory.name} was the main focus (${topCategory.rate}%). ${highValueRatio >= 50 ? 'High-priority tasks exceeded 50%, excellent execution!' : 'Keep focused!'}\n\n\n`
   } else {
     const highValueRatio = completedTasks > 0 ? Math.round((byPriority.high.filter(t => t.status === TaskStatus.COMPLETED).length / completedTasks) * 100) : 0
     report += currentLanguage.value === 'zh'
@@ -2985,8 +3036,8 @@ const generateReportContent = () => {
   report += `🏠 ${t('life')} (${lifeTotal}${currentLanguage.value === 'zh' ? '项' : ' tasks'})\n`
   report += `${currentLanguage.value === 'zh' ? '已完成' : 'Completed'}: ${lifeCompleted}${currentLanguage.value === 'zh' ? '项' : ''} (${lifeRate}%)  |  ${currentLanguage.value === 'zh' ? '番茄' : 'Pomodoros'}: ${lifePomodoros}${currentLanguage.value === 'zh' ? '个' : ''}\n\n\n`
   
-  // 第三部分：年度习惯 Top 10（仅季报/年报显示）或 里程碑（所有报告显示）
-  if (reportType.value === 'yearly' || reportType.value === 'quarterly') {
+  // 第三部分：年度习惯 Top 10（仅季报/半年报/年报显示）或 里程碑（所有报告显示）
+  if (reportType.value === 'yearly' || reportType.value === 'quarterly' || reportType.value === 'halfyearly') {
     report += `${doubleSeparator}\n`
     report += currentLanguage.value === 'zh' ? '【第三部分】年度习惯 Top 10 - Top 10 Habits\n' : '【Part 3】Top 10 Habits\n'
     report += `${doubleSeparator}\n\n`
@@ -3270,10 +3321,10 @@ const generateReportContent = () => {
       date: formatDate(new Date(task.created_at))
     }))
   
-  // 月度趋势数据（用于年报/季报的趋势图）
+  // 月度趋势数据（用于年报/半年报/季报的趋势图）
   const monthlyTrend = []
-  if (reportType.value === 'yearly' || reportType.value === 'quarterly') {
-    const monthsInPeriod = reportType.value === 'yearly' ? 12 : 3
+  if (reportType.value === 'yearly' || reportType.value === 'quarterly' || reportType.value === 'halfyearly') {
+    const monthsInPeriod = reportType.value === 'yearly' ? 12 : reportType.value === 'halfyearly' ? 6 : 3
     const startMonth = startDate.getMonth()
     const startYear = startDate.getFullYear()
     
@@ -3304,7 +3355,7 @@ const generateReportContent = () => {
   let heatmapData = null
   let streakStats = null
   
-  if (reportType.value === 'yearly' || reportType.value === 'quarterly') {
+  if (reportType.value === 'yearly' || reportType.value === 'quarterly' || reportType.value === 'halfyearly') {
     const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1
     const heatmapDays = []
     
@@ -3448,6 +3499,9 @@ const generateExecutiveSummary = (data, reportType) => {
   const lang = currentLanguage.value
   const year = new Date().getFullYear()
   
+  // 调试：打印 reportType（v1.6.4 修复版）
+  console.log('🔍 generateExecutiveSummary - reportType:', reportType, typeof reportType)
+  
   if (reportType === 'yearly') {
     // 年度摘要
     const topCategory = data.categories.reduce((max, cat) => cat.pomodoros > max.pomodoros ? cat : max, data.categories[0])
@@ -3458,6 +3512,15 @@ const generateExecutiveSummary = (data, reportType) => {
     return lang === 'zh'
       ? `在过去的 ${year} 年，你共计专注了 ${data.totalFocusHours} 个小时（${data.totalPomodoros} 个番茄钟）。其中，${topCategory.icon} ${topCategory.name}占据了你 ${topCategory.rate}% 的精力。你保持了${data.completionRate >= 80 ? '极高' : data.completionRate >= 60 ? '良好' : '稳定'}的执行力（${data.completionRate}% 完成率）${topHabit ? `，并且将「${topHabit.text}」培养成了贯穿全年的坚实习惯（累计 ${topHabit.count} 次）` : ''}${streakInfo}${topMilestone ? `。最值得铭记的是「${topMilestone.text}」这一里程碑时刻` : ''}。`
       : `In ${year}, you focused for ${data.totalFocusHours} hours (${data.totalPomodoros} pomodoros). ${topCategory.icon} ${topCategory.name} took ${topCategory.rate}% of your energy. You maintained ${data.completionRate >= 80 ? 'excellent' : data.completionRate >= 60 ? 'good' : 'steady'} execution (${data.completionRate}% completion rate)${topHabit ? `, and cultivated "${topHabit.text}" as a solid habit (${topHabit.count} times)` : ''}${data.streakStats && data.streakStats.longest > 7 ? `, achieving a ${data.streakStats.longest}-day longest streak` : ''}${topMilestone ? `. The most memorable milestone was "${topMilestone.text}"` : ''}.`
+  } else if (reportType === 'halfyearly') {
+    // 半年报摘要
+    const topCategory = data.categories.reduce((max, cat) => cat.pomodoros > max.pomodoros ? cat : max, data.categories[0])
+    const topMilestone = data.milestones && data.milestones.length > 0 ? data.milestones[0] : null
+    const streakInfo = data.streakStats && data.streakStats.longest > 7 ? `，最长连胜 ${data.streakStats.longest} 天` : ''
+    
+    return lang === 'zh'
+      ? `本半年你完成了 ${data.completedTasks} 个任务，累计投入 ${data.totalFocusHours} 小时。${topCategory.icon} ${topCategory.name}是你的主战场（${topCategory.rate}%）${streakInfo}${data.bestMonth ? `，其中 ${data.bestMonth.month}是最高产的月份（${data.bestMonth.count} 个任务）` : ''}${topMilestone ? `。本半年最大突破是完成了「${topMilestone.text}」` : ''}。`
+      : `This half-year you completed ${data.completedTasks} tasks with ${data.totalFocusHours} hours invested. ${topCategory.icon} ${topCategory.name} was your main focus (${topCategory.rate}%)${data.streakStats && data.streakStats.longest > 7 ? `, with a ${data.streakStats.longest}-day longest streak` : ''}${data.bestMonth ? `, with ${data.bestMonth.month} being the most productive month (${data.bestMonth.count} tasks)` : ''}${topMilestone ? `. The biggest breakthrough was completing "${topMilestone.text}"` : ''}.`
   } else if (reportType === 'quarterly') {
     // 季度摘要
     const topCategory = data.categories.reduce((max, cat) => cat.pomodoros > max.pomodoros ? cat : max, data.categories[0])
@@ -3475,6 +3538,14 @@ const generateExecutiveSummary = (data, reportType) => {
     return lang === 'zh'
       ? `本月你完成了 ${data.completedTasks} 个任务，日均 ${data.avgTasksPerDay} 个，完成率 ${data.completionRate}%。${topCategory.icon} ${topCategory.name}是你投入最多的领域（${topCategory.completed} 个任务）${topMilestone ? `，其中「${topMilestone.text}」最为关键` : ''}。`
       : `This month you completed ${data.completedTasks} tasks, averaging ${data.avgTasksPerDay} per day with ${data.completionRate}% completion rate. ${topCategory.icon} ${topCategory.name} received the most attention (${topCategory.completed} tasks)${topMilestone ? `, with "${topMilestone.text}" being the most critical` : ''}.`
+  } else if (reportType === 'daily') {
+    // 日报摘要
+    const topCategory = data.categories.reduce((max, cat) => cat.completed > max.completed ? cat : max, data.categories[0])
+    const highValueRatio = data.completedTasks > 0 ? Math.round((data.priorities[0].completed / data.completedTasks) * 100) : 0
+    
+    return lang === 'zh'
+      ? `今天你完成了 ${data.completedTasks} 个任务，完成率 ${data.completionRate}%，专注 ${data.totalPomodoros} 个番茄钟。${topCategory.icon} ${topCategory.name}是今日主要投入（${topCategory.completed} 个任务）。${highValueRatio >= 50 ? '高优先级任务占比超过50%，执行力优秀！' : '继续保持专注！'}`
+      : `Today you completed ${data.completedTasks} tasks with ${data.completionRate}% completion rate, focusing ${data.totalPomodoros} pomodoros. ${topCategory.icon} ${topCategory.name} was the main focus (${topCategory.completed} tasks). ${highValueRatio >= 50 ? 'High-priority tasks exceeded 50%, excellent execution!' : 'Keep focused!'}`
   } else {
     // 周报摘要
     const topMilestone = data.milestones && data.milestones.length > 0 ? data.milestones[0] : null
@@ -4510,12 +4581,12 @@ const checkAndNotifyDeadline = async () => {
   }
 }
 
-// 监听报告弹窗打开，自动生成报告
-watch(showReportModal, (newVal) => {
-  if (newVal) {
-    generateReportContent()
-  }
-})
+// 监听报告弹窗打开，自动生成报告（已禁用，改为手动生成）
+// watch(showReportModal, (newVal) => {
+//   if (newVal) {
+//     generateReportContent()
+//   }
+// })
 
 onMounted(async () => {
   await userStore.checkLogin()
