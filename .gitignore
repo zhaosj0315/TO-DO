@@ -10,6 +10,7 @@ android/
 
 # iOS构建产物
 ios/
+*.ipa
 
 # Electron构建产物
 electron/
@@ -17,8 +18,12 @@ electron/
 # 发布产物
 release/
 
-# APK文件
+# 构建产物（所有平台）
 *.apk
+*.dmg
+*.zip
+*.app
+App.app/
 
 # 图标临时文件
 icon-*.png
@@ -35,3 +40,22 @@ icon-*.png
 
 # 系统文件
 Thumbs.db
+
+# 历史审计报告（只保留最新版本）
+DOC_AUDIT_REPORT_202*.md
+DOC_AUDIT_REPORT_V1.[0-4]*.md
+DOC_AUDIT_REPORT_V1.5.[0-8]*.md
+AUDIT_QUICK_SUMMARY.md
+AUDIT_QUICK_SUMMARY_V1.5.*.md
+DOC_DELIVERABLES_V1.[0-4]*.md
+DOC_DELIVERABLES_V1.5.*.md
+DOC_DELIVERABLES_202*.md
+DOC_ISSUES_LIST_202*.md
+DOC_ISSUES_LIST_V1.5.*.md
+DOC_MAINTENANCE_SUMMARY_202*.md
+DOC_MAINTENANCE_SUMMARY_V1.5.*.md
+DOC_AUDIT_DELIVERABLES_*.md
+WORK_SUMMARY_*.md
+
+# 临时脚本
+ios-build-guide.sh

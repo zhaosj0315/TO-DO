@@ -163,7 +163,7 @@ This is an **offline Android To-Do management application** built with **Vue 3**
 5. 开始离线管理您的任务！
 
 ### Windows 版本
-1. 下载 `TODO App Setup 1.4.0.exe` 安装程序
+1. 下载 `TODO App Setup 1.6.0.exe` 安装程序
 2. 双击运行安装程序
 3. 选择安装目录并完成安装
 4. 从桌面快捷方式启动应用
