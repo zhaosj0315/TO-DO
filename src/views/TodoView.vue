@@ -1348,6 +1348,58 @@
               </div>
             </div>
 
+            <!-- 行为热力图 (Heatmap) - 仅季报/年报显示 -->
+            <div class="report-section" v-if="reportData.heatmapData && (reportType === 'yearly' || reportType === 'quarterly')">
+              <h3 class="section-title">{{ currentLanguage === 'zh' ? '📊 行为热力图' : '📊 Activity Heatmap' }}</h3>
+              <div class="heatmap-container">
+                <div class="heatmap-legend">
+                  <span class="legend-label">{{ currentLanguage === 'zh' ? '少' : 'Less' }}</span>
+                  <div class="legend-colors">
+                    <div class="legend-box" style="background: #ebedf0;"></div>
+                    <div class="legend-box" style="background: #c6e48b;"></div>
+                    <div class="legend-box" style="background: #7bc96f;"></div>
+                    <div class="legend-box" style="background: #239a3b;"></div>
+                    <div class="legend-box" style="background: #196127;"></div>
+                  </div>
+                  <span class="legend-label">{{ currentLanguage === 'zh' ? '多' : 'More' }}</span>
+                </div>
+                <div class="heatmap-grid">
+                  <div class="heatmap-months">
+                    <span v-for="month in reportData.heatmapData.months" :key="month.label" class="month-label">{{ month.label }}</span>
+                  </div>
+                  <div class="heatmap-weeks">
+                    <div class="heatmap-week" v-for="(week, weekIndex) in reportData.heatmapData.weeks" :key="weekIndex">
+                      <div 
+                        v-for="(day, dayIndex) in week" 
+                        :key="dayIndex"
+                        class="heatmap-day"
+                        :style="{ background: day.color }"
+                        :title="`${day.date}: ${day.count} ${currentLanguage === 'zh' ? '个任务' : 'tasks'}`"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="heatmap-stats" v-if="reportData.streakStats">
+                  <div class="streak-item">
+                    <span class="streak-label">{{ currentLanguage === 'zh' ? '🔥 最长连胜' : '🔥 Longest Streak' }}</span>
+                    <span class="streak-value">{{ reportData.streakStats.longest }} {{ currentLanguage === 'zh' ? '天' : 'days' }}</span>
+                  </div>
+                  <div class="streak-item">
+                    <span class="streak-label">{{ currentLanguage === 'zh' ? '⚡ 当前连胜' : '⚡ Current Streak' }}</span>
+                    <span class="streak-value">{{ reportData.streakStats.current }} {{ currentLanguage === 'zh' ? '天' : 'days' }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 月度趋势图 (Monthly Trend) - 仅年报显示 -->
+            <div class="report-section" v-if="reportData.monthlyTrend && reportData.monthlyTrend.length > 0 && reportType === 'yearly'">
+              <h3 class="section-title">{{ currentLanguage === 'zh' ? '📈 月度趋势' : '📈 Monthly Trend' }}</h3>
+              <div class="trend-chart-container">
+                <EChart :option="monthlyTrendChartOption" style="height: 300px;" />
+              </div>
+            </div>
+
             <!-- 重点任务 -->
             <div class="report-section" v-if="reportType === 'weekly' || reportType === 'monthly'">
               <h3 class="section-title">{{ currentLanguage === 'zh' ? '🎯 重点任务 (Top 10)' : '🎯 Key Tasks (Top 10)' }}</h3>
@@ -1370,6 +1422,7 @@
           </div>
         </div>
         <div class="modal-footer" style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem;">
+          <button class="btn btn-secondary" @click="exportPoster">{{ currentLanguage === 'zh' ? '📸 保存海报' : '📸 Save Poster' }}</button>
           <button class="btn btn-secondary" @click="copyReportText">{{ t('copyText') }}</button>
           <button class="btn btn-secondary" @click="exportMarkdown">{{ t('exportMarkdown') }}</button>
           <button class="btn btn-primary" @click="showReportModal = false">{{ t('close') }}</button>
@@ -1390,6 +1443,7 @@ import { Preferences } from '@capacitor/preferences'
 import { Filesystem, Directory } from '@capacitor/filesystem'
 import { LocalNotifications } from '@capacitor/local-notifications'
 import * as XLSX from 'xlsx'
+import html2canvas from 'html2canvas'
 import EChart from '../components/EChart.vue'
 
 const router = useRouter()
@@ -1786,6 +1840,99 @@ const editCustomDateTime = ref('')
 const editWeekdays = ref([])
 const showAddForm = ref(true)
 const currentPage = ref(1)
+
+// 月度趋势图配置
+const monthlyTrendChartOption = computed(() => {
+  if (!reportData.value.monthlyTrend || reportData.value.monthlyTrend.length === 0) return {}
+  
+  const months = reportData.value.monthlyTrend.map(m => m.month)
+  const taskCounts = reportData.value.monthlyTrend.map(m => m.count)
+  const pomodoros = reportData.value.monthlyTrend.map(m => m.pomodoros)
+  
+  return {
+    backgroundColor: 'transparent',
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'cross'
+      }
+    },
+    legend: {
+      data: [currentLanguage.value === 'zh' ? '完成任务数' : 'Tasks', currentLanguage.value === 'zh' ? '番茄钟' : 'Pomodoros'],
+      top: 10
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      boundaryGap: false,
+      data: months
+    },
+    yAxis: [
+      {
+        type: 'value',
+        name: currentLanguage.value === 'zh' ? '任务数' : 'Tasks',
+        position: 'left'
+      },
+      {
+        type: 'value',
+        name: currentLanguage.value === 'zh' ? '番茄钟' : 'Pomodoros',
+        position: 'right'
+      }
+    ],
+    series: [
+      {
+        name: currentLanguage.value === 'zh' ? '完成任务数' : 'Tasks',
+        type: 'line',
+        smooth: true,
+        data: taskCounts,
+        itemStyle: {
+          color: '#667eea'
+        },
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              { offset: 0, color: 'rgba(102, 126, 234, 0.3)' },
+              { offset: 1, color: 'rgba(102, 126, 234, 0.05)' }
+            ]
+          }
+        }
+      },
+      {
+        name: currentLanguage.value === 'zh' ? '番茄钟' : 'Pomodoros',
+        type: 'line',
+        smooth: true,
+        yAxisIndex: 1,
+        data: pomodoros,
+        itemStyle: {
+          color: '#f5576c'
+        },
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              { offset: 0, color: 'rgba(245, 87, 108, 0.3)' },
+              { offset: 1, color: 'rgba(245, 87, 108, 0.05)' }
+            ]
+          }
+        }
+      }
+    ]
+  }
+})
 
 // 饼图配置（精力分配）
 const pieChartOption = computed(() => {
@@ -3151,6 +3298,117 @@ const generateReportContent = () => {
     }
   }
   
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 热力图数据生成（仅季报/年报）
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  let heatmapData = null
+  let streakStats = null
+  
+  if (reportType.value === 'yearly' || reportType.value === 'quarterly') {
+    const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1
+    const heatmapDays = []
+    
+    // 生成每一天的数据
+    for (let i = 0; i < days; i++) {
+      const date = new Date(startDate)
+      date.setDate(startDate.getDate() + i)
+      const dateStr = date.toISOString().split('T')[0]
+      
+      const dayTasks = periodTasks.filter(t => {
+        const taskDate = new Date(t.created_at)
+        return taskDate.toISOString().split('T')[0] === dateStr && t.status === TaskStatus.COMPLETED
+      })
+      
+      heatmapDays.push({
+        date: dateStr,
+        count: dayTasks.length,
+        pomodoros: dayTasks.reduce((sum, t) => sum + getPomodoroCount(t.priority), 0)
+      })
+    }
+    
+    // 计算颜色（基于完成任务数）
+    const maxCount = Math.max(...heatmapDays.map(d => d.count), 1)
+    const getColor = (count) => {
+      if (count === 0) return '#ebedf0'
+      const ratio = count / maxCount
+      if (ratio <= 0.2) return '#c6e48b'
+      if (ratio <= 0.4) return '#7bc96f'
+      if (ratio <= 0.6) return '#239a3b'
+      return '#196127'
+    }
+    
+    // 按周组织数据
+    const weeks = []
+    let currentWeek = []
+    const firstDayOfWeek = startDate.getDay() // 0=周日, 1=周一
+    
+    // 填充第一周的空白
+    for (let i = 0; i < firstDayOfWeek; i++) {
+      currentWeek.push({ date: '', count: 0, color: 'transparent' })
+    }
+    
+    heatmapDays.forEach((day, index) => {
+      currentWeek.push({
+        ...day,
+        color: getColor(day.count)
+      })
+      
+      if (currentWeek.length === 7) {
+        weeks.push(currentWeek)
+        currentWeek = []
+      }
+    })
+    
+    // 填充最后一周的空白
+    if (currentWeek.length > 0) {
+      while (currentWeek.length < 7) {
+        currentWeek.push({ date: '', count: 0, color: 'transparent' })
+      }
+      weeks.push(currentWeek)
+    }
+    
+    // 生成月份标签
+    const months = []
+    let currentMonth = startDate.getMonth()
+    for (let i = 0; i < days; i += 30) {
+      const date = new Date(startDate)
+      date.setDate(startDate.getDate() + i)
+      const month = date.getMonth()
+      if (month !== currentMonth || i === 0) {
+        months.push({
+          label: currentLanguage.value === 'zh' ? `${month + 1}月` : date.toLocaleString('en', { month: 'short' }),
+          offset: Math.floor(i / 7)
+        })
+        currentMonth = month
+      }
+    }
+    
+    heatmapData = { weeks, months }
+    
+    // 计算连胜记录
+    let currentStreak = 0
+    let longestStreak = 0
+    let tempStreak = 0
+    
+    for (let i = heatmapDays.length - 1; i >= 0; i--) {
+      if (heatmapDays[i].count > 0) {
+        tempStreak++
+        if (i === heatmapDays.length - 1) {
+          currentStreak = tempStreak
+        }
+      } else {
+        longestStreak = Math.max(longestStreak, tempStreak)
+        tempStreak = 0
+      }
+    }
+    longestStreak = Math.max(longestStreak, tempStreak)
+    
+    streakStats = {
+      current: currentStreak,
+      longest: longestStreak
+    }
+  }
+  
   // 年度总专注时长（番茄钟转小时）
   
   reportData.value = {
@@ -3174,7 +3432,9 @@ const generateReportContent = () => {
     maxDaily: maxDaily || 1,
     keyTasks,
     aggregatedTasks,
-    milestones, // 新增：里程碑数据
+    milestones,
+    heatmapData, // 新增：热力图数据
+    streakStats, // 新增：连胜统计
     summary,
     insights
   }
@@ -3193,18 +3453,20 @@ const generateExecutiveSummary = (data, reportType) => {
     const topCategory = data.categories.reduce((max, cat) => cat.pomodoros > max.pomodoros ? cat : max, data.categories[0])
     const topHabit = data.aggregatedTasks && data.aggregatedTasks.length > 0 ? data.aggregatedTasks[0] : null
     const topMilestone = data.milestones && data.milestones.length > 0 ? data.milestones[0] : null
+    const streakInfo = data.streakStats && data.streakStats.longest > 7 ? `，创造了 ${data.streakStats.longest} 天的最长连胜记录` : ''
     
     return lang === 'zh'
-      ? `在过去的 ${year} 年，你共计专注了 ${data.totalFocusHours} 个小时（${data.totalPomodoros} 个番茄钟）。其中，${topCategory.icon} ${topCategory.name}占据了你 ${topCategory.rate}% 的精力。你保持了${data.completionRate >= 80 ? '极高' : data.completionRate >= 60 ? '良好' : '稳定'}的执行力（${data.completionRate}% 完成率）${topHabit ? `，并且将「${topHabit.text}」培养成了贯穿全年的坚实习惯（累计 ${topHabit.count} 次）` : ''}${topMilestone ? `。最值得铭记的是「${topMilestone.text}」这一里程碑时刻` : ''}。`
-      : `In ${year}, you focused for ${data.totalFocusHours} hours (${data.totalPomodoros} pomodoros). ${topCategory.icon} ${topCategory.name} took ${topCategory.rate}% of your energy. You maintained ${data.completionRate >= 80 ? 'excellent' : data.completionRate >= 60 ? 'good' : 'steady'} execution (${data.completionRate}% completion rate)${topHabit ? `, and cultivated "${topHabit.text}" as a solid habit (${topHabit.count} times)` : ''}${topMilestone ? `. The most memorable milestone was "${topMilestone.text}"` : ''}.`
+      ? `在过去的 ${year} 年，你共计专注了 ${data.totalFocusHours} 个小时（${data.totalPomodoros} 个番茄钟）。其中，${topCategory.icon} ${topCategory.name}占据了你 ${topCategory.rate}% 的精力。你保持了${data.completionRate >= 80 ? '极高' : data.completionRate >= 60 ? '良好' : '稳定'}的执行力（${data.completionRate}% 完成率）${topHabit ? `，并且将「${topHabit.text}」培养成了贯穿全年的坚实习惯（累计 ${topHabit.count} 次）` : ''}${streakInfo}${topMilestone ? `。最值得铭记的是「${topMilestone.text}」这一里程碑时刻` : ''}。`
+      : `In ${year}, you focused for ${data.totalFocusHours} hours (${data.totalPomodoros} pomodoros). ${topCategory.icon} ${topCategory.name} took ${topCategory.rate}% of your energy. You maintained ${data.completionRate >= 80 ? 'excellent' : data.completionRate >= 60 ? 'good' : 'steady'} execution (${data.completionRate}% completion rate)${topHabit ? `, and cultivated "${topHabit.text}" as a solid habit (${topHabit.count} times)` : ''}${data.streakStats && data.streakStats.longest > 7 ? `, achieving a ${data.streakStats.longest}-day longest streak` : ''}${topMilestone ? `. The most memorable milestone was "${topMilestone.text}"` : ''}.`
   } else if (reportType === 'quarterly') {
     // 季度摘要
     const topCategory = data.categories.reduce((max, cat) => cat.pomodoros > max.pomodoros ? cat : max, data.categories[0])
     const topMilestone = data.milestones && data.milestones.length > 0 ? data.milestones[0] : null
+    const streakInfo = data.streakStats && data.streakStats.longest > 7 ? `，最长连胜 ${data.streakStats.longest} 天` : ''
     
     return lang === 'zh'
-      ? `本季度你完成了 ${data.completedTasks} 个任务，累计投入 ${data.totalFocusHours} 小时。${topCategory.icon} ${topCategory.name}是你的主战场（${topCategory.rate}%），${data.bestMonth ? `其中 ${data.bestMonth.month}是最高产的月份（${data.bestMonth.count} 个任务）` : ''}${topMilestone ? `。本季最大突破是完成了「${topMilestone.text}」` : ''}。`
-      : `This quarter you completed ${data.completedTasks} tasks with ${data.totalFocusHours} hours invested. ${topCategory.icon} ${topCategory.name} was your main focus (${topCategory.rate}%)${data.bestMonth ? `, with ${data.bestMonth.month} being the most productive month (${data.bestMonth.count} tasks)` : ''}${topMilestone ? `. The biggest breakthrough was completing "${topMilestone.text}"` : ''}.`
+      ? `本季度你完成了 ${data.completedTasks} 个任务，累计投入 ${data.totalFocusHours} 小时。${topCategory.icon} ${topCategory.name}是你的主战场（${topCategory.rate}%）${streakInfo}${data.bestMonth ? `，其中 ${data.bestMonth.month}是最高产的月份（${data.bestMonth.count} 个任务）` : ''}${topMilestone ? `。本季最大突破是完成了「${topMilestone.text}」` : ''}。`
+      : `This quarter you completed ${data.completedTasks} tasks with ${data.totalFocusHours} hours invested. ${topCategory.icon} ${topCategory.name} was your main focus (${topCategory.rate}%)${data.streakStats && data.streakStats.longest > 7 ? `, with a ${data.streakStats.longest}-day longest streak` : ''}${data.bestMonth ? `, with ${data.bestMonth.month} being the most productive month (${data.bestMonth.count} tasks)` : ''}${topMilestone ? `. The biggest breakthrough was completing "${topMilestone.text}"` : ''}.`
   } else if (reportType === 'monthly') {
     // 月度摘要
     const topCategory = data.categories.reduce((max, cat) => cat.completed > max.completed ? cat : max, data.categories[0])
@@ -3444,6 +3706,58 @@ const exportMarkdown = () => {
   } catch (err) {
     console.error(err)
     alert(currentLanguage.value === 'zh' ? '导出失败' : 'Export failed')
+  }
+}
+
+// 方法：导出数据海报
+const exportPoster = async () => {
+  try {
+    const reportElement = document.querySelector('.report-modal-content')
+    if (!reportElement) {
+      alert(currentLanguage.value === 'zh' ? '未找到报告内容' : 'Report content not found')
+      return
+    }
+    
+    // 显示加载提示
+    const loadingMsg = currentLanguage.value === 'zh' ? '正在生成海报...' : 'Generating poster...'
+    const originalText = event.target.textContent
+    event.target.textContent = loadingMsg
+    event.target.disabled = true
+    
+    // 等待一帧，确保 DOM 更新
+    await new Promise(resolve => setTimeout(resolve, 100))
+    
+    // 生成海报
+    const canvas = await html2canvas(reportElement, {
+      backgroundColor: '#f5f5f5',
+      scale: 2, // 提高清晰度
+      logging: false,
+      useCORS: true,
+      allowTaint: true
+    })
+    
+    // 转换为图片并下载
+    canvas.toBlob((blob) => {
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      const filename = `${reportData.value.title}_${new Date().getTime()}.png`
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+      
+      // 恢复按钮状态
+      event.target.textContent = originalText
+      event.target.disabled = false
+      
+      alert(currentLanguage.value === 'zh' ? '海报已保存' : 'Poster saved')
+    }, 'image/png')
+  } catch (err) {
+    console.error('导出海报失败:', err)
+    alert(currentLanguage.value === 'zh' ? '导出失败，请重试' : 'Export failed, please try again')
+    event.target.disabled = false
   }
 }
 
@@ -8064,6 +8378,109 @@ onUnmounted(() => {
   border-radius: 6px;
   border-left: 3px solid #667eea;
   font-style: italic;
+}
+
+/* 热力图样式 */
+.heatmap-container {
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+}
+
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.legend-colors {
+  display: flex;
+  gap: 3px;
+}
+
+.legend-box {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  border: 1px solid rgba(27, 31, 35, 0.06);
+}
+
+.heatmap-grid {
+  overflow-x: auto;
+}
+
+.heatmap-months {
+  display: flex;
+  gap: 0;
+  margin-bottom: 0.5rem;
+  padding-left: 20px;
+}
+
+.month-label {
+  font-size: 0.7rem;
+  color: #666;
+  min-width: 60px;
+}
+
+.heatmap-weeks {
+  display: flex;
+  gap: 3px;
+}
+
+.heatmap-week {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.heatmap-day {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  border: 1px solid rgba(27, 31, 35, 0.06);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.heatmap-day:hover {
+  transform: scale(1.2);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.heatmap-stats {
+  display: flex;
+  gap: 2rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.streak-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.streak-label {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.streak-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #667eea;
+}
+
+/* 趋势图样式 */
+.trend-chart-container {
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
 }
 
 .key-tasks {
