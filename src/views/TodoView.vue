@@ -496,6 +496,18 @@
             <div class="entry-arrow">›</div>
           </div>
 
+          <!-- 数据报告入口 -->
+          <div class="pomodoro-entry" @click="showReportModal = true">
+            <div class="entry-icon">📊</div>
+            <div class="entry-content">
+              <div class="entry-title">{{ t('dataReport') }}</div>
+              <div class="entry-summary">
+                {{ t('dataReportDesc') }}
+              </div>
+            </div>
+            <div class="entry-arrow">›</div>
+          </div>
+
           <!-- 修改密码入口 -->
           <div class="settings-entry" @click="showPasswordModal = true">
             <div class="entry-icon">🔒</div>
@@ -1056,12 +1068,45 @@
       </div>
     </div>
 
+    <!-- 数据报告弹窗 -->
+    <div v-if="showReportModal" class="modal-overlay" @click.self="showReportModal = false">
+      <div class="modal-content glass-card" style="background: white; max-width: 800px; width: 96%; max-height: 90vh; overflow-y: auto; padding: 1rem;">
+        <div class="modal-header">
+          <h3>📊 {{ t('dataReport') }}</h3>
+          <button class="close-btn" @click="showReportModal = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <!-- 报告配置 -->
+          <div class="report-config">
+            <div class="config-row">
+              <label>{{ t('reportType') }}:</label>
+              <select v-model="reportType" class="input" style="width: 150px;" @change="generateReportContent">
+                <option value="weekly">{{ t('weeklyReport') }}</option>
+                <option value="monthly">{{ t('monthlyReport') }}</option>
+                <option value="quarterly">{{ t('quarterlyReport') }}</option>
+                <option value="yearly">{{ t('yearlyReport') }}</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 报告预览 -->
+          <div class="report-preview">
+            <pre style="white-space: pre-wrap; font-family: monospace; font-size: 0.85rem; line-height: 1.6; background: #f5f5f5; padding: 1rem; border-radius: 8px; max-height: 60vh; overflow-y: auto;">{{ reportContent }}</pre>
+          </div>
+        </div>
+        <div class="modal-footer" style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem;">
+          <button class="btn btn-secondary" @click="copyReportText">{{ t('copyText') }}</button>
+          <button class="btn btn-primary" @click="showReportModal = false">{{ t('close') }}</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 底部抽屉 - 添加任务 -->
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useOfflineTaskStore } from '../stores/offlineTaskStore'
 import { useOfflineUserStore } from '../stores/offlineUserStore'
@@ -1228,6 +1273,21 @@ const i18n = {
     onlyRemaining: '仅剩',
     days: '天',
     hours: '小时',
+    // 数据报告
+    dataReport: '数据报告',
+    dataReportDesc: '生成周报、月报、年报',
+    generateReport: '生成报告',
+    reportType: '报告类型',
+    weeklyReport: '周报',
+    monthlyReport: '月报',
+    quarterlyReport: '季报',
+    yearlyReport: '年报',
+    customReport: '自定义',
+    reportTitle: '报告标题',
+    reporter: '汇报人',
+    copyText: '复制文本',
+    exportMarkdown: '导出Markdown',
+    generateImage: '生成图片',
   },
   en: {
     // 标题
@@ -1381,6 +1441,21 @@ const i18n = {
     onlyRemaining: 'Only',
     days: 'days',
     hours: 'hrs',
+    // 数据报告
+    dataReport: 'Data Report',
+    dataReportDesc: 'Generate weekly, monthly, yearly reports',
+    generateReport: 'Generate',
+    reportType: 'Report Type',
+    weeklyReport: 'Weekly',
+    monthlyReport: 'Monthly',
+    quarterlyReport: 'Quarterly',
+    yearlyReport: 'Yearly',
+    customReport: 'Custom',
+    reportTitle: 'Report Title',
+    reporter: 'Reporter',
+    copyText: 'Copy Text',
+    exportMarkdown: 'Export MD',
+    generateImage: 'Generate Image',
   }
 }
 
@@ -1420,6 +1495,9 @@ const showPasswordModal = ref(false)
 const showPhoneModal = ref(false)
 const showWeeklyModal = ref(false)
 const showCustomDateModal = ref(false)
+const showReportModal = ref(false) // 数据报告弹窗
+const reportType = ref('weekly') // 报告类型
+const reportContent = ref('') // 报告内容
 const editingTask = ref(null)
 const editDescription = ref('')
 const editText = ref('')
@@ -2139,6 +2217,194 @@ const handleLogout = async () => {
   await userStore.logout()
   taskStore.clearUser()
   router.push('/')
+}
+
+// 方法：生成报告内容
+const generateReportContent = () => {
+  const now = new Date()
+  let startDate, endDate, periodName
+  
+  // 计算时间范围
+  switch (reportType.value) {
+    case 'weekly':
+      // 本周：周一到今天
+      const dayOfWeek = now.getDay()
+      const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+      startDate = new Date(now)
+      startDate.setDate(now.getDate() - diff)
+      startDate.setHours(0, 0, 0, 0)
+      endDate = new Date(now)
+      endDate.setHours(23, 59, 59, 999)
+      periodName = currentLanguage.value === 'zh' ? `第${Math.ceil((now.getDate() + diff) / 7)}周` : `Week ${Math.ceil((now.getDate() + diff) / 7)}`
+      break
+    case 'monthly':
+      // 本月：1号到今天
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0)
+      endDate = new Date(now)
+      endDate.setHours(23, 59, 59, 999)
+      periodName = currentLanguage.value === 'zh' ? `${now.getMonth() + 1}月` : `${now.toLocaleString('en', { month: 'long' })}`
+      break
+    case 'quarterly':
+      // 本季度
+      const quarter = Math.floor(now.getMonth() / 3)
+      startDate = new Date(now.getFullYear(), quarter * 3, 1, 0, 0, 0, 0)
+      endDate = new Date(now)
+      endDate.setHours(23, 59, 59, 999)
+      periodName = currentLanguage.value === 'zh' ? `第${quarter + 1}季度` : `Q${quarter + 1}`
+      break
+    case 'yearly':
+      // 本年：1月1日到今天
+      startDate = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0)
+      endDate = new Date(now)
+      endDate.setHours(23, 59, 59, 999)
+      periodName = `${now.getFullYear()}${currentLanguage.value === 'zh' ? '年' : ''}`
+      break
+  }
+  
+  // 筛选时间范围内的任务
+  const periodTasks = taskStore.tasks.filter(task => {
+    const taskDate = new Date(task.created_at)
+    return taskDate >= startDate && taskDate <= endDate
+  })
+  
+  // 统计数据
+  const totalTasks = periodTasks.length
+  const completedTasks = periodTasks.filter(t => t.status === TaskStatus.COMPLETED).length
+  const pendingTasks = periodTasks.filter(t => t.status === TaskStatus.PENDING).length
+  const overdueTasks = periodTasks.filter(t => t.status === TaskStatus.OVERDUE).length
+  const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+  const totalPomodoros = periodTasks
+    .filter(t => t.status === TaskStatus.COMPLETED)
+    .reduce((sum, t) => sum + getPomodoroCount(t.priority), 0)
+  
+  // 按分类统计
+  const byCategory = {
+    work: periodTasks.filter(t => t.category === 'work'),
+    study: periodTasks.filter(t => t.category === 'study'),
+    life: periodTasks.filter(t => t.category === 'life')
+  }
+  
+  // 按优先级统计
+  const byPriority = {
+    high: periodTasks.filter(t => t.priority === 'high' || t.priority === 'urgent'),
+    medium: periodTasks.filter(t => t.priority === 'medium'),
+    low: periodTasks.filter(t => t.priority === 'low')
+  }
+  
+  // 工作日数
+  const workDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1
+  const avgTasksPerDay = workDays > 0 ? (completedTasks / workDays).toFixed(1) : 0
+  
+  // 生成报告文本
+  const reportTitle = currentLanguage.value === 'zh' 
+    ? `【${reportType.value === 'weekly' ? '工作周报' : reportType.value === 'monthly' ? '月度总结' : reportType.value === 'quarterly' ? '季度报告' : '年度总结'}】${now.getFullYear()}年${periodName}`
+    : `【${reportType.value === 'weekly' ? 'Weekly Report' : reportType.value === 'monthly' ? 'Monthly Summary' : reportType.value === 'quarterly' ? 'Quarterly Report' : 'Annual Summary'}】${periodName} ${now.getFullYear()}`
+  
+  const separator = '━'.repeat(60)
+  const doubleSeparator = '═'.repeat(60)
+  
+  let report = `${separator}\n`
+  report += `${reportTitle}\n`
+  report += `${separator}\n`
+  report += currentLanguage.value === 'zh' 
+    ? `汇报人：${currentUsername.value}          生成时间：${formatDateTime(now)}\n`
+    : `Reporter: ${currentUsername.value}          Generated: ${formatDateTime(now)}\n`
+  report += currentLanguage.value === 'zh'
+    ? `周期：${formatDate(startDate)} - ${formatDate(endDate)}\n`
+    : `Period: ${formatDate(startDate)} - ${formatDate(endDate)}\n`
+  report += `${separator}\n\n\n`
+  
+  // 第一部分：执行摘要
+  report += `${doubleSeparator}\n`
+  report += currentLanguage.value === 'zh' ? '【第一部分】执行摘要 - Executive Summary\n' : '【Part 1】Executive Summary\n'
+  report += `${doubleSeparator}\n\n`
+  
+  report += currentLanguage.value === 'zh' ? '一、核心数据概览\n' : '1. Core Data Overview\n'
+  report += `${separator}\n`
+  report += `┌──────────┬──────────┬──────────┬──────────┐\n`
+  report += currentLanguage.value === 'zh'
+    ? `│ 📝 总任务 │ ✅ 已完成 │ 🍅 番茄钟 │ 📈 完成率 │\n`
+    : `│ 📝 Total  │ ✅ Done   │ 🍅 Pomodoro│ 📈 Rate  │\n`
+  report += `│   ${String(totalTasks).padStart(3)}    │    ${String(completedTasks).padStart(3)}   │   ${String(totalPomodoros).padStart(3)}    │   ${String(completionRate).padStart(2)}%    │\n`
+  report += `└──────────┴──────────┴──────────┴──────────┘\n\n`
+  report += currentLanguage.value === 'zh'
+    ? `工作日：${workDays}天  |  日均完成：${avgTasksPerDay}任务  |  日均番茄：${(totalPomodoros / workDays).toFixed(1)}个\n\n\n`
+    : `Work Days: ${workDays}  |  Avg Tasks: ${avgTasksPerDay}/day  |  Avg Pomodoros: ${(totalPomodoros / workDays).toFixed(1)}/day\n\n\n`
+  
+  // 第二部分：分类统计
+  report += `${doubleSeparator}\n`
+  report += currentLanguage.value === 'zh' ? '【第二部分】分类统计 - Category Statistics\n' : '【Part 2】Category Statistics\n'
+  report += `${doubleSeparator}\n\n`
+  
+  report += currentLanguage.value === 'zh' ? '一、按工作分类统计\n' : '1. By Category\n'
+  report += `${separator}\n\n`
+  
+  // 工作类任务
+  const workCompleted = byCategory.work.filter(t => t.status === TaskStatus.COMPLETED).length
+  const workTotal = byCategory.work.length
+  const workRate = workTotal > 0 ? Math.round((workCompleted / workTotal) * 100) : 0
+  const workPomodoros = byCategory.work.filter(t => t.status === TaskStatus.COMPLETED).reduce((sum, t) => sum + getPomodoroCount(t.priority), 0)
+  
+  report += `💼 ${t('work')} (${workTotal}${currentLanguage.value === 'zh' ? '项' : ' tasks'})\n`
+  report += `${currentLanguage.value === 'zh' ? '已完成' : 'Completed'}: ${workCompleted}${currentLanguage.value === 'zh' ? '项' : ''} (${workRate}%)  |  ${currentLanguage.value === 'zh' ? '番茄' : 'Pomodoros'}: ${workPomodoros}${currentLanguage.value === 'zh' ? '个' : ''}\n\n`
+  
+  // 学习类任务
+  const studyCompleted = byCategory.study.filter(t => t.status === TaskStatus.COMPLETED).length
+  const studyTotal = byCategory.study.length
+  const studyRate = studyTotal > 0 ? Math.round((studyCompleted / studyTotal) * 100) : 0
+  const studyPomodoros = byCategory.study.filter(t => t.status === TaskStatus.COMPLETED).reduce((sum, t) => sum + getPomodoroCount(t.priority), 0)
+  
+  report += `📚 ${t('study')} (${studyTotal}${currentLanguage.value === 'zh' ? '项' : ' tasks'})\n`
+  report += `${currentLanguage.value === 'zh' ? '已完成' : 'Completed'}: ${studyCompleted}${currentLanguage.value === 'zh' ? '项' : ''} (${studyRate}%)  |  ${currentLanguage.value === 'zh' ? '番茄' : 'Pomodoros'}: ${studyPomodoros}${currentLanguage.value === 'zh' ? '个' : ''}\n\n`
+  
+  // 生活类任务
+  const lifeCompleted = byCategory.life.filter(t => t.status === TaskStatus.COMPLETED).length
+  const lifeTotal = byCategory.life.length
+  const lifeRate = lifeTotal > 0 ? Math.round((lifeCompleted / lifeTotal) * 100) : 0
+  const lifePomodoros = byCategory.life.filter(t => t.status === TaskStatus.COMPLETED).reduce((sum, t) => sum + getPomodoroCount(t.priority), 0)
+  
+  report += `🏠 ${t('life')} (${lifeTotal}${currentLanguage.value === 'zh' ? '项' : ' tasks'})\n`
+  report += `${currentLanguage.value === 'zh' ? '已完成' : 'Completed'}: ${lifeCompleted}${currentLanguage.value === 'zh' ? '项' : ''} (${lifeRate}%)  |  ${currentLanguage.value === 'zh' ? '番茄' : 'Pomodoros'}: ${lifePomodoros}${currentLanguage.value === 'zh' ? '个' : ''}\n\n\n`
+  
+  // 第三部分：任务明细（只显示已完成的前20项）
+  report += `${doubleSeparator}\n`
+  report += currentLanguage.value === 'zh' ? '【第三部分】任务明细 - Task Details (前20项)\n' : '【Part 3】Task Details (Top 20)\n'
+  report += `${doubleSeparator}\n\n`
+  
+  const completedTasksList = periodTasks
+    .filter(t => t.status === TaskStatus.COMPLETED)
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, 20)
+  
+  completedTasksList.forEach((task, index) => {
+    report += `✅ ${index + 1}. ${task.text}\n`
+    report += `   ${currentLanguage.value === 'zh' ? '时间' : 'Time'}: ${formatDateTime(task.created_at)}  |  ${currentLanguage.value === 'zh' ? '分类' : 'Category'}: ${getCategoryText(task.category)}  |  ${currentLanguage.value === 'zh' ? '优先级' : 'Priority'}: ${getPriorityText(task.priority)}\n`
+    if (task.description) {
+      report += `   ${currentLanguage.value === 'zh' ? '说明' : 'Description'}: ${task.description}\n`
+    }
+    report += `\n`
+  })
+  
+  report += `\n${separator}\n`
+  report += currentLanguage.value === 'zh' 
+    ? `报告生成时间：${formatDateTime(now)}\n`
+    : `Generated: ${formatDateTime(now)}\n`
+  report += currentLanguage.value === 'zh'
+    ? `数据来源：TODO App 任务管理系统\n`
+    : `Data Source: TODO App Task Management System\n`
+  report += `${separator}\n`
+  
+  reportContent.value = report
+}
+
+// 方法：复制报告文本
+const copyReportText = async () => {
+  try {
+    await navigator.clipboard.writeText(reportContent.value)
+    alert(currentLanguage.value === 'zh' ? '报告已复制到剪贴板' : 'Report copied to clipboard')
+  } catch (err) {
+    alert(currentLanguage.value === 'zh' ? '复制失败，请手动复制' : 'Copy failed, please copy manually')
+  }
 }
 
 // 方法：加载用户信息
@@ -2869,6 +3135,13 @@ const checkAndNotifyDeadline = async () => {
     await LocalNotifications.schedule({ notifications })
   }
 }
+
+// 监听报告弹窗打开，自动生成报告
+watch(showReportModal, (newVal) => {
+  if (newVal) {
+    generateReportContent()
+  }
+})
 
 onMounted(async () => {
   await userStore.checkLogin()
