@@ -5453,8 +5453,8 @@ onUnmounted(() => {
   justify-content: center;
   align-items: center;
   gap: 1rem;
-  margin-top: 1.5rem;
-  padding: 1rem 0;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0;
 }
 
 .page-btn {
@@ -5493,8 +5493,8 @@ onUnmounted(() => {
 
 /* 页脚版权信息 */
 .app-footer {
-  margin-top: 2rem;
-  padding: 1rem 0;
+  margin-top: 1rem;
+  padding: 0.5rem 0;
   border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
 
@@ -5505,7 +5505,7 @@ onUnmounted(() => {
 .footer-main {
   font-size: 0.7rem;
   color: rgba(255, 255, 255, 0.7);
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.25rem;
   display: flex;
   align-items: center;
   justify-content: center;
