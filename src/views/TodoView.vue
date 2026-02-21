@@ -1080,14 +1080,26 @@
           <div class="report-config">
             <div class="config-row">
               <label>{{ t('reportType') }}:</label>
-              <select v-model="reportType" class="input" style="width: 150px;" @change="generateReportContent">
+              <select v-model="reportType" class="input" style="width: 150px;" @change="onReportTypeChange">
                 <option value="daily">{{ t('dailyReport') }}</option>
                 <option value="weekly">{{ t('weeklyReport') }}</option>
                 <option value="monthly">{{ t('monthlyReport') }}</option>
                 <option value="quarterly">{{ t('quarterlyReport') }}</option>
                 <option value="halfyearly">{{ t('halfyearlyReport') }}</option>
                 <option value="yearly">{{ t('yearlyReport') }}</option>
+                <option value="custom">{{ t('customReport') }}</option>
               </select>
+            </div>
+            
+            <!-- 自定义日期范围 -->
+            <div v-if="reportType === 'custom'" class="config-row" style="margin-top: 0.5rem;">
+              <label>{{ currentLanguage === 'zh' ? '开始日期' : 'Start Date' }}:</label>
+              <input type="date" v-model="customStartDate" class="input" style="width: 150px;">
+              <label style="margin-left: 1rem;">{{ currentLanguage === 'zh' ? '结束日期' : 'End Date' }}:</label>
+              <input type="date" v-model="customEndDate" class="input" style="width: 150px;">
+              <button class="btn btn-primary" @click="generateReportContent" style="margin-left: 1rem;">
+                {{ currentLanguage === 'zh' ? '生成报告' : 'Generate' }}
+              </button>
             </div>
           </div>
 
@@ -1618,6 +1630,7 @@ const i18n = {
     halfyearlyReport: '半年报',
     yearlyReport: '年报',
     customReport: '自定义',
+    customReport: '自定义',
     reportTitle: '报告标题',
     reporter: '汇报人',
     copyText: '复制文本',
@@ -1788,6 +1801,7 @@ const i18n = {
     halfyearlyReport: 'Half-Yearly',
     yearlyReport: 'Yearly',
     customReport: 'Custom',
+    customReport: 'Custom',
     reportTitle: 'Report Title',
     reporter: 'Reporter',
     copyText: 'Copy Text',
@@ -1834,6 +1848,8 @@ const showWeeklyModal = ref(false)
 const showCustomDateModal = ref(false)
 const showReportModal = ref(false) // 数据报告弹窗
 const reportType = ref('weekly') // 报告类型（默认：周报）
+const customStartDate = ref('') // 自定义开始日期
+const customEndDate = ref('') // 自定义结束日期
 const reportContent = ref('') // 报告内容（文本格式）
 const reportData = ref({}) // 报告数据（结构化）
 const editingTask = ref(null)
@@ -2757,6 +2773,21 @@ const handleLogout = async () => {
   router.push('/')
 }
 
+// 方法：报告类型改变时的处理
+const onReportTypeChange = () => {
+  // 如果不是自定义类型，立即生成报告
+  if (reportType.value !== 'custom') {
+    generateReportContent()
+  } else {
+    // 自定义类型，设置默认日期范围（最近30天）
+    const end = new Date()
+    const start = new Date()
+    start.setDate(start.getDate() - 30)
+    customStartDate.value = start.toISOString().split('T')[0]
+    customEndDate.value = end.toISOString().split('T')[0]
+  }
+}
+
 // 方法：生成报告内容
 const generateReportContent = () => {
   console.log('🚀 generateReportContent 开始 - reportType:', reportType.value)
@@ -2765,6 +2796,26 @@ const generateReportContent = () => {
   
   // 计算时间范围
   switch (reportType.value) {
+    case 'custom':
+      // 自定义：用户选择的日期范围
+      if (!customStartDate.value || !customEndDate.value) {
+        alert(currentLanguage.value === 'zh' ? '请选择开始和结束日期' : 'Please select start and end date')
+        return
+      }
+      startDate = new Date(customStartDate.value)
+      startDate.setHours(0, 0, 0, 0)
+      endDate = new Date(customEndDate.value)
+      endDate.setHours(23, 59, 59, 999)
+      
+      if (startDate > endDate) {
+        alert(currentLanguage.value === 'zh' ? '开始日期不能晚于结束日期' : 'Start date cannot be later than end date')
+        return
+      }
+      
+      periodName = currentLanguage.value === 'zh' 
+        ? `${customStartDate.value} 至 ${customEndDate.value}`
+        : `${customStartDate.value} to ${customEndDate.value}`
+      break
     case 'daily':
       // 今天：0点到现在
       startDate = new Date(now)
@@ -2859,7 +2910,8 @@ const generateReportContent = () => {
       monthly: '月度总结',
       quarterly: '季度报告',
       halfyearly: '半年度报告',
-      yearly: '年度总结'
+      yearly: '年度总结',
+      custom: '自定义报告'
     },
     en: {
       daily: 'Daily Report',
@@ -2867,7 +2919,8 @@ const generateReportContent = () => {
       monthly: 'Monthly Summary',
       quarterly: 'Quarterly Report',
       halfyearly: 'Half-Yearly Report',
-      yearly: 'Annual Summary'
+      yearly: 'Annual Summary',
+      custom: 'Custom Report'
     }
   }
   
