@@ -5503,7 +5503,7 @@ onUnmounted(() => {
 }
 
 .footer-main {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: rgba(255, 255, 255, 0.7);
   margin-bottom: 0.4rem;
   display: flex;
@@ -5515,7 +5515,7 @@ onUnmounted(() => {
 
 .footer-links {
   font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.7);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5526,11 +5526,11 @@ onUnmounted(() => {
 
 .footer-version {
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .footer-copyright {
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .footer-divider {
@@ -5539,7 +5539,7 @@ onUnmounted(() => {
 }
 
 .footer-text {
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .footer-link {
