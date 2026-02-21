@@ -1089,9 +1089,108 @@
             </div>
           </div>
 
-          <!-- 报告预览 -->
-          <div class="report-preview">
-            <pre style="white-space: pre-wrap; font-family: monospace; font-size: 0.85rem; line-height: 1.6; background: #f5f5f5; padding: 1rem; border-radius: 8px; max-height: 60vh; overflow-y: auto;">{{ reportContent }}</pre>
+          <!-- 报告预览 - 卡片式UI -->
+          <div class="report-preview-cards">
+            <!-- 报告头部 -->
+            <div class="report-header">
+              <h2>{{ reportData.title }}</h2>
+              <p class="report-period">{{ reportData.period }}</p>
+              <p class="report-meta">{{ currentLanguage === 'zh' ? '汇报人' : 'Reporter' }}: {{ currentUsername }} | {{ currentLanguage === 'zh' ? '生成时间' : 'Generated' }}: {{ reportData.generatedTime }}</p>
+            </div>
+
+            <!-- 核心数据卡片 -->
+            <div class="report-stats-grid">
+              <div class="stat-card-report">
+                <div class="stat-icon">📝</div>
+                <div class="stat-value">{{ reportData.totalTasks }}</div>
+                <div class="stat-label">{{ currentLanguage === 'zh' ? '总任务' : 'Total Tasks' }}</div>
+              </div>
+              <div class="stat-card-report">
+                <div class="stat-icon">✅</div>
+                <div class="stat-value">{{ reportData.completedTasks }}</div>
+                <div class="stat-label">{{ currentLanguage === 'zh' ? '已完成' : 'Completed' }}</div>
+              </div>
+              <div class="stat-card-report">
+                <div class="stat-icon">🍅</div>
+                <div class="stat-value">{{ reportData.totalPomodoros }}</div>
+                <div class="stat-label">{{ currentLanguage === 'zh' ? '番茄钟' : 'Pomodoros' }}</div>
+              </div>
+              <div class="stat-card-report highlight">
+                <div class="stat-icon">📈</div>
+                <div class="stat-value">{{ reportData.completionRate }}%</div>
+                <div class="stat-label">{{ currentLanguage === 'zh' ? '完成率' : 'Completion Rate' }}</div>
+              </div>
+            </div>
+
+            <!-- 分类统计 -->
+            <div class="report-section">
+              <h3 class="section-title">{{ currentLanguage === 'zh' ? '📊 分类统计' : '📊 By Category' }}</h3>
+              <div class="category-stats">
+                <div v-for="cat in reportData.categories" :key="cat.name" class="category-item">
+                  <div class="category-header">
+                    <span class="category-name">{{ cat.icon }} {{ cat.name }}</span>
+                    <span class="category-value">{{ cat.completed }}/{{ cat.total }} ({{ cat.rate }}%)</span>
+                  </div>
+                  <div class="progress-bar">
+                    <div class="progress-fill" :style="{ width: cat.rate + '%', background: cat.color }"></div>
+                  </div>
+                  <div class="category-detail">
+                    <span>🍅 {{ cat.pomodoros }}{{ currentLanguage === 'zh' ? '个' : '' }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 优先级分布 -->
+            <div class="report-section">
+              <h3 class="section-title">{{ currentLanguage === 'zh' ? '⚡ 优先级分布' : '⚡ By Priority' }}</h3>
+              <div class="priority-stats">
+                <div v-for="pri in reportData.priorities" :key="pri.name" class="priority-item">
+                  <div class="priority-header">
+                    <span class="priority-name">{{ pri.name }}</span>
+                    <span class="priority-value">{{ pri.total }}{{ currentLanguage === 'zh' ? '项' : '' }} ({{ pri.percentage }}%)</span>
+                  </div>
+                  <div class="progress-bar">
+                    <div class="progress-fill" :style="{ width: pri.percentage + '%', background: pri.color }"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 每日趋势 -->
+            <div class="report-section" v-if="reportData.dailyTrend && reportData.dailyTrend.length > 0">
+              <h3 class="section-title">{{ currentLanguage === 'zh' ? '📈 每日完成趋势' : '📈 Daily Trend' }}</h3>
+              <div class="daily-trend">
+                <div v-for="day in reportData.dailyTrend" :key="day.date" class="trend-item">
+                  <div class="trend-label">{{ day.label }}</div>
+                  <div class="trend-bar-container">
+                    <div class="trend-bar" :style="{ width: (day.count / reportData.maxDaily * 100) + '%' }">
+                      <span class="trend-value">{{ day.count }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 重点任务 -->
+            <div class="report-section">
+              <h3 class="section-title">{{ currentLanguage === 'zh' ? '🎯 重点任务 (Top 10)' : '🎯 Key Tasks (Top 10)' }}</h3>
+              <div class="key-tasks">
+                <div v-for="(task, index) in reportData.keyTasks" :key="task.id" class="task-item-report">
+                  <div class="task-number">{{ index + 1 }}</div>
+                  <div class="task-content-report">
+                    <div class="task-title-report">✅ {{ task.text }}</div>
+                    <div class="task-meta-report">
+                      <span>{{ task.categoryIcon }} {{ task.categoryText }}</span>
+                      <span>⚡ {{ task.priorityText }}</span>
+                      <span>🍅 {{ task.pomodoros }}</span>
+                      <span>📅 {{ task.time }}</span>
+                    </div>
+                    <div v-if="task.description" class="task-desc-report">{{ task.description }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         <div class="modal-footer" style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem;">
@@ -1497,7 +1596,8 @@ const showWeeklyModal = ref(false)
 const showCustomDateModal = ref(false)
 const showReportModal = ref(false) // 数据报告弹窗
 const reportType = ref('weekly') // 报告类型
-const reportContent = ref('') // 报告内容
+const reportContent = ref('') // 报告内容（文本格式）
+const reportData = ref({}) // 报告数据（结构化）
 const editingTask = ref(null)
 const editDescription = ref('')
 const editText = ref('')
