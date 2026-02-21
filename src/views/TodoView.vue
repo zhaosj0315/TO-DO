@@ -2589,15 +2589,31 @@ const generateReportContent = () => {
   // 按完成数降序排列
   dailyTrend.sort((a, b) => b.count - a.count)
   
-  // 重点任务
-  const keyTasks = completedTasksList.slice(0, 10).map(task => ({
-    id: task.id,
-    text: task.text,
-    description: task.description,
-    categoryIcon: task.category === 'work' ? '💼' : task.category === 'study' ? '📚' : '🏠',
-    categoryText: getCategoryText(task.category),
-    priorityText: getPriorityText(task.priority),
-    pomodoros: getPomodoroCount(task.priority),
+  // 重点任务（按优先级和番茄数排序）
+  const keyTasks = completedTasksList
+    .sort((a, b) => {
+      // 优先级权重：high/urgent=3, medium=2, low=1
+      const priorityWeight = (p) => {
+        if (p === 'high' || p === 'urgent') return 3
+        if (p === 'medium') return 2
+        return 1
+      }
+      const weightA = priorityWeight(a.priority)
+      const weightB = priorityWeight(b.priority)
+      
+      // 先按优先级排序，优先级相同则按番茄数排序
+      if (weightB !== weightA) return weightB - weightA
+      return getPomodoroCount(b.priority) - getPomodoroCount(a.priority)
+    })
+    .slice(0, 10)
+    .map(task => ({
+      id: task.id,
+      text: task.text,
+      description: task.description,
+      categoryIcon: task.category === 'work' ? '💼' : task.category === 'study' ? '📚' : '🏠',
+      categoryText: getCategoryText(task.category),
+      priorityText: getPriorityText(task.priority),
+      pomodoros: getPomodoroCount(task.priority),
     time: formatDateTime(task.created_at)
   }))
   
