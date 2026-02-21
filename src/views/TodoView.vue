@@ -220,12 +220,33 @@
         <!-- 页脚版权信息 -->
         <footer class="app-footer">
           <div class="footer-content">
-            <p class="footer-version">TO-DO App v1.4.0</p>
-            <p class="footer-copyright">© 2026 TO-DO App. All rights reserved.</p>
-            <p class="footer-license">
-              MIT License | 离线存储，数据安全 | 
-              <span class="privacy-link" @click="showPrivacyPolicy = true">隐私政策</span> | 
-              <span class="privacy-link" @click="showSupport = true">联系与支持</span>
+            <p class="footer-main">
+              <span class="footer-version">TO-DO App v1.6.0</span>
+              <span class="footer-divider">·</span>
+              <span class="footer-link" @click="showChangelog = true">
+                {{ currentLanguage === 'zh' ? '📋 更新日志' : '📋 Changelog' }}
+              </span>
+              <span class="footer-divider">·</span>
+              <span class="footer-copyright">© 2026 TO-DO Team</span>
+            </p>
+            <p class="footer-links">
+              <a href="https://github.com/zhaosj0315/TO-DO" target="_blank" class="footer-link">GitHub</a>
+              <span class="footer-divider">·</span>
+              <span class="footer-link" @click="showPrivacyPolicy = true">
+                {{ currentLanguage === 'zh' ? '隐私政策' : 'Privacy' }}
+              </span>
+              <span class="footer-divider">·</span>
+              <span class="footer-link" @click="showSupport = true">
+                {{ currentLanguage === 'zh' ? '联系支持' : 'Support' }}
+              </span>
+              <span class="footer-divider">·</span>
+              <span class="footer-link" @click="toggleLanguage">
+                {{ currentLanguage === 'zh' ? '🌐 EN' : '🌐 中文' }}
+              </span>
+              <span class="footer-divider">·</span>
+              <span class="footer-text">
+                {{ currentLanguage === 'zh' ? '完全离线 · 本地存储' : 'Offline · Local Storage' }}
+              </span>
             </p>
           </div>
         </footer>
@@ -565,32 +586,73 @@
     <div v-if="showSupport" class="modal-overlay" @click.self="showSupport = false">
       <div class="modal-content glass-card" style="background: white; max-width: 550px; width: 96%; padding: 0.8rem;">
         <div class="modal-header">
-          <h3>💝 联系与支持</h3>
+          <h3>💝 {{ currentLanguage === 'zh' ? '联系与支持' : 'Contact & Support' }}</h3>
           <button class="close-btn" @click="showSupport = false">&times;</button>
         </div>
         <div class="modal-body">
-          <p class="support-desc">遇到bug别慌，扫码找我唠唠；用得爽了，请我喝杯奶茶呗 ☕</p>
+          <p class="support-desc">{{ currentLanguage === 'zh' ? '遇到bug别慌，扫码找我唠唠；用得爽了，请我喝杯奶茶呗 ☕' : 'Found a bug? Scan to contact me. Enjoying the app? Buy me a coffee ☕' }}</p>
           
           <div class="qr-codes">
             <div class="qr-item">
               <img src="../assets/images/wechat-qr.png" alt="微信二维码" class="qr-image">
-              <p class="qr-label">💬 添加微信</p>
+              <p class="qr-label">💬 {{ currentLanguage === 'zh' ? '添加微信' : 'WeChat' }}</p>
             </div>
             <div class="qr-item">
               <img src="../assets/images/payment-qr.png" alt="打赏二维码" class="qr-image">
-              <p class="qr-label">💰 打赏支持</p>
+              <p class="qr-label">💰 {{ currentLanguage === 'zh' ? '打赏支持' : 'Donate' }}</p>
             </div>
           </div>
 
           <div class="contact-info">
             <span class="contact-icon">📞</span>
-            <span class="contact-text">联系电话：17858441076</span>
+            <span class="contact-text">{{ currentLanguage === 'zh' ? '联系电话：17858441076' : 'Phone: 17858441076' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 更新日志弹窗 -->
+    <div v-if="showChangelog" class="modal-overlay" @click.self="showChangelog = false">
+      <div class="modal-content privacy-modal">
+        <div class="modal-header">
+          <h3>📋 {{ currentLanguage === 'zh' ? '更新日志' : 'Changelog' }}</h3>
+          <button class="close-btn" @click="showChangelog = false">&times;</button>
+        </div>
+        <div class="modal-body privacy-content">
+          <div class="changelog-section">
+            <h4>v1.6.0 (2026-02-21)</h4>
+            <p class="version-tag">{{ currentLanguage === 'zh' ? '当前版本' : 'Current Version' }}</p>
+            <ul>
+              <li>{{ currentLanguage === 'zh' ? 'UI视觉系统全面升级' : 'Complete UI visual system upgrade' }}</li>
+              <li>{{ currentLanguage === 'zh' ? '统计区域主次分明，色彩语义化' : 'Statistics area with clear hierarchy and semantic colors' }}</li>
+              <li>{{ currentLanguage === 'zh' ? '创建任务区凹陷感设计' : 'Task creation area with inset design' }}</li>
+              <li>{{ currentLanguage === 'zh' ? '右上角胶囊化封装（iOS风格）' : 'Top-right capsule design (iOS style)' }}</li>
+              <li>{{ currentLanguage === 'zh' ? '任务列表标签严格对齐' : 'Task list tags strictly aligned' }}</li>
+              <li>{{ currentLanguage === 'zh' ? '高级筛选弹窗紧凑化' : 'Advanced filter modal compacted' }}</li>
+              <li>{{ currentLanguage === 'zh' ? '筛选和展开按钮添加中文注释' : 'Filter and expand buttons with text labels' }}</li>
+            </ul>
           </div>
 
-          <div class="app-footer">
-            <p class="app-version">TO-DO App v1.4.0</p>
-            <p class="copyright">© 2026 TO-DO App. All rights reserved.</p>
-            <p class="footer-links">MIT License | 离线存储，数据安全 | 隐私政策</p>
+          <div class="changelog-section">
+            <h4>v1.5.9 (2026-02-21)</h4>
+            <ul>
+              <li>{{ currentLanguage === 'zh' ? '修复待办统计与筛选不一致bug' : 'Fixed pending tasks filter inconsistency' }}</li>
+              <li>{{ currentLanguage === 'zh' ? '优化所有弹窗的左右留白' : 'Optimized modal padding' }}</li>
+            </ul>
+          </div>
+
+          <div class="changelog-section">
+            <h4>v1.5.8 (2026-02-21)</h4>
+            <ul>
+              <li>{{ currentLanguage === 'zh' ? '筛选按钮移至统计栏' : 'Filter button moved to stats bar' }}</li>
+              <li>{{ currentLanguage === 'zh' ? '统一按钮高度，视觉更协调' : 'Unified button height' }}</li>
+            </ul>
+          </div>
+
+          <div class="changelog-link">
+            <a href="https://github.com/zhaosj0315/TO-DO/blob/main/CHANGELOG.md" target="_blank" class="footer-link">
+              {{ currentLanguage === 'zh' ? '📖 查看完整更新日志' : '📖 View Full Changelog' }}
+            </a>
           </div>
         </div>
       </div>
@@ -1046,6 +1108,8 @@ const editCustomDateTime = ref('')
 const editWeekdays = ref([])
 const showAddForm = ref(true)
 const currentPage = ref(1)
+const currentLanguage = ref('zh') // 语言切换：zh 中文, en 英文
+const showChangelog = ref(false) // 更新日志弹窗
 const pageSize = 6
 const fileInput = ref(null)
 const mainContent = ref(null)
@@ -2326,6 +2390,13 @@ const showNotification = (message, type = 'info') => {
   emit('notify', { message, type })
 }
 
+// 语言切换方法
+const toggleLanguage = () => {
+  currentLanguage.value = currentLanguage.value === 'zh' ? 'en' : 'zh'
+  // 保存语言偏好到本地存储
+  Preferences.set({ key: 'language', value: currentLanguage.value })
+}
+
 // 刷新方法
 const handleRefresh = async () => {
   if (isRefreshing.value) return
@@ -2421,6 +2492,12 @@ const checkAndNotifyDeadline = async () => {
 onMounted(async () => {
   await userStore.checkLogin()
   await loadUserInfo()
+  
+  // 加载语言偏好
+  const { value: savedLanguage } = await Preferences.get({ key: 'language' })
+  if (savedLanguage) {
+    currentLanguage.value = savedLanguage
+  }
   
   // 设置任务Store的当前用户并加载该用户的任务
   await taskStore.setCurrentUser(userStore.currentUser)
@@ -5291,7 +5368,7 @@ onUnmounted(() => {
 /* 页脚版权信息 */
 .app-footer {
   margin-top: 2rem;
-  padding: 1.5rem 0 1rem;
+  padding: 1rem 0;
   border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
 
@@ -5299,34 +5376,57 @@ onUnmounted(() => {
   text-align: center;
 }
 
-.footer-version {
+.footer-main {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 0.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.footer-links {
   font-size: 0.7rem;
   color: rgba(255, 255, 255, 0.6);
-  margin-bottom: 0.3rem;
-  font-weight: 500;
-}
-
-.footer-copyright {
-  font-size: 0.65rem;
-  color: rgba(255, 255, 255, 0.5);
-  margin-bottom: 0.2rem;
-}
-
-.footer-license {
-  font-size: 0.6rem;
-  color: rgba(255, 255, 255, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.3rem;
   line-height: 1.4;
 }
 
-.privacy-link {
-  color: rgba(255, 255, 255, 0.7);
-  cursor: pointer;
-  text-decoration: underline;
-  transition: color 0.3s;
+.footer-version {
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
 }
 
-.privacy-link:hover {
+.footer-copyright {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.footer-divider {
+  color: rgba(255, 255, 255, 0.3);
+  margin: 0 0.2rem;
+}
+
+.footer-text {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.footer-link {
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.3s;
+  border-bottom: 1px solid transparent;
+}
+
+.footer-link:hover {
   color: rgba(255, 255, 255, 1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
 }
 
 /* 隐私政策模态框 */
@@ -5368,12 +5468,93 @@ onUnmounted(() => {
 
 .privacy-content ul {
   margin: 0.8rem 0;
-  padding-left: 2rem;
+  padding-left: 1.5rem;
 }
 
 .privacy-content li {
   margin: 0.5rem 0;
   color: #555;
+}
+
+/* 更新日志样式 */
+.changelog-section {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #eee;
+}
+
+.changelog-section:last-of-type {
+  border-bottom: none;
+}
+
+.changelog-section h4 {
+  color: #667eea;
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+}
+
+.version-tag {
+  display: inline-block;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.2rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.changelog-section ul {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+}
+
+.changelog-section li {
+  margin: 0.6rem 0;
+  color: #555;
+  line-height: 1.6;
+}
+
+.changelog-link {
+  text-align: center;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid #eee;
+}
+
+.changelog-link a {
+  color: #667eea;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.changelog-link a:hover {
+  color: #764ba2;
+}
+
+/* 周选择器样式 */
+.weekly-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.8rem;
+}
+
+.weekday-checkbox-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.8rem 0.4rem;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.weekday-checkbox-item:has(input:checked) {
+  background: rgba(102, 126, 234, 0.1);
+  border-color: #667eea;
+}
+
+.weekday-checkbox-item input {
 }
 
 .highlight-box {
