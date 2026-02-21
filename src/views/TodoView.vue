@@ -136,9 +136,9 @@
             <!-- 优先级 -->
             <div class="attr-group">
               <select v-model="newTaskPriority" class="attr-select attr-select-short">
-                <option value="high">{{ t('high') }}</option>
-                <option value="medium">{{ t('medium') }}</option>
-                <option value="low">{{ t('low') }}</option>
+                <option v-for="opt in priorityOptions" :key="opt.value" :value="opt.value">
+                  {{ opt.label }}
+                </option>
               </select>
             </div>
 
@@ -370,28 +370,14 @@
             <label class="filter-label">⚡ {{ t('priority') }}</label>
             <div class="filter-buttons">
               <button 
-                class="filter-chip priority-high" 
-                :class="{ active: currentPriorityFilter === 'high' }"
-                @click="setPriorityFilter('high')"
+                v-for="opt in priorityOptions" 
+                :key="opt.value"
+                class="filter-chip" 
+                :class="{ active: currentPriorityFilter === opt.value, [`priority-${opt.value}`]: true }"
+                @click="setPriorityFilter(opt.value)"
               >
-                <span class="chip-label">{{ t('high') }}</span>
-                <span class="chip-count">{{ highPriorityCount }}</span>
-              </button>
-              <button 
-                class="filter-chip priority-medium" 
-                :class="{ active: currentPriorityFilter === 'medium' }"
-                @click="setPriorityFilter('medium')"
-              >
-                <span class="chip-label">{{ t('medium') }}</span>
-                <span class="chip-count">{{ mediumPriorityCount }}</span>
-              </button>
-              <button 
-                class="filter-chip priority-low" 
-                :class="{ active: currentPriorityFilter === 'low' }"
-                @click="setPriorityFilter('low')"
-              >
-                <span class="chip-label">{{ t('low') }}</span>
-                <span class="chip-count">{{ lowPriorityCount }}</span>
+                <span class="chip-label">{{ opt.label }}</span>
+                <span class="chip-count">{{ baseFilteredTasks.filter(t => t.priority === opt.value).length }}</span>
               </button>
             </div>
           </div>
@@ -557,6 +543,18 @@
               style="display: none" 
               @change="importFromExcel"
             />
+          </div>
+
+          <!-- 优先级模式配置 -->
+          <div class="settings-entry" @click="togglePriorityMode">
+            <div class="entry-icon">⚡</div>
+            <div class="entry-content">
+              <div class="entry-title">{{ t('priorityMode') }}</div>
+              <div class="entry-summary">
+                {{ priorityMode === 'traditional' ? t('traditionalMode') : t('eisenhowerMode') }}
+              </div>
+            </div>
+            <div class="entry-arrow">›</div>
           </div>
 
           <!-- 联系与支持 -->
@@ -1033,9 +1031,9 @@
           <div class="edit-field">
             <label>{{ currentLanguage === 'zh' ? '优先级' : 'Priority' }}</label>
             <select v-model="editPriority" class="input">
-              <option value="high">{{ t('high') }}</option>
-              <option value="medium">{{ t('medium') }}</option>
-              <option value="low">{{ t('low') }}</option>
+              <option v-for="opt in priorityOptions" :key="opt.value" :value="opt.value">
+                {{ opt.label }}
+              </option>
             </select>
           </div>
           <div class="edit-field">
@@ -1205,6 +1203,15 @@ const i18n = {
     unbind: '解绑',
     bindHint: '绑定后可使用手机号+验证码登录此账号',
     confirmBind: '确认绑定',
+    // 优先级模式
+    priorityMode: '优先级模式',
+    traditionalMode: '传统三级',
+    eisenhowerMode: '时间象限法',
+    // 时间象限法优先级
+    urgentImportant: '重要且紧急',
+    important: '重要但不紧急',
+    urgent: '紧急但不重要',
+    notUrgentNotImportant: '不紧急也不重要',
   },
   en: {
     // 标题
@@ -1333,6 +1340,15 @@ const i18n = {
     unbind: 'Unbind',
     bindHint: 'You can login with phone number after binding',
     confirmBind: 'Confirm',
+    // 优先级模式
+    priorityMode: 'Priority Mode',
+    traditionalMode: 'Traditional',
+    eisenhowerMode: 'Eisenhower Matrix',
+    // 时间象限法优先级
+    urgentImportant: 'Urgent & Important',
+    important: 'Important',
+    urgent: 'Urgent',
+    notUrgentNotImportant: 'Low Priority',
   }
 }
 
@@ -1383,6 +1399,7 @@ const editWeekdays = ref([])
 const showAddForm = ref(true)
 const currentPage = ref(1)
 const currentLanguage = ref('zh') // 语言切换：zh 中文, en 英文
+const priorityMode = ref('traditional') // 优先级模式：traditional 传统三级, eisenhower 时间象限法
 const showChangelog = ref(false) // 更新日志弹窗
 const pageSize = 6
 const fileInput = ref(null)
@@ -1479,6 +1496,24 @@ const overdueCount = computed(() => baseFilteredTasks.value.filter(t => t.status
 const highPriorityCount = computed(() => baseFilteredTasks.value.filter(t => t.priority === 'high').length)
 const mediumPriorityCount = computed(() => baseFilteredTasks.value.filter(t => t.priority === 'medium').length)
 const lowPriorityCount = computed(() => baseFilteredTasks.value.filter(t => t.priority === 'low').length)
+
+// 优先级选项（根据模式动态生成）
+const priorityOptions = computed(() => {
+  if (priorityMode.value === 'eisenhower') {
+    return [
+      { value: 'high', label: t('urgentImportant'), color: '#ef4444' },
+      { value: 'medium', label: t('important'), color: '#f97316' },
+      { value: 'urgent', label: t('urgent'), color: '#eab308' },
+      { value: 'low', label: t('notUrgentNotImportant'), color: '#9ca3af' }
+    ]
+  } else {
+    return [
+      { value: 'high', label: t('high'), color: '#ef4444' },
+      { value: 'medium', label: t('medium'), color: '#f97316' },
+      { value: 'low', label: t('low'), color: '#3b82f6' }
+    ]
+  }
+})
 
 // 分类统计（基于当前时间筛选）
 const getCategoryCount = (category) => {
@@ -2358,12 +2393,8 @@ const getTaskTypeText = (task) => {
 
 // 方法：获取优先级文本
 const getPriorityText = (priority) => {
-  const priorityMap = {
-    high: '高',
-    medium: '中',
-    low: '低'
-  }
-  return priorityMap[priority] || priority
+  const option = priorityOptions.value.find(opt => opt.value === priority)
+  return option ? option.label : priority
 }
 
 // 方法：获取番茄数（根据优先级）
@@ -2691,6 +2722,13 @@ const toggleLanguage = () => {
   Preferences.set({ key: 'language', value: currentLanguage.value })
 }
 
+// 优先级模式切换方法
+const togglePriorityMode = () => {
+  priorityMode.value = priorityMode.value === 'traditional' ? 'eisenhower' : 'traditional'
+  // 保存优先级模式到本地存储
+  Preferences.set({ key: 'priorityMode', value: priorityMode.value })
+}
+
 // 刷新方法
 const handleRefresh = async () => {
   if (isRefreshing.value) return
@@ -2791,6 +2829,12 @@ onMounted(async () => {
   const { value: savedLanguage } = await Preferences.get({ key: 'language' })
   if (savedLanguage) {
     currentLanguage.value = savedLanguage
+  }
+  
+  // 加载优先级模式偏好
+  const { value: savedPriorityMode } = await Preferences.get({ key: 'priorityMode' })
+  if (savedPriorityMode) {
+    priorityMode.value = savedPriorityMode
   }
   
   // 设置任务Store的当前用户并加载该用户的任务
