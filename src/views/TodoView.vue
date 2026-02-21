@@ -1141,6 +1141,17 @@
               </div>
             </div>
 
+            <!-- 智能洞察 -->
+            <div class="report-section" v-if="reportData.insights && reportData.insights.length > 0">
+              <h3 class="section-title">{{ currentLanguage === 'zh' ? '💡 本期洞察' : '💡 Insights' }}</h3>
+              <div class="insights-container">
+                <div v-for="(insight, index) in reportData.insights" :key="index" class="insight-card" :class="`insight-${insight.type}`">
+                  <div class="insight-icon">{{ insight.icon }}</div>
+                  <div class="insight-text">{{ insight.text }}</div>
+                </div>
+              </div>
+            </div>
+
             <!-- 分类统计 -->
             <div class="report-section">
               <h3 class="section-title">{{ currentLanguage === 'zh' ? '📊 分类统计' : '📊 By Category' }}</h3>
@@ -2706,6 +2717,17 @@ const generateReportContent = () => {
     : 0 // 高价值任务占比
   const avgTasksPerDay = workDays > 0 ? (completedTasks / workDays).toFixed(1) : 0
   
+  // 智能洞察引擎
+  const insights = generateInsights({
+    dailyTrend,
+    categories,
+    highValueRatio,
+    completedTasks,
+    workDays,
+    focusEfficiency,
+    byCategory
+  })
+  
   // 任务聚合（去重统计）
   const taskFrequency = {}
   completedTasksList.forEach(task => {
@@ -2746,8 +2768,77 @@ const generateReportContent = () => {
     maxDaily: maxDaily || 1,
     keyTasks,
     aggregatedTasks,
-    summary
+    summary,
+    insights
   }
+}
+
+// 智能洞察引擎
+const generateInsights = (data) => {
+  const insights = []
+  const lang = currentLanguage.value
+  
+  // 规则A：高产分析（找出番茄钟最多的一天）
+  if (data.dailyTrend && data.dailyTrend.length > 0) {
+    const bestDay = data.dailyTrend.reduce((max, day) => day.count > max.count ? day : max, data.dailyTrend[0])
+    if (bestDay.count > 0) {
+      const topCategory = data.categories.reduce((max, cat) => cat.completed > max.completed ? cat : max, data.categories[0])
+      insights.push({
+        icon: '🚀',
+        type: 'productivity',
+        text: lang === 'zh'
+          ? `这周的你犹如神助！${bestDay.label}是你战斗力最强的一天，一口气完成了 ${bestDay.count} 个任务，主要聚焦在${topCategory.icon} ${topCategory.name}上。`
+          : `You were on fire! ${bestDay.label} was your most productive day with ${bestDay.count} tasks completed, mainly focused on ${topCategory.icon} ${topCategory.name}.`
+      })
+    }
+  }
+  
+  // 规则B：失衡预警（工作占比过高）
+  const workRatio = data.categories[0].rate
+  if (workRatio > 70) {
+    insights.push({
+      icon: '⚠️',
+      type: 'balance',
+      text: lang === 'zh'
+        ? `本期是个不折不扣的工作狂（工作占比高达 ${workRatio}%）。努力固然可敬，但周末别忘了给"生活"留点时间，去打场球或看个电影吧！`
+        : `You're a workaholic this period (work accounts for ${workRatio}%). Hard work is admirable, but don't forget to leave some time for life on weekends!`
+    })
+  }
+  
+  // 规则C：执行力巅峰（高优先级任务完成率高）
+  if (data.highValueRatio >= 50) {
+    insights.push({
+      icon: '🎯',
+      type: 'execution',
+      text: lang === 'zh'
+        ? `完美的要事优先执行者！本期你极其精准地消灭了高优先级任务（占比 ${data.highValueRatio}%），没有被琐事牵着鼻子走。`
+        : `Perfect prioritization! You precisely eliminated high-priority tasks (${data.highValueRatio}%), not distracted by trivial matters.`
+    })
+  }
+  
+  // 规则D：连胜激励（连续多天完成任务）
+  if (data.workDays >= 7 && data.completedTasks >= data.workDays) {
+    insights.push({
+      icon: '🏆',
+      type: 'streak',
+      text: lang === 'zh'
+        ? `大满贯达成！🏆 你创造了完美的 ${data.workDays} 天连续行动记录，自律得让人可怕。`
+        : `Grand Slam! 🏆 You've created a perfect ${data.workDays}-day action streak. Your discipline is impressive!`
+    })
+  }
+  
+  // 规则E：专注力评价
+  if (data.focusEfficiency >= 8) {
+    insights.push({
+      icon: '⚡',
+      type: 'focus',
+      text: lang === 'zh'
+        ? `超强专注力！日均 ${data.focusEfficiency} 个番茄钟，你的时间管理能力已经超越了90%的人。`
+        : `Super focus! ${data.focusEfficiency} pomodoros per day on average. Your time management skills surpass 90% of people.`
+    })
+  }
+  
+  return insights
 }
 
 // 生成智能总结（基于实际完成的任务）
@@ -6935,6 +7026,59 @@ onUnmounted(() => {
 .category-detail {
   font-size: 0.75rem;
   color: #999;
+}
+
+.insights-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.insight-card {
+  display: flex;
+  gap: 1rem;
+  padding: 1.2rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f8f9fc 0%, #e9ecef 100%);
+  border-left: 4px solid #667eea;
+  align-items: flex-start;
+}
+
+.insight-card.insight-productivity {
+  background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%);
+  border-left-color: #00acc1;
+}
+
+.insight-card.insight-balance {
+  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+  border-left-color: #fb8c00;
+}
+
+.insight-card.insight-execution {
+  background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+  border-left-color: #8e24aa;
+}
+
+.insight-card.insight-streak {
+  background: linear-gradient(135deg, #fff9c4 0%, #fff59d 100%);
+  border-left-color: #fbc02d;
+}
+
+.insight-card.insight-focus {
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+  border-left-color: #43a047;
+}
+
+.insight-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.insight-text {
+  flex: 1;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #333;
 }
 
 .daily-trend {
