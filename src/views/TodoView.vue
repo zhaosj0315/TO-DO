@@ -1122,6 +1122,15 @@
               </div>
             </div>
 
+            <!-- 执行官摘要 -->
+            <div class="executive-summary" v-if="reportData.executiveSummary">
+              <div class="summary-icon">📋</div>
+              <div class="summary-content">
+                <h4 class="summary-title">{{ currentLanguage === 'zh' ? '执行官摘要' : 'Executive Summary' }}</h4>
+                <p class="summary-text">{{ reportData.executiveSummary }}</p>
+              </div>
+            </div>
+
             <!-- 新增KPI指标 -->
             <div class="report-kpi-section">
               <div class="kpi-item">
@@ -2876,6 +2885,44 @@ const generateReportContent = () => {
     aggregatedTasks,
     summary,
     insights
+  }
+  
+  // 生成执行官摘要
+  reportData.value.executiveSummary = generateExecutiveSummary(reportData.value, reportType.value)
+}
+
+// 生成执行官摘要（Executive Summary）
+const generateExecutiveSummary = (data, reportType) => {
+  const lang = currentLanguage.value
+  const year = new Date().getFullYear()
+  
+  if (reportType === 'yearly') {
+    // 年度摘要
+    const topCategory = data.categories.reduce((max, cat) => cat.pomodoros > max.pomodoros ? cat : max, data.categories[0])
+    const topHabit = data.aggregatedTasks && data.aggregatedTasks.length > 0 ? data.aggregatedTasks[0] : null
+    
+    return lang === 'zh'
+      ? `在过去的 ${year} 年，你共计专注了 ${data.totalFocusHours} 个小时（${data.totalPomodoros} 个番茄钟）。其中，${topCategory.icon} ${topCategory.name}占据了你 ${topCategory.rate}% 的精力。你保持了${data.completionRate >= 80 ? '极高' : data.completionRate >= 60 ? '良好' : '稳定'}的执行力（${data.completionRate}% 完成率）${topHabit ? `，并且将「${topHabit.text}」培养成了贯穿全年的坚实习惯（累计 ${topHabit.count} 次）` : ''}。`
+      : `In ${year}, you focused for ${data.totalFocusHours} hours (${data.totalPomodoros} pomodoros). ${topCategory.icon} ${topCategory.name} took ${topCategory.rate}% of your energy. You maintained ${data.completionRate >= 80 ? 'excellent' : data.completionRate >= 60 ? 'good' : 'steady'} execution (${data.completionRate}% completion rate)${topHabit ? `, and cultivated "${topHabit.text}" as a solid habit (${topHabit.count} times)` : ''}.`
+  } else if (reportType === 'quarterly') {
+    // 季度摘要
+    const topCategory = data.categories.reduce((max, cat) => cat.pomodoros > max.pomodoros ? cat : max, data.categories[0])
+    
+    return lang === 'zh'
+      ? `本季度你完成了 ${data.completedTasks} 个任务，累计投入 ${data.totalFocusHours} 小时。${topCategory.icon} ${topCategory.name}是你的主战场（${topCategory.rate}%），${data.bestMonth ? `其中 ${data.bestMonth.month}是最高产的月份（${data.bestMonth.count} 个任务）` : ''}。`
+      : `This quarter you completed ${data.completedTasks} tasks with ${data.totalFocusHours} hours invested. ${topCategory.icon} ${topCategory.name} was your main focus (${topCategory.rate}%)${data.bestMonth ? `, with ${data.bestMonth.month} being the most productive month (${data.bestMonth.count} tasks)` : ''}.`
+  } else if (reportType === 'monthly') {
+    // 月度摘要
+    const topCategory = data.categories.reduce((max, cat) => cat.completed > max.completed ? cat : max, data.categories[0])
+    
+    return lang === 'zh'
+      ? `本月你完成了 ${data.completedTasks} 个任务，日均 ${data.avgTasksPerDay} 个，完成率 ${data.completionRate}%。${topCategory.icon} ${topCategory.name}是你投入最多的领域（${topCategory.completed} 个任务）。`
+      : `This month you completed ${data.completedTasks} tasks, averaging ${data.avgTasksPerDay} per day with ${data.completionRate}% completion rate. ${topCategory.icon} ${topCategory.name} received the most attention (${topCategory.completed} tasks).`
+  } else {
+    // 周报摘要
+    return lang === 'zh'
+      ? `本周你完成了 ${data.completedTasks} 个任务，完成率 ${data.completionRate}%，日均专注 ${data.focusEfficiency} 个番茄钟。${data.highValueRatio >= 50 ? '高优先级任务占比超过50%，执行力优秀！' : '继续保持专注！'}`
+      : `This week you completed ${data.completedTasks} tasks with ${data.completionRate}% completion rate, averaging ${data.focusEfficiency} pomodoros per day. ${data.highValueRatio >= 50 ? 'High-priority tasks exceeded 50%, excellent execution!' : 'Keep focused!'}`
   }
 }
 
@@ -6754,6 +6801,39 @@ onUnmounted(() => {
   flex-wrap: wrap;
   gap: 0.3rem;
   line-height: 1.4;
+}
+
+.executive-summary {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  color: white;
+  align-items: flex-start;
+}
+
+.executive-summary .summary-icon {
+  font-size: 2.5rem;
+  flex-shrink: 0;
+}
+
+.executive-summary .summary-content {
+  flex: 1;
+}
+
+.executive-summary .summary-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.8rem;
+  opacity: 0.9;
+}
+
+.executive-summary .summary-text {
+  font-size: 0.95rem;
+  line-height: 1.8;
+  opacity: 0.95;
 }
 
 .footer-version {
