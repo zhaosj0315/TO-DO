@@ -1221,6 +1221,13 @@ const i18n = {
     // 日期标签
     todayLabel: '今天',
     yesterdayLabel: '昨天',
+    // 截止时间
+    noDeadline: '无截止',
+    overdue: '逾期',
+    remaining: '还剩',
+    onlyRemaining: '仅剩',
+    days: '天',
+    hours: '小时',
   },
   en: {
     // 标题
@@ -1367,6 +1374,13 @@ const i18n = {
     // 日期标签
     todayLabel: 'Today',
     yesterdayLabel: 'Yesterday',
+    // 截止时间
+    noDeadline: 'No deadline',
+    overdue: 'Overdue',
+    remaining: 'Left',
+    onlyRemaining: 'Only',
+    days: 'days',
+    hours: 'hrs',
   }
 }
 
@@ -2399,11 +2413,11 @@ const exportToExcel = async () => {
 const getTaskTypeText = (task) => {
   switch (task.type) {
     case 'today':
-      return '今天'
+      return t('today')
     case 'tomorrow':
-      return '明天'
+      return t('tomorrow')
     case 'this_week':
-      return '本周内'
+      return t('thisWeek')
     case 'custom_date':
       if (task.customDate) {
         const date = new Date(task.customDate)
@@ -2416,17 +2430,17 @@ const getTaskTypeText = (task) => {
         }
         return text
       }
-      return '指定日期'
+      return t('customDate')
     case 'daily':
-      return '每天'
+      return t('daily')
     case 'weekday':
-      return '工作日'
+      return t('weekday')
     case 'weekly':
       if (task.weekdays) {
         const selectedDays = task.weekdays.map(day => weekdays[day]).join(',')
-        return `每周${selectedDays}`
+        return currentLanguage.value === 'zh' ? `每周${selectedDays}` : `Weekly: ${selectedDays}`
       }
-      return '每周'
+      return t('weekly')
     default:
       return ''
   }
@@ -2449,12 +2463,7 @@ const getPomodoroCount = (priority) => {
 
 // 方法：获取分类文本
 const getCategoryText = (category) => {
-  const categoryMap = {
-    work: '工作',
-    study: '学习',
-    life: '生活'
-  }
-  return categoryMap[category] || category
+  return t(category) // work/study/life 都在语言包中
 }
 
 // 方法：触发文件选择
@@ -2625,7 +2634,7 @@ const formatDateTime = (dateStr) => {
 // 方法：获取任务截止时间文本
 const getDeadlineText = (task) => {
   const deadline = calculateDeadline(task)
-  if (!deadline) return '无截止'
+  if (!deadline) return t('noDeadline')
   
   const now = new Date()
   const diff = deadline - now
@@ -2637,8 +2646,8 @@ const getDeadlineText = (task) => {
     const days = Math.floor(hours / 24)
     const remainingHours = hours % 24
     
-    if (days > 0) return `逾期 ${days}天 ${remainingHours}小时`
-    return `逾期 ${hours}小时`
+    if (days > 0) return `${t('overdue')} ${days}${t('days')} ${remainingHours}${t('hours')}`
+    return `${t('overdue')} ${hours}${t('hours')}`
   } else {
     // 未逾期
     const hours = Math.floor(diff / (1000 * 60 * 60))
@@ -2655,14 +2664,14 @@ const getDeadlineText = (task) => {
     // 基础日期格式
     let dateStr = `${year}/${month}/${day} ${hour}:${minute}`
     if (date.toDateString() === now.toDateString()) {
-      dateStr = `今天 ${hour}:${minute}`
+      dateStr = `${t('todayLabel')} ${hour}:${minute}`
     } else if (new Date(now.getTime() + 86400000).toDateString() === date.toDateString()) {
-      dateStr = `明天 ${hour}:${minute}`
+      dateStr = `${t('tomorrow')} ${hour}:${minute}`
     }
     
     // 添加剩余时间提醒
-    if (days > 0) return `${dateStr} (还剩 ${days}天)`
-    return `${dateStr} (仅剩 ${hours}小时)`
+    if (days > 0) return `${dateStr} (${t('remaining')} ${days}${t('days')})`
+    return `${dateStr} (${t('onlyRemaining')} ${hours}${t('hours')})`
   }
 }
 
