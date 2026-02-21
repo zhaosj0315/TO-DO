@@ -5,20 +5,20 @@
       <!-- 顶部标题栏 -->
       <header class="header">
         <div class="user-info">
-          <h1>{{ taskTitle }}</h1>
+          <h1>{{ t('myTasks') }}</h1>
         </div>
         <div class="header-actions">
           <!-- 刷新按钮 -->
-          <button class="btn-icon-circle btn-refresh-icon" @click="handleRefresh" title="刷新">
+          <button class="btn-icon-circle btn-refresh-icon" @click="handleRefresh" :title="t('refresh')">
             <span :class="{ spinning: isRefreshing }">⟳</span>
           </button>
           <!-- 回收站按钮（带数字气泡） -->
-          <button class="btn-icon-circle btn-trash" @click="showTrash = true" title="回收站">
+          <button class="btn-icon-circle btn-trash" @click="showTrash = true" :title="t('trash')">
             🗑️
             <span v-if="taskStore.deletedTasks.length > 0" class="badge-count">{{ taskStore.deletedTasks.length }}</span>
           </button>
           <!-- 个人头像 -->
-          <button class="btn-avatar" @click="showProfile = true" title="个人主页">
+          <button class="btn-avatar" @click="showProfile = true" :title="t('profile')">
             <div class="avatar-mini">{{ currentUsername ? currentUsername.charAt(0).toUpperCase() : 'U' }}</div>
           </button>
         </div>
@@ -30,33 +30,33 @@
         <div class="stats-grid">
           <!-- 全部 -->
           <div class="stat-card stat-card-all clickable" @click="setFilter('all')" :class="{ active: currentFilter === 'all' }">
-            <span class="stat-label">全部</span>
+            <span class="stat-label">{{ t('all') }}</span>
             <span class="stat-value">{{ baseFilteredTasks.length }}</span>
           </div>
 
           <!-- 已完成 -->
           <div class="stat-card stat-card-completed clickable" @click="setFilter('completed')" :class="{ active: currentFilter === 'completed' }">
-            <span class="stat-label">已完成</span>
+            <span class="stat-label">{{ t('completed') }}</span>
             <span class="stat-value success">{{ completedCount }}</span>
           </div>
 
           <!-- 待办 -->
           <div class="stat-card stat-card-pending clickable" @click="setFilter('pending')" :class="{ active: currentFilter === 'pending' }">
-            <span class="stat-label">待办</span>
+            <span class="stat-label">{{ t('pending') }}</span>
             <span class="stat-value">{{ pendingCount }}</span>
           </div>
 
           <!-- 已逾期 -->
           <div class="stat-card stat-card-overdue clickable" @click="setFilter('overdue')" :class="{ active: currentFilter === 'overdue' }">
-            <span class="stat-label">已逾期</span>
+            <span class="stat-label">{{ t('overdue') }}</span>
             <span class="stat-value danger">{{ overdueCount }}</span>
           </div>
 
           <!-- 筛选按钮 - 移到统计栏 -->
-          <button class="stat-card filter-card" @click="showFilterModal = true" title="高级筛选">
+          <button class="stat-card filter-card" @click="showFilterModal = true" :title="t('filter')">
             <div class="icon-with-label">
               <span class="icon-small">🔍</span>
-              <span class="label-small">筛选</span>
+              <span class="label-small">{{ t('filter') }}</span>
             </div>
           </button>
 
@@ -64,7 +64,7 @@
           <div class="stat-card add-toggle-card" @click="showAddForm = !showAddForm" :class="{ active: showAddForm }">
             <div class="icon-with-label">
               <span class="icon-small arrow-icon" :class="{ rotated: showAddForm }">↓</span>
-              <span class="label-small">{{ showAddForm ? '收起' : '展开' }}</span>
+              <span class="label-small">{{ showAddForm ? t('collapse') : t('expand') }}</span>
             </div>
           </div>
         </div>
@@ -77,7 +77,7 @@
               v-model="searchKeyword" 
               type="text" 
               class="search-input-main" 
-              placeholder="🔍 搜索任务名称或描述..."
+              :placeholder="t('searchPlaceholder')"
               @input="handleSearch"
             >
             <button v-if="searchKeyword" class="clear-search-btn" @click="clearSearch">✕</button>
@@ -92,7 +92,7 @@
               type="text" 
               v-model="newTaskText" 
               class="task-input-main"
-              placeholder="➕ 新建任务：输入任务名称..."
+              :placeholder="t('addTaskPlaceholder')"
               @keyup.enter="addTask"
             >
           </div>
@@ -954,7 +954,7 @@
     </div>
 
     <!-- 星期选择模态框 - 每周重复 -->
-    <div v-if="showWeeklyModal" class="modal-overlay" @click.self="showWeeklyModal = false">
+    <div v-if="showWeeklyModal" class="modal-overlay" @click.self="showWeeklyModal = false" style="z-index: 1100;">
       <div class="modal-content glass-card" style="background: white; max-width: 450px; width: 96%; padding: 1rem;">
         <div class="modal-header">
           <h3>选择重复日期</h3>
@@ -968,7 +968,30 @@
             </label>
           </div>
           <div class="modal-actions" style="margin-top: 2rem;">
-            <button class="btn btn-primary" style="width: 100%;" @click="showWeeklyModal = false">确定</button>
+            <button class="btn btn-primary" style="width: 100%;" @click="confirmWeeklySelect">确定</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 自定义日期时间模态框 -->
+    <div v-if="showCustomDateModal" class="modal-overlay" @click.self="confirmCustomDate" style="z-index: 1100;">
+      <div class="modal-content glass-card" style="background: white; max-width: 450px; width: 96%; padding: 1rem;" @click.stop>
+        <div class="modal-header">
+          <h3>选择日期时间</h3>
+          <button class="close-btn" @click="confirmCustomDate">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>日期和时间</label>
+            <input 
+              v-model="customDateTime" 
+              type="datetime-local" 
+              class="input" 
+              :min="getTodayDateTime()"
+              style="width: 100%; font-size: 1rem;"
+              @change="confirmCustomDate"
+            >
           </div>
         </div>
       </div>
@@ -1021,24 +1044,11 @@
               <option value="today">今天</option>
               <option value="tomorrow">明天</option>
               <option value="this_week">本周内</option>
-              <option value="custom_date">指定日期</option>
               <option value="daily">每天重复</option>
               <option value="weekday">工作日重复</option>
-              <option value="weekly">每周重复</option>
+              <option value="custom_date">{{ editCustomDateTime ? formatDisplayDateTime(editCustomDateTime) : '指定日期' }}</option>
+              <option value="weekly">{{ editWeekdays.length > 0 ? formatSelectedWeekdays(editWeekdays) : '每周重复' }}</option>
             </select>
-          </div>
-          <div v-if="editType === 'custom_date'" class="edit-field">
-            <label>指定日期时间</label>
-            <input v-model="editCustomDateTime" type="datetime-local" class="input" :min="getTodayDateTime()">
-          </div>
-          <div v-if="editType === 'weekly'" class="edit-field">
-            <label>重复周期</label>
-            <div class="weekday-selector">
-              <label v-for="(day, index) in weekdays" :key="index" class="weekday-label">
-                <input type="checkbox" :value="index" v-model="editWeekdays">
-                <span>{{ day }}</span>
-              </label>
-            </div>
           </div>
           <div class="modal-actions">
             <button class="btn btn-secondary" @click="editingTask = null">取消</button>
@@ -1065,6 +1075,101 @@ import * as XLSX from 'xlsx'
 const router = useRouter()
 const taskStore = useOfflineTaskStore()
 const userStore = useOfflineUserStore()
+
+// 语言包配置
+const i18n = {
+  zh: {
+    // 标题
+    myTasks: '我的任务',
+    // 统计
+    all: '全部',
+    completed: '已完成',
+    pending: '待办',
+    overdue: '已逾期',
+    filter: '筛选',
+    expand: '展开',
+    collapse: '收起',
+    // 搜索
+    searchPlaceholder: '🔍 搜索任务名称或描述...',
+    // 添加任务
+    addTaskPlaceholder: '➕ 新建任务：输入任务名称...',
+    descriptionPlaceholder: '📝 添加详细描述（可选）...',
+    // 按钮
+    add: '添加',
+    cancel: '取消',
+    confirm: '确认',
+    save: '保存',
+    delete: '删除',
+    edit: '编辑',
+    // 任务类型
+    today: '今天',
+    tomorrow: '明天',
+    thisWeek: '本周内',
+    customDate: '指定日期',
+    daily: '每天重复',
+    weekday: '工作日重复',
+    weekly: '每周重复',
+    // 分类
+    work: '工作',
+    study: '学习',
+    life: '生活',
+    // 优先级
+    high: '高',
+    medium: '中',
+    low: '低',
+    // 其他
+    refresh: '刷新',
+    trash: '回收站',
+    profile: '个人主页',
+  },
+  en: {
+    // 标题
+    myTasks: 'My Tasks',
+    // 统计
+    all: 'All',
+    completed: 'Done',
+    pending: 'Todo',
+    overdue: 'Overdue',
+    filter: 'Filter',
+    expand: 'Expand',
+    collapse: 'Collapse',
+    // 搜索
+    searchPlaceholder: '🔍 Search tasks...',
+    // 添加任务
+    addTaskPlaceholder: '➕ New task: Enter title...',
+    descriptionPlaceholder: '📝 Add description (optional)...',
+    // 按钮
+    add: 'Add',
+    cancel: 'Cancel',
+    confirm: 'Confirm',
+    save: 'Save',
+    delete: 'Delete',
+    edit: 'Edit',
+    // 任务类型
+    today: 'Today',
+    tomorrow: 'Tomorrow',
+    thisWeek: 'This Week',
+    customDate: 'Custom Date',
+    daily: 'Daily',
+    weekday: 'Weekdays',
+    weekly: 'Weekly',
+    // 分类
+    work: 'Work',
+    study: 'Study',
+    life: 'Life',
+    // 优先级
+    high: 'High',
+    medium: 'Medium',
+    low: 'Low',
+    // 其他
+    refresh: 'Refresh',
+    trash: 'Trash',
+    profile: 'Profile',
+  }
+}
+
+// 获取翻译文本
+const t = (key) => i18n[currentLanguage.value][key] || key
 
 // 任务状态枚举
 const TaskStatus = {
@@ -1098,6 +1203,7 @@ const showPrivacyPolicy = ref(false)
 const showPasswordModal = ref(false)
 const showPhoneModal = ref(false)
 const showWeeklyModal = ref(false)
+const showCustomDateModal = ref(false)
 const editingTask = ref(null)
 const editDescription = ref('')
 const editText = ref('')
@@ -1135,15 +1241,6 @@ let bindTimer = null
 
 // 获取当前用户名
 const currentUsername = computed(() => userStore.currentUser)
-
-// 智能生成标题
-const taskTitle = computed(() => {
-  const username = currentUsername.value
-  if (!username) return '我的任务'
-  // 判断是否为中文用户名
-  const isChinese = /[\u4e00-\u9fa5]/.test(username)
-  return isChinese ? `${username}的任务` : `${username}'s Tasks`
-})
 
 // 筛选选项
 const filters = [
@@ -1698,12 +1795,41 @@ const openEditModal = (task) => {
 
 // 方法：处理编辑类型变化
 const handleEditTypeChange = () => {
-  if (editType.value !== 'custom_date') {
-    editCustomDateTime.value = ''
+  // 如果选择指定日期，打开日期选择弹窗
+  if (editType.value === 'custom_date') {
+    // 设置当前编辑的日期时间到弹窗
+    customDateTime.value = editCustomDateTime.value || getTodayDateTime()
+    showCustomDateModal.value = true
   }
-  if (editType.value !== 'weekly') {
+  // 如果选择每周重复，打开周期选择弹窗
+  else if (editType.value === 'weekly') {
+    // 设置当前编辑的周期到弹窗
+    selectedWeekdays.value = [...editWeekdays.value]
+    showWeeklyModal.value = true
+  }
+  // 其他类型清空相关数据
+  else {
+    editCustomDateTime.value = ''
     editWeekdays.value = []
   }
+}
+
+// 方法：确认自定义日期选择
+const confirmCustomDate = () => {
+  if (editingTask.value) {
+    // 如果是编辑任务，同步到编辑表单
+    editCustomDateTime.value = customDateTime.value
+  }
+  showCustomDateModal.value = false
+}
+
+// 方法：确认周期选择
+const confirmWeeklySelect = () => {
+  if (editingTask.value) {
+    // 如果是编辑任务，同步到编辑表单
+    editWeekdays.value = [...selectedWeekdays.value]
+  }
+  showWeeklyModal.value = false
 }
 
 // 方法：保存任务编辑
