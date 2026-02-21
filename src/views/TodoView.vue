@@ -1122,6 +1122,25 @@
               </div>
             </div>
 
+            <!-- 新增KPI指标 -->
+            <div class="report-kpi-section">
+              <div class="kpi-item">
+                <span class="kpi-icon">⚡</span>
+                <span class="kpi-label">{{ currentLanguage === 'zh' ? '专注力效率' : 'Focus Efficiency' }}</span>
+                <span class="kpi-value">{{ reportData.focusEfficiency }} 🍅/{{ currentLanguage === 'zh' ? '天' : 'day' }}</span>
+              </div>
+              <div class="kpi-item">
+                <span class="kpi-icon">🎯</span>
+                <span class="kpi-label">{{ currentLanguage === 'zh' ? '高价值任务占比' : 'High-Value Ratio' }}</span>
+                <span class="kpi-value">{{ reportData.highValueRatio }}%</span>
+              </div>
+              <div class="kpi-item">
+                <span class="kpi-icon">📅</span>
+                <span class="kpi-label">{{ currentLanguage === 'zh' ? '日均完成' : 'Avg Tasks/Day' }}</span>
+                <span class="kpi-value">{{ reportData.avgTasksPerDay }} {{ currentLanguage === 'zh' ? '个' : '' }}</span>
+              </div>
+            </div>
+
             <!-- 分类统计 -->
             <div class="report-section">
               <h3 class="section-title">{{ currentLanguage === 'zh' ? '📊 分类统计' : '📊 By Category' }}</h3>
@@ -1186,7 +1205,24 @@
               </div>
             </div>
 
-            <!-- 重点任务 -->
+            <!-- 高频任务（聚合去重） -->
+            <div class="report-section" v-if="reportData.aggregatedTasks && reportData.aggregatedTasks.length > 0">
+              <h3 class="section-title">{{ currentLanguage === 'zh' ? '🔥 高频任务 Top 10' : '🔥 Most Frequent Tasks' }}</h3>
+              <div class="aggregated-tasks">
+                <div v-for="(task, index) in reportData.aggregatedTasks" :key="index" class="aggregated-task-item">
+                  <div class="task-rank">{{ index + 1 }}</div>
+                  <div class="task-info">
+                    <div class="task-name">{{ task.text }}</div>
+                    <div class="task-stats">
+                      <span class="task-frequency">{{ currentLanguage === 'zh' ? '完成' : 'Done' }} {{ task.count }} {{ currentLanguage === 'zh' ? '次' : 'times' }}</span>
+                      <span class="task-pomodoros">🍅 {{ task.pomodoros }}</span>
+                      <span class="task-persistence">{{ currentLanguage === 'zh' ? '坚持度' : 'Persistence' }} {{ Math.min(100, task.count * 20) }}%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- 重点任务 -->
             <div class="report-section">
               <h3 class="section-title">{{ currentLanguage === 'zh' ? '🎯 重点任务 (Top 10)' : '🎯 Key Tasks (Top 10)' }}</h3>
@@ -2409,7 +2445,6 @@ const generateReportContent = () => {
   
   // 工作日数
   const workDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1
-  const avgTasksPerDay = workDays > 0 ? (completedTasks / workDays).toFixed(1) : 0
   
   // 生成报告文本
   const reportTitle = currentLanguage.value === 'zh' 
@@ -2658,11 +2693,40 @@ const generateReportContent = () => {
       categoryText: getCategoryText(task.category),
       priorityText: getPriorityText(task.priority),
       pomodoros: getPomodoroCount(task.priority),
-    time: formatDateTime(task.created_at)
-  }))
+      time: formatDateTime(task.created_at)
+    }))
   
   // 智能总结（基于实际完成的任务）
   const summary = generateSmartSummary(reportType.value, completedTasksList)
+  
+  // 新增KPI指标
+  const focusEfficiency = workDays > 0 ? (totalPomodoros / workDays).toFixed(1) : 0 // 专注力效率
+  const highValueRatio = completedTasks > 0 
+    ? Math.round((byPriority.high.filter(t => t.status === TaskStatus.COMPLETED).length / completedTasks) * 100) 
+    : 0 // 高价值任务占比
+  const avgTasksPerDay = workDays > 0 ? (completedTasks / workDays).toFixed(1) : 0
+  
+  // 任务聚合（去重统计）
+  const taskFrequency = {}
+  completedTasksList.forEach(task => {
+    const key = task.text.trim().toLowerCase()
+    if (!taskFrequency[key]) {
+      taskFrequency[key] = {
+        text: task.text,
+        count: 0,
+        pomodoros: 0,
+        category: task.category,
+        priority: task.priority
+      }
+    }
+    taskFrequency[key].count++
+    taskFrequency[key].pomodoros += getPomodoroCount(task.priority)
+  })
+  
+  // 转换为数组并按频次排序
+  const aggregatedTasks = Object.values(taskFrequency)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10)
   
   reportData.value = {
     title: reportTitle.replace(/【|】/g, ''),
@@ -2672,11 +2736,16 @@ const generateReportContent = () => {
     completedTasks,
     totalPomodoros,
     completionRate,
+    focusEfficiency,
+    highValueRatio,
+    avgTasksPerDay,
+    workDays,
     categories,
     priorities,
     dailyTrend,
     maxDaily: maxDaily || 1,
     keyTasks,
+    aggregatedTasks,
     summary
   }
 }
@@ -6909,6 +6978,96 @@ onUnmounted(() => {
 .trend-value {
   color: white;
   font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.report-kpi-section {
+  display: flex;
+  gap: 1rem;
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border-radius: 10px;
+}
+
+.kpi-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.kpi-icon {
+  font-size: 1.5rem;
+}
+
+.kpi-label {
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.kpi-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.aggregated-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.aggregated-task-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #fff 0%, #f9f9f9 100%);
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+  align-items: center;
+}
+
+.task-rank {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.task-info {
+  flex: 1;
+}
+
+.task-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.task-stats {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.task-frequency {
+  color: #667eea;
+  font-weight: 600;
+}
+
+.task-persistence {
+  color: #f5576c;
   font-weight: 600;
 }
 
