@@ -54,13 +54,17 @@
 
           <!-- 筛选按钮 - 移到统计栏 -->
           <button class="stat-card filter-card" @click="showFilterModal = true" title="高级筛选">
-            🔍
+            <div class="icon-with-label">
+              <span class="icon-small">🔍</span>
+              <span class="label-small">筛选</span>
+            </div>
           </button>
 
           <!-- 添加/收起按钮 - 融入统计栏 -->
           <div class="stat-card add-toggle-card" @click="showAddForm = !showAddForm" :class="{ active: showAddForm }">
-            <div class="toggle-pill">
-              <span class="arrow-icon" :class="{ rotated: showAddForm }">↓</span>
+            <div class="icon-with-label">
+              <span class="icon-small arrow-icon" :class="{ rotated: showAddForm }">↓</span>
+              <span class="label-small">{{ showAddForm ? '收起' : '展开' }}</span>
             </div>
           </div>
         </div>
@@ -2629,7 +2633,6 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 1.2rem;
   transition: all 0.3s ease;
 }
 
@@ -2637,6 +2640,35 @@ onUnmounted(() => {
   background: rgba(102, 126, 234, 0.2);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* 图标+文字组合样式 */
+.icon-with-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.icon-small {
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.label-small {
+  font-size: 0.65rem;
+  line-height: 1;
+  color: #666;
+  font-weight: 500;
+}
+
+.filter-card:hover .label-small {
+  color: #667eea;
+}
+
+.add-toggle-card:hover .label-small {
+  color: #667eea;
 }
 
 .toggle-pill {
@@ -2656,7 +2688,6 @@ onUnmounted(() => {
 }
 
 .arrow-icon {
-  font-size: 1.2rem;
   color: #667eea;
   transition: transform 0.3s ease;
   display: inline-block;
