@@ -2413,8 +2413,8 @@ const generateReportContent = () => {
   
   // 生成报告文本
   const reportTitle = currentLanguage.value === 'zh' 
-    ? `【${reportType.value === 'weekly' ? '工作周报' : reportType.value === 'monthly' ? '月度总结' : reportType.value === 'quarterly' ? '季度报告' : '年度总结'}】${now.getFullYear()}年${periodName}`
-    : `【${reportType.value === 'weekly' ? 'Weekly Report' : reportType.value === 'monthly' ? 'Monthly Summary' : reportType.value === 'quarterly' ? 'Quarterly Report' : 'Annual Summary'}】${periodName} ${now.getFullYear()}`
+    ? `【${reportType.value === 'weekly' ? '工作周报' : reportType.value === 'monthly' ? '月度总结' : reportType.value === 'quarterly' ? '季度报告' : '年度总结'}】${periodName}`
+    : `【${reportType.value === 'weekly' ? 'Weekly Report' : reportType.value === 'monthly' ? 'Monthly Summary' : reportType.value === 'quarterly' ? 'Quarterly Report' : 'Annual Summary'}】${periodName}`
   
   const separator = '━'.repeat(60)
   const doubleSeparator = '═'.repeat(60)
@@ -2482,19 +2482,63 @@ const generateReportContent = () => {
   report += `🏠 ${t('life')} (${lifeTotal}${currentLanguage.value === 'zh' ? '项' : ' tasks'})\n`
   report += `${currentLanguage.value === 'zh' ? '已完成' : 'Completed'}: ${lifeCompleted}${currentLanguage.value === 'zh' ? '项' : ''} (${lifeRate}%)  |  ${currentLanguage.value === 'zh' ? '番茄' : 'Pomodoros'}: ${lifePomodoros}${currentLanguage.value === 'zh' ? '个' : ''}\n\n\n`
   
-  // 第三部分：任务明细（只显示已完成的前20项）
+  // 第三部分：本期重点事项
   report += `${doubleSeparator}\n`
-  report += currentLanguage.value === 'zh' ? '【第三部分】任务明细 - Task Details (前20项)\n' : '【Part 3】Task Details (Top 20)\n'
+  report += currentLanguage.value === 'zh' ? '【第三部分】本期重点事项 - Key Activities\n' : '【Part 3】Key Activities\n'
+  report += `${doubleSeparator}\n\n`
+  
+  // 按分类归纳任务
+  const workTasks = periodTasks.filter(t => t.status === TaskStatus.COMPLETED && t.category === 'work')
+  const studyTasks = periodTasks.filter(t => t.status === TaskStatus.COMPLETED && t.category === 'study')
+  const lifeTasks = periodTasks.filter(t => t.status === TaskStatus.COMPLETED && t.category === 'life')
+  
+  if (workTasks.length > 0) {
+    report += `💼 ${currentLanguage.value === 'zh' ? '工作' : 'Work'} (${workTasks.length}${currentLanguage.value === 'zh' ? '项' : ''})\n`
+    workTasks.slice(0, 10).forEach(t => {
+      report += `  • ${t.text}\n`
+    })
+    report += `\n`
+  }
+  
+  if (studyTasks.length > 0) {
+    report += `📚 ${currentLanguage.value === 'zh' ? '学习' : 'Study'} (${studyTasks.length}${currentLanguage.value === 'zh' ? '项' : ''})\n`
+    studyTasks.slice(0, 10).forEach(t => {
+      report += `  • ${t.text}\n`
+    })
+    report += `\n`
+  }
+  
+  if (lifeTasks.length > 0) {
+    report += `🏠 ${currentLanguage.value === 'zh' ? '生活' : 'Life'} (${lifeTasks.length}${currentLanguage.value === 'zh' ? '项' : ''})\n`
+    lifeTasks.slice(0, 10).forEach(t => {
+      report += `  • ${t.text}\n`
+    })
+    report += `\n`
+  }
+  
+  // 第四部分：重点任务（按优先级排序）
+  report += `${doubleSeparator}\n`
+  report += currentLanguage.value === 'zh' ? '【第四部分】重点任务 Top 10 - Key Tasks\n' : '【Part 4】Key Tasks Top 10\n'
   report += `${doubleSeparator}\n\n`
   
   const completedTasksList = periodTasks
     .filter(t => t.status === TaskStatus.COMPLETED)
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-    .slice(0, 20)
+    .sort((a, b) => {
+      const priorityWeight = (p) => {
+        if (p === 'high' || p === 'urgent') return 3
+        if (p === 'medium') return 2
+        return 1
+      }
+      const weightA = priorityWeight(a.priority)
+      const weightB = priorityWeight(b.priority)
+      if (weightB !== weightA) return weightB - weightA
+      return getPomodoroCount(b.priority) - getPomodoroCount(a.priority)
+    })
+    .slice(0, 10)
   
   completedTasksList.forEach((task, index) => {
-    report += `✅ ${index + 1}. ${task.text}\n`
-    report += `   ${currentLanguage.value === 'zh' ? '时间' : 'Time'}: ${formatDateTime(task.created_at)}  |  ${currentLanguage.value === 'zh' ? '分类' : 'Category'}: ${getCategoryText(task.category)}  |  ${currentLanguage.value === 'zh' ? '优先级' : 'Priority'}: ${getPriorityText(task.priority)}\n`
+    report += `${index + 1}. ${task.text}\n`
+    report += `   ${currentLanguage.value === 'zh' ? '分类' : 'Category'}: ${getCategoryText(task.category)}  |  ${currentLanguage.value === 'zh' ? '优先级' : 'Priority'}: ${getPriorityText(task.priority)}  |  ${currentLanguage.value === 'zh' ? '番茄' : 'Pomodoros'}: ${getPomodoroCount(task.priority)}\n`
     if (task.description) {
       report += `   ${currentLanguage.value === 'zh' ? '说明' : 'Description'}: ${task.description}\n`
     }
