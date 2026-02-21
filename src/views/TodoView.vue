@@ -1141,6 +1141,20 @@
               </div>
             </div>
 
+            <!-- 智能总结 -->
+            <div class="report-section" v-if="reportData.summary && reportData.summary.length > 0">
+              <h3 class="section-title">{{ currentLanguage === 'zh' ? '💡 本期重点事项' : '💡 Key Activities' }}</h3>
+              <div class="summary-content">
+                <div v-for="(item, index) in reportData.summary" :key="index" class="summary-item">
+                  <div class="summary-icon">{{ item.icon }}</div>
+                  <div class="summary-text">
+                    <div class="summary-title">{{ item.title }}</div>
+                    <div class="summary-desc">{{ item.description }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- 优先级分布 -->
             <div class="report-section">
               <h3 class="section-title">{{ currentLanguage === 'zh' ? '⚡ 优先级分布' : '⚡ By Priority' }}</h3>
@@ -1157,9 +1171,9 @@
               </div>
             </div>
 
-            <!-- 每日趋势 -->
+            <!-- 每日趋势（按完成数降序） -->
             <div class="report-section" v-if="reportData.dailyTrend && reportData.dailyTrend.length > 0">
-              <h3 class="section-title">{{ currentLanguage === 'zh' ? '📈 每日完成趋势' : '📈 Daily Trend' }}</h3>
+              <h3 class="section-title">{{ currentLanguage === 'zh' ? '📈 高效工作日排行' : '📈 Most Productive Days' }}</h3>
               <div class="daily-trend">
                 <div v-for="day in reportData.dailyTrend" :key="day.date" class="trend-item">
                   <div class="trend-label">{{ day.label }}</div>
@@ -1172,12 +1186,12 @@
               </div>
             </div>
 
-            <!-- 智能总结 -->
-            <div class="report-section" v-if="reportData.summary">
-              <h3 class="section-title">{{ currentLanguage === 'zh' ? '💡 智能总结' : '💡 Smart Summary' }}</h3>
-              <div class="summary-content">
-                <div v-for="(item, index) in reportData.summary" :key="index" class="summary-item">
-                  <div class="summary-icon">{{ item.icon }}</div>
+            <!-- 重点任务 -->
+            <div class="report-section">
+              <h3 class="section-title">{{ currentLanguage === 'zh' ? '🎯 重点任务 (Top 10)' : '🎯 Key Tasks (Top 10)' }}</h3>
+              <div class="key-tasks">
+                <div v-for="(task, index) in reportData.keyTasks" :key="task.id" class="task-item-report">
+                  <div class="task-number">{{ index + 1 }}</div>
                   <div class="summary-text">
                     <div class="summary-title">{{ item.title }}</div>
                     <div class="summary-desc">{{ item.description }}</div>
@@ -2585,6 +2599,9 @@ const generateReportContent = () => {
     dailyTrend.push({ date: dateStr, label, count })
   }
   
+  // 按完成数降序排列
+  dailyTrend.sort((a, b) => b.count - a.count)
+  
   // 重点任务
   const keyTasks = completedTasksList.slice(0, 10).map(task => ({
     id: task.id,
@@ -2713,6 +2730,15 @@ const exportMarkdown = () => {
       markdown += `- ${currentLanguage.value === 'zh' ? '番茄钟' : 'Pomodoros'}: ${cat.pomodoros}\n\n`
     })
     
+    // 智能总结（前置）
+    if (data.summary && data.summary.length > 0) {
+      markdown += `## ${currentLanguage.value === 'zh' ? '💡 本期重点事项' : '💡 Key Activities'}\n\n`
+      data.summary.forEach(item => {
+        markdown += `### ${item.icon} ${item.title}\n\n`
+        markdown += `${item.description}\n\n`
+      })
+    }
+    
     // 优先级分布
     markdown += `## ${currentLanguage.value === 'zh' ? '⚡ 优先级分布' : '⚡ By Priority'}\n\n`
     data.priorities.forEach(pri => {
@@ -2720,18 +2746,9 @@ const exportMarkdown = () => {
     })
     markdown += `\n`
     
-    // 智能总结
-    if (data.summary && data.summary.length > 0) {
-      markdown += `## ${currentLanguage.value === 'zh' ? '💡 智能总结' : '💡 Smart Summary'}\n\n`
-      data.summary.forEach(item => {
-        markdown += `### ${item.icon} ${item.title}\n\n`
-        markdown += `${item.description}\n\n`
-      })
-    }
-    
-    // 每日趋势
+    // 每日趋势（按完成数降序）
     if (data.dailyTrend && data.dailyTrend.length > 0) {
-      markdown += `## ${currentLanguage.value === 'zh' ? '📈 每日完成趋势' : '📈 Daily Trend'}\n\n`
+      markdown += `## ${currentLanguage.value === 'zh' ? '📈 高效工作日排行' : '📈 Most Productive Days'}\n\n`
       data.dailyTrend.forEach(day => {
         markdown += `- **${day.label}**: ${day.count}${currentLanguage.value === 'zh' ? '个任务' : ' tasks'}\n`
       })
