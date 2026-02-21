@@ -5,7 +5,7 @@
       <!-- 顶部标题栏 -->
       <header class="header">
         <div class="user-info">
-          <h1>{{ t('myTasks') }}</h1>
+          <h1>{{ currentUsername }}{{ t('tasksSuffix') }}</h1>
         </div>
         <div class="header-actions">
           <!-- 刷新按钮 -->
@@ -1081,6 +1081,7 @@ const i18n = {
   zh: {
     // 标题
     myTasks: '我的任务',
+    tasksSuffix: '的任务',
     // 统计
     all: '全部',
     completed: '已完成',
@@ -1125,6 +1126,7 @@ const i18n = {
   en: {
     // 标题
     myTasks: 'My Tasks',
+    tasksSuffix: '\'s Tasks',
     // 统计
     all: 'All',
     completed: 'Done',
