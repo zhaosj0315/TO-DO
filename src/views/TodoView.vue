@@ -754,7 +754,7 @@
     <div v-if="showPomodoroStats" class="modal-overlay" @click.self="showPomodoroStats = false">
       <div class="modal-content glass-card" style="background: white; max-width: 650px; width: 96%; padding: 1rem;">
         <div class="modal-header">
-          <h3>🍅 番茄钟统计</h3>
+          <h3>🍅 {{ t('pomodoroOverview') }}</h3>
           <button class="close-btn" @click="showPomodoroStats = false">&times;</button>
         </div>
         <div class="modal-body">
@@ -763,22 +763,22 @@
             <div class="overview-item earned">
               <div class="overview-icon">✅</div>
               <div class="overview-value">{{ earnedPomodoros }}</div>
-              <div class="overview-label">已获得</div>
+              <div class="overview-label">{{ t('earned') }}</div>
             </div>
             <div class="overview-item pending">
               <div class="overview-icon">⏳</div>
               <div class="overview-value">{{ pendingPomodoros }}</div>
-              <div class="overview-label">待获得</div>
+              <div class="overview-label">{{ t('pendingEarn') }}</div>
             </div>
             <div class="overview-item lost">
               <div class="overview-icon">❌</div>
               <div class="overview-value">{{ lostPomodoros }}</div>
-              <div class="overview-label">逾期扣除</div>
+              <div class="overview-label">{{ t('overdueDeduct') }}</div>
             </div>
             <div class="overview-item total">
               <div class="overview-icon">🏆</div>
               <div class="overview-value">{{ totalPomodoros }}</div>
-              <div class="overview-label">净获得</div>
+              <div class="overview-label">{{ t('netEarned') }}</div>
             </div>
           </div>
 
@@ -787,13 +787,13 @@
             <div class="level-badge-icon">{{ getLevelBadge().icon }}</div>
             <div class="badge-info">
               <div class="badge-title">{{ getLevelBadge().title }}</div>
-              <div class="badge-desc">累计获得 {{ earnedPomodoros }} 个番茄</div>
+              <div class="badge-desc">{{ t('accumulatedEarned') }} {{ earnedPomodoros }} {{ t('pomodoros') }}</div>
             </div>
           </div>
 
           <!-- 近7天趋势 -->
           <div class="stats-section">
-            <h4 class="section-title">📈 近7天趋势</h4>
+            <h4 class="section-title">📈 {{ t('last7DaysTrend') }}</h4>
             <div class="trend-chart">
               <div v-for="(day, index) in getLast7DaysTrend()" :key="index" class="trend-bar-wrapper">
                 <div class="trend-bar" :style="{ height: (day.count / getMaxDailyInWeek() * 100) + '%' }">
@@ -806,27 +806,27 @@
 
           <!-- 时间维度统计 -->
           <div class="stats-section">
-            <h4 class="section-title">📅 时间统计</h4>
+            <h4 class="section-title">📅 {{ t('timeStats') }}</h4>
             <div class="detail-stats-grid">
               <div class="stats-card time-today">
                 <div class="stats-icon">☀️</div>
                 <div class="stats-info">
                   <div class="stats-value">{{ getPomodorosByTime('today') }}</div>
-                  <div class="stats-label">今日</div>
+                  <div class="stats-label">{{ t('today') }}</div>
                 </div>
               </div>
               <div class="stats-card time-week">
                 <div class="stats-icon">📊</div>
                 <div class="stats-info">
                   <div class="stats-value">{{ getPomodorosByTime('week') }}</div>
-                  <div class="stats-label">本周</div>
+                  <div class="stats-label">{{ t('thisWeek') }}</div>
                 </div>
               </div>
               <div class="stats-card time-month">
                 <div class="stats-icon">📈</div>
                 <div class="stats-info">
                   <div class="stats-value">{{ getPomodorosByTime('month') }}</div>
-                  <div class="stats-label">本月</div>
+                  <div class="stats-label">{{ t('thisMonth') }}</div>
                 </div>
               </div>
             </div>
@@ -834,11 +834,11 @@
 
           <!-- 分类占比 -->
           <div class="stats-section">
-            <h4 class="section-title">📊 分类占比</h4>
+            <h4 class="section-title">📊 {{ t('categoryDistribution') }}</h4>
             <div class="category-bars">
               <div class="category-bar-item">
                 <div class="category-bar-header">
-                  <span>💼 工作</span>
+                  <span>💼 {{ t('work') }}</span>
                   <span class="category-bar-value">{{ getPomodorosByCategory('work') }} ({{ getCategoryPercent('work') }}%)</span>
                 </div>
                 <div class="category-bar-bg">
@@ -847,7 +847,7 @@
               </div>
               <div class="category-bar-item">
                 <div class="category-bar-header">
-                  <span>📚 学习</span>
+                  <span>📚 {{ t('study') }}</span>
                   <span class="category-bar-value">{{ getPomodorosByCategory('study') }} ({{ getCategoryPercent('study') }}%)</span>
                 </div>
                 <div class="category-bar-bg">
@@ -856,7 +856,7 @@
               </div>
               <div class="category-bar-item">
                 <div class="category-bar-header">
-                  <span>🏠 生活</span>
+                  <span>🏠 {{ t('life') }}</span>
                   <span class="category-bar-value">{{ getPomodorosByCategory('life') }} ({{ getCategoryPercent('life') }}%)</span>
                 </div>
                 <div class="category-bar-bg">
@@ -1170,6 +1170,20 @@ const i18n = {
     permanentDelete: '彻底删除',
     originalCategory: '原分类',
     emptyTrash: '回收站空空如也',
+    // 番茄钟统计
+    pomodoroOverview: '番茄钟统计',
+    earned: '已获得',
+    pendingEarn: '待获得',
+    overdueDeduct: '逾期扣除',
+    netEarned: '净获得',
+    accumulatedEarned: '累计获得',
+    pomodoros: '个番茄',
+    last7DaysTrend: '近7天趋势',
+    timeStats: '时间统计',
+    today: '今日',
+    thisWeek: '本周',
+    thisMonth: '本月',
+    categoryDistribution: '分类占比',
   },
   en: {
     // 标题
@@ -1263,6 +1277,20 @@ const i18n = {
     permanentDelete: 'Delete',
     originalCategory: 'Category',
     emptyTrash: 'Recycle bin is empty',
+    // 番茄钟统计
+    pomodoroOverview: 'Pomodoro Stats',
+    earned: 'Earned',
+    pendingEarn: 'Pending',
+    overdueDeduct: 'Lost',
+    netEarned: 'Net',
+    accumulatedEarned: 'Total earned',
+    pomodoros: 'pomodoros',
+    last7DaysTrend: 'Last 7 Days',
+    timeStats: 'Time Stats',
+    today: 'Today',
+    thisWeek: 'This Week',
+    thisMonth: 'This Month',
+    categoryDistribution: 'By Category',
   }
 }
 
