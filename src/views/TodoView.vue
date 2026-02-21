@@ -319,30 +319,30 @@
     <div v-if="showFilterModal" class="modal-overlay" @click.self="showFilterModal = false">
       <div class="modal-content filter-modal">
         <div class="modal-header">
-          <h3>🔍 高级筛选</h3>
+          <h3>🔍 {{ t('advancedFilter') }}</h3>
           <button class="close-btn" @click="showFilterModal = false">&times;</button>
         </div>
         <div class="modal-body filter-body">
           <!-- 日期范围 -->
           <div class="filter-section">
-            <label class="filter-label">📅 日期范围</label>
+            <label class="filter-label">📅 {{ t('dateRange') }}</label>
             <div class="date-range-picker">
               <div 
                 class="date-input-box" 
                 :class="{ 'has-value': startDate }" 
                 @click="showDatePicker('start')"
               >
-                {{ startDate ? formatDisplayDate(startDate) : '开始日期' }}
+                {{ startDate ? formatDisplayDate(startDate) : t('startDate') }}
               </div>
-              <span class="date-separator">至</span>
+              <span class="date-separator">{{ t('to') }}</span>
               <div 
                 class="date-input-box" 
                 :class="{ 'has-value': endDate }" 
                 @click="showDatePicker('end')"
               >
-                {{ endDate ? formatDisplayDate(endDate) : '结束日期' }}
+                {{ endDate ? formatDisplayDate(endDate) : t('endDate') }}
               </div>
-              <button v-if="startDate || endDate" class="clear-btn-small" @click="clearDateFilter">清除</button>
+              <button v-if="startDate || endDate" class="clear-btn-small" @click="clearDateFilter">{{ t('clear') }}</button>
             </div>
             <input ref="hiddenStartDate" type="date" style="display:none" @change="handleStartDateChange">
             <input ref="hiddenEndDate" type="date" style="display:none" @change="handleEndDateChange">
@@ -350,7 +350,7 @@
 
           <!-- 分类筛选 -->
           <div class="filter-section">
-            <label class="filter-label">🏷️ 分类</label>
+            <label class="filter-label">🏷️ {{ t('category') }}</label>
             <div class="filter-buttons">
               <button 
                 v-for="cat in categories" 
@@ -367,14 +367,14 @@
 
           <!-- 优先级筛选 -->
           <div class="filter-section">
-            <label class="filter-label">⚡ 优先级</label>
+            <label class="filter-label">⚡ {{ t('priority') }}</label>
             <div class="filter-buttons">
               <button 
                 class="filter-chip priority-high" 
                 :class="{ active: currentPriorityFilter === 'high' }"
                 @click="setPriorityFilter('high')"
               >
-                <span class="chip-label">高</span>
+                <span class="chip-label">{{ t('high') }}</span>
                 <span class="chip-count">{{ highPriorityCount }}</span>
               </button>
               <button 
@@ -382,7 +382,7 @@
                 :class="{ active: currentPriorityFilter === 'medium' }"
                 @click="setPriorityFilter('medium')"
               >
-                <span class="chip-label">中</span>
+                <span class="chip-label">{{ t('medium') }}</span>
                 <span class="chip-count">{{ mediumPriorityCount }}</span>
               </button>
               <button 
@@ -390,7 +390,7 @@
                 :class="{ active: currentPriorityFilter === 'low' }"
                 @click="setPriorityFilter('low')"
               >
-                <span class="chip-label">低</span>
+                <span class="chip-label">{{ t('low') }}</span>
                 <span class="chip-count">{{ lowPriorityCount }}</span>
               </button>
             </div>
@@ -398,22 +398,22 @@
 
           <!-- 关键字搜索 -->
           <div class="filter-section">
-            <label class="filter-label">🔍 关键字搜索</label>
+            <label class="filter-label">🔍 {{ t('keywordSearch') }}</label>
             <div class="search-input-wrapper">
               <input 
                 v-model="searchKeyword" 
                 type="text" 
                 class="search-input-modal" 
-                placeholder="搜索任务名称或描述..."
+                :placeholder="t('searchTaskPlaceholder')"
                 @input="handleSearch"
               >
-              <button v-if="searchKeyword" class="clear-btn-small" @click="clearSearch">清除</button>
+              <button v-if="searchKeyword" class="clear-btn-small" @click="clearSearch">{{ t('clear') }}</button>
             </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-reset" @click="resetFilters">重置</button>
-          <button class="btn btn-confirm" @click="showFilterModal = false">确定</button>
+          <button class="btn btn-reset" @click="resetFilters">{{ t('reset') }}</button>
+          <button class="btn btn-confirm" @click="showFilterModal = false">{{ t('confirm') }}</button>
         </div>
       </div>
     </div>
@@ -422,7 +422,7 @@
     <div v-if="showTrash" class="modal-overlay" @click.self="showTrash = false">
       <div class="modal-content glass-card" style="background: white; width: 96%; padding: 1rem;">
         <div class="modal-header">
-          <h3>回收站</h3>
+          <h3>{{ t('recycleBin') }}</h3>
           <button class="close-btn" @click="showTrash = false">&times;</button>
         </div>
         <div class="modal-body">
@@ -430,15 +430,15 @@
             <li v-for="task in taskStore.deletedTasks" :key="task.id" class="trash-item">
               <div class="trash-info">
                 <span class="trash-title">{{ task.text }}</span>
-                <span class="trash-meta:">原分类: {{ getCategoryText(task.category) }}</span>
+                <span class="trash-meta:">{{ t('originalCategory') }}: {{ getCategoryText(task.category) }}</span>
               </div>
               <div class="trash-actions">
-                <button class="btn btn-success btn-sm" @click="restoreTask(task.id)">恢复</button>
-                <button class="btn btn-danger btn-sm" @click="permanentDelete(task.id)">彻底删除</button>
+                <button class="btn btn-success btn-sm" @click="restoreTask(task.id)">{{ t('restore') }}</button>
+                <button class="btn btn-danger btn-sm" @click="permanentDelete(task.id)">{{ t('permanentDelete') }}</button>
               </div>
             </li>
           </ul>
-          <p v-else class="empty-state">回收站空空如也</p>
+          <p v-else class="empty-state">{{ t('emptyTrash') }}</p>
         </div>
       </div>
     </div>
@@ -447,7 +447,7 @@
     <div v-if="showProfile" class="modal-overlay" @click.self="showProfile = false">
       <div class="modal-content glass-card profile-modal" style="background: white;">
         <div class="modal-header">
-          <h3>个人主页</h3>
+          <h3>{{ t('personalProfile') }}</h3>
           <button class="close-btn" @click="showProfile = false">&times;</button>
         </div>
         <div class="modal-body">
@@ -473,7 +473,7 @@
                 <p class="profile-meta">📅 {{ formatDate(userProfileInfo.registerTime) }}</p>
                 <p class="profile-meta" v-if="userProfileInfo.usernameModifiedTime">✏️ {{ formatDate(userProfileInfo.usernameModifiedTime) }}</p>
                 <p class="profile-meta">🕐 {{ formatDate(userProfileInfo.lastLoginTime) }}</p>
-                <p class="profile-meta">📊 使用{{ usageDays }}天</p>
+                <p class="profile-meta">📊 {{ t('usageDays') }}{{ usageDays }}{{ t('days') }}</p>
               </div>
             </div>
           </div>
@@ -481,19 +481,19 @@
           <!-- 统计信息 -->
           <div class="profile-stats-compact">
             <div class="stat-item">
-              <span class="stat-label">总任务</span>
+              <span class="stat-label">{{ t('totalTasks') }}</span>
               <span class="stat-value">{{ taskStore.tasks.length }}</span>
             </div>
             <div class="stat-item">
-              <span class="stat-label">已完成</span>
+              <span class="stat-label">{{ t('completedTasks') }}</span>
               <span class="stat-value">{{ completedCount }}</span>
             </div>
             <div class="stat-item">
-              <span class="stat-label">待完成</span>
+              <span class="stat-label">{{ t('pendingTasks') }}</span>
               <span class="stat-value">{{ pendingCount }}</span>
             </div>
             <div class="stat-item">
-              <span class="stat-label">完成率</span>
+              <span class="stat-label">{{ t('completionRate') }}</span>
               <span class="stat-value">{{ completionRate }}%</span>
             </div>
           </div>
@@ -502,9 +502,9 @@
           <div class="pomodoro-entry" @click="showPomodoroStats = true">
             <div class="entry-icon">🍅</div>
             <div class="entry-content">
-              <div class="entry-title">番茄钟统计</div>
+              <div class="entry-title">{{ t('pomodoroStats') }}</div>
               <div class="entry-summary">
-                已获得 {{ earnedPomodoros }} 个 | 净获得 {{ totalPomodoros }} 个
+                {{ t('earnedPomodoros') }} {{ earnedPomodoros }} {{ currentLanguage === 'zh' ? '个' : '' }} | {{ t('netPomodoros') }} {{ totalPomodoros }} {{ currentLanguage === 'zh' ? '个' : '' }}
               </div>
             </div>
             <div class="entry-arrow">›</div>
@@ -514,8 +514,8 @@
           <div class="settings-entry" @click="showPasswordModal = true">
             <div class="entry-icon">🔒</div>
             <div class="entry-content">
-              <div class="entry-title">修改密码</div>
-              <div class="entry-summary">修改账号登录密码</div>
+              <div class="entry-title">{{ t('changePassword') }}</div>
+              <div class="entry-summary">{{ t('modifyPassword') }}</div>
             </div>
             <div class="entry-arrow">›</div>
           </div>
@@ -524,9 +524,9 @@
           <div class="settings-entry" @click="showPhoneModal = true">
             <div class="entry-icon">📱</div>
             <div class="entry-content">
-              <div class="entry-title">绑定手机号</div>
+              <div class="entry-title">{{ t('bindPhone') }}</div>
               <div class="entry-summary">
-                {{ userProfileInfo.boundPhone ? userProfileInfo.boundPhone : '未绑定' }}
+                {{ userProfileInfo.boundPhone ? userProfileInfo.boundPhone : t('notBound') }}
               </div>
             </div>
             <div class="entry-arrow">›</div>
@@ -534,20 +534,20 @@
 
           <!-- 数据导出与导入 -->
           <div class="export-section">
-            <h4 class="export-title">📊 数据管理</h4>
-            <p class="export-desc">导出或导入您的任务数据，轻松备份与迁移</p>
+            <h4 class="export-title">📊 {{ t('dataManagement') }}</h4>
+            <p class="export-desc">{{ t('dataManagementDesc') }}</p>
             <div class="data-buttons">
               <button class="btn btn-export" @click="exportToExcel">
                 <span class="export-icon">📥</span>
-                导出任务
+                {{ t('exportTasks') }}
               </button>
               <button class="btn btn-import" @click="triggerImport">
                 <span class="export-icon">📤</span>
-                导入任务
+                {{ t('importTasks') }}
               </button>
               <button class="btn btn-template" @click="downloadTemplate">
                 <span class="export-icon">📋</span>
-                下载模板
+                {{ t('downloadTemplate') }}
               </button>
             </div>
             <input 
@@ -564,9 +564,9 @@
           <div class="support-entry" @click="showSupport = true">
             <div class="entry-icon">💝</div>
             <div class="entry-content">
-              <div class="entry-title">联系与支持</div>
+              <div class="entry-title">{{ t('contactSupport') }}</div>
               <div class="entry-summary">
-                遇到bug或想打赏？点击查看联系方式
+                {{ t('contactSupportDesc') }}
               </div>
             </div>
             <div class="entry-arrow">›</div>
@@ -575,7 +575,7 @@
           <!-- 退出登录按钮 -->
           <div style="margin-top: 1.5rem; text-align: center;">
             <button class="btn btn-danger" @click="handleLogout" style="width: 100%;">
-              退出登录
+              {{ t('logout') }}
             </button>
           </div>
         </div>
@@ -1125,12 +1125,51 @@ const i18n = {
     // 弹窗标题
     changePassword: '修改密码',
     bindPhone: '绑定手机号',
+    advancedFilter: '高级筛选',
+    recycleBin: '回收站',
+    personalProfile: '个人主页',
+    contactSupport: '联系与支持',
+    pomodoroStats: '番茄钟统计',
     // 表单标签
     currentPassword: '当前密码',
     newPassword: '新密码',
     currentPasswordPlaceholder: '请输入当前密码',
     newPasswordPlaceholder: '请输入新密码',
     confirmChange: '确认修改',
+    // 筛选相关
+    dateRange: '日期范围',
+    startDate: '开始日期',
+    endDate: '结束日期',
+    to: '至',
+    clear: '清除',
+    category: '分类',
+    priority: '优先级',
+    keywordSearch: '关键字搜索',
+    searchTaskPlaceholder: '搜索任务名称或描述...',
+    reset: '重置',
+    // 个人主页
+    totalTasks: '总任务',
+    completedTasks: '已完成',
+    pendingTasks: '待完成',
+    completionRate: '完成率',
+    usageDays: '使用',
+    days: '天',
+    earnedPomodoros: '已获得',
+    netPomodoros: '净获得',
+    modifyPassword: '修改账号登录密码',
+    notBound: '未绑定',
+    dataManagement: '数据管理',
+    dataManagementDesc: '导出或导入您的任务数据，轻松备份与迁移',
+    exportTasks: '导出任务',
+    importTasks: '导入任务',
+    downloadTemplate: '下载模板',
+    contactSupportDesc: '遇到bug或想打赏？点击查看联系方式',
+    logout: '退出登录',
+    // 回收站
+    restore: '恢复',
+    permanentDelete: '彻底删除',
+    originalCategory: '原分类',
+    emptyTrash: '回收站空空如也',
   },
   en: {
     // 标题
@@ -1179,12 +1218,51 @@ const i18n = {
     // 弹窗标题
     changePassword: 'Change Password',
     bindPhone: 'Bind Phone',
+    advancedFilter: 'Advanced Filter',
+    recycleBin: 'Recycle Bin',
+    personalProfile: 'Profile',
+    contactSupport: 'Contact & Support',
+    pomodoroStats: 'Pomodoro Stats',
     // 表单标签
     currentPassword: 'Current Password',
     newPassword: 'New Password',
     currentPasswordPlaceholder: 'Enter current password',
     newPasswordPlaceholder: 'Enter new password',
     confirmChange: 'Confirm',
+    // 筛选相关
+    dateRange: 'Date Range',
+    startDate: 'Start Date',
+    endDate: 'End Date',
+    to: 'to',
+    clear: 'Clear',
+    category: 'Category',
+    priority: 'Priority',
+    keywordSearch: 'Keyword Search',
+    searchTaskPlaceholder: 'Search tasks...',
+    reset: 'Reset',
+    // 个人主页
+    totalTasks: 'Total',
+    completedTasks: 'Completed',
+    pendingTasks: 'Pending',
+    completionRate: 'Rate',
+    usageDays: 'Usage',
+    days: 'days',
+    earnedPomodoros: 'Earned',
+    netPomodoros: 'Net',
+    modifyPassword: 'Change account password',
+    notBound: 'Not bound',
+    dataManagement: 'Data Management',
+    dataManagementDesc: 'Export or import your tasks for backup and migration',
+    exportTasks: 'Export',
+    importTasks: 'Import',
+    downloadTemplate: 'Template',
+    contactSupportDesc: 'Found a bug or want to donate? Click for contact info',
+    logout: 'Logout',
+    // 回收站
+    restore: 'Restore',
+    permanentDelete: 'Delete',
+    originalCategory: 'Category',
+    emptyTrash: 'Recycle bin is empty',
   }
 }
 
