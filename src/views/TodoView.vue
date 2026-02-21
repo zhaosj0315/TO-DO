@@ -5453,7 +5453,7 @@ onUnmounted(() => {
   justify-content: center;
   align-items: center;
   gap: 1rem;
-  margin-top: 0.2rem;
+  margin-top: 0.1rem;
   padding: 0.2rem 0;
 }
 
