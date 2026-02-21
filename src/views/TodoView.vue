@@ -377,7 +377,7 @@
                 @click="setPriorityFilter(opt.value)"
               >
                 <span class="chip-label">{{ opt.label }}</span>
-                <span class="chip-count">{{ baseFilteredTasks.filter(t => t.priority === opt.value).length }}</span>
+                <span class="chip-count">{{ opt.count }}</span>
               </button>
             </div>
           </div>
@@ -1465,7 +1465,12 @@ const filteredTasks = computed(() => {
   
   // 优先级筛选
   if (currentPriorityFilter.value !== 'all') {
-    tasks = tasks.filter(t => t.priority === currentPriorityFilter.value)
+    if (priorityMode.value === 'traditional' && currentPriorityFilter.value === 'high') {
+      // 传统模式下，"高"包含 high 和 urgent
+      tasks = tasks.filter(t => t.priority === 'high' || t.priority === 'urgent')
+    } else {
+      tasks = tasks.filter(t => t.priority === currentPriorityFilter.value)
+    }
   }
   
   // 关键字搜索（模糊匹配任务名称和描述）
@@ -1493,27 +1498,45 @@ const completedCount = computed(() => baseFilteredTasks.value.filter(t => t.stat
 const overdueCount = computed(() => baseFilteredTasks.value.filter(t => t.status === TaskStatus.OVERDUE).length)
 
 // 优先级统计（基于baseFilteredTasks）
-const highPriorityCount = computed(() => baseFilteredTasks.value.filter(t => t.priority === 'high').length)
+const highPriorityCount = computed(() => {
+  if (priorityMode.value === 'traditional') {
+    // 传统模式：high + urgent 合并为"高"
+    return baseFilteredTasks.value.filter(t => t.priority === 'high' || t.priority === 'urgent').length
+  }
+  return baseFilteredTasks.value.filter(t => t.priority === 'high').length
+})
 const mediumPriorityCount = computed(() => baseFilteredTasks.value.filter(t => t.priority === 'medium').length)
 const lowPriorityCount = computed(() => baseFilteredTasks.value.filter(t => t.priority === 'low').length)
+const urgentPriorityCount = computed(() => baseFilteredTasks.value.filter(t => t.priority === 'urgent').length)
 
 // 优先级选项（根据模式动态生成）
 const priorityOptions = computed(() => {
   if (priorityMode.value === 'eisenhower') {
+    // 时间象限法：4个选项
     return [
-      { value: 'high', label: t('urgentImportant'), color: '#ef4444' },
-      { value: 'medium', label: t('important'), color: '#f97316' },
-      { value: 'urgent', label: t('urgent'), color: '#eab308' },
-      { value: 'low', label: t('notUrgentNotImportant'), color: '#9ca3af' }
+      { value: 'high', label: t('urgentImportant'), color: '#ef4444', count: highPriorityCount.value },
+      { value: 'medium', label: t('important'), color: '#f97316', count: mediumPriorityCount.value },
+      { value: 'urgent', label: t('urgent'), color: '#eab308', count: urgentPriorityCount.value },
+      { value: 'low', label: t('notUrgentNotImportant'), color: '#9ca3af', count: lowPriorityCount.value }
     ]
   } else {
+    // 传统三级：3个选项（high和urgent合并为"高"）
     return [
-      { value: 'high', label: t('high'), color: '#ef4444' },
-      { value: 'medium', label: t('medium'), color: '#f97316' },
-      { value: 'low', label: t('low'), color: '#3b82f6' }
+      { value: 'high', label: t('high'), color: '#ef4444', count: highPriorityCount.value },
+      { value: 'medium', label: t('medium'), color: '#f97316', count: mediumPriorityCount.value },
+      { value: 'low', label: t('low'), color: '#3b82f6', count: lowPriorityCount.value }
     ]
   }
 })
+
+// 获取优先级显示文本（传统模式下 urgent 也显示为"高"）
+const getPriorityLabel = (priority) => {
+  if (priorityMode.value === 'traditional' && priority === 'urgent') {
+    return t('high')
+  }
+  const option = priorityOptions.value.find(opt => opt.value === priority)
+  return option ? option.label : priority
+}
 
 // 分类统计（基于当前时间筛选）
 const getCategoryCount = (category) => {
@@ -2393,8 +2416,7 @@ const getTaskTypeText = (task) => {
 
 // 方法：获取优先级文本
 const getPriorityText = (priority) => {
-  const option = priorityOptions.value.find(opt => opt.value === priority)
-  return option ? option.label : priority
+  return getPriorityLabel(priority)
 }
 
 // 方法：获取番茄数（根据优先级）
