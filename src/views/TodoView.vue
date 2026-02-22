@@ -55,7 +55,7 @@
           <!-- 筛选按钮 - 移到统计栏 -->
           <button class="stat-card filter-card" @click="showFilterModal = true" :title="t('filter')">
             <div class="icon-with-label">
-              <span class="icon-small">🔍</span>
+              <span class="icon-small">🎛️</span>
               <span class="label-small">{{ t('filter') }}</span>
             </div>
           </button>
@@ -66,21 +66,6 @@
               <span class="icon-small arrow-icon" :class="{ rotated: showAddForm }">↓</span>
               <span class="label-small">{{ showAddForm ? t('collapse') : t('expand') }}</span>
             </div>
-          </div>
-        </div>
-
-        <!-- 第二行：搜索框 -->
-        <div class="action-bar">
-          <!-- 搜索框 -->
-          <div class="search-container">
-            <input 
-              v-model="searchKeyword" 
-              type="text" 
-              class="search-input-main" 
-              :placeholder="t('searchPlaceholder')"
-              @input="handleSearch"
-            >
-            <button v-if="searchKeyword" class="clear-search-btn" @click="clearSearch">✕</button>
           </div>
         </div>
 
@@ -319,13 +304,71 @@
     <div v-if="showFilterModal" class="modal-overlay" @click.self="showFilterModal = false">
       <div class="modal-content filter-modal">
         <div class="modal-header">
-          <h3>🔍 {{ t('advancedFilter') }}</h3>
+          <h3>🎛️ {{ t('advancedFilter') }}</h3>
           <button class="close-btn" @click="showFilterModal = false">&times;</button>
         </div>
         <div class="modal-body filter-body">
+          <!-- 关键字搜索 - 置顶 -->
+          <div class="filter-section">
+            <label class="filter-label">🔍 {{ t('keywordSearch') }}</label>
+            <div class="search-input-wrapper">
+              <input 
+                ref="filterSearchInput"
+                v-model="searchKeyword" 
+                type="text" 
+                class="search-input-modal" 
+                :placeholder="t('searchTaskPlaceholder')"
+                @input="handleSearch"
+              >
+              <button v-if="searchKeyword" class="clear-btn-small" @click="clearSearch">{{ t('clear') }}</button>
+            </div>
+          </div>
+
+          <!-- 分类筛选 -->
+          <div class="filter-section">
+            <label class="filter-label">🏷️ {{ t('category') }}</label>
+            <div class="filter-buttons">
+              <button 
+                v-for="cat in categories" 
+                :key="cat.value"
+                class="filter-chip filter-chip-tag" 
+                :class="{ active: currentCategoryFilter === cat.value }"
+                @click="setCategoryFilter(cat.value)"
+              >
+                <span class="chip-label-main">{{ cat.label }}</span>
+                <span class="chip-count-badge">{{ getCategoryCount(cat.value) }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 优先级筛选 -->
+          <div class="filter-section">
+            <label class="filter-label">⚡ {{ t('priority') }}</label>
+            <div class="filter-buttons">
+              <button 
+                v-for="opt in priorityOptions" 
+                :key="opt.value"
+                class="filter-chip filter-chip-tag" 
+                :class="{ active: currentPriorityFilter === opt.value, [`priority-${opt.value}`]: true }"
+                @click="setPriorityFilter(opt.value)"
+              >
+                <span class="priority-dot" :class="`dot-${opt.value}`"></span>
+                <span class="chip-label-main">{{ opt.label }}</span>
+                <span class="chip-count-badge">{{ opt.count }}</span>
+              </button>
+            </div>
+          </div>
+
           <!-- 日期范围 -->
           <div class="filter-section">
             <label class="filter-label">📅 {{ t('dateRange') }}</label>
+            <!-- 快捷日期按钮 -->
+            <div class="quick-date-buttons">
+              <button class="quick-date-btn" @click="setQuickDate('today')">{{ t('today') }}</button>
+              <button class="quick-date-btn" @click="setQuickDate('thisWeek')">{{ t('thisWeek') }}</button>
+              <button class="quick-date-btn" @click="setQuickDate('overdue')">{{ t('overdue') }}</button>
+            </div>
+            <!-- 自定义日期 -->
             <div class="date-range-picker">
               <div 
                 class="date-input-box" 
@@ -346,55 +389,6 @@
             </div>
             <input ref="hiddenStartDate" type="date" style="display:none" @change="handleStartDateChange">
             <input ref="hiddenEndDate" type="date" style="display:none" @change="handleEndDateChange">
-          </div>
-
-          <!-- 分类筛选 -->
-          <div class="filter-section">
-            <label class="filter-label">🏷️ {{ t('category') }}</label>
-            <div class="filter-buttons">
-              <button 
-                v-for="cat in categories" 
-                :key="cat.value"
-                class="filter-chip" 
-                :class="{ active: currentCategoryFilter === cat.value }"
-                @click="setCategoryFilter(cat.value)"
-              >
-                <span class="chip-label">{{ cat.label }}</span>
-                <span class="chip-count">{{ getCategoryCount(cat.value) }}</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- 优先级筛选 -->
-          <div class="filter-section">
-            <label class="filter-label">⚡ {{ t('priority') }}</label>
-            <div class="filter-buttons">
-              <button 
-                v-for="opt in priorityOptions" 
-                :key="opt.value"
-                class="filter-chip" 
-                :class="{ active: currentPriorityFilter === opt.value, [`priority-${opt.value}`]: true }"
-                @click="setPriorityFilter(opt.value)"
-              >
-                <span class="chip-label">{{ opt.label }}</span>
-                <span class="chip-count">{{ opt.count }}</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- 关键字搜索 -->
-          <div class="filter-section">
-            <label class="filter-label">🔍 {{ t('keywordSearch') }}</label>
-            <div class="search-input-wrapper">
-              <input 
-                v-model="searchKeyword" 
-                type="text" 
-                class="search-input-modal" 
-                :placeholder="t('searchTaskPlaceholder')"
-                @input="handleSearch"
-              >
-              <button v-if="searchKeyword" class="clear-btn-small" @click="clearSearch">{{ t('clear') }}</button>
-            </div>
           </div>
         </div>
         <div class="modal-footer">
@@ -2474,6 +2468,35 @@ const clearDateFilter = () => {
   currentPage.value = 1
 }
 
+// 方法：快捷日期设置
+const setQuickDate = (type) => {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = String(today.getMonth() + 1).padStart(2, '0')
+  const day = String(today.getDate()).padStart(2, '0')
+  const todayStr = `${year}-${month}-${day}`
+  
+  if (type === 'today') {
+    startDate.value = todayStr
+    endDate.value = todayStr
+  } else if (type === 'thisWeek') {
+    const dayOfWeek = today.getDay()
+    const monday = new Date(today)
+    monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1))
+    const sunday = new Date(monday)
+    sunday.setDate(monday.getDate() + 6)
+    
+    startDate.value = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`
+    endDate.value = `${sunday.getFullYear()}-${String(sunday.getMonth() + 1).padStart(2, '0')}-${String(sunday.getDate()).padStart(2, '0')}`
+  } else if (type === 'overdue') {
+    const yesterday = new Date(today)
+    yesterday.setDate(today.getDate() - 1)
+    startDate.value = '2020-01-01'
+    endDate.value = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`
+  }
+  currentPage.value = 1
+}
+
 // 显示日期选择器
 const showDatePicker = (type) => {
   const pickerRef = type === 'start' ? hiddenStartDate : hiddenEndDate
@@ -2539,6 +2562,7 @@ const handleEndDateChange = (e) => {
 const hiddenStartDate = ref(null)
 const hiddenEndDate = ref(null)
 const hiddenCustomDateTime = ref(null)
+const filterSearchInput = ref(null)
 
 // 方法：筛选任务
 const filterTasks = () => {
@@ -4988,6 +5012,15 @@ onUnmounted(() => {
   if (countdownInterval.value) clearInterval(countdownInterval.value)
 })
 
+// 监听筛选弹窗打开，自动聚焦搜索框
+watch(showFilterModal, (newVal) => {
+  if (newVal) {
+    nextTick(() => {
+      filterSearchInput.value?.focus()
+    })
+  }
+})
+
 // 监听报告数据变化，触发数字滚动动画
 watch(() => reportData.value, (newData) => {
   if (newData && showReportModal.value) {
@@ -7208,6 +7241,92 @@ watch(() => reportData.value, (newData) => {
 .filter-chip.priority-low.active {
   background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
   box-shadow: 0 4px 12px rgba(67, 233, 123, 0.35);
+}
+
+/* 新标签样式 - 水平布局 */
+.filter-chip-tag {
+  flex-direction: row !important;
+  justify-content: flex-start !important;
+  gap: 0.5rem !important;
+  padding: 0.5rem 0.8rem !important;
+}
+
+.chip-label-main {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.9rem;
+  flex: 1;
+  text-align: left;
+}
+
+.chip-count-badge {
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: #999;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 0.15rem 0.5rem;
+  border-radius: 12px;
+  min-width: 24px;
+  text-align: center;
+}
+
+.filter-chip-tag.active .chip-label-main,
+.filter-chip-tag.active .chip-count-badge {
+  color: white;
+}
+
+.filter-chip-tag.active .chip-count-badge {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* 优先级颜色点 */
+.priority-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot-high {
+  background: #f5576c;
+}
+
+.dot-medium {
+  background: #4facfe;
+}
+
+.dot-low {
+  background: #43e97b;
+}
+
+/* 快捷日期按钮 */
+.quick-date-buttons {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+}
+
+.quick-date-btn {
+  flex: 1;
+  padding: 0.5rem 0.8rem;
+  border: 2px solid #d0d0d0;
+  background: #fafafa;
+  border-radius: 18px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quick-date-btn:hover {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.08);
+  color: #667eea;
+}
+
+.quick-date-btn:active {
+  transform: scale(0.95);
 }
 
 /* 搜索框 - 撑满宽度 */
