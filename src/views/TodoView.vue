@@ -2998,13 +2998,10 @@ const generateReportContent = () => {
     // 必须有详细备注才有资格成为里程碑
     if (!task.description || task.description.trim().length === 0) return false
     
-    // 长周期报告（月/季/年）硬性门槛：过滤低优先级且耗时不足2个番茄的琐事
-    const isLongPeriod = ['monthly', 'quarterly', 'halfyearly', 'yearly'].includes(reportType.value)
-    if (isLongPeriod) {
-      const pomodoros = getPomodoroCount(task.priority)
-      const isLowValueTask = task.priority === 'low' && pomodoros < 2
-      if (isLowValueTask) return false
-    }
+    // Bug2修复：全局硬性门槛（所有报告类型）- 过滤低优先级且耗时不足2个番茄的琐事
+    const pomodoros = getPomodoroCount(task.priority)
+    const isLowValueTask = task.priority === 'low' && pomodoros < 2
+    if (isLowValueTask) return false
     
     let score = 0
     const hasRichDescription = task.description.trim().length > 10
@@ -3121,10 +3118,18 @@ const generateReportContent = () => {
         : `Today you completed ${completedTasks} tasks with ${completionRate}% completion rate, focusing ${totalPomodoros} pomodoros. ${topCategory.icon} ${topCategory.name} was the main focus (${topCategory.rate}%). ${highValueRatio >= 50 ? 'High-priority tasks exceeded 50%, excellent execution!' : 'Keep focused!'}\n\n\n`
     }
   } else {
+    // 周报/自定义报告：区分时间代词
     const highValueRatio = completedTasks > 0 ? Math.round((byPriority.high.filter(t => t.status === TaskStatus.COMPLETED).length / completedTasks) * 100) : 0
+    const timePeriod = reportType.value === 'custom' 
+      ? (currentLanguage.value === 'zh' ? '本期' : 'During this period')
+      : (currentLanguage.value === 'zh' ? '本周' : 'This week')
+    const highlightPrefix = reportType.value === 'custom'
+      ? (currentLanguage.value === 'zh' ? '本期' : 'The')
+      : (currentLanguage.value === 'zh' ? '本周' : 'The')
+    
     report += currentLanguage.value === 'zh'
-      ? `本周你完成了 ${completedTasks} 个任务，完成率 ${completionRate}%，日均专注 ${avgPomodorosPerDay} 个番茄钟。${highValueRatio >= 50 ? '高优先级任务占比超过50%，执行力优秀！' : '继续保持专注！'}${topMilestone ? ` 本周最大亮点是「${topMilestone.text}」。` : ''}\n\n\n`
-      : `This week you completed ${completedTasks} tasks with ${completionRate}% completion rate, averaging ${avgPomodorosPerDay} pomodoros per day. ${highValueRatio >= 50 ? 'High-priority tasks exceeded 50%, excellent execution!' : 'Keep focused!'}${topMilestone ? ` The highlight of the week was "${topMilestone.text}".` : ''}\n\n\n`
+      ? `${timePeriod}你完成了 ${completedTasks} 个任务，完成率 ${completionRate}%，日均专注 ${avgPomodorosPerDay} 个番茄钟。${highValueRatio >= 50 ? '高优先级任务占比超过50%，执行力优秀！' : '继续保持专注！'}${topMilestone ? ` ${highlightPrefix}最大亮点是「${topMilestone.text}」。` : ''}\n\n\n`
+      : `${timePeriod} you completed ${completedTasks} tasks with ${completionRate}% completion rate, averaging ${avgPomodorosPerDay} pomodoros per day. ${highValueRatio >= 50 ? 'High-priority tasks exceeded 50%, excellent execution!' : 'Keep focused!'}${topMilestone ? ` ${highlightPrefix} highlight was "${topMilestone.text}".` : ''}\n\n\n`
   }
   
   // 第二部分：分类统计
@@ -7780,29 +7785,54 @@ watch(() => reportData.value, (newData) => {
 }
 
 .executive-summary-hero {
-  background: white;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 16px;
   padding: 2rem;
   margin-bottom: 2rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.executive-summary-hero::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  animation: pulse 8s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.1); opacity: 0.8; }
 }
 
 .summary-badge {
   display: inline-block;
   padding: 0.4rem 1rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
   color: white;
   border-radius: 20px;
   font-size: 0.85rem;
   font-weight: 600;
   margin-bottom: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  position: relative;
+  z-index: 1;
 }
 
 .summary-text-hero {
   font-size: 1.05rem;
   line-height: 1.8;
-  color: #333;
+  color: white;
   margin: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 1;
 }
 
 .hero-stats {
@@ -7813,22 +7843,34 @@ watch(() => reportData.value, (newData) => {
 }
 
 .hero-stat-card {
-  background: white;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
   border-radius: 16px;
   padding: 1.5rem;
   text-align: center;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.hero-stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.2);
 }
 
 .hero-stat-icon {
   font-size: 2.5rem;
   margin-bottom: 0.5rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
 
 .hero-stat-value {
   font-size: 2.5rem;
   font-weight: 700;
-  color: #667eea;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   font-family: 'DIN Alternate', 'Roboto Mono', monospace;
   margin-bottom: 0.3rem;
 }
