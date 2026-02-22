@@ -158,22 +158,18 @@
               <span class="task-title" @click="openEditModal(task)" title="点击编辑详情">{{ task.text }}</span>
               <div v-if="task.description" class="task-description">{{ task.description }}</div>
               <div class="task-meta">
-                <div class="task-meta-left">
-                  <span class="task-time" title="添加时间">📝 {{ formatDateTime(task.created_at) }}</span>
-                  <span class="task-deadline" :class="getDeadlineClass(task)" title="计划完成时间">⏰ {{ getDeadlineText(task) }}</span>
-                  <span class="task-type badge">{{ getTaskTypeText(task) }}</span>
-                </div>
-                <div class="task-meta-right">
-                  <span class="badge badge-icon" :class="`priority-${task.priority}`" :title="`优先级: ${getPriorityText(task.priority)}`">
-                    ⚡ {{ getPriorityText(task.priority) }}
-                  </span>
-                  <span class="badge badge-icon" :class="`category-${task.category}`" :title="`分类: ${getCategoryText(task.category)}`">
-                    🏷️ {{ getCategoryText(task.category) }}
-                  </span>
-                  <span class="badge badge-pomodoro" :class="`pomodoro-${task.priority}`" :title="`预估番茄数: ${getPomodoroCount(task.priority)}个`">
-                    <span v-for="n in getPomodoroCount(task.priority)" :key="n">🍅</span>
-                  </span>
-                </div>
+                <span class="task-time" title="添加时间">📝 {{ formatDateTime(task.created_at) }}</span>
+                <span class="task-deadline" :class="getDeadlineClass(task)" title="计划完成时间">⏰ {{ getDeadlineText(task) }}</span>
+                <span class="task-type badge">{{ getTaskTypeText(task) }}</span>
+                <span class="badge badge-icon" :class="`priority-${task.priority}`" :title="`优先级: ${getPriorityText(task.priority)}`">
+                  ⚡ {{ getPriorityText(task.priority) }}
+                </span>
+                <span class="badge badge-icon" :class="`category-${task.category}`" :title="`分类: ${getCategoryText(task.category)}`">
+                  🏷️ {{ getCategoryText(task.category) }}
+                </span>
+                <span class="badge badge-pomodoro" :class="`pomodoro-${task.priority}`" :title="`预估番茄数: ${getPomodoroCount(task.priority)}个`">
+                  <span v-for="n in getPomodoroCount(task.priority)" :key="n">🍅</span>
+                </span>
               </div>
             </div>
             <!-- v1.2: 增大删除按钮点击区域 -->
@@ -6077,26 +6073,11 @@ watch(() => reportData.value, (newData) => {
 
 .task-meta {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem;
   align-items: center;
   margin-top: 0.5rem;
-  gap: 1rem;
   line-height: 1;
-}
-
-.task-meta-left {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  align-items: center;
-}
-
-.task-meta-right {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  align-items: center;
-  margin-left: auto;
 }
 
 /* v1.2: 图标化徽章 */
