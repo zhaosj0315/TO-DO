@@ -4817,13 +4817,8 @@ const getDeadlineText = (task) => {
     const hour = String(date.getHours()).padStart(2, '0')
     const minute = String(date.getMinutes()).padStart(2, '0')
     
-    // 基础日期格式
-    let dateStr = `${year}/${month}/${day} ${hour}:${minute}`
-    if (date.toDateString() === now.toDateString()) {
-      dateStr = `${t('todayLabel')} ${hour}:${minute}`
-    } else if (new Date(now.getTime() + 86400000).toDateString() === date.toDateString()) {
-      dateStr = `${t('tomorrow')} ${hour}:${minute}`
-    }
+    // 始终显示具体日期格式（不使用"今天"、"明天"）
+    const dateStr = `${year}/${month}/${day} ${hour}:${minute}`
     
     // 添加剩余时间提醒
     if (days > 0) return `${dateStr} (${t('remaining')} ${days}${t('days')})`
