@@ -1438,6 +1438,16 @@
       </div>
     </div>
 
+    <!-- 撤销Toast -->
+    <transition name="toast-slide">
+      <div v-if="showUndoToast" class="undo-toast">
+        <span class="toast-message">{{ undoToastMessage }}</span>
+        <button class="toast-undo-btn" @click="undoDelete">
+          {{ currentLanguage === 'zh' ? '撤销' : 'UNDO' }}
+        </button>
+      </div>
+    </transition>
+
     <!-- 底部抽屉 - 添加任务 -->
   </div>
 </template>
@@ -2066,6 +2076,12 @@ const mainContent = ref(null)
 const showFilterModal = ref(false)
 const isRefreshing = ref(false)
 
+// 撤销Toast相关
+const showUndoToast = ref(false)
+const undoToastMessage = ref('')
+let undoTimer = null
+let pendingDeleteTask = null
+
 // 个人主页相关
 const newUsername = ref('')
 const oldPassword = ref('')
@@ -2668,11 +2684,46 @@ const toggleTaskCompletion = async (taskId) => {
 
 // 方法：删除任务
 const deleteTask = async (taskId) => {
+  // 保存待删除任务信息
+  const task = taskStore.tasks.find(t => t.id === taskId)
+  if (!task) return
+  
+  pendingDeleteTask = { ...task }
+  
+  // 立即从界面移除（视觉上删除）
   await taskStore.deleteTask(taskId)
-  // 删除任务时清除提醒记录
+  
+  // 清除提醒记录
   notifiedTasks.delete(`urgent_${taskId}`)
   notifiedTasks.delete(`overdue_${taskId}`)
-  showNotification('任务已移至回收站！', 'info')
+  
+  // 显示撤销Toast
+  undoToastMessage.value = currentLanguage.value === 'zh' ? '任务已删除' : 'Task deleted'
+  showUndoToast.value = true
+  
+  // 清除旧定时器
+  if (undoTimer) clearTimeout(undoTimer)
+  
+  // 5秒后自动隐藏Toast（任务已真正删除到回收站）
+  undoTimer = setTimeout(() => {
+    showUndoToast.value = false
+    pendingDeleteTask = null
+  }, 5000)
+}
+
+// 方法：撤销删除
+const undoDelete = async () => {
+  if (!pendingDeleteTask) return
+  
+  // 清除定时器
+  if (undoTimer) clearTimeout(undoTimer)
+  
+  // 恢复任务
+  await taskStore.restoreTask(pendingDeleteTask.id)
+  
+  // 隐藏Toast
+  showUndoToast.value = false
+  pendingDeleteTask = null
 }
 
 // 方法：恢复任务
@@ -9251,5 +9302,66 @@ watch(() => reportData.value, (newData) => {
   color: #999;
   line-height: 1.4;
   margin-top: 0.3rem;
+}
+
+/* 撤销Toast - Gmail风格 */
+.undo-toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(50, 50, 50, 0.95);
+  color: white;
+  padding: 0.8rem 1.2rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 10000;
+  backdrop-filter: blur(10px);
+}
+
+.toast-message {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.toast-undo-btn {
+  background: transparent;
+  border: none;
+  color: #4facfe;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.3rem 0.8rem;
+  border-radius: 4px;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.toast-undo-btn:hover {
+  background: rgba(79, 172, 254, 0.2);
+}
+
+.toast-undo-btn:active {
+  transform: scale(0.95);
+}
+
+/* Toast滑入滑出动画 */
+.toast-slide-enter-active,
+.toast-slide-leave-active {
+  transition: all 0.3s ease;
+}
+
+.toast-slide-enter-from {
+  transform: translate(-50%, 100px);
+  opacity: 0;
+}
+
+.toast-slide-leave-to {
+  transform: translate(-50%, 100px);
+  opacity: 0;
 }
 </style>
