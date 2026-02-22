@@ -158,18 +158,22 @@
               <span class="task-title" @click="openEditModal(task)" title="点击编辑详情">{{ task.text }}</span>
               <div v-if="task.description" class="task-description">{{ task.description }}</div>
               <div class="task-meta">
-                <span class="task-time" title="添加时间">📝 {{ formatDateTime(task.created_at) }}</span>
-                <span class="task-deadline" :class="getDeadlineClass(task)" title="计划完成时间">⏰ {{ getDeadlineText(task) }}</span>
-                <span class="task-type badge">{{ getTaskTypeText(task) }}</span>
-                <span class="badge badge-icon" :class="`priority-${task.priority}`" :title="`优先级: ${getPriorityText(task.priority)}`">
-                  ⚡ {{ getPriorityText(task.priority) }}
-                </span>
-                <span class="badge badge-icon" :class="`category-${task.category}`" :title="`分类: ${getCategoryText(task.category)}`">
-                  🏷️ {{ getCategoryText(task.category) }}
-                </span>
-                <span class="badge badge-pomodoro" :class="`pomodoro-${task.priority}`" :title="`预估番茄数: ${getPomodoroCount(task.priority)}个`">
-                  <span v-for="n in getPomodoroCount(task.priority)" :key="n">🍅</span>
-                </span>
+                <div class="task-meta-left">
+                  <span class="task-time" title="添加时间">📝 {{ formatDateTime(task.created_at) }}</span>
+                  <span class="task-deadline" :class="getDeadlineClass(task)" title="计划完成时间">⏰ {{ getDeadlineText(task) }}</span>
+                  <span class="task-type badge">{{ getTaskTypeText(task) }}</span>
+                </div>
+                <div class="task-meta-right">
+                  <span class="badge badge-icon" :class="`priority-${task.priority}`" :title="`优先级: ${getPriorityText(task.priority)}`">
+                    ⚡ {{ getPriorityText(task.priority) }}
+                  </span>
+                  <span class="badge badge-icon" :class="`category-${task.category}`" :title="`分类: ${getCategoryText(task.category)}`">
+                    🏷️ {{ getCategoryText(task.category) }}
+                  </span>
+                  <span class="badge badge-pomodoro" :class="`pomodoro-${task.priority}`" :title="`预估番茄数: ${getPomodoroCount(task.priority)}个`">
+                    <span v-for="n in getPomodoroCount(task.priority)" :key="n">🍅</span>
+                  </span>
+                </div>
               </div>
             </div>
             <!-- v1.2: 增大删除按钮点击区域 -->
@@ -6073,11 +6077,26 @@ watch(() => reportData.value, (newData) => {
 
 .task-meta {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
+  gap: 1rem;
+  line-height: 1;
+}
+
+.task-meta-left {
+  display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
   align-items: center;
-  margin-top: 0.5rem;
-  line-height: 1;  /* 统一行高 */
+}
+
+.task-meta-right {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  margin-left: auto;
 }
 
 /* v1.2: 图标化徽章 */
@@ -7637,8 +7656,8 @@ watch(() => reportData.value, (newData) => {
   font-size: 0.85rem;
   color: #333;
   transition: all 0.3s;
-  /* 内阴影 - 凹陷感 */
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.05);
+  /* 悬浮阴影 - Z轴拉高 */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05), 0 2px 4px rgba(0, 0, 0, 0.03);
   line-height: 1.5;
   height: 36px;
   box-sizing: border-box;
@@ -7652,8 +7671,9 @@ watch(() => reportData.value, (newData) => {
   outline: none;
   border-color: #667eea;
   background: white;
-  /* 聚焦时去掉内阴影，增加外阴影 */
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1), 0 4px 12px rgba(102, 126, 234, 0.15);
+  /* 聚焦时增强悬浮感 */
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1), 0 6px 16px rgba(102, 126, 234, 0.15);
+  transform: translateY(-1px);
 }
 
 /* 任务描述输入框 */
