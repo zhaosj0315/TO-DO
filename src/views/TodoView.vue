@@ -1364,10 +1364,10 @@
                   <span class="legend-label">{{ currentLanguage === 'zh' ? '少' : 'Less' }}</span>
                   <div class="legend-colors">
                     <div class="legend-box" style="background: #ebedf0;"></div>
-                    <div class="legend-box" style="background: #c6e48b;"></div>
-                    <div class="legend-box" style="background: #7bc96f;"></div>
-                    <div class="legend-box" style="background: #239a3b;"></div>
-                    <div class="legend-box" style="background: #196127;"></div>
+                    <div class="legend-box" style="background: #c4b5fd;"></div>
+                    <div class="legend-box" style="background: #a78bfa;"></div>
+                    <div class="legend-box" style="background: #8b5cf6;"></div>
+                    <div class="legend-box" style="background: #6d28d9;"></div>
                   </div>
                   <span class="legend-label">{{ currentLanguage === 'zh' ? '多' : 'More' }}</span>
                 </div>
@@ -3668,15 +3668,15 @@ const generateReportContent = () => {
       })
     }
     
-    // 计算颜色（基于完成任务数）
+    // 计算颜色（基于完成任务数）- 紫色渐变主题
     const maxCount = Math.max(...heatmapDays.map(d => d.count), 1)
     const getColor = (count) => {
       if (count === 0) return '#ebedf0'
       const ratio = count / maxCount
-      if (ratio <= 0.2) return '#c6e48b'
-      if (ratio <= 0.4) return '#7bc96f'
-      if (ratio <= 0.6) return '#239a3b'
-      return '#196127'
+      if (ratio <= 0.2) return '#c4b5fd'  // 浅紫
+      if (ratio <= 0.4) return '#a78bfa'  // 中浅紫
+      if (ratio <= 0.6) return '#8b5cf6'  // 中紫
+      return '#6d28d9'  // 深紫
     }
     
     // 按周组织数据
