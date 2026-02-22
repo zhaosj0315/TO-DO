@@ -1122,17 +1122,17 @@
             <div class="hero-stats">
               <div class="hero-stat-card">
                 <div class="hero-stat-icon">🍅</div>
-                <div class="hero-stat-value">{{ reportData.totalPomodoros }}</div>
+                <div id="countup-pomodoros" class="hero-stat-value">{{ reportData.totalPomodoros }}</div>
                 <div class="hero-stat-label">{{ currentLanguage === 'zh' ? '番茄钟' : 'Pomodoros' }}</div>
               </div>
               <div class="hero-stat-card">
                 <div class="hero-stat-icon">✅</div>
-                <div class="hero-stat-value">{{ reportData.completedTasks }}</div>
+                <div id="countup-completed" class="hero-stat-value">{{ reportData.completedTasks }}</div>
                 <div class="hero-stat-label">{{ currentLanguage === 'zh' ? '项已完成' : 'Completed' }}</div>
               </div>
               <div class="hero-stat-card">
                 <div class="hero-stat-icon">📈</div>
-                <div class="hero-stat-value">{{ reportData.completionRate }}%</div>
+                <div id="countup-rate" class="hero-stat-value">{{ reportData.completionRate }}%</div>
                 <div class="hero-stat-label">{{ currentLanguage === 'zh' ? '战胜了拖延' : 'Beat Procrastination' }}</div>
               </div>
             </div>
@@ -1340,8 +1340,8 @@
               </div>
             </div>
 
-            <!-- 闪光的里程碑 (Milestones) -->
-            <div class="report-section" v-if="reportData.milestones && reportData.milestones.length > 0 && (reportType === 'yearly' || reportType === 'quarterly')">
+            <!-- 闪光的里程碑 (Milestones) - 月报/季报/半年报/年报显示 -->
+            <div class="report-section" v-if="reportData.milestones && reportData.milestones.length > 0 && (reportType === 'yearly' || reportType === 'quarterly' || reportType === 'halfyearly' || reportType === 'monthly')">
               <h3 class="section-title">{{ currentLanguage === 'zh' ? '✨ 闪光的里程碑' : '✨ Key Milestones' }}</h3>
               <div class="milestones-timeline">
                 <div v-for="(milestone, index) in reportData.milestones" :key="milestone.id" class="milestone-item">
@@ -1459,6 +1459,7 @@ import { LocalNotifications } from '@capacitor/local-notifications'
 import * as XLSX from 'xlsx'
 import html2canvas from 'html2canvas'
 import EChart from '../components/EChart.vue'
+import { CountUp } from 'countup.js'
 
 const router = useRouter()
 const taskStore = useOfflineTaskStore()
@@ -4966,6 +4967,38 @@ onMounted(async () => {
 onUnmounted(() => {
   if (countdownInterval.value) clearInterval(countdownInterval.value)
 })
+
+// 监听报告数据变化，触发数字滚动动画
+watch(() => reportData.value, (newData) => {
+  if (newData && showReportModal.value) {
+    nextTick(() => {
+      // 番茄钟数字滚动
+      if (newData.totalPomodoros && document.getElementById('countup-pomodoros')) {
+        new CountUp('countup-pomodoros', newData.totalPomodoros, {
+          duration: 2,
+          useEasing: true
+        }).start()
+      }
+      
+      // 已完成任务数字滚动
+      if (newData.completedTasks && document.getElementById('countup-completed')) {
+        new CountUp('countup-completed', newData.completedTasks, {
+          duration: 2,
+          useEasing: true
+        }).start()
+      }
+      
+      // 完成率数字滚动
+      if (newData.completionRate !== undefined && document.getElementById('countup-rate')) {
+        new CountUp('countup-rate', newData.completionRate, {
+          duration: 2,
+          useEasing: true,
+          suffix: '%'
+        }).start()
+      }
+    })
+  }
+}, { deep: true })
 </script>
 
 <style scoped>
@@ -8717,18 +8750,24 @@ onUnmounted(() => {
   transition: width 0.3s ease;
 }
 
-/* 里程碑时间轴样式 */
+/* 里程碑时间轴样式 - 优化版 */
 .milestones-timeline {
   display: flex;
   flex-direction: column;
   gap: 0;
   padding-left: 1rem;
+  position: relative;
 }
 
 .milestone-item {
   display: flex;
   gap: 1rem;
   position: relative;
+  transition: transform 0.3s ease;
+}
+
+.milestone-item:hover {
+  transform: translateX(4px);
 }
 
 .milestone-marker {
@@ -8739,59 +8778,99 @@ onUnmounted(() => {
 }
 
 .milestone-dot {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 50%;
-  border: 3px solid white;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+  border: 4px solid white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5), 0 0 0 4px rgba(102, 126, 234, 0.1);
   flex-shrink: 0;
   z-index: 2;
+  transition: all 0.3s ease;
+}
+
+.milestone-item:hover .milestone-dot {
+  transform: scale(1.2);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6), 0 0 0 6px rgba(102, 126, 234, 0.15);
 }
 
 .milestone-line {
-  width: 2px;
+  width: 3px;
   flex: 1;
   background: linear-gradient(180deg, #667eea 0%, #e0e0e0 100%);
   margin-top: 4px;
   min-height: 40px;
+  border-radius: 2px;
 }
 
 .milestone-content {
   flex: 1;
   padding: 0.5rem 1rem 1.5rem 0;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.02) 0%, rgba(255, 255, 255, 0) 100%);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.milestone-item:hover .milestone-content {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(255, 255, 255, 0) 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .milestone-date {
   font-size: 0.75rem;
   color: #999;
   margin-bottom: 0.3rem;
+  font-weight: 500;
 }
 
 .milestone-title {
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 600;
   color: #333;
   margin-bottom: 0.4rem;
+  line-height: 1.4;
 }
 
 .milestone-meta {
   display: flex;
-  gap: 0.8rem;
+  gap: 1rem;
   font-size: 0.8rem;
   color: #666;
   margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.milestone-meta span {
+  padding: 2px 8px;
+  background: rgba(102, 126, 234, 0.08);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.milestone-meta span:hover {
+  background: rgba(102, 126, 234, 0.15);
 }
 
 .milestone-description {
   font-size: 0.85rem;
-  color: #666;
-  line-height: 1.5;
-  padding: 0.6rem;
-  background: #f9f9f9;
-  border-radius: 6px;
-  border-left: 3px solid #667eea;
+  color: #555;
+  line-height: 1.6;
+  padding: 0.8rem 1rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
   font-style: italic;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  position: relative;
+}
+
+.milestone-description::before {
+  content: '💬';
+  position: absolute;
+  left: -12px;
+  top: 8px;
+  font-size: 1.2rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
 
 /* 热力图样式 */

@@ -88,6 +88,7 @@
     "@capacitor/ios": "^8.1.0",
     "@capacitor/local-notifications": "^8.0.1",
     "@capacitor/preferences": "^8.0.1",
+    "countup.js": "^2.9.0",
     "echarts": "^6.0.0",
     "html2canvas": "^1.4.1",
     "pinia": "^3.0.4",
