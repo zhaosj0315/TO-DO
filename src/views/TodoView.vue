@@ -3487,10 +3487,18 @@ const generateReportContent = () => {
   // 轨道2：年度大事提取 (Milestone Extraction) - 用于生成【闪光的里程碑】时间轴 - 去重处理
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   const milestonesRaw = completedTasksList.filter(task => {
+    // 必须有详细备注才有资格成为里程碑
+    if (!task.description || task.description.trim().length === 0) return false
+    
+    // 全局硬性门槛：过滤低优先级且耗时不足2个番茄的琐事
+    const pomodoros = getPomodoroCount(task.priority)
+    const isLowValueTask = task.priority === 'low' && pomodoros < 2
+    if (isLowValueTask) return false
+    
     let score = 0
     
     // 条件1：强备注特征（有详细描述）
-    const hasRichDescription = task.description && task.description.trim().length > 10
+    const hasRichDescription = task.description.trim().length > 10
     if (hasRichDescription) score++
     
     // 条件2：高优且耗时（优先级=高 且 番茄钟≥4）
@@ -3755,11 +3763,18 @@ const generateExecutiveSummary = (data, reportType) => {
       ? `今天你完成了 ${data.completedTasks} 个任务，完成率 ${data.completionRate}%，专注 ${data.totalPomodoros} 个番茄钟。${topCategory.icon} ${topCategory.name}是今日主要投入（${topCategory.completed} 个任务）。${highValueRatio >= 50 ? '高优先级任务占比超过50%，执行力优秀！' : '继续保持专注！'}`
       : `Today you completed ${data.completedTasks} tasks with ${data.completionRate}% completion rate, focusing ${data.totalPomodoros} pomodoros. ${topCategory.icon} ${topCategory.name} was the main focus (${topCategory.completed} tasks). ${highValueRatio >= 50 ? 'High-priority tasks exceeded 50%, excellent execution!' : 'Keep focused!'}`
   } else {
-    // 周报摘要
+    // 周报/自定义摘要
     const topMilestone = data.milestones && data.milestones.length > 0 ? data.milestones[0] : null
+    const timePeriod = reportType === 'custom' 
+      ? (lang === 'zh' ? '本期' : 'During this period')
+      : (lang === 'zh' ? '本周' : 'This week')
+    const highlightPrefix = reportType === 'custom'
+      ? (lang === 'zh' ? '本期' : 'The')
+      : (lang === 'zh' ? '本周' : 'The')
+    
     return lang === 'zh'
-      ? `本周你完成了 ${data.completedTasks} 个任务，完成率 ${data.completionRate}%，日均专注 ${data.focusEfficiency} 个番茄钟。${data.highValueRatio >= 50 ? '高优先级任务占比超过50%，执行力优秀！' : '继续保持专注！'}${topMilestone ? ` 本周最大亮点是「${topMilestone.text}」。` : ''}`
-      : `This week you completed ${data.completedTasks} tasks with ${data.completionRate}% completion rate, averaging ${data.focusEfficiency} pomodoros per day. ${data.highValueRatio >= 50 ? 'High-priority tasks exceeded 50%, excellent execution!' : 'Keep focused!'}${topMilestone ? ` The highlight of the week was "${topMilestone.text}".` : ''}`
+      ? `${timePeriod}你完成了 ${data.completedTasks} 个任务，完成率 ${data.completionRate}%，日均专注 ${data.focusEfficiency} 个番茄钟。${data.highValueRatio >= 50 ? '高优先级任务占比超过50%，执行力优秀！' : '继续保持专注！'}${topMilestone ? ` ${highlightPrefix}最大亮点是「${topMilestone.text}」。` : ''}`
+      : `${timePeriod} you completed ${data.completedTasks} tasks with ${data.completionRate}% completion rate, averaging ${data.focusEfficiency} pomodoros per day. ${data.highValueRatio >= 50 ? 'High-priority tasks exceeded 50%, excellent execution!' : 'Keep focused!'}${topMilestone ? ` ${highlightPrefix} highlight was "${topMilestone.text}".` : ''}`
   }
 }
 
