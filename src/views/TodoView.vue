@@ -82,18 +82,20 @@
             >
           </div>
 
-          <!-- 任务描述（可选） -->
-          <div class="add-form-row-desc" v-if="newTaskText.trim()">
-            <textarea 
-              v-model="newTaskDescription" 
-              class="task-textarea-desc"
-              placeholder="📝 任务描述（可选）..."
-              rows="2"
-            ></textarea>
-          </div>
+          <!-- 只有输入内容后才显示以下部分 -->
+          <template v-if="newTaskText.trim()">
+            <!-- 任务描述（可选） -->
+            <div class="add-form-row-desc">
+              <textarea 
+                v-model="newTaskDescription" 
+                class="task-textarea-desc"
+                placeholder="📝 任务描述（可选）..."
+                rows="2"
+              ></textarea>
+            </div>
 
-          <!-- 第二行：属性配置 -->
-          <div class="add-form-row-attrs">
+            <!-- 第二行：属性配置 -->
+            <div class="add-form-row-attrs">
             <!-- 日期类型 -->
             <div class="attr-group">
               <select v-model="newTaskType" class="attr-select attr-select-date" @change="handleTaskTypeChange">
@@ -130,6 +132,7 @@
             <!-- 提交按钮 -->
             <button class="btn-submit-main" @click="addTask" title="添加任务">✓</button>
           </div>
+          </template>
         </div>
       </section>
 
@@ -174,6 +177,9 @@
                 <template v-else>
                   <span class="task-time-compact" :class="getDeadlineClass(task)" title="截止时间">⏰ {{ formatCompactDateTime(getDeadlineDate(task)) }}</span>
                 </template>
+                
+                <!-- 任务类型 -->
+                <span class="badge badge-icon badge-type" :title="`类型: ${getTaskTypeText(task)}`">📅 {{ getTaskTypeText(task) }}</span>
                 
                 <!-- 核心标签 -->
                 <span class="badge badge-icon" :class="`priority-${task.priority}`">⚡{{ getPriorityText(task.priority) }}</span>
@@ -5276,20 +5282,23 @@ watch(() => reportData.value, (newData) => {
   justify-content: center;
   padding: 0;
   min-height: 100vh;
+  max-height: 100vh; /* 限制最大高度 */
   width: 100%;
   max-width: 100vw;
-  overflow-x: hidden;
+  overflow: hidden; /* 强制禁止滚动 */
+  box-sizing: border-box;
 }
 
 .main-content {
   width: 100%;
   max-width: 100%;
   flex: none;
-  padding: 0.5rem 0.8rem;
+  padding: 0.5rem 0.8rem 0 0.8rem; /* 取消底部内边距 */
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 0;
+  overflow: hidden; /* 强制禁止滚动 */
 }
 
 /* 任务列表与统计区域内容完全对齐（像素级） */
@@ -6093,23 +6102,28 @@ watch(() => reportData.value, (newData) => {
 .task-time-compact {
   display: inline-flex;
   align-items: center;
-  font-size: 0.7rem;
+  font-size: 0.5rem; /* 8px */
   color: #666;
-  padding: 0.2rem 0.4rem;
-  border-radius: 8px;
+  padding: 0.15rem 0.3rem; /* 进一步缩小padding：从0.2rem 0.35rem减至0.15rem 0.3rem */
+  border-radius: 4px; /* 进一步缩小圆角：从6px减至4px */
   background: rgba(0, 0, 0, 0.03);
   line-height: 1;
-  height: 22px;
+  height: auto; /* 改为自动高度，由内容撑开 */
   white-space: nowrap;
+  box-sizing: border-box;
 }
 
 /* 压缩状态样式 */
 .task-status-compact {
   display: inline-flex;
   align-items: center;
-  font-size: 1rem;
+  font-size: 0.625rem; /* 10px */
+  padding: 0.15rem 0.25rem; /* 进一步缩小padding */
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.03);
   line-height: 1;
-  height: 22px;
+  height: auto; /* 改为自动高度 */
+  box-sizing: border-box;
 }
 
 /* 完成时间徽章 */
@@ -6212,12 +6226,12 @@ watch(() => reportData.value, (newData) => {
 .task-item {
   display: flex;
   align-items: flex-start;
-  gap: 6px; /* 调整至6px，平衡紧凑与呼吸感 */
+  gap: 6px;
   padding: 0.8rem;
   background: white;
   border-radius: 12px;
-  margin: 0 0 1rem 0 !important; /* 增加底部间距 */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin: 0 0 0.5rem 0 !important; /* 压缩间距50%：从1rem(16px)减至0.5rem(8px) */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04); /* 加强阴影：从0.06增至0.04，模糊从3px增至4px */
   transition: all 0.3s;
   -webkit-tap-highlight-color: transparent;
   width: 100%;
@@ -6229,14 +6243,14 @@ watch(() => reportData.value, (newData) => {
 }
 
 .task-checkbox {
-  width: 14px; /* 缩小至14px，小于文字 */
-  height: 14px;
+  width: 10px; /* 缩小至10px，略小于标题12px */
+  height: 10px;
   cursor: pointer;
-  margin-top: 0.2rem; /* 重新微调对齐 */
+  margin-top: 0.1rem;
   flex-shrink: 0;
   /* 加粗边框，防止发虚 */
   border: 1.5px solid #999 !important;
-  border-radius: 3px;
+  border-radius: 2px; /* 缩小圆角：从3px减至2px */
   appearance: none;
   -webkit-appearance: none;
   background: white;
@@ -6256,7 +6270,7 @@ watch(() => reportData.value, (newData) => {
   left: 50%;
   transform: translate(-50%, -50%);
   color: white;
-  font-size: 10px; /* 同步缩小勾号 */
+  font-size: 7px; /* 同步缩小勾号：从8px减至7px */
   font-weight: bold;
 }
 
@@ -6277,7 +6291,7 @@ watch(() => reportData.value, (newData) => {
 }
 
 .task-title {
-  font-size: 1rem;
+  font-size: 0.75rem; /* 12px：从0.875rem(14px)减至0.75rem(12px) */
   font-weight: 600;
   cursor: pointer;
   transition: color 0.2s;
@@ -6293,15 +6307,15 @@ watch(() => reportData.value, (newData) => {
 .btn-delete-inline {
   background: none;
   border: none;
-  font-size: 0.875rem; /* 14px，视觉小巧 */
+  font-size: 0.625rem; /* 10px：从0.6875rem(11px)减至0.625rem(10px) */
   cursor: pointer;
-  padding: 0.6rem; /* 增大点击热区至44px（14px + 0.6rem*2 ≈ 44px） */
-  margin: -0.6rem; /* 负边距抵消padding，保持视觉位置 */
-  opacity: 0.6; /* 提高对比度：从0.35增至0.6 */
+  padding: 0.6rem;
+  margin: -0.6rem;
+  opacity: 0.6;
   transition: all 0.2s;
   flex-shrink: 0;
   line-height: 1;
-  color: #666; /* 加深颜色：从#999改为#666 */
+  color: #666;
 }
 
 .btn-delete-inline:hover {
@@ -6311,9 +6325,9 @@ watch(() => reportData.value, (newData) => {
 }
 
 .task-description {
-  font-size: 0.85rem;
+  font-size: 0.625rem; /* 10px：保持不变 */
   color: #888;
-  margin-top: 0.25rem; /* 压缩：从0.4rem减至0.25rem */
+  margin-top: 0.25rem;
   line-height: 1.4;
   max-width: 100%;
   word-wrap: break-word;
@@ -6322,9 +6336,9 @@ watch(() => reportData.value, (newData) => {
 .task-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem; /* 压缩：从0.6rem减至0.5rem */
+  gap: 1px; /* 极致压缩：1px */
   align-items: center;
-  margin-top: 0.35rem; /* 压缩：从0.5rem减至0.35rem */
+  margin-top: 0.35rem;
   line-height: 1;
 }
 
@@ -6333,12 +6347,13 @@ watch(() => reportData.value, (newData) => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.2rem;
-  font-size: 0.75rem;
-  padding: 0.25rem 0.5rem;  /* 统一内边距 */
-  border-radius: 12px;
-  line-height: 1;  /* 统一行高 */
-  height: 24px;  /* 固定高度 */
+  gap: 0.1rem; /* 进一步缩小间距：从0.15rem减至0.1rem */
+  font-size: 0.5rem; /* 8px */
+  padding: 0.15rem 0.3rem; /* 进一步缩小padding：从0.2rem 0.35rem减至0.15rem 0.3rem */
+  border-radius: 4px; /* 进一步缩小圆角：从6px减至4px */
+  background: rgba(0, 0, 0, 0.03);
+  line-height: 1;
+  height: auto; /* 改为自动高度，由内容撑开 */
   box-sizing: border-box;
 }
 
@@ -6347,15 +6362,22 @@ watch(() => reportData.value, (newData) => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.2rem;
-  font-size: 0.75rem;
+  gap: 0.05rem; /* 进一步缩小间距：从0.1rem减至0.05rem */
+  font-size: 0.5rem; /* 8px */
   font-weight: 600;
-  padding: 0.25rem 0.5rem;  /* 统一内边距 */
-  border-radius: 12px;
+  padding: 0.15rem 0.3rem; /* 进一步缩小padding */
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.03);
   transition: all 0.3s;
-  line-height: 1;  /* 统一行高 */
-  height: 24px;  /* 固定高度 */
+  line-height: 1;
+  height: auto; /* 改为自动高度 */
   box-sizing: border-box;
+}
+
+/* 任务类型标签 */
+.badge-type {
+  background: rgba(139, 92, 246, 0.08); /* 淡紫色背景 */
+  color: #8b5cf6; /* 紫色文字 */
 }
 
 .pomodoro-high {
@@ -6452,8 +6474,8 @@ watch(() => reportData.value, (newData) => {
 
 /* 统一的圆形图标按钮 */
 .btn-icon-circle {
-  width: 40px;
-  height: 40px;
+  width: 32px; /* 缩小：从40px减至32px */
+  height: 32px;
   border-radius: 50%;
   border: none;
   background: rgba(255, 255, 255, 0.25);
@@ -6491,20 +6513,20 @@ watch(() => reportData.value, (newData) => {
 
 /* 刷新按钮特殊尺寸和样式 */
 .btn-refresh-icon {
-  font-size: 2.2rem;
-  background: rgba(102, 126, 234, 0.25) !important; /* 紫色背景 */
+  font-size: 1.6rem; /* 缩小：从2.2rem减至1.6rem */
+  background: rgba(102, 126, 234, 0.25) !important;
   color: white !important;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .btn-refresh-icon:hover {
-  background: rgba(102, 126, 234, 0.4) !important; /* 悬停更深 */
+  background: rgba(102, 126, 234, 0.4) !important;
   color: white !important;
 }
 
 /* 回收站按钮 */
 .btn-trash {
-  font-size: 1.4rem;
+  font-size: 1.1rem; /* 缩小：从1.4rem减至1.1rem */
 }
 
 /* 数字气泡 */
@@ -6528,8 +6550,8 @@ watch(() => reportData.value, (newData) => {
 }
 
 .btn-avatar {
-  width: 40px;
-  height: 40px;
+  width: 32px; /* 缩小：从40px减至32px */
+  height: 32px;
   border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, 0.9);
   background: white;
@@ -8778,18 +8800,21 @@ watch(() => reportData.value, (newData) => {
 /* 页脚版权信息 */
 .app-footer {
   margin-top: 0.25rem;
-  padding: 0.5rem 0;
+  margin-bottom: 0 !important; /* 强制取消底部外边距 */
+  padding: 0.5rem 0 0 0; /* 取消底部内边距 */
   border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .footer-content {
   text-align: center;
+  margin-bottom: 0 !important; /* 强制取消底部外边距 */
+  padding-bottom: 0 !important; /* 强制取消底部内边距 */
 }
 
 .footer-main {
   font-size: 0.7rem;
   color: rgba(255, 255, 255, 0.7);
-  margin-bottom: 0.25rem;
+  margin-bottom: 0 !important; /* 强制取消底部外边距 */
   display: flex;
   align-items: center;
   justify-content: center;

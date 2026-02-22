@@ -56,20 +56,39 @@ body {
   color: #333;
   line-height: 1.6;
   min-height: 100vh;
-  overflow-x: hidden;
+  max-height: 100vh; /* 限制最大高度为视口高度 */
+  overflow: hidden; /* 物理隔离：强制禁止滚动 */
   width: 100vw;
   max-width: 100%;
+  margin: 0; /* 确保无外边距 */
+  padding: 0; /* 确保无内边距 */
+  box-sizing: border-box; /* 盒模型修正 */
+}
+
+/* 隐藏滚动条但保持滚动功能 */
+body::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
+}
+
+body {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
 }
 
 .app {
   min-height: 100vh;
+  max-height: 100vh; /* 限制最大高度 */
   width: 100vw;
   max-width: 100%;
   display: flex;
   flex-direction: column;
   position: relative;
   z-index: 1;
-  overflow-x: hidden;
+  overflow: hidden; /* 强制禁止滚动 */
+  box-sizing: border-box; /* 盒模型修正 */
+  margin: 0;
+  padding: 0;
 }
 
 .bg-decoration {
