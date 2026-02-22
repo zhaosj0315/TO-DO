@@ -170,8 +170,9 @@
                     {{ getDeadlineText(task) }}
                   </span>
                 </template>
-                <!-- 未完成任务：显示截止时间 -->
+                <!-- 未完成任务：显示创建时间和截止时间 -->
                 <template v-else>
+                  <span class="task-time" title="添加时间">📝 {{ formatDateTime(task.created_at) }}</span>
                   <span class="task-deadline" :class="getDeadlineClass(task)" title="计划完成时间">⏰ {{ getDeadlineText(task) }}</span>
                 </template>
                 
