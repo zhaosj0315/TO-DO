@@ -161,9 +161,12 @@
                 <!-- 创建时间（所有任务都显示） -->
                 <span class="task-time" title="添加时间">📝 {{ formatDateTime(task.created_at) }}</span>
                 
-                <!-- 已完成任务：显示完成时间和状态 -->
+                <!-- 已完成任务：显示计划完成时间、实际完成时间和状态 -->
                 <template v-if="task.status === 'completed'">
-                  <span class="task-completed-time" title="完成时间">
+                  <span class="task-deadline-planned" title="计划完成时间">
+                    📅 {{ getPlannedDeadlineText(task) }}
+                  </span>
+                  <span class="task-completed-time" title="实际完成时间">
                     ✅ {{ formatDateTime(task.completed_at || task.created_at) }}
                   </span>
                   <span class="task-deadline task-deadline-success" title="完成状态">
@@ -4776,6 +4779,21 @@ const formatDateTime = (dateStr) => {
   return `${year}/${month}/${day} ${hour}:${minute}`
 }
 
+// 方法：获取计划完成时间（纯日期，不含状态）
+const getPlannedDeadlineText = (task) => {
+  const deadline = calculateDeadline(task)
+  if (!deadline) return t('noDeadline')
+  
+  const date = new Date(deadline)
+  const year = date.getFullYear()
+  const month = date.getMonth() + 1
+  const day = date.getDate()
+  const hour = String(date.getHours()).padStart(2, '0')
+  const minute = String(date.getMinutes()).padStart(2, '0')
+  
+  return `${year}/${month}/${day} ${hour}:${minute}`
+}
+
 // 方法：获取任务截止时间文本
 const getDeadlineText = (task) => {
   // 已完成任务：显示完成状态（准时/逾期）
@@ -5956,6 +5974,22 @@ watch(() => reportData.value, (newData) => {
   padding: 0.25rem 0.5rem;
   border-radius: 12px;
   background: rgba(16, 185, 129, 0.1);
+  line-height: 1;
+  height: 24px;
+  box-sizing: border-box;
+}
+
+/* 计划完成时间徽章 */
+.task-deadline-planned {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: #6366f1;
+  font-weight: 500;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  background: rgba(99, 102, 241, 0.1);
   line-height: 1;
   height: 24px;
   box-sizing: border-box;
