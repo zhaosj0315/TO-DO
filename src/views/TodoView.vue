@@ -158,20 +158,23 @@
               <span class="task-title" @click="openEditModal(task)" title="点击编辑详情">{{ task.text }}</span>
               <div v-if="task.description" class="task-description">{{ task.description }}</div>
               <div class="task-meta">
+                <!-- 创建时间（所有任务都显示） -->
+                <span class="task-time" title="添加时间">📝 {{ formatDateTime(task.created_at) }}</span>
+                
                 <!-- 已完成任务：显示完成时间和状态 -->
                 <template v-if="task.status === 'completed'">
                   <span class="task-completed-time" title="完成时间">
-                    ✅ {{ currentLanguage === 'zh' ? '完成于' : 'Completed' }}: {{ formatDateTime(task.completed_at || task.created_at) }}
+                    ✅ {{ formatDateTime(task.completed_at || task.created_at) }}
                   </span>
-                  <span class="task-deadline" :class="getDeadlineClass(task)" title="完成状态">
+                  <span class="task-deadline task-deadline-success" title="完成状态">
                     {{ getDeadlineText(task) }}
                   </span>
                 </template>
-                <!-- 未完成任务：显示创建时间和截止时间 -->
+                <!-- 未完成任务：显示截止时间 -->
                 <template v-else>
-                  <span class="task-time" title="添加时间">📝 {{ formatDateTime(task.created_at) }}</span>
                   <span class="task-deadline" :class="getDeadlineClass(task)" title="计划完成时间">⏰ {{ getDeadlineText(task) }}</span>
                 </template>
+                
                 <span class="task-type badge">{{ getTaskTypeText(task) }}</span>
                 <span class="badge badge-icon" :class="`priority-${task.priority}`" :title="`优先级: ${getPriorityText(task.priority)}`">
                   ⚡ {{ getPriorityText(task.priority) }}
