@@ -6204,7 +6204,7 @@ watch(() => reportData.value, (newData) => {
   align-items: center;
   justify-content: center;
   padding: 0.6rem; /* 增大点击热区 */
-  margin: -0.6rem 0 -0.6rem -0.6rem; /* 负边距抵消padding */
+  margin: -0.6rem -0.6rem -0.6rem -0.6rem; /* 四周负边距完全抵消padding */
   cursor: pointer;
 }
 
@@ -6212,7 +6212,7 @@ watch(() => reportData.value, (newData) => {
 .task-item {
   display: flex;
   align-items: flex-start;
-  gap: 4px; /* 调整至4px */
+  gap: 6px; /* 调整至6px，平衡紧凑与呼吸感 */
   padding: 0.8rem;
   background: white;
   border-radius: 12px;
