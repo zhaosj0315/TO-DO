@@ -52,7 +52,17 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
     async toggleTaskCompletion(taskId) {
       const task = this.tasks.find(t => t.id === taskId)
       if (task) {
-        task.status = task.status === 'completed' ? 'pending' : 'completed'
+        const wasCompleted = task.status === 'completed'
+        task.status = wasCompleted ? 'pending' : 'completed'
+        
+        // 记录完成时间戳
+        if (!wasCompleted) {
+          task.completed_at = new Date().toISOString()
+        } else {
+          // 取消完成时清除时间戳
+          delete task.completed_at
+        }
+        
         await this.saveTasks()
       }
     },

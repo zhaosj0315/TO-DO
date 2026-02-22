@@ -158,8 +158,20 @@
               <span class="task-title" @click="openEditModal(task)" title="点击编辑详情">{{ task.text }}</span>
               <div v-if="task.description" class="task-description">{{ task.description }}</div>
               <div class="task-meta">
-                <span class="task-time" title="添加时间">📝 {{ formatDateTime(task.created_at) }}</span>
-                <span class="task-deadline" :class="getDeadlineClass(task)" title="计划完成时间">⏰ {{ getDeadlineText(task) }}</span>
+                <!-- 已完成任务：显示完成时间和状态 -->
+                <template v-if="task.status === 'completed'">
+                  <span class="task-completed-time" title="完成时间">
+                    ✅ {{ currentLanguage === 'zh' ? '完成于' : 'Completed' }}: {{ formatDateTime(task.completed_at || task.created_at) }}
+                  </span>
+                  <span class="task-deadline" :class="getDeadlineClass(task)" title="完成状态">
+                    {{ getDeadlineText(task) }}
+                  </span>
+                </template>
+                <!-- 未完成任务：显示创建时间和截止时间 -->
+                <template v-else>
+                  <span class="task-time" title="添加时间">📝 {{ formatDateTime(task.created_at) }}</span>
+                  <span class="task-deadline" :class="getDeadlineClass(task)" title="计划完成时间">⏰ {{ getDeadlineText(task) }}</span>
+                </template>
                 <span class="task-type badge">{{ getTaskTypeText(task) }}</span>
                 <span class="badge badge-icon" :class="`priority-${task.priority}`" :title="`优先级: ${getPriorityText(task.priority)}`">
                   ⚡ {{ getPriorityText(task.priority) }}
@@ -4763,6 +4775,17 @@ const formatDateTime = (dateStr) => {
 
 // 方法：获取任务截止时间文本
 const getDeadlineText = (task) => {
+  // 已完成任务：显示完成状态（准时/逾期）
+  if (task.status === 'completed') {
+    const deadline = calculateDeadline(task)
+    if (!deadline) return '✅ 已完成'
+    
+    const completedTime = new Date(task.completed_at || task.created_at)
+    const isOnTime = completedTime <= deadline
+    
+    return isOnTime ? '🏁 准时完成' : '⚠️ 逾期完成'
+  }
+  
   const deadline = calculateDeadline(task)
   if (!deadline) return t('noDeadline')
   
@@ -5919,6 +5942,22 @@ watch(() => reportData.value, (newData) => {
   padding: 0.25rem 0.5rem;
   border-radius: 12px;
   background: rgba(0, 0, 0, 0.04);
+  line-height: 1;
+  height: 24px;
+  box-sizing: border-box;
+}
+
+/* 完成时间徽章 */
+.task-completed-time {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: #10b981;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  background: rgba(16, 185, 129, 0.1);
   line-height: 1;
   height: 24px;
   box-sizing: border-box;
