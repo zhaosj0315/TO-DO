@@ -1362,8 +1362,8 @@
               </div>
             </div>
 
-            <!-- 行为热力图 (Heatmap) - 仅季报/年报显示 -->
-            <div class="report-section" v-if="reportData.heatmapData && (reportType === 'yearly' || reportType === 'quarterly')">
+            <!-- 行为热力图 (Heatmap) - 季报/半年报/年报显示 -->
+            <div class="report-section" v-if="reportData.heatmapData && (reportType === 'yearly' || reportType === 'quarterly' || reportType === 'halfyearly')">
               <h3 class="section-title">{{ currentLanguage === 'zh' ? '📊 行为热力图' : '📊 Activity Heatmap' }}</h3>
               <div class="heatmap-container">
                 <div class="heatmap-legend">
@@ -1406,8 +1406,8 @@
               </div>
             </div>
 
-            <!-- 月度趋势图 (Monthly Trend) - 仅年报显示 -->
-            <div class="report-section" v-if="reportData.monthlyTrend && reportData.monthlyTrend.length > 0 && reportType === 'yearly'">
+            <!-- 月度趋势图 (Monthly Trend) - 半年报/年报显示 -->
+            <div class="report-section" v-if="reportData.monthlyTrend && reportData.monthlyTrend.length > 0 && (reportType === 'yearly' || reportType === 'halfyearly')">
               <h3 class="section-title">{{ currentLanguage === 'zh' ? '📈 月度趋势' : '📈 Monthly Trend' }}</h3>
               <div class="trend-chart-container">
                 <EChart :option="monthlyTrendChartOption" style="height: 300px;" />
@@ -2997,6 +2997,14 @@ const generateReportContent = () => {
     // 必须有详细备注才有资格成为里程碑
     if (!task.description || task.description.trim().length === 0) return false
     
+    // 长周期报告（月/季/年）硬性门槛：过滤低优先级且耗时不足2个番茄的琐事
+    const isLongPeriod = ['monthly', 'quarterly', 'halfyearly', 'yearly'].includes(reportType.value)
+    if (isLongPeriod) {
+      const pomodoros = getPomodoroCount(task.priority)
+      const isLowValueTask = task.priority === 'low' && pomodoros < 2
+      if (isLowValueTask) return false
+    }
+    
     let score = 0
     const hasRichDescription = task.description.trim().length > 10
     if (hasRichDescription) score++
@@ -3093,17 +3101,24 @@ const generateReportContent = () => {
   } else if (reportType.value === 'monthly') {
     const transition = getMilestoneTransition()
     const milestoneText = topMilestone 
-      ? (transition.includes('此外') ? `${transition}${topMilestone.text}」最为关键` : `，其中「${topMilestone.text}」最为关键`)
+      ? (transition.includes('此外') ? `${transition}${topMilestone.text}」` : `，其中「${topMilestone.text}」最为关键`)
       : ''
     
     report += currentLanguage.value === 'zh'
       ? `本月你完成了 ${completedTasks} 个任务，日均 ${avgTasksPerDay} 个，完成率 ${completionRate}%。${topCategory.icon} ${topCategory.name}是你投入最多的领域（${topCategory.rate}%）${milestoneText}。\n\n\n`
       : `This month you completed ${completedTasks} tasks, averaging ${avgTasksPerDay} per day with ${completionRate}% completion rate. ${topCategory.icon} ${topCategory.name} received the most attention (${topCategory.rate}%)${topMilestone ? `, with "${topMilestone.text}" being the most critical` : ''}.\n\n\n`
   } else if (reportType.value === 'daily') {
-    const highValueRatio = completedTasks > 0 ? Math.round((byPriority.high.filter(t => t.status === TaskStatus.COMPLETED).length / completedTasks) * 100) : 0
-    report += currentLanguage.value === 'zh'
-      ? `今天你完成了 ${completedTasks} 个任务，完成率 ${completionRate}%，专注 ${totalPomodoros} 个番茄钟。${topCategory.icon} ${topCategory.name}是今日主要投入（${topCategory.rate}%）。${highValueRatio >= 50 ? '高优先级任务占比超过50%，执行力优秀！' : '继续保持专注！'}\n\n\n`
-      : `Today you completed ${completedTasks} tasks with ${completionRate}% completion rate, focusing ${totalPomodoros} pomodoros. ${topCategory.icon} ${topCategory.name} was the main focus (${topCategory.rate}%). ${highValueRatio >= 50 ? 'High-priority tasks exceeded 50%, excellent execution!' : 'Keep focused!'}\n\n\n`
+    // Bug1修复：零值兜底逻辑
+    if (totalTasks === 0 || completedTasks === 0) {
+      report += currentLanguage.value === 'zh'
+        ? `当前还没有任务数据哦，快去开启今天的第一个番茄钟吧！🍅\n\n\n`
+        : `No task data yet. Start your first pomodoro today! 🍅\n\n\n`
+    } else {
+      const highValueRatio = completedTasks > 0 ? Math.round((byPriority.high.filter(t => t.status === TaskStatus.COMPLETED).length / completedTasks) * 100) : 0
+      report += currentLanguage.value === 'zh'
+        ? `今天你完成了 ${completedTasks} 个任务，完成率 ${completionRate}%，专注 ${totalPomodoros} 个番茄钟。${topCategory.icon} ${topCategory.name}是今日主要投入（${topCategory.rate}%）。${highValueRatio >= 50 ? '高优先级任务占比超过50%，执行力优秀！' : '继续保持专注！'}\n\n\n`
+        : `Today you completed ${completedTasks} tasks with ${completionRate}% completion rate, focusing ${totalPomodoros} pomodoros. ${topCategory.icon} ${topCategory.name} was the main focus (${topCategory.rate}%). ${highValueRatio >= 50 ? 'High-priority tasks exceeded 50%, excellent execution!' : 'Keep focused!'}\n\n\n`
+    }
   } else {
     const highValueRatio = completedTasks > 0 ? Math.round((byPriority.high.filter(t => t.status === TaskStatus.COMPLETED).length / completedTasks) * 100) : 0
     report += currentLanguage.value === 'zh'
@@ -3180,11 +3195,27 @@ const generateReportContent = () => {
     } else {
       report += currentLanguage.value === 'zh' ? '暂无高频任务数据\n\n' : 'No frequent tasks data\n\n'
     }
+    
+    // Bug2修复：月报添加【闪光的里程碑】模块
+    if (textMilestones.length > 0) {
+      report += `${doubleSeparator}\n`
+      report += currentLanguage.value === 'zh' ? '【第四部分】闪光的里程碑 - Key Milestones\n' : '【Part 4】Key Milestones\n'
+      report += `${doubleSeparator}\n\n`
+      
+      textMilestones.forEach((milestone, index) => {
+        report += `${index + 1}. ${milestone.text}\n`
+        report += `   📅 ${formatDate(new Date(milestone.created_at))}  |  ${getCategoryText(milestone.category)}  |  ⚡ ${getPriorityText(milestone.priority)}  |  🍅 ${getPomodoroCount(milestone.priority)}\n`
+        if (milestone.description) {
+          report += `   💬 ${milestone.description}\n`
+        }
+        report += `\n`
+      })
+    }
   } else {
     // 周报/日报：先显示高频习惯，再显示里程碑
     
-    // Bug2修复：添加【本期高频投入】模块
-    if (textAggregatedTasks.length > 0) {
+    // Bug2修复：添加【本期高频投入】模块（日报跳过）
+    if (reportType.value !== 'daily' && textAggregatedTasks.length > 0) {
       report += `${doubleSeparator}\n`
       report += currentLanguage.value === 'zh' ? '【第三部分】本期高频投入 - Frequent Tasks\n' : '【Part 3】Frequent Tasks\n'
       report += `${doubleSeparator}\n\n`
@@ -3195,8 +3226,8 @@ const generateReportContent = () => {
       })
     }
     
-    // Bug3修复：里程碑按番茄钟数降序排序
-    if (textMilestones.length > 0) {
+    // Bug3修复：里程碑按番茄钟数降序排序（日报跳过）
+    if (reportType.value !== 'daily' && textMilestones.length > 0) {
       const sortedMilestones = [...textMilestones].sort((a, b) => {
         const aPomo = getPomodoroCount(a.priority)
         const bPomo = getPomodoroCount(b.priority)
@@ -3221,7 +3252,11 @@ const generateReportContent = () => {
   }
   
   // Bug3修复：待办预警去重 + 新增【待办预警】模块
-  const incompleteTasks = periodTasks.filter(t => t.status !== TaskStatus.COMPLETED)
+  // 日报：查询所有未完成任务（不限时间范围），其他报告：查询周期内未完成任务
+  const incompleteTasks = reportType.value === 'daily' 
+    ? taskStore.tasks.filter(t => t.status !== TaskStatus.COMPLETED)
+    : periodTasks.filter(t => t.status !== TaskStatus.COMPLETED)
+    
   if (incompleteTasks.length > 0) {
     // 按任务名称去重，保留优先级最高的
     const incompleteTasksMap = {}
@@ -3250,7 +3285,12 @@ const generateReportContent = () => {
       .slice(0, 5)
     
     report += `${doubleSeparator}\n`
-    report += currentLanguage.value === 'zh' ? '【待办预警】未完成任务 - Pending Tasks\n' : '【Pending Alert】Incomplete Tasks\n'
+    // 日报显示为第三部分，其他报告显示为待办预警
+    if (reportType.value === 'daily') {
+      report += currentLanguage.value === 'zh' ? '【第三部分】待办预警 - Pending Tasks\n' : '【Part 3】Pending Tasks\n'
+    } else {
+      report += currentLanguage.value === 'zh' ? '【待办预警】未完成任务 - Pending Tasks\n' : '【Pending Alert】Incomplete Tasks\n'
+    }
     report += `${doubleSeparator}\n\n`
     
     topIncompleteTasks.forEach((task, index) => {
