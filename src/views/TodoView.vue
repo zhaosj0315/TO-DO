@@ -189,7 +189,7 @@
             </div>
             <!-- v1.2: 增大删除按钮点击区域 -->
             <button class="btn-delete-touch" @click="deleteTask(task.id)" title="删除任务">
-              ×
+              🗑️
             </button>
           </li>
         </ul>
@@ -5938,12 +5938,11 @@ watch(() => reportData.value, (newData) => {
   padding: 0;
   border-radius: 50%;
   border: none;
-  background: linear-gradient(135deg, #f44336, #e91e63);
-  color: white;
-  font-size: 1.5rem;
-  font-weight: 300;
+  background: rgba(0, 0, 0, 0.05);
+  color: #999;
+  font-size: 1.2rem;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5951,8 +5950,9 @@ watch(() => reportData.value, (newData) => {
 }
 
 .btn-delete-touch:hover {
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
+  background: rgba(0, 0, 0, 0.1);
+  color: #666;
+  transform: scale(1.05);
 }
 
 .btn-delete-touch:active {
