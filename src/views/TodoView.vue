@@ -154,46 +154,35 @@
                 @change="toggleTaskCompletion(task.id)"
               >
             </label>
-            <div class="task-content">
-              <span class="task-title" @click="openEditModal(task)" title="点击编辑详情">{{ task.text }}</span>
+            <div class="task-content" @click="openTaskDetail(task)" style="cursor: pointer;">
+              <div class="task-title-row">
+                <span class="task-title" title="点击查看详情">{{ task.text }}</span>
+                <button class="btn-delete-inline" @click.stop="deleteTask(task.id)" title="删除任务">🗑️</button>
+              </div>
               <div v-if="task.description" class="task-description">{{ task.description }}</div>
               <div class="task-meta">
-                <!-- 创建时间（所有任务都显示） -->
-                <span class="task-time" title="添加时间">📝 {{ formatDateTime(task.created_at) }}</span>
+                <!-- 时间信息（压缩格式：去掉年份） -->
+                <span class="task-time-compact" title="创建时间">📝 {{ formatCompactDateTime(task.created_at) }}</span>
                 
-                <!-- 已完成任务：显示计划完成时间、实际完成时间和状态 -->
+                <!-- 已完成任务：计划时间 + 实际时间 + 状态 -->
                 <template v-if="task.status === 'completed'">
-                  <span class="task-deadline-planned" title="计划完成时间">
-                    📅 {{ getPlannedDeadlineText(task) }}
-                  </span>
-                  <span class="task-completed-time" title="实际完成时间">
-                    ✅ {{ formatDateTime(task.completed_at || task.created_at) }}
-                  </span>
-                  <span class="task-deadline task-deadline-success" title="完成状态">
-                    {{ getDeadlineText(task) }}
-                  </span>
+                  <span class="task-time-compact" title="计划完成">⏰ {{ formatCompactDateTime(getPlannedDeadlineDate(task)) }}</span>
+                  <span class="task-time-compact" title="实际完成">✅ {{ formatCompactDateTime(task.completed_at) }}</span>
+                  <span class="task-status-compact" :class="getDeadlineClass(task)">{{ getCompactStatus(task) }}</span>
                 </template>
-                <!-- 未完成任务：显示截止时间 -->
+                <!-- 未完成任务：截止时间 -->
                 <template v-else>
-                  <span class="task-deadline" :class="getDeadlineClass(task)" title="计划完成时间">⏰ {{ getDeadlineText(task) }}</span>
+                  <span class="task-time-compact" :class="getDeadlineClass(task)" title="截止时间">⏰ {{ formatCompactDateTime(getDeadlineDate(task)) }}</span>
                 </template>
                 
-                <span class="task-type badge">{{ getTaskTypeText(task) }}</span>
-                <span class="badge badge-icon" :class="`priority-${task.priority}`" :title="`优先级: ${getPriorityText(task.priority)}`">
-                  ⚡ {{ getPriorityText(task.priority) }}
-                </span>
-                <span class="badge badge-icon" :class="`category-${task.category}`" :title="`分类: ${getCategoryText(task.category)}`">
-                  🏷️ {{ getCategoryText(task.category) }}
-                </span>
-                <span class="badge badge-pomodoro" :class="`pomodoro-${task.priority}`" :title="`预估番茄数: ${getPomodoroCount(task.priority)}个`">
+                <!-- 核心标签 -->
+                <span class="badge badge-icon" :class="`priority-${task.priority}`">⚡{{ getPriorityText(task.priority) }}</span>
+                <span class="badge badge-icon" :class="`category-${task.category}`">🏷️{{ getCategoryText(task.category) }}</span>
+                <span class="badge badge-pomodoro" :class="`pomodoro-${task.priority}`">
                   <span v-for="n in getPomodoroCount(task.priority)" :key="n">🍅</span>
                 </span>
               </div>
             </div>
-            <!-- v1.2: 增大删除按钮点击区域 -->
-            <button class="btn-delete-touch" @click="deleteTask(task.id)" title="删除任务">
-              🗑️
-            </button>
           </li>
         </ul>
         <div v-else class="empty-state">
@@ -1014,6 +1003,96 @@
               style="width: 100%; font-size: 1rem;"
               @change="confirmCustomDate"
             >
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 任务详情抽屉 (Bottom Sheet) -->
+    <div v-if="showTaskDetail" class="bottom-sheet-overlay" @click.self="closeTaskDetail">
+      <div class="bottom-sheet">
+        <div class="bottom-sheet-header">
+          <div class="sheet-handle"></div>
+          <h3>📋 任务详情</h3>
+          <button class="close-btn" @click="closeTaskDetail">&times;</button>
+        </div>
+        <div class="bottom-sheet-body" v-if="detailTask">
+          <!-- 任务标题和描述 -->
+          <div class="detail-section">
+            <h4 class="detail-title">{{ detailTask.text }}</h4>
+            <p v-if="detailTask.description" class="detail-description">{{ detailTask.description }}</p>
+          </div>
+
+          <!-- 时间轴 -->
+          <div class="detail-section timeline">
+            <div class="timeline-item">
+              <div class="timeline-icon">📝</div>
+              <div class="timeline-content">
+                <div class="timeline-label">创建时间</div>
+                <div class="timeline-value">{{ formatDateTime(detailTask.created_at) }}</div>
+              </div>
+            </div>
+            
+            <div class="timeline-item" v-if="detailTask.status !== 'completed'">
+              <div class="timeline-icon">⏰</div>
+              <div class="timeline-content">
+                <div class="timeline-label">截止时间</div>
+                <div class="timeline-value" :class="getDeadlineClass(detailTask)">{{ getDeadlineText(detailTask) }}</div>
+              </div>
+            </div>
+
+            <template v-if="detailTask.status === 'completed'">
+              <div class="timeline-item">
+                <div class="timeline-icon">⏰</div>
+                <div class="timeline-content">
+                  <div class="timeline-label">计划完成时间</div>
+                  <div class="timeline-value">{{ getPlannedDeadlineText(detailTask) }}</div>
+                </div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-icon">✅</div>
+                <div class="timeline-content">
+                  <div class="timeline-label">实际完成时间</div>
+                  <div class="timeline-value">{{ formatDateTime(detailTask.completed_at || detailTask.created_at) }}</div>
+                </div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-icon">🏁</div>
+                <div class="timeline-content">
+                  <div class="timeline-label">完成状态</div>
+                  <div class="timeline-value task-deadline-success">{{ getDeadlineText(detailTask) }}</div>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <!-- 任务属性 -->
+          <div class="detail-section attributes">
+            <div class="attr-item">
+              <span class="attr-label">📅 任务类型</span>
+              <span class="attr-value badge">{{ getTaskTypeText(detailTask) }}</span>
+            </div>
+            <div class="attr-item">
+              <span class="attr-label">⚡ 优先级</span>
+              <span class="attr-value badge" :class="`priority-${detailTask.priority}`">{{ getPriorityText(detailTask.priority) }}</span>
+            </div>
+            <div class="attr-item">
+              <span class="attr-label">🏷️ 分类</span>
+              <span class="attr-value badge" :class="`category-${detailTask.category}`">{{ getCategoryText(detailTask.category) }}</span>
+            </div>
+            <div class="attr-item">
+              <span class="attr-label">🍅 番茄钟</span>
+              <span class="attr-value badge badge-pomodoro" :class="`pomodoro-${detailTask.priority}`">
+                <span v-for="n in getPomodoroCount(detailTask.priority)" :key="n">🍅</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- 操作按钮 -->
+          <div class="detail-actions">
+            <button class="btn btn-primary" @click="openEditModal(detailTask); closeTaskDetail()">
+              ✏️ 编辑任务
+            </button>
           </div>
         </div>
       </div>
@@ -1885,6 +1964,10 @@ const editCustomDateTime = ref('')
 const editWeekdays = ref([])
 const showAddForm = ref(true)
 const currentPage = ref(1)
+
+// Bottom Sheet 状态
+const showTaskDetail = ref(false)
+const detailTask = ref(null)
 
 // 月度趋势图配置
 const monthlyTrendChartOption = computed(() => {
@@ -2775,6 +2858,18 @@ const openEditModal = (task) => {
   }
   
   editWeekdays.value = task.weekdays ? [...task.weekdays] : []
+}
+
+// 方法：打开任务详情抽屉
+const openTaskDetail = (task) => {
+  detailTask.value = task
+  showTaskDetail.value = true
+}
+
+// 方法：关闭任务详情抽屉
+const closeTaskDetail = () => {
+  showTaskDetail.value = false
+  detailTask.value = null
 }
 
 // 方法：处理编辑类型变化
@@ -4779,6 +4874,37 @@ const formatDateTime = (dateStr) => {
   return `${year}/${month}/${day} ${hour}:${minute}`
 }
 
+// 方法：压缩格式日期时间（去掉年份）
+const formatCompactDateTime = (dateStr) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  const month = date.getMonth() + 1
+  const day = date.getDate()
+  const hour = String(date.getHours()).padStart(2, '0')
+  const minute = String(date.getMinutes()).padStart(2, '0')
+  return `${month}/${day} ${hour}:${minute}`
+}
+
+// 方法：获取截止日期对象
+const getDeadlineDate = (task) => {
+  return calculateDeadline(task)
+}
+
+// 方法：获取计划完成日期对象
+const getPlannedDeadlineDate = (task) => {
+  return calculateDeadline(task)
+}
+
+// 方法：获取压缩状态文本
+const getCompactStatus = (task) => {
+  if (task.status !== 'completed') return ''
+  const deadline = calculateDeadline(task)
+  if (!deadline) return '✅'
+  const completedTime = new Date(task.completed_at || task.created_at)
+  const isOnTime = completedTime <= deadline
+  return isOnTime ? '🏁' : '⚠️'
+}
+
 // 方法：获取计划完成时间（纯日期，不含状态）
 const getPlannedDeadlineText = (task) => {
   const deadline = calculateDeadline(task)
@@ -5963,6 +6089,29 @@ watch(() => reportData.value, (newData) => {
   box-sizing: border-box;
 }
 
+/* 压缩时间样式（更紧凑） */
+.task-time-compact {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.7rem;
+  color: #666;
+  padding: 0.2rem 0.4rem;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.03);
+  line-height: 1;
+  height: 22px;
+  white-space: nowrap;
+}
+
+/* 压缩状态样式 */
+.task-status-compact {
+  display: inline-flex;
+  align-items: center;
+  font-size: 1rem;
+  line-height: 1;
+  height: 22px;
+}
+
 /* 完成时间徽章 */
 .task-completed-time {
   display: inline-flex;
@@ -6054,16 +6203,16 @@ watch(() => reportData.value, (newData) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.5rem;
-  margin: -0.5rem 0.2rem -0.5rem -0.5rem; /* 微调间距以对齐统计按钮 */
+  padding: 0.6rem; /* 增大点击热区 */
+  margin: -0.6rem 0 -0.6rem -0.6rem; /* 负边距抵消padding */
   cursor: pointer;
 }
 
 /* v1.2: 任务卡片触摸反馈 */
 .task-item {
   display: flex;
-  align-items: center;
-  gap: 0.8rem;
+  align-items: flex-start;
+  gap: 4px; /* 调整至4px */
   padding: 0.8rem;
   background: white;
   border-radius: 12px;
@@ -6080,63 +6229,91 @@ watch(() => reportData.value, (newData) => {
 }
 
 .task-checkbox {
-  transform: scale(1.3);
+  width: 14px; /* 缩小至14px，小于文字 */
+  height: 14px;
   cursor: pointer;
-}
-
-/* v1.2: 触摸优化 - 删除按钮 */
-.btn-delete-touch {
-  min-width: 44px;
-  min-height: 44px;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  border-radius: 50%;
-  border: none;
-  background: rgba(0, 0, 0, 0.05);
-  color: #999;
-  font-size: 1.2rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  margin-top: 0.2rem; /* 重新微调对齐 */
   flex-shrink: 0;
+  /* 加粗边框，防止发虚 */
+  border: 1.5px solid #999 !important;
+  border-radius: 3px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: white;
+  position: relative;
+  transition: all 0.2s;
 }
 
-.btn-delete-touch:hover {
-  background: rgba(0, 0, 0, 0.1);
-  color: #666;
-  transform: scale(1.05);
+.task-checkbox:checked {
+  background: #8b5cf6;
+  border-color: #8b5cf6 !important;
 }
 
-.btn-delete-touch:active {
-  transform: scale(0.95);
+.task-checkbox:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 10px; /* 同步缩小勾号 */
+  font-weight: bold;
 }
 
 .task-content {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 /* v1.2: 字体比例优化 */
+/* 任务标题行（标题+删除按钮） */
+.task-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
 .task-title {
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
   transition: color 0.2s;
   line-height: 1.4;
+  flex: 1;
 }
 
 .task-title:hover {
   color: var(--primary-color);
 }
 
+/* 内联删除按钮 */
+.btn-delete-inline {
+  background: none;
+  border: none;
+  font-size: 0.875rem; /* 14px，视觉小巧 */
+  cursor: pointer;
+  padding: 0.6rem; /* 增大点击热区至44px（14px + 0.6rem*2 ≈ 44px） */
+  margin: -0.6rem; /* 负边距抵消padding，保持视觉位置 */
+  opacity: 0.6; /* 提高对比度：从0.35增至0.6 */
+  transition: all 0.2s;
+  flex-shrink: 0;
+  line-height: 1;
+  color: #666; /* 加深颜色：从#999改为#666 */
+}
+
+.btn-delete-inline:hover {
+  opacity: 1;
+  transform: scale(1.15);
+  color: #333; /* 悬停更深 */
+}
+
 .task-description {
   font-size: 0.85rem;
   color: #888;
-  margin-top: 0.4rem;
+  margin-top: 0.25rem; /* 压缩：从0.4rem减至0.25rem */
   line-height: 1.4;
   max-width: 100%;
   word-wrap: break-word;
@@ -6145,9 +6322,9 @@ watch(() => reportData.value, (newData) => {
 .task-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
+  gap: 0.5rem; /* 压缩：从0.6rem减至0.5rem */
   align-items: center;
-  margin-top: 0.5rem;
+  margin-top: 0.35rem; /* 压缩：从0.5rem减至0.35rem */
   line-height: 1;
 }
 
@@ -7171,6 +7348,200 @@ watch(() => reportData.value, (newData) => {
   align-items: center;
   z-index: 1000;
   backdrop-filter: blur(8px);
+}
+
+/* Bottom Sheet 样式 */
+.bottom-sheet-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: flex-end;
+  animation: fadeIn 0.2s ease;
+}
+
+.bottom-sheet {
+  background: white;
+  width: 100%;
+  max-height: 75vh;
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.3s ease;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.bottom-sheet-header {
+  position: relative;
+  padding: 1rem 1.5rem 0.8rem;
+  border-bottom: 1px solid #f0f0f0;
+  text-align: center;
+}
+
+.sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: #d0d0d0;
+  border-radius: 2px;
+  margin: 0 auto 0.8rem;
+}
+
+.bottom-sheet-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.bottom-sheet-header .close-btn {
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.8rem;
+  color: #999;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+}
+
+.bottom-sheet-body {
+  overflow-y: auto;
+  padding: 1.5rem;
+  flex: 1;
+}
+
+.detail-section {
+  margin-bottom: 1.5rem;
+}
+
+.detail-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 0.5rem 0;
+}
+
+.detail-description {
+  color: #666;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* 时间轴样式 */
+.timeline {
+  position: relative;
+  padding-left: 2.5rem;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 1rem;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, #e0e0e0, #f5f5f5);
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 1.2rem;
+  display: flex;
+  align-items: flex-start;
+}
+
+.timeline-item:last-child {
+  margin-bottom: 0;
+}
+
+.timeline-icon {
+  position: absolute;
+  left: -2rem;
+  width: 2rem;
+  height: 2rem;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  box-shadow: 0 0 0 3px #f5f5f5;
+}
+
+.timeline-content {
+  flex: 1;
+}
+
+.timeline-label {
+  font-size: 0.75rem;
+  color: #999;
+  margin-bottom: 0.2rem;
+}
+
+.timeline-value {
+  font-size: 0.9rem;
+  color: #333;
+  font-weight: 500;
+}
+
+/* 属性列表 */
+.attributes {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.attr-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.attr-item:last-child {
+  border-bottom: none;
+}
+
+.attr-label {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.attr-value {
+  font-size: 0.85rem;
+}
+
+/* 操作按钮 */
+.detail-actions {
+  margin-top: 1rem;
+}
+
+.detail-actions .btn {
+  width: 100%;
+  padding: 0.9rem;
+  font-size: 1rem;
+  border-radius: 12px;
+}
+
+/* 动画 */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }
 
 .modal-content {
