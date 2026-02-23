@@ -9550,24 +9550,24 @@ watch(() => reportData.value, (newData) => {
 
 .footer-version {
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.7);
+  color: #666;
 }
 
 .footer-copyright {
-  color: rgba(255, 255, 255, 0.7);
+  color: #666;
 }
 
 .footer-divider {
-  color: rgba(255, 255, 255, 0.3);
+  color: #999;
   margin: 0 0.2rem;
 }
 
 .footer-text {
-  color: rgba(255, 255, 255, 0.7);
+  color: #666;
 }
 
 .footer-link {
-  color: rgba(255, 255, 255, 0.7);
+  color: #666;
   cursor: pointer;
   text-decoration: none;
   transition: color 0.3s;
@@ -9575,8 +9575,8 @@ watch(() => reportData.value, (newData) => {
 }
 
 .footer-link:hover {
-  color: rgba(255, 255, 255, 1);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+  color: #333;
+  border-bottom: 1px solid rgba(102, 126, 234, 0.5);
 }
 
 /* 隐私政策模态框 */
