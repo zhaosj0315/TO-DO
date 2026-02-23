@@ -8352,27 +8352,32 @@ watch(() => reportData.value, (newData) => {
 .filter-chip-tag {
   flex-direction: row !important;
   justify-content: flex-start !important;
-  gap: 0.5rem !important;
-  padding: 0.5rem 0.8rem !important;
+  gap: 0.4rem !important;
+  padding: 0.45rem 0.6rem !important;
+  overflow: hidden;
 }
 
 .chip-label-main {
   font-weight: 600;
   color: #333;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   flex: 1;
   text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .chip-count-badge {
   font-weight: 400;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: #999;
   background: rgba(0, 0, 0, 0.05);
-  padding: 0.15rem 0.5rem;
-  border-radius: 12px;
-  min-width: 24px;
+  padding: 0.1rem 0.4rem;
+  border-radius: 10px;
+  min-width: 20px;
   text-align: center;
+  flex-shrink: 0;
 }
 
 .filter-chip-tag.active .chip-label-main,
