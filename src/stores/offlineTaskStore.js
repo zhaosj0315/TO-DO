@@ -134,11 +134,24 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         filtered = filtered.filter(t => t.category === categoryFilter)
       }
 
+      // 根据时间维度筛选
+      const dimension = dateRange.dimension || 'created'
+      
       if (dateRange.start) {
         const start = new Date(dateRange.start)
         start.setHours(0, 0, 0, 0)
         filtered = filtered.filter(t => {
-          const taskDate = new Date(t.created_at)
+          let taskDate
+          if (dimension === 'created') {
+            taskDate = new Date(t.created_at)
+          } else if (dimension === 'deadline') {
+            const deadline = this.calculateDeadline(t)
+            if (!deadline) return false
+            taskDate = new Date(deadline)
+          } else if (dimension === 'completed') {
+            if (!t.completed_at) return false
+            taskDate = new Date(t.completed_at)
+          }
           return taskDate >= start
         })
       }
@@ -147,7 +160,17 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         const end = new Date(dateRange.end)
         end.setHours(23, 59, 59, 999)
         filtered = filtered.filter(t => {
-          const taskDate = new Date(t.created_at)
+          let taskDate
+          if (dimension === 'created') {
+            taskDate = new Date(t.created_at)
+          } else if (dimension === 'deadline') {
+            const deadline = this.calculateDeadline(t)
+            if (!deadline) return false
+            taskDate = new Date(deadline)
+          } else if (dimension === 'completed') {
+            if (!t.completed_at) return false
+            taskDate = new Date(t.completed_at)
+          }
           return taskDate <= end
         })
       }
@@ -171,6 +194,44 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         }
         return new Date(b.created_at) - new Date(a.created_at)
       })
+    },
+
+    calculateDeadline(task) {
+      const now = new Date()
+      
+      switch (task.type) {
+        case 'today':
+        case 'daily':
+          return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
+        
+        case 'tomorrow':
+          const tomorrow = new Date(now)
+          tomorrow.setDate(tomorrow.getDate() + 1)
+          return new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 23, 59, 59)
+        
+        case 'this_week':
+          const endOfWeek = new Date(now)
+          const dayOfWeek = now.getDay()
+          const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek
+          endOfWeek.setDate(endOfWeek.getDate() + daysUntilSunday)
+          return new Date(endOfWeek.getFullYear(), endOfWeek.getMonth(), endOfWeek.getDate(), 23, 59, 59)
+        
+        case 'custom_date':
+          if (task.customDate) {
+            const date = new Date(task.customDate)
+            if (task.customTime) {
+              const [hours, minutes] = task.customTime.split(':')
+              date.setHours(parseInt(hours), parseInt(minutes), 0)
+            } else {
+              date.setHours(23, 59, 59)
+            }
+            return date
+          }
+          return null
+        
+        default:
+          return null
+      }
     },
 
     async setCurrentUser(username) {

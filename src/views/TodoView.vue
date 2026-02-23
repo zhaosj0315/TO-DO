@@ -425,6 +425,30 @@
           <!-- 日期范围 -->
           <div class="filter-section">
             <label class="filter-label">📅 {{ t('dateRange') }}</label>
+            <!-- 时间维度选择 -->
+            <div class="time-dimension-buttons">
+              <button 
+                class="dimension-btn" 
+                :class="{ active: timeDimension === 'created' }"
+                @click="timeDimension = 'created'"
+              >
+                创建时间
+              </button>
+              <button 
+                class="dimension-btn" 
+                :class="{ active: timeDimension === 'deadline' }"
+                @click="timeDimension = 'deadline'"
+              >
+                截止时间
+              </button>
+              <button 
+                class="dimension-btn" 
+                :class="{ active: timeDimension === 'completed' }"
+                @click="timeDimension = 'completed'"
+              >
+                完成时间
+              </button>
+            </div>
             <!-- 快捷日期按钮 -->
             <div class="quick-date-buttons">
               <button class="quick-date-btn" @click="setQuickDate('today')">{{ t('today') }}</button>
@@ -2215,6 +2239,7 @@ const currentPriorityFilter = ref('all')
 const searchKeyword = ref('')
 const startDate = ref('')
 const endDate = ref('')
+const timeDimension = ref('created') // 时间维度：created/deadline/completed
 const countdownInterval = ref(null)
 const showTrash = ref(false)
 const showProfile = ref(false)
@@ -2518,7 +2543,8 @@ const baseFilteredTasks = computed(() => {
 const filteredTasks = computed(() => {
   let tasks = taskStore.getFilteredTasks(currentFilter.value, currentCategoryFilter.value, {
     start: startDate.value,
-    end: endDate.value
+    end: endDate.value,
+    dimension: timeDimension.value
   })
   
   // 优先级筛选
@@ -8325,6 +8351,38 @@ watch(() => reportData.value, (newData) => {
 }
 
 /* 快捷日期按钮 */
+.time-dimension-buttons {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+}
+
+.dimension-btn {
+  flex: 1;
+  padding: 0.5rem 0.8rem;
+  border: 2px solid #d0d0d0;
+  background: #fafafa;
+  border-radius: 18px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dimension-btn:hover {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.08);
+  color: #667eea;
+}
+
+.dimension-btn.active {
+  border-color: #667eea;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
 .quick-date-buttons {
   display: flex;
   gap: 0.6rem;
