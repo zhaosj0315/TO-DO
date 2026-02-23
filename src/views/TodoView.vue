@@ -7027,7 +7027,7 @@ watch(() => reportData.value, (newData) => {
 }
 
 .user-info h1 {
-  font-size: 1.4rem;
+  font-size: 24px;
   margin: 0;
 }
 
@@ -7046,7 +7046,7 @@ watch(() => reportData.value, (newData) => {
   align-items: center;
   justify-content: center;
   position: relative;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0);
 }
 
 .btn-icon-circle:hover {
@@ -7120,7 +7120,7 @@ watch(() => reportData.value, (newData) => {
   align-items: center;
   justify-content: center;
   padding: 1px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0);
   overflow: hidden;
 }
 
