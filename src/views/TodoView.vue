@@ -285,6 +285,10 @@
                 {{ currentLanguage === 'zh' ? '🍅 番茄规则' : '🍅 Rules' }}
               </span>
               <span class="footer-divider">·</span>
+              <a href="https://github.com/zhaosj0315/TO-DO/releases/tag/v1.6.11" target="_blank" class="footer-link">
+                {{ currentLanguage === 'zh' ? '📦 下载安装包' : '📦 Download' }}
+              </a>
+              <span class="footer-divider">·</span>
               <span class="footer-copyright">© 2026 TO-DO Team</span>
             </p>
             <p class="footer-links">
@@ -3174,6 +3178,9 @@ const addTask = async () => {
   selectedWeekdays.value = []
   
   showNotification('任务添加成功！', 'success')
+  
+  // 更新每日摘要通知
+  await scheduleDailySummaryNotification()
 }
 
 // 方法：格式化显示的星期几
@@ -3213,6 +3220,8 @@ const toggleTaskCompletion = async (taskId) => {
   // 完成任务时清除提醒记录
   notifiedTasks.delete(`urgent_${taskId}`)
   notifiedTasks.delete(`overdue_${taskId}`)
+  // 更新每日摘要通知
+  await scheduleDailySummaryNotification()
 }
 
 // 方法：置顶/取消置顶任务
@@ -3234,6 +3243,9 @@ const deleteTask = async (taskId) => {
   // 清除提醒记录
   notifiedTasks.delete(`urgent_${taskId}`)
   notifiedTasks.delete(`overdue_${taskId}`)
+  
+  // 更新每日摘要通知
+  await scheduleDailySummaryNotification()
   
   // 显示撤销Toast
   undoToastMessage.value = currentLanguage.value === 'zh' ? '任务已删除' : 'Task deleted'
@@ -5034,7 +5046,7 @@ const exportToExcel = async () => {
   const tasks = taskStore.tasks
   
   if (tasks.length === 0) {
-    alert('暂无任务数据可导出')
+    showNotification('暂无任务数据可导出', 'error')
     return
   }
   
@@ -5091,14 +5103,54 @@ const exportToExcel = async () => {
     const isNative = Capacitor.isNativePlatform()
     
     if (isNative) {
-      // 原生应用：保存到文件系统
-      const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' })
-      await Filesystem.writeFile({
-        path: filename,
-        data: wbout,
-        directory: Directory.Documents
-      })
-      showNotification(`文件已保存到：文档/${filename}`, 'success')
+      // 原生应用：尝试多种保存方式
+      try {
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' })
+        
+        // 先尝试保存到 Documents 目录
+        try {
+          await Filesystem.writeFile({
+            path: filename,
+            data: wbout,
+            directory: Directory.Documents
+          })
+          showNotification(`文件已保存到：文档/${filename}`, 'success')
+        } catch (docError) {
+          console.warn('Documents 目录保存失败，尝试 ExternalStorage:', docError)
+          
+          // 如果失败，尝试保存到 ExternalStorage（Android）
+          try {
+            await Filesystem.writeFile({
+              path: filename,
+              data: wbout,
+              directory: Directory.ExternalStorage
+            })
+            showNotification(`文件已保存到：外部存储/${filename}`, 'success')
+          } catch (extError) {
+            console.warn('ExternalStorage 保存失败，尝试 Data 目录:', extError)
+            
+            // 最后尝试 Data 目录
+            await Filesystem.writeFile({
+              path: filename,
+              data: wbout,
+              directory: Directory.Data
+            })
+            showNotification(`文件已保存到：应用数据/${filename}`, 'success')
+          }
+        }
+      } catch (nativeError) {
+        console.error('原生保存失败，降级到浏览器下载:', nativeError)
+        // 降级到浏览器下载方式
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
+        const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = filename
+        a.click()
+        URL.revokeObjectURL(url)
+        showNotification(`文件已下载：${filename}`, 'success')
+      }
     } else {
       // 网页版：触发浏览器下载
       const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
@@ -5823,6 +5875,68 @@ const checkAndNotifyDeadline = async () => {
   }
 }
 
+// 设置每日任务摘要通知
+const scheduleDailySummaryNotification = async () => {
+  try {
+    // 取消之前的每日摘要通知
+    await LocalNotifications.cancel({ notifications: [{ id: 999999 }] })
+    
+    // 计算今日任务统计
+    const now = new Date()
+    const pendingTasks = taskStore.tasks.filter(t => t.status === 'pending')
+    const overdueTasks = taskStore.tasks.filter(t => t.status === 'overdue')
+    
+    // 计算即将逾期的任务（24小时内）
+    const urgentTasks = pendingTasks.filter(task => {
+      const deadline = calculateDeadline(task)
+      if (!deadline) return false
+      const hoursLeft = (deadline - now) / (1000 * 60 * 60)
+      return hoursLeft > 0 && hoursLeft <= 24
+    })
+    
+    // 构建通知内容
+    let body = `📋 待办: ${pendingTasks.length}个`
+    if (urgentTasks.length > 0) {
+      body += ` | ⏰ 即将逾期: ${urgentTasks.length}个`
+    }
+    if (overdueTasks.length > 0) {
+      body += ` | ❌ 已逾期: ${overdueTasks.length}个`
+    }
+    
+    // 添加激励语
+    if (pendingTasks.length === 0 && overdueTasks.length === 0) {
+      body = '🎉 太棒了！今天没有待办任务，享受轻松的一天吧！'
+    } else if (urgentTasks.length > 0) {
+      body += '\n⚡ 有任务即将逾期，记得及时完成哦！'
+    } else if (overdueTasks.length > 0) {
+      body += '\n💪 加油！把逾期的任务完成吧！'
+    } else {
+      body += '\n✨ 新的一天，加油完成任务！'
+    }
+    
+    // 设置明天早上9点的通知
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    tomorrow.setHours(9, 0, 0, 0)
+    
+    await LocalNotifications.schedule({
+      notifications: [{
+        title: '📅 今日任务摘要',
+        body: body,
+        id: 999999,
+        schedule: { 
+          at: tomorrow,
+          allowWhileIdle: true
+        }
+      }]
+    })
+    
+    console.log('每日摘要通知已设置:', tomorrow)
+  } catch (error) {
+    console.error('设置每日摘要通知失败:', error)
+  }
+}
+
 // 监听报告弹窗打开，自动生成报告（已禁用，改为手动生成）
 // watch(showReportModal, (newVal) => {
 //   if (newVal) {
@@ -5870,6 +5984,9 @@ onMounted(async () => {
   
   // 请求通知权限
   await LocalNotifications.requestPermissions()
+  
+  // 设置每日任务摘要通知
+  await scheduleDailySummaryNotification()
   
   countdownInterval.value = setInterval(() => {
     taskStore.checkOverdueTasks()
