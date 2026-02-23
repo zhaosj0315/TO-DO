@@ -283,6 +283,14 @@
                 {{ currentLanguage === 'zh' ? '📋 更新日志' : '📋 Changelog' }}
               </span>
               <span class="footer-divider">·</span>
+              <span class="footer-link" @click="showUserGuide = true">
+                {{ currentLanguage === 'zh' ? '📖 使用指南' : '📖 Guide' }}
+              </span>
+              <span class="footer-divider">·</span>
+              <span class="footer-link" @click="showPomodoroRules = true">
+                {{ currentLanguage === 'zh' ? '🍅 番茄规则' : '🍅 Rules' }}
+              </span>
+              <span class="footer-divider">·</span>
               <span class="footer-copyright">© 2026 TO-DO Team</span>
             </p>
             <p class="footer-links">
@@ -293,7 +301,7 @@
               </span>
               <span class="footer-divider">·</span>
               <span class="footer-link" @click="showSupport = true">
-                {{ currentLanguage === 'zh' ? '联系支持' : 'Support' }}
+                {{ currentLanguage === 'zh' ? '💬 反馈' : '💬 Feedback' }}
               </span>
               <span class="footer-divider">·</span>
               <span class="footer-link" @click="toggleLanguage">
@@ -494,6 +502,72 @@
       </div>
     </div>
 
+    <!-- 首次登录欢迎弹窗 -->
+    <div v-if="showWelcome" class="modal-overlay" @click.self="showWelcome = false">
+      <div class="modal-content glass-card" style="background: white; max-width: 500px; width: 96%; padding: 1.5rem;">
+        <div class="modal-header">
+          <h3>🎉 {{ currentLanguage === 'zh' ? '欢迎使用 TO-DO App！' : 'Welcome to TO-DO App!' }}</h3>
+          <button class="close-btn" @click="showWelcome = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="welcome-content">
+            <h4>📌 {{ currentLanguage === 'zh' ? '重要提醒' : 'Important Notice' }}</h4>
+            <ul class="welcome-list">
+              <li>{{ currentLanguage === 'zh' ? '本应用完全离线运行' : 'This app runs completely offline' }}</li>
+              <li>{{ currentLanguage === 'zh' ? '数据仅存储在您的设备上' : 'Data is stored only on your device' }}</li>
+              <li><strong>{{ currentLanguage === 'zh' ? '请定期导出数据备份' : 'Please export data regularly' }}</strong></li>
+            </ul>
+            
+            <h4>💡 {{ currentLanguage === 'zh' ? '如何备份？' : 'How to Backup?' }}</h4>
+            <p class="backup-guide">
+              {{ currentLanguage === 'zh' ? '个人主页 → 数据管理 → 导出Excel' : 'Profile → Data Management → Export Excel' }}
+            </p>
+            
+            <div class="welcome-warning">
+              <span class="warning-icon">⚠️</span>
+              <span class="warning-text">
+                {{ currentLanguage === 'zh' ? '卸载应用将导致数据永久丢失！' : 'Uninstalling the app will permanently delete all data!' }}
+              </span>
+            </div>
+          </div>
+          
+          <button class="btn btn-primary" @click="showWelcome = false" style="width: 100%; margin-top: 1rem;">
+            {{ currentLanguage === 'zh' ? '我知道了' : 'Got it' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 定期备份提醒弹窗 -->
+    <div v-if="showBackupReminder" class="modal-overlay" @click.self="showBackupReminder = false">
+      <div class="modal-content glass-card" style="background: white; max-width: 450px; width: 96%; padding: 1.5rem;">
+        <div class="modal-header">
+          <h3>💾 {{ currentLanguage === 'zh' ? '数据备份提醒' : 'Backup Reminder' }}</h3>
+          <button class="close-btn" @click="showBackupReminder = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="backup-reminder-text">
+            {{ currentLanguage === 'zh' ? 
+              `您已使用本应用一段时间，累计创建了 ${taskStore.tasks.length} 个任务。建议立即备份数据！` : 
+              `You have created ${taskStore.tasks.length} tasks. It's recommended to backup your data now!` 
+            }}
+          </p>
+          
+          <div class="backup-reminder-buttons">
+            <button class="btn btn-primary" @click="exportToExcel(); showBackupReminder = false">
+              {{ currentLanguage === 'zh' ? '立即备份' : 'Backup Now' }}
+            </button>
+            <button class="btn btn-secondary" @click="showBackupReminder = false">
+              {{ currentLanguage === 'zh' ? '稍后提醒' : 'Remind Later' }}
+            </button>
+            <button class="btn btn-text" @click="disableBackupReminder">
+              {{ currentLanguage === 'zh' ? '不再提醒' : 'Don\'t Remind' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 个人主页弹窗 -->
     <div v-if="showProfile" class="modal-overlay" @click.self="showProfile = false">
       <div class="modal-content glass-card profile-modal" style="background: white;">
@@ -598,6 +672,16 @@
           <!-- 数据导出与导入 -->
           <div class="export-section">
             <h4 class="export-title">📊 {{ t('dataManagement') }}</h4>
+            
+            <!-- 重要提示 -->
+            <div class="backup-warning">
+              <div class="warning-icon">⚠️</div>
+              <div class="warning-text">
+                <strong>重要：卸载应用前请务必导出数据！</strong><br>
+                建议每周备份一次数据
+              </div>
+            </div>
+            
             <p class="export-desc">{{ t('dataManagementDesc') }}</p>
             <div class="data-buttons">
               <button class="btn btn-export" @click="exportToExcel">
@@ -661,11 +745,11 @@
     <div v-if="showSupport" class="modal-overlay" @click.self="showSupport = false">
       <div class="modal-content glass-card" style="background: white; max-width: 550px; width: 96%; padding: 0.8rem;">
         <div class="modal-header">
-          <h3>💝 {{ currentLanguage === 'zh' ? '联系与支持' : 'Contact & Support' }}</h3>
+          <h3>💬 {{ currentLanguage === 'zh' ? '问题反馈' : 'Feedback' }}</h3>
           <button class="close-btn" @click="showSupport = false">&times;</button>
         </div>
         <div class="modal-body">
-          <p class="support-desc">{{ currentLanguage === 'zh' ? '遇到bug别慌，扫码找我唠唠；用得爽了，请我喝杯奶茶呗 ☕' : 'Found a bug? Scan to contact me. Enjoying the app? Buy me a coffee ☕' }}</p>
+          <p class="support-desc">{{ currentLanguage === 'zh' ? '遇到bug或有功能建议？欢迎反馈！' : 'Found a bug or have suggestions? Feel free to contact!' }}</p>
           
           <div class="qr-codes">
             <div class="qr-item">
@@ -679,9 +763,145 @@
           </div>
 
           <div class="contact-info">
+            <span class="contact-icon">📧</span>
+            <span class="contact-text">{{ currentLanguage === 'zh' ? 'GitHub Issues: ' : 'GitHub Issues: ' }}<a href="https://github.com/zhaosj0315/TO-DO/issues" target="_blank">提交反馈</a></span>
+          </div>
+          
+          <div class="contact-info">
             <span class="contact-icon">📞</span>
             <span class="contact-text">{{ currentLanguage === 'zh' ? '联系电话：17858441076' : 'Phone: 17858441076' }}</span>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 使用指南弹窗 -->
+    <div v-if="showUserGuide" class="modal-overlay" @click.self="showUserGuide = false">
+      <div class="modal-content privacy-modal">
+        <div class="modal-header">
+          <h3>📖 {{ currentLanguage === 'zh' ? '使用指南' : 'User Guide' }}</h3>
+          <button class="close-btn" @click="showUserGuide = false">&times;</button>
+        </div>
+        <div class="modal-body privacy-content">
+          <h4>一、快速开始</h4>
+          <p><strong>创建任务</strong></p>
+          <ul>
+            <li>点击"展开"按钮（▼）显示任务创建表单</li>
+            <li>输入任务名称后，自动展开其他属性选项</li>
+            <li>选择任务类型、分类、优先级、时长/规模</li>
+            <li>点击"✓"按钮完成创建</li>
+          </ul>
+
+          <p><strong>任务类型说明</strong></p>
+          <ul>
+            <li><strong>今天/明天/本周</strong>：短期任务，可选择时长（快速/正常/较长）</li>
+            <li><strong>指定日期</strong>：长期任务，可选择规模（小型/中型/大型）</li>
+            <li><strong>每天重复</strong>：每天都要完成的习惯任务</li>
+            <li><strong>工作日重复</strong>：周一至周五重复</li>
+            <li><strong>每周重复</strong>：选择特定星期几重复</li>
+          </ul>
+
+          <h4>二、任务管理</h4>
+          <ul>
+            <li><strong>完成任务</strong>：点击任务前的复选框</li>
+            <li><strong>查看详情</strong>：点击任务标题</li>
+            <li><strong>编辑任务</strong>：在详情页点击"编辑任务"</li>
+            <li><strong>删除任务</strong>：点击任务右侧的🗑️图标</li>
+            <li><strong>恢复任务</strong>：在回收站中点击"恢复"</li>
+          </ul>
+
+          <h4>三、筛选与搜索</h4>
+          <ul>
+            <li><strong>快速筛选</strong>：点击统计卡片（全部/已完成/待办/已逾期）</li>
+            <li><strong>高级筛选</strong>：点击🎛️按钮，可按日期/分类/优先级筛选</li>
+            <li><strong>关键字搜索</strong>：在搜索框输入关键词</li>
+            <li><strong>重置筛选</strong>：点击⟳刷新按钮</li>
+          </ul>
+
+          <h4>四、数据管理</h4>
+          <ul>
+            <li><strong>导出数据</strong>：个人主页 → 数据管理 → 导出Excel</li>
+            <li><strong>导入数据</strong>：个人主页 → 数据管理 → 导入Excel</li>
+            <li><strong>下载模板</strong>：个人主页 → 数据管理 → 下载模板</li>
+          </ul>
+
+          <h4>五、常见问题</h4>
+          <p><strong>Q: 如何修改用户名？</strong></p>
+          <p>A: 点击右上角头像 → 个人主页 → 修改用户名</p>
+
+          <p><strong>Q: 数据存储在哪里？</strong></p>
+          <p>A: 所有数据存储在设备本地，完全离线，不会上传到服务器</p>
+
+          <p><strong>Q: 如何备份数据？</strong></p>
+          <p>A: 使用"导出Excel"功能定期备份数据</p>
+
+          <p><strong>Q: 卸载应用会丢失数据吗？</strong></p>
+          <p>A: 是的，卸载前请先导出数据备份</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 番茄规则弹窗 -->
+    <div v-if="showPomodoroRules" class="modal-overlay" @click.self="showPomodoroRules = false">
+      <div class="modal-content privacy-modal">
+        <div class="modal-header">
+          <h3>🍅 {{ currentLanguage === 'zh' ? '番茄奖励规则' : 'Pomodoro Rules' }}</h3>
+          <button class="close-btn" @click="showPomodoroRules = false">&times;</button>
+        </div>
+        <div class="modal-body privacy-content">
+          <h4>一、基础规则</h4>
+          <ul>
+            <li>1个番茄 = 25分钟工作时间</li>
+            <li>番茄数根据任务类型、时长/规模、优先级综合计算</li>
+            <li>完成任务获得番茄，逾期任务扣除番茄</li>
+          </ul>
+
+          <h4>二、计算公式</h4>
+          
+          <p><strong>短期任务（今天/明天/本周）</strong></p>
+          <ul>
+            <li>快速(0.5h) × 2 × 优先级系数 = 0.75-1.5个番茄</li>
+            <li>正常(2h) × 2 × 优先级系数 = 3-6个番茄</li>
+            <li>较长(4h) × 2 × 优先级系数 = 6-12个番茄</li>
+          </ul>
+
+          <p><strong>长期任务（指定日期）</strong></p>
+          <ul>
+            <li>小型项目 × 优先级系数 = 7.5-15个番茄</li>
+            <li>中型项目 × 优先级系数 = 22.5-45个番茄</li>
+            <li>大型项目 × 优先级系数 = 75-150个番茄</li>
+          </ul>
+
+          <p><strong>重复任务（每天/工作日/每周）</strong></p>
+          <ul>
+            <li>单次固定 2 × 优先级系数 = 1.5-3个番茄</li>
+            <li>累计效应明显（坚持30天 = 45-90个番茄）</li>
+          </ul>
+
+          <p><strong>已完成任务（跨度>1天）</strong></p>
+          <ul>
+            <li>实际天数 × 2 × 优先级系数</li>
+            <li>最多300个番茄封顶</li>
+            <li>示例：4个月任务(高优先级) = 300个番茄</li>
+          </ul>
+
+          <h4>三、优先级系数</h4>
+          <ul>
+            <li><strong>高优先级</strong>：1.5倍</li>
+            <li><strong>中优先级</strong>：1.0倍</li>
+            <li><strong>低优先级</strong>：0.75倍</li>
+          </ul>
+
+          <h4>四、统计说明</h4>
+          <ul>
+            <li><strong>已获得</strong>：完成任务获得的番茄总数</li>
+            <li><strong>待获得</strong>：待完成任务的预估番茄数</li>
+            <li><strong>逾期扣除</strong>：逾期任务扣除的番茄数</li>
+            <li><strong>净获得</strong>：已获得 - 逾期扣除</li>
+          </ul>
+
+          <h4>五、实际耗时</h4>
+          <p>已完成任务会显示实际耗时（完成时间 - 创建时间），帮助你了解真实的时间投入。</p>
         </div>
       </div>
     </div>
@@ -2017,6 +2237,10 @@ const showProfile = ref(false)
 const showPomodoroStats = ref(false)
 const showSupport = ref(false)
 const showPrivacyPolicy = ref(false)
+const showUserGuide = ref(false) // 使用指南弹窗
+const showPomodoroRules = ref(false) // 番茄规则弹窗
+const showWelcome = ref(false) // 首次登录欢迎弹窗
+const showBackupReminder = ref(false) // 定期备份提醒弹窗
 const showPasswordModal = ref(false)
 const showPhoneModal = ref(false)
 const showWeeklyModal = ref(false)
@@ -2419,21 +2643,21 @@ const earnedPomodoros = computed(() => {
   // 已完成任务获得的番茄数
   return taskStore.tasks
     .filter(t => t.status === TaskStatus.COMPLETED)
-    .reduce((sum, t) => sum + getPomodoroCount(t.priority), 0)
+    .reduce((sum, t) => sum + getPomodoroCount(t), 0)
 })
 
 const pendingPomodoros = computed(() => {
   // 待完成任务可获得的番茄数
   return taskStore.tasks
     .filter(t => t.status === TaskStatus.PENDING)
-    .reduce((sum, t) => sum + getPomodoroCount(t.priority), 0)
+    .reduce((sum, t) => sum + getPomodoroCount(t), 0)
 })
 
 const lostPomodoros = computed(() => {
   // 逾期任务扣除的番茄数
   return taskStore.tasks
     .filter(t => t.status === TaskStatus.OVERDUE)
-    .reduce((sum, t) => sum + getPomodoroCount(t.priority), 0)
+    .reduce((sum, t) => sum + getPomodoroCount(t), 0)
 })
 
 const totalPomodoros = computed(() => {
@@ -2445,14 +2669,14 @@ const totalPomodoros = computed(() => {
 const getPomodorosByCategory = (category) => {
   return taskStore.tasks
     .filter(t => t.category === category && t.status === TaskStatus.COMPLETED)
-    .reduce((sum, t) => sum + getPomodoroCount(t.priority), 0)
+    .reduce((sum, t) => sum + getPomodoroCount(t), 0)
 }
 
 // 按优先级统计番茄数
 const getPomodorosByPriority = (priority) => {
   return taskStore.tasks
     .filter(t => t.priority === priority && t.status === TaskStatus.COMPLETED)
-    .reduce((sum, t) => sum + getPomodoroCount(t.priority), 0)
+    .reduce((sum, t) => sum + getPomodoroCount(t), 0)
 }
 
 // 按时间统计番茄数
@@ -2477,7 +2701,7 @@ const getPomodorosByTime = (period) => {
       }
       return false
     })
-    .reduce((sum, t) => sum + getPomodoroCount(t.priority), 0)
+    .reduce((sum, t) => sum + getPomodoroCount(t), 0)
 }
 
 // 连续打卡天数
@@ -2524,7 +2748,7 @@ const getMaxDailyPomodoros = () => {
     .forEach(t => {
       const date = new Date(t.created_at).toDateString()
       if (!dailyStats[date]) dailyStats[date] = 0
-      dailyStats[date] += getPomodoroCount(t.priority)
+      dailyStats[date] += getPomodoroCount(t)
     })
   
   return Object.keys(dailyStats).length > 0 
@@ -2557,7 +2781,7 @@ const getLast7DaysTrend = () => {
         const taskDate = new Date(t.created_at)
         return taskDate.toDateString() === dateStr
       })
-      .reduce((sum, t) => sum + getPomodoroCount(t.priority), 0)
+      .reduce((sum, t) => sum + getPomodoroCount(t), 0)
     
     const label = i === 0 ? t('todayLabel') : i === 1 ? t('yesterdayLabel') : `${date.getMonth() + 1}/${date.getDate()}`
     trend.push({ label, count, date: dateStr })
@@ -3150,7 +3374,7 @@ const generateReportContent = () => {
   const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
   const totalPomodoros = periodTasks
     .filter(t => t.status === TaskStatus.COMPLETED)
-    .reduce((sum, t) => sum + getPomodoroCount(t.priority), 0)
+    .reduce((sum, t) => sum + getPomodoroCount(t), 0)
   
   // 按分类统计
   const byCategory = {
@@ -3219,17 +3443,17 @@ const generateReportContent = () => {
   const workCompleted = byCategory.work.filter(t => t.status === TaskStatus.COMPLETED).length
   const workTotal = byCategory.work.length
   const workRate = workTotal > 0 ? Math.round((workCompleted / workTotal) * 100) : 0
-  const workPomodoros = byCategory.work.filter(t => t.status === TaskStatus.COMPLETED).reduce((sum, t) => sum + getPomodoroCount(t.priority), 0)
+  const workPomodoros = byCategory.work.filter(t => t.status === TaskStatus.COMPLETED).reduce((sum, t) => sum + getPomodoroCount(t), 0)
   
   const studyCompleted = byCategory.study.filter(t => t.status === TaskStatus.COMPLETED).length
   const studyTotal = byCategory.study.length
   const studyRate = studyTotal > 0 ? Math.round((studyCompleted / studyTotal) * 100) : 0
-  const studyPomodoros = byCategory.study.filter(t => t.status === TaskStatus.COMPLETED).reduce((sum, t) => sum + getPomodoroCount(t.priority), 0)
+  const studyPomodoros = byCategory.study.filter(t => t.status === TaskStatus.COMPLETED).reduce((sum, t) => sum + getPomodoroCount(t), 0)
   
   const lifeCompleted = byCategory.life.filter(t => t.status === TaskStatus.COMPLETED).length
   const lifeTotal = byCategory.life.length
   const lifeRate = lifeTotal > 0 ? Math.round((lifeCompleted / lifeTotal) * 100) : 0
-  const lifePomodoros = byCategory.life.filter(t => t.status === TaskStatus.COMPLETED).reduce((sum, t) => sum + getPomodoroCount(t.priority), 0)
+  const lifePomodoros = byCategory.life.filter(t => t.status === TaskStatus.COMPLETED).reduce((sum, t) => sum + getPomodoroCount(t), 0)
   
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // 轨道1：高频习惯聚合 (用于文本报告)
@@ -3250,7 +3474,7 @@ const generateReportContent = () => {
       }
     }
     textTaskFrequency[key].count++
-    textTaskFrequency[key].pomodoros += getPomodoroCount(task.priority)
+    textTaskFrequency[key].pomodoros += getPomodoroCount(task)
   })
   
   const textMinExecutions = reportType.value === 'yearly' ? 3 : reportType.value === 'quarterly' ? 2 : 1
@@ -3267,14 +3491,14 @@ const generateReportContent = () => {
     if (!task.description || task.description.trim().length === 0) return false
     
     // Bug2修复：全局硬性门槛（所有报告类型）- 过滤低优先级且耗时不足2个番茄的琐事
-    const pomodoros = getPomodoroCount(task.priority)
+    const pomodoros = getPomodoroCount(task)
     const isLowValueTask = task.priority === 'low' && pomodoros < 2
     if (isLowValueTask) return false
     
     let score = 0
     const hasRichDescription = task.description.trim().length > 10
     if (hasRichDescription) score++
-    const isHighValueTask = (task.priority === 'high' || task.priority === 'urgent') && getPomodoroCount(task.priority) >= 4
+    const isHighValueTask = (task.priority === 'high' || task.priority === 'urgent') && getPomodoroCount(task) >= 4
     if (isHighValueTask) score++
     const taskKey = task.text.trim().toLowerCase()
     const isRareEvent = textTaskFrequency[taskKey] && textTaskFrequency[taskKey].count < 3
@@ -3447,7 +3671,7 @@ const generateReportContent = () => {
       
       textMilestones.forEach((milestone, index) => {
         report += `${index + 1}. ${milestone.text}\n`
-        report += `   📅 ${formatDate(new Date(milestone.created_at))}  |  ${getCategoryText(milestone.category)}  |  ⚡ ${getPriorityText(milestone.priority)}  |  🍅 ${getPomodoroCount(milestone.priority)}\n`
+        report += `   📅 ${formatDate(new Date(milestone.created_at))}  |  ${getCategoryText(milestone.category)}  |  ⚡ ${getPriorityText(milestone.priority)}  |  🍅 ${getPomodoroCount(milestone)}\n`
         if (milestone.description) {
           report += `   💬 ${milestone.description}\n`
         }
@@ -3478,7 +3702,7 @@ const generateReportContent = () => {
       
       textMilestones.forEach((milestone, index) => {
         report += `${index + 1}. ${milestone.text}\n`
-        report += `   📅 ${formatDate(new Date(milestone.created_at))}  |  ${getCategoryText(milestone.category)}  |  ⚡ ${getPriorityText(milestone.priority)}  |  🍅 ${getPomodoroCount(milestone.priority)}\n`
+        report += `   📅 ${formatDate(new Date(milestone.created_at))}  |  ${getCategoryText(milestone.category)}  |  ⚡ ${getPriorityText(milestone.priority)}  |  🍅 ${getPomodoroCount(milestone)}\n`
         if (milestone.description) {
           report += `   💬 ${milestone.description}\n`
         }
@@ -3503,8 +3727,8 @@ const generateReportContent = () => {
     // Bug3修复：里程碑按番茄钟数降序排序（日报跳过）
     if (reportType.value !== 'daily' && textMilestones.length > 0) {
       const sortedMilestones = [...textMilestones].sort((a, b) => {
-        const aPomo = getPomodoroCount(a.priority)
-        const bPomo = getPomodoroCount(b.priority)
+        const aPomo = getPomodoroCount(a)
+        const bPomo = getPomodoroCount(b)
         if (aPomo !== bPomo) return bPomo - aPomo
         const priorityWeight = { high: 3, urgent: 3, medium: 2, low: 1 }
         return (priorityWeight[b.priority] || 0) - (priorityWeight[a.priority] || 0)
@@ -3516,7 +3740,7 @@ const generateReportContent = () => {
       
       sortedMilestones.forEach((milestone, index) => {
         report += `${index + 1}. ${milestone.text}\n`
-        report += `   📅 ${formatDate(new Date(milestone.created_at))}  |  ${getCategoryText(milestone.category)}  |  ⚡ ${getPriorityText(milestone.priority)}  |  🍅 ${getPomodoroCount(milestone.priority)}\n`
+        report += `   📅 ${formatDate(new Date(milestone.created_at))}  |  ${getCategoryText(milestone.category)}  |  ⚡ ${getPriorityText(milestone.priority)}  |  🍅 ${getPomodoroCount(milestone)}\n`
         if (milestone.description) {
           report += `   💬 ${milestone.description}\n`
         }
@@ -3684,7 +3908,7 @@ const generateReportContent = () => {
       
       // 先按优先级排序，优先级相同则按番茄数排序
       if (weightB !== weightA) return weightB - weightA
-      return getPomodoroCount(b.priority) - getPomodoroCount(a.priority)
+      return getPomodoroCount(b) - getPomodoroCount(a)
     })
     .slice(0, 10)
     .map(task => ({
@@ -3694,7 +3918,7 @@ const generateReportContent = () => {
       categoryIcon: task.category === 'work' ? '💼' : task.category === 'study' ? '📚' : '🏠',
       categoryText: getCategoryText(task.category),
       priorityText: getPriorityText(task.priority),
-      pomodoros: getPomodoroCount(task.priority),
+      pomodoros: getPomodoroCount(task),
       time: formatDateTime(task.created_at)
     }))
   
@@ -3735,7 +3959,7 @@ const generateReportContent = () => {
       }
     }
     taskFrequency[key].count++
-    taskFrequency[key].pomodoros += getPomodoroCount(task.priority)
+    taskFrequency[key].pomodoros += getPomodoroCount(task)
   })
   
   // 转换为数组，过滤碎态数据（频次<3的偶然事件），按总番茄数排序
@@ -3759,7 +3983,7 @@ const generateReportContent = () => {
     if (!task.description || task.description.trim().length === 0) return false
     
     // 全局硬性门槛：过滤低优先级且耗时不足2个番茄的琐事
-    const pomodoros = getPomodoroCount(task.priority)
+    const pomodoros = getPomodoroCount(task)
     const isLowValueTask = task.priority === 'low' && pomodoros < 2
     if (isLowValueTask) return false
     
@@ -3770,7 +3994,7 @@ const generateReportContent = () => {
     if (hasRichDescription) score++
     
     // 条件2：高优且耗时（优先级=高 且 番茄钟≥4）
-    const isHighValueTask = (task.priority === 'high' || task.priority === 'urgent') && getPomodoroCount(task.priority) >= 4
+    const isHighValueTask = (task.priority === 'high' || task.priority === 'urgent') && getPomodoroCount(task) >= 4
     if (isHighValueTask) score++
     
     // 条件3：低频独立特征（该任务名称在周期内出现次数<3）
@@ -3800,7 +4024,7 @@ const generateReportContent = () => {
       categoryIcon: task.category === 'work' ? '💼' : task.category === 'study' ? '📚' : '🏠',
       categoryText: getCategoryText(task.category),
       priorityText: getPriorityText(task.priority),
-      pomodoros: getPomodoroCount(task.priority),
+      pomodoros: getPomodoroCount(task),
       time: formatDateTime(task.created_at),
       date: formatDate(new Date(task.created_at))
     }))
@@ -3823,7 +4047,7 @@ const generateReportContent = () => {
         return taskDate >= monthStart && taskDate <= monthEnd && t.status === TaskStatus.COMPLETED
       })
       
-      const monthPomodoros = monthTasks.reduce((sum, t) => sum + getPomodoroCount(t.priority), 0)
+      const monthPomodoros = monthTasks.reduce((sum, t) => sum + getPomodoroCount(t), 0)
       
       monthlyTrend.push({
         month: `${month + 1}${currentLanguage.value === 'zh' ? '月' : ''}`,
@@ -3857,7 +4081,7 @@ const generateReportContent = () => {
       heatmapDays.push({
         date: dateStr,
         count: dayTasks.length,
-        pomodoros: dayTasks.reduce((sum, t) => sum + getPomodoroCount(t.priority), 0)
+        pomodoros: dayTasks.reduce((sum, t) => sum + getPomodoroCount(t), 0)
       })
     }
     
@@ -4682,16 +4906,45 @@ const exportToExcel = async () => {
   }
   
   try {
-    // 准备导出数据
-    const exportData = tasks.map(task => ({
-      '任务名称': task.text,
-      '详细描述': task.description || '',
-      '分类': getCategoryText(task.category),
-      '优先级': getPriorityText(task.priority),
-      '类型': getTaskTypeText(task),
-      '状态': task.status === 'completed' ? '已完成' : task.status === 'overdue' ? '已逾期' : '待办',
-      '创建时间': formatDate(task.created_at)
-    }))
+    // 准备导出数据（完整字段）
+    const exportData = tasks.map(task => {
+      // 计算实际耗时
+      let actualHours = ''
+      if (task.status === 'completed' && task.completed_at && task.created_at) {
+        actualHours = calculateActualHours(task) || ''
+      }
+      
+      // 时长/规模
+      let durationScale = ''
+      if (task.duration) {
+        durationScale = task.duration === 'quick' ? '快速(0.5h)' : 
+                       task.duration === 'normal' ? '正常(2h)' : '较长(4h)'
+      } else if (task.scale) {
+        durationScale = task.scale === 'small' ? '小型' : 
+                       task.scale === 'medium' ? '中型' : '大型'
+      }
+      
+      const data = {
+        '任务名称': task.text || '',
+        '详细描述': task.description || '',
+        '任务类型': getTaskTypeText(task) || '',
+        '分类': getCategoryText(task.category) || '',
+        '优先级': getPriorityText(task.priority) || '',
+        '状态': task.status === 'completed' ? '已完成' : task.status === 'overdue' ? '已逾期' : '待办',
+        '创建时间': task.created_at ? formatDateTime(task.created_at) : '',
+        '截止时间': (task.status !== 'completed' && getDeadlineDate(task)) ? formatDateTime(getDeadlineDate(task)) : '',
+        '计划完成时间': (task.status === 'completed' && getPlannedDeadlineDate(task)) ? formatDateTime(getPlannedDeadlineDate(task)) : '',
+        '实际完成时间': (task.status === 'completed' && task.completed_at) ? formatDateTime(task.completed_at) : '',
+        '实际耗时': actualHours,
+        '番茄数': getPomodoroCount(task) || 0,
+        '时长/规模': durationScale,
+        '指定日期': task.customDate || '',
+        '指定时间': task.customTime || '',
+        '重复周期': (task.weekdays && task.weekdays.length > 0) ? formatSelectedWeekdays(task.weekdays) : '',
+        '任务ID': task.id || ''
+      }
+      return data
+    })
     
     // 创建工作簿
     const ws = XLSX.utils.json_to_sheet(exportData)
@@ -4701,17 +4954,33 @@ const exportToExcel = async () => {
     // 生成文件名
     const filename = `TODO任务_${currentUsername.value}_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.xlsx`
     
-    // 生成二进制数据
-    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' })
+    // 检测运行环境
+    const isNative = Capacitor.isNativePlatform()
     
-    // 保存到Android下载目录
-    await Filesystem.writeFile({
-      path: filename,
-      data: wbout,
-      directory: Directory.Documents
-    })
+    if (isNative) {
+      // 原生应用：保存到文件系统
+      const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' })
+      await Filesystem.writeFile({
+        path: filename,
+        data: wbout,
+        directory: Directory.Documents
+      })
+      showNotification(`文件已保存到：文档/${filename}`, 'success')
+    } else {
+      // 网页版：触发浏览器下载
+      const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
+      const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      a.click()
+      URL.revokeObjectURL(url)
+      showNotification(`文件已下载：${filename}`, 'success')
+    }
     
-    showNotification(`文件已保存到：文档/${filename}`, 'success')
+    // 记录备份时间
+    await recordBackupTime()
   } catch (error) {
     console.error('导出失败:', error)
     showNotification('导出失败，请重试', 'error')
@@ -5287,6 +5556,34 @@ const jumpToPageNumber = () => {
   }
 }
 
+// 方法：检查备份提醒
+const checkBackupReminder = async () => {
+  const { value: lastBackupTime } = await Preferences.get({ key: `lastBackup_${userStore.currentUser}` })
+  const { value: reminderDisabled } = await Preferences.get({ key: `backupReminderDisabled_${userStore.currentUser}` })
+  
+  if (reminderDisabled === 'true') return
+  
+  const now = Date.now()
+  const daysSinceBackup = lastBackupTime ? (now - parseInt(lastBackupTime)) / (1000 * 60 * 60 * 24) : 999
+  const taskCount = taskStore.tasks.length
+  
+  // 触发条件：30天未备份 或 任务数超过50且7天未备份
+  if (daysSinceBackup > 30 || (taskCount > 50 && daysSinceBackup > 7)) {
+    showBackupReminder.value = true
+  }
+}
+
+// 方法：记录备份时间
+const recordBackupTime = async () => {
+  await Preferences.set({ key: `lastBackup_${userStore.currentUser}`, value: Date.now().toString() })
+}
+
+// 方法：禁用备份提醒
+const disableBackupReminder = async () => {
+  await Preferences.set({ key: `backupReminderDisabled_${userStore.currentUser}`, value: 'true' })
+  showBackupReminder.value = false
+}
+
 // 检查并发送逾期提醒
 const checkAndNotifyDeadline = async () => {
   const now = new Date()
@@ -5379,6 +5676,16 @@ onMounted(async () => {
   
   // 设置任务Store的当前用户并加载该用户的任务
   await taskStore.setCurrentUser(userStore.currentUser)
+  
+  // 检查是否首次登录
+  const { value: hasSeenWelcome } = await Preferences.get({ key: `welcome_${userStore.currentUser}` })
+  if (!hasSeenWelcome) {
+    showWelcome.value = true
+    await Preferences.set({ key: `welcome_${userStore.currentUser}`, value: 'true' })
+  }
+  
+  // 检查是否需要备份提醒
+  await checkBackupReminder()
   
   // 请求通知权限
   await LocalNotifications.requestPermissions()
@@ -7366,8 +7673,35 @@ watch(() => reportData.value, (newData) => {
   text-align: center;
 }
 
+.backup-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.8rem;
+  background: rgba(255, 193, 7, 0.15);
+  border: 2px solid rgba(255, 193, 7, 0.5);
+  border-radius: 8px;
+  margin-bottom: 0.8rem;
+  text-align: left;
+}
+
+.warning-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.warning-text {
+  font-size: 0.7rem;
+  color: #333;
+  line-height: 1.4;
+}
+
+.warning-text strong {
+  color: #d32f2f;
+}
+
 .export-title {
-  margin: 0 0 0.3rem 0;
+  margin: 0 0 0.8rem 0;
   font-size: 0.85rem;
   color: var(--text-dark);
   font-weight: 600;
@@ -9184,6 +9518,80 @@ watch(() => reportData.value, (newData) => {
   margin-bottom: 2rem;
   padding-bottom: 1.5rem;
   border-bottom: 1px solid #eee;
+}
+
+/* 欢迎弹窗样式 */
+.welcome-content h4 {
+  color: #667eea;
+  font-size: 0.95rem;
+  margin: 1rem 0 0.5rem 0;
+}
+
+.welcome-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+}
+
+.welcome-list li {
+  padding: 0.4rem 0;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.backup-guide {
+  background: rgba(102, 126, 234, 0.1);
+  padding: 0.8rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #667eea;
+  font-weight: 600;
+  text-align: center;
+  margin: 0.5rem 0;
+}
+
+.welcome-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.8rem;
+  background: rgba(255, 193, 7, 0.15);
+  border: 2px solid rgba(255, 193, 7, 0.5);
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.welcome-warning .warning-text {
+  font-size: 0.85rem;
+  color: #d32f2f;
+  font-weight: 600;
+}
+
+/* 备份提醒弹窗样式 */
+.backup-reminder-text {
+  font-size: 0.9rem;
+  color: #555;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.backup-reminder-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.btn-text {
+  background: none;
+  border: none;
+  color: #999;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0.5rem;
+}
+
+.btn-text:hover {
+  color: #667eea;
 }
 
 .changelog-section:last-of-type {

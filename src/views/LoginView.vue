@@ -1,5 +1,18 @@
 <template>
   <div class="login-container">
+    <!-- 离线应用提示 -->
+    <div class="offline-notice">
+      <div class="notice-icon">⚠️</div>
+      <div class="notice-content">
+        <div class="notice-title">重要提示</div>
+        <div class="notice-text">
+          本应用为纯离线应用，所有数据存储在设备本地。<br>
+          <strong>请定期导出数据备份，卸载应用将导致数据永久丢失！</strong><br>
+          <span class="backup-hint">💡 备份方法：登录后点击右上角头像 → 数据管理 → 导出Excel</span>
+        </div>
+      </div>
+    </div>
+
     <div class="glass-card login-box">
       <!-- 登录模式切换 -->
       <div class="login-tabs" v-if="!isRegister && !isForgotPassword">
@@ -578,10 +591,59 @@ const resetForm = () => {
 
 .login-container {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
   padding: 1rem;
+  gap: 1rem;
+}
+
+.offline-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  padding: 1rem;
+  background: rgba(255, 193, 7, 0.15);
+  border: 2px solid rgba(255, 193, 7, 0.5);
+  border-radius: 12px;
+  max-width: 400px;
+  width: 100%;
+  backdrop-filter: blur(10px);
+}
+
+.notice-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.notice-content {
+  flex: 1;
+}
+
+.notice-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #f57c00;
+  margin-bottom: 0.3rem;
+}
+
+.notice-text {
+  font-size: 0.75rem;
+  color: #333;
+  line-height: 1.5;
+}
+
+.notice-text strong {
+  color: #d32f2f;
+}
+
+.backup-hint {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.7rem;
+  color: #555;
+  font-weight: 600;
 }
 
 .login-box {
