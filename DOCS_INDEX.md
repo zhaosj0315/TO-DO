@@ -17,7 +17,7 @@
 
 ### [RELEASE_NOTES_v1.6.11.md](./RELEASE_NOTES_v1.6.11.md) ⭐ 最新
 **用途**: v1.6.11 版本发布说明
-**内容**: Windows 打包支持、重复任务耗时修复、UI 优化、下载链接。
+**内容**: 每日摘要通知、首次登录备份提醒、数据说明弹窗、导出兼容性优化、页脚布局重构、Windows 打包支持、重复任务耗时修复、UI 优化。
 
 ---
 
@@ -29,13 +29,13 @@
 
 ### [FEATURES.md](./FEATURES.md)
 **用途**: 完整功能说明 (v1.6.11)
-**内容**: 任务类型、截止时间、番茄钟、筛选功能、添加表单、右上角按钮组、扁平化设计。
+**内容**: 任务类型、截止时间、番茄钟、筛选功能、添加表单、右上角按钮组、扁平化设计、通知系统。
 
 ---
 
 ### [USER_MANUAL.md](./USER_MANUAL.md)
 **用途**: 用户使用手册  
-**内容**: 包含番茄钟系统、数据导入导出、账户安全的操作指南。
+**内容**: 包含番茄钟系统、数据导入导出、账户安全、通知设置的操作指南。
 
 ---
 
@@ -73,21 +73,29 @@
 
 ---
 
-### [APK_BUILD_QUICK.md](./APK_BUILD_QUICK.md)
-**用途**: APK打包快速参考  
-**内容**: 快速命令列表。
+### [CROSS_PLATFORM_BUILD.md](./CROSS_PLATFORM_BUILD.md)
+**用途**: 跨平台打包总览  
+**内容**: Android/Windows/macOS 打包流程对比。
 
 ---
 
 ## 🔍 审计报告
 
-### [DOC_AUDIT_REPORT_V1.5.6_FINAL.md](./DOC_AUDIT_REPORT_V1.5.6_FINAL.md)
-**用途**: v1.5.6版本文档审计报告（当前）⭐ NEW
+### [DOC_AUDIT_REPORT_V1.6.11_FINAL.md](./DOC_AUDIT_REPORT_V1.6.11_FINAL.md) ⭐ 最新
+**用途**: v1.6.11版本文档审计报告（当前）
 **内容**: 文档-代码一致性检查、问题清单、修复计划。
 
 ---
 
+### [NOTIFICATION_AUDIT_REPORT.md](./NOTIFICATION_AUDIT_REPORT.md)
+**用途**: 通知系统审计报告
+**内容**: 6种通知类型详细说明、触发条件、防刷屏机制。
+
+---
+
 ### 历史审计报告
+- [DOC_AUDIT_REPORT_V1.6.10.md](./DOC_AUDIT_REPORT_V1.6.10.md) - v1.6.10审计
+- [DOC_AUDIT_REPORT_V1.6.5_FINAL.md](./DOC_AUDIT_REPORT_V1.6.5_FINAL.md) - v1.6.5审计
 - [AUDIT_REPORT_V1.4.0.md](./AUDIT_REPORT_V1.4.0.md) - v1.4.0审计
 - [AUDIT_REPORT_V1.3.1.md](./AUDIT_REPORT_V1.3.1.md) - v1.3.1审计
 - [AUDIT_REPORT_V1.3.0.md](./AUDIT_REPORT_V1.3.0.md) - v1.3.0审计
@@ -96,5 +104,5 @@
 ---
 
 **维护者**: External Auditor  
-**最后更新**: 2026-02-20  
-**文档版本**: v1.5.6
+**最后更新**: 2026-02-23  
+**文档版本**: v1.6.11
