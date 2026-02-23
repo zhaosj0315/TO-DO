@@ -212,43 +212,27 @@
         
         <!-- 分页控件 -->
         <div v-if="totalPages > 1 || filteredTasks.length > 6" class="pagination">
-          <!-- 首页 -->
-          <button 
-            class="page-btn" 
-            :disabled="currentPage === 1" 
-            @click="goToFirstPage"
-            title="首页"
-          >
-            ‹‹
-          </button>
-          <!-- 上一页 -->
+          <!-- 上一页 (单击上一页，双击首页) -->
           <button 
             class="page-btn" 
             :disabled="currentPage === 1" 
             @click="currentPage--"
-            title="上一页"
+            @dblclick="goToFirstPage"
+            title="单击上一页，双击首页"
           >
             ‹
           </button>
           <!-- 页码信息 -->
           <span class="page-info">{{ currentPage }} / {{ totalPages }}</span>
-          <!-- 下一页 -->
+          <!-- 下一页 (单击下一页，双击末页) -->
           <button 
             class="page-btn" 
             :disabled="currentPage === totalPages" 
             @click="currentPage++"
-            title="下一页"
+            @dblclick="goToLastPage"
+            title="单击下一页，双击末页"
           >
             ›
-          </button>
-          <!-- 末页 -->
-          <button 
-            class="page-btn" 
-            :disabled="currentPage === totalPages" 
-            @click="goToLastPage"
-            title="末页"
-          >
-            ››
           </button>
           <!-- 每页条数 -->
           <select v-model.number="pageSize" @change="changePageSize(pageSize)" class="page-size-select">
@@ -264,12 +248,12 @@
               v-model="jumpToPage" 
               type="number" 
               class="jump-input" 
-              :placeholder="`1-${totalPages}`"
+              placeholder="1"
               @keyup.enter="jumpToPageNumber"
+              @blur="jumpToPageNumber"
               min="1"
               :max="totalPages"
             >
-            <button class="jump-btn" @click="jumpToPageNumber">Go</button>
           </span>
         </div>
 
@@ -9277,31 +9261,33 @@ watch(() => reportData.value, (newData) => {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.15rem;
   margin-top: 0.25rem;
   margin-bottom: 0.25rem;
   padding: 0;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
 }
 
 .page-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 1px solid rgba(102, 126, 234, 0.3);
-  background: white;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 0.3rem;
+  border: none;
+  background: transparent;
   color: var(--primary-color);
-  font-size: 1rem;
+  font-size: 12px;
+  font-weight: bold;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .page-btn:hover:not(:disabled) {
-  background: var(--primary-color);
-  color: white;
+  color: var(--secondary-color);
   transform: scale(1.1);
 }
 
@@ -9311,22 +9297,24 @@ watch(() => reportData.value, (newData) => {
 }
 
 .page-info {
-  font-size: 0.85rem;
+  font-size: 12px;
   color: var(--text-dark);
   font-weight: 600;
-  min-width: 50px;
+  min-width: 40px;
   text-align: center;
+  flex-shrink: 0;
 }
 
 .page-size-select {
-  padding: 0.4rem 0.6rem;
+  padding: 0.2rem 0.4rem;
   border: 1px solid rgba(102, 126, 234, 0.3);
-  border-radius: 8px;
+  border-radius: 4px;
   background: white;
   color: var(--text-dark);
-  font-size: 0.75rem;
+  font-size: 12px;
   cursor: pointer;
   transition: all 0.3s;
+  flex-shrink: 0;
 }
 
 .page-size-select:hover {
@@ -9336,16 +9324,17 @@ watch(() => reportData.value, (newData) => {
 .page-jump {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0;
+  flex-shrink: 0;
 }
 
 .jump-input {
-  width: 50px;
-  padding: 0.4rem;
+  width: 35px;
+  padding: 0.2rem;
   border: 1px solid rgba(102, 126, 234, 0.3);
-  border-radius: 6px;
+  border-radius: 4px;
   text-align: center;
-  font-size: 0.75rem;
+  font-size: 12px;
 }
 
 .jump-input:focus {
@@ -9354,19 +9343,18 @@ watch(() => reportData.value, (newData) => {
 }
 
 .jump-btn {
-  padding: 0.4rem 0.8rem;
+  padding: 0.2rem 0.5rem;
   border: none;
-  border-radius: 6px;
+  border-radius: 4px;
   background: var(--primary-color);
   color: white;
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   cursor: pointer;
   transition: all 0.3s;
 }
 
 .jump-btn:hover {
   background: var(--secondary-color);
-  transform: scale(1.05);
 }
 
 /* 页脚版权信息 */
