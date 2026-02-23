@@ -7033,20 +7033,20 @@ watch(() => reportData.value, (newData) => {
 
 /* 统一的圆形图标按钮 */
 .btn-icon-circle {
-  width: 28px;
-  height: 28px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   border: none;
   background: rgba(255, 255, 255, 0.25);
   color: white;
-  font-size: 1rem;
+  font-size: 0.8rem;
   cursor: pointer;
   transition: all 0.3s;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .btn-icon-circle:hover {
@@ -7109,18 +7109,18 @@ watch(() => reportData.value, (newData) => {
 }
 
 .btn-avatar {
-  width: 28px;
-  height: 28px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.9);
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
   background: white;
   cursor: pointer;
   transition: all 0.3s;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  padding: 1px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   overflow: hidden;
 }
 
