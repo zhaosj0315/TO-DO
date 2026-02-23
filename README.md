@@ -185,7 +185,7 @@ This is an **offline Android To-Do management application** built with **Vue 3**
 5. 开始离线管理您的任务！
 
 ### Windows 版本
-1. 下载 `TODO App Setup 1.6.0.exe` 安装程序
+1. 下载 `TODO App Setup 1.6.11.exe` 安装程序
 2. 双击运行安装程序
 3. 选择安装目录并完成安装
 4. 从桌面快捷方式启动应用
@@ -198,6 +198,22 @@ This is an **offline Android To-Do management application** built with **Vue 3**
 4. **同步到Android**: `npx cap sync android`
 5. **一键打包APK**: 
    ```bash
+   ./build-apk.sh
+   ```
+6. **一键打包Windows**: 
+   ```bash
+   # Windows 系统
+   build-windows.bat
+   
+   # macOS/Linux 系统
+   ./build-windows.sh
+   ```
+7. **APK位置**: `TODO-App.apk`（项目根目录）
+8. **Windows安装包位置**: `release/TODO App Setup 1.6.11.exe`
+
+**详细打包流程**: 
+- Android APK: 请查看 [APK打包快速指南](APK_BUILD_QUICK.md) 或 [完整指南](APK_BUILD_GUIDE.md)
+- Windows EXE: 请查看 [Windows打包指南](WINDOWS_BUILD_GUIDE.md)
    ./build-apk.sh
    ```
 6. **APK位置**: `TODO-App.apk`（项目根目录）

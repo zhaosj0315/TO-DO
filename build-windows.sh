@@ -1,40 +1,47 @@
 #!/bin/bash
 
+# Windows Electron 一键打包脚本（macOS/Linux 环境）
+# 用途：自动构建 TODO App 的 Windows 安装程序
+
+set -e  # 遇到错误立即退出
+
 echo "=========================================="
-echo "  TODO App - Windows EXE 一键打包脚本"
+echo "  TODO App - Windows 安装包打包脚本"
 echo "=========================================="
 echo ""
 
-# 1. 构建前端
-echo "📦 步骤 1/2: 构建前端代码..."
+# 1. 清理旧文件
+echo "🧹 步骤 1/3: 清理旧文件..."
+rm -rf dist
+rm -rf release
+echo "✅ 清理完成"
+echo ""
+
+# 2. 构建前端代码
+echo "🔨 步骤 2/3: 构建前端代码..."
 npm run build
-
-if [ $? -ne 0 ]; then
-  echo "❌ 前端构建失败！"
-  exit 1
-fi
-
 echo "✅ 前端构建完成"
 echo ""
 
-# 2. 打包 Windows EXE
-echo "🔨 步骤 2/2: 打包 Windows 安装程序..."
-npm run electron:build-win
+# 3. 打包 Windows 安装程序
+echo "📦 步骤 3/3: 打包 Windows 安装程序..."
+npx electron-builder --win
 
-if [ $? -ne 0 ]; then
-  echo "❌ Windows 打包失败！"
-  exit 1
-fi
+# 获取版本号
+VERSION=$(node -p "require('./package.json').version")
 
-echo ""
-echo "=========================================="
-echo "✅ Windows 安装程序打包完成！"
-echo "📁 输出目录: release/"
-echo "=========================================="
+echo "✅ Windows 打包完成"
 echo ""
 
-# 显示生成的文件
-if [ -d "release" ]; then
-  echo "生成的文件："
-  ls -lh release/*.exe 2>/dev/null || echo "未找到 .exe 文件"
-fi
+# 显示文件信息
+echo "=========================================="
+echo "  ✅ 打包成功！"
+echo "=========================================="
+echo ""
+echo "📦 安装包位置: release/TODO App Setup ${VERSION}.exe"
+echo ""
+echo "🚀 安装方式:"
+echo "   1. 双击运行 Setup 安装程序"
+echo "   2. 选择安装目录"
+echo "   3. 完成安装后从桌面快捷方式启动"
+echo ""
