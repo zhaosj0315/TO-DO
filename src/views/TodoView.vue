@@ -9270,11 +9270,12 @@ watch(() => reportData.value, (newData) => {
 }
 
 .page-btn {
-  min-width: 24px;
-  height: 24px;
-  padding: 0 0.3rem;
-  border: none;
-  background: transparent;
+  min-width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1.5px solid var(--primary-color);
+  border-radius: 50%;
+  background: white;
   color: var(--primary-color);
   font-size: 12px;
   font-weight: bold;
