@@ -36,6 +36,13 @@ This is an **offline Android To-Do management application** built with **Vue 3**
   - **Task descriptions**: Inline display with full editing support
   - **Deadline Display**: Auto-calculated deadline with color-coded urgency
   - **Pomodoro System**: Visual tomato count based on priority (🍅🍅🍅🍅)
+  - **Pin to Top**: Pin important tasks to stay at the top of the list (📌 button)
+- **Smart Sorting System**:
+  - Intelligent weight-based sorting algorithm
+  - Pinned tasks always on top (sorted by priority internally)
+  - Overdue penalty with decay mechanism (3-day threshold)
+  - 2-hour urgent warning auto-promotion
+  - Weight tiers: Pinned(0-2) → Overdue Critical(100-200) → Overdue Decay(200-500) → Urgent Warning(600-650) → Normal Pending(700-900) → Completed(10000+)
 - **Advanced Filtering**:
   - Filter by status (All, Pending, Completed, Overdue)
   - Filter by category (Work, Study, Life)
@@ -128,6 +135,13 @@ This is an **offline Android To-Do management application** built with **Vue 3**
   - 任务详细描述，直接在列表中显示
   - **截止时间显示**: 自动计算截止时间，颜色分级提醒
   - **番茄钟系统**: 根据优先级显示番茄数（🍅🍅🍅🍅）
+  - **置顶功能**: 点击📌按钮将重要任务置顶（📌 按钮）
+- **智能排序系统**:
+  - 智能权重排序算法
+  - 置顶任务永远在最前面（内部按优先级细分）
+  - 逾期任务惩罚衰减机制（3天阈值）
+  - 2小时紧急预警自动提升
+  - 权重分层：置顶(0-2) → 逾期高危(100-200) → 逾期衰减(200-500) → 紧急预警(600-650) → 正常待办(700-900) → 已完成(10000+)
 - **高级筛选**:
   - 按状态筛选（全部、待办、已完成、已逾期）
   - 按分类筛选（工作、学习、生活）
@@ -264,6 +278,7 @@ userInfo[username] = {
   status: String,          // 状态: 'pending' | 'completed' | 'overdue'
   created_at: String,      // 创建时间（ISO格式）
   completed_at: String,    // 实际完成时间（ISO格式，仅completed状态）
+  is_pinned: Boolean,      // 是否置顶（v1.6.12新增）
   duration: String,        // 时长: 'quick' | 'normal' | 'long'（短期任务）
   scale: String,           // 规模: 'small' | 'medium' | 'large'（长期任务）
   user_id: String          // 所属用户
@@ -299,6 +314,22 @@ userInfo[username] = {
 - ✅ 通知提示
 
 ## 📝 版本历史 | Version History
+
+### v1.6.12 (2026-02-23)
+- ✨ **任务置顶功能**:
+  - 新增 is_pinned 字段，任务卡片右上角 📌 按钮
+  - 视觉反馈：灰色半透明 → 彩色旋转45度
+  - 置顶任务永远排在列表最前面
+- ✨ **智能权重排序系统**:
+  - 重构排序逻辑为权重计算模型
+  - 权重分层：置顶(0-2) → 逾期高危(100-200) → 逾期衰减(200-500) → 紧急预警(600-650) → 正常待办(700-900) → 已完成(10000+)
+  - 置顶区内部按优先级细分（高/中/低）
+  - 逾期任务惩罚衰减机制（3天阈值）
+  - 2小时紧急预警自动提升权重
+- 🎯 **排序逻辑优化**:
+  - 解决逾期任务"淹没首屏"问题
+  - 解决"紧急但不逾期"任务被忽略问题
+  - 解决置顶任务"通货膨胀"问题
 
 ### v1.6.11 (2026-02-23)
 - ✨ **多时间维度筛选功能**:
