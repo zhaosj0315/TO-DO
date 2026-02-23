@@ -187,7 +187,7 @@
                 <!-- 已完成任务：计划时间 + 实际时间 + 耗时 + 状态 -->
                 <template v-if="task.status === 'completed'">
                   <span class="task-time-compact" title="计划完成">⏰ {{ formatCompactDateTime(getPlannedDeadlineDate(task)) }}</span>
-                  <span class="task-time-compact" title="实际完成">✅ {{ formatCompactDateTime(task.completed_at) }} ({{ calculateActualHours(task) }})</span>
+                  <span v-if="task.completed_at" class="task-time-compact" title="实际完成">✅ {{ formatCompactDateTime(task.completed_at) }}<template v-if="calculateActualHours(task)"> ({{ calculateActualHours(task) }})</template></span>
                   <span class="task-status-compact" :class="getDeadlineClass(task)">{{ getCompactStatus(task) }}</span>
                 </template>
                 <!-- 未完成任务：截止时间 -->
@@ -1324,7 +1324,7 @@
                   <div class="timeline-value">{{ formatDateTime(detailTask.completed_at || detailTask.created_at) }}</div>
                 </div>
               </div>
-              <div class="timeline-item">
+              <div v-if="detailTask.completed_at && calculateActualHours(detailTask)" class="timeline-item">
                 <div class="timeline-icon">⏱️</div>
                 <div class="timeline-content">
                   <div class="timeline-label">实际耗时</div>
@@ -5154,6 +5154,12 @@ const importFromExcel = async (event) => {
               status: status,
               created_at: createdAt,
               user_id: currentUsername.value
+            }
+            
+            // 如果是已完成状态，设置完成时间
+            if (status === 'completed') {
+              const completedTime = parseDateTime(row['实际完成时间'])
+              newTask.completed_at = completedTime || createdAt
             }
             
             await taskStore.addTask(newTask)

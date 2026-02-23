@@ -156,6 +156,15 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         if (a.status !== b.status) {
           return a.status === 'completed' ? 1 : -1
         }
+        
+        // 已完成任务：按实际完成时间倒序
+        if (a.status === 'completed' && b.status === 'completed') {
+          const aTime = a.completed_at ? new Date(a.completed_at) : new Date(a.created_at)
+          const bTime = b.completed_at ? new Date(b.completed_at) : new Date(b.created_at)
+          return bTime - aTime
+        }
+        
+        // 未完成任务：按优先级 + 创建时间
         const priorityOrder = { high: 0, medium: 1, low: 2 }
         if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
           return priorityOrder[a.priority] - priorityOrder[b.priority]
