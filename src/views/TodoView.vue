@@ -82,54 +82,57 @@
             >
           </div>
 
-          <!-- 任务描述（可选） -->
-          <div class="add-form-row-desc" v-if="newTaskText.trim()">
-            <textarea 
-              v-model="newTaskDescription" 
-              class="task-textarea-desc"
-              placeholder="📝 任务描述（可选）..."
-              rows="2"
-            ></textarea>
-          </div>
-
-          <!-- 第二行：属性配置 -->
-          <div class="add-form-row-attrs">
-            <!-- 日期类型 -->
-            <div class="attr-group">
-              <select v-model="newTaskType" class="attr-select attr-select-date" @change="handleTaskTypeChange">
-                <option value="today">{{ t('today') }}</option>
-                <option value="tomorrow">{{ t('tomorrow') }}</option>
-                <option value="this_week">{{ t('thisWeek') }}</option>
-                <option value="daily">{{ t('daily') }}</option>
-                <option value="weekday">{{ t('weekday') }}</option>
-                <option value="custom_date">{{ customDateTime ? formatDisplayDateTime(customDateTime) : t('customDate') }}</option>
-                <option value="weekly">{{ selectedWeekdays.length > 0 ? formatSelectedWeekdays(selectedWeekdays) : t('weekly') }}</option>
-              </select>
+          <!-- 只有输入任务名称后才显示以下部分 -->
+          <template v-if="newTaskText.trim()">
+            <!-- 任务描述（可选） -->
+            <div class="add-form-row-desc">
+              <textarea 
+                v-model="newTaskDescription" 
+                class="task-textarea-desc"
+                placeholder="📝 任务描述（可选）..."
+                rows="2"
+              ></textarea>
             </div>
 
-            <input ref="hiddenCustomDateTime" type="datetime-local" style="display:none" :min="getTodayDateTime()" @change="handleCustomDateTimeChange">
+            <!-- 第二行：属性配置 -->
+            <div class="add-form-row-attrs">
+              <!-- 日期类型 -->
+              <div class="attr-group">
+                <select v-model="newTaskType" class="attr-select attr-select-date" @change="handleTaskTypeChange">
+                  <option value="today">{{ t('today') }}</option>
+                  <option value="tomorrow">{{ t('tomorrow') }}</option>
+                  <option value="this_week">{{ t('thisWeek') }}</option>
+                  <option value="daily">{{ t('daily') }}</option>
+                  <option value="weekday">{{ t('weekday') }}</option>
+                  <option value="custom_date">{{ customDateTime ? formatDisplayDateTime(customDateTime) : t('customDate') }}</option>
+                  <option value="weekly">{{ selectedWeekdays.length > 0 ? formatSelectedWeekdays(selectedWeekdays) : t('weekly') }}</option>
+                </select>
+              </div>
 
-            <!-- 分类 -->
-            <div class="attr-group">
-              <select v-model="newTaskCategory" class="attr-select attr-select-short">
-                <option value="work">{{ t('work') }}</option>
-                <option value="study">{{ t('study') }}</option>
-                <option value="life">{{ t('life') }}</option>
-              </select>
+              <input ref="hiddenCustomDateTime" type="datetime-local" style="display:none" :min="getTodayDateTime()" @change="handleCustomDateTimeChange">
+
+              <!-- 分类 -->
+              <div class="attr-group">
+                <select v-model="newTaskCategory" class="attr-select attr-select-short">
+                  <option value="work">{{ t('work') }}</option>
+                  <option value="study">{{ t('study') }}</option>
+                  <option value="life">{{ t('life') }}</option>
+                </select>
+              </div>
+
+              <!-- 优先级 -->
+              <div class="attr-group">
+                <select v-model="newTaskPriority" class="attr-select attr-select-short">
+                  <option v-for="opt in priorityOptions" :key="opt.value" :value="opt.value">
+                    {{ opt.label }}
+                  </option>
+                </select>
+              </div>
+
+              <!-- 提交按钮 -->
+              <button class="btn-submit-main" @click="addTask" title="添加任务">✓</button>
             </div>
-
-            <!-- 优先级 -->
-            <div class="attr-group">
-              <select v-model="newTaskPriority" class="attr-select attr-select-short">
-                <option v-for="opt in priorityOptions" :key="opt.value" :value="opt.value">
-                  {{ opt.label }}
-                </option>
-              </select>
-            </div>
-
-            <!-- 提交按钮 -->
-            <button class="btn-submit-main" @click="addTask" title="添加任务">✓</button>
-          </div>
+          </template>
         </div>
       </section>
 
@@ -179,7 +182,7 @@
                 <span class="badge badge-icon" :class="`priority-${task.priority}`">⚡{{ getPriorityText(task.priority) }}</span>
                 <span class="badge badge-icon" :class="`category-${task.category}`">🏷️{{ getCategoryText(task.category) }}</span>
                 <span class="badge badge-pomodoro" :class="`pomodoro-${task.priority}`">
-                  <span v-for="n in getPomodoroCount(task.priority)" :key="n">🍅</span>
+                  🍅×{{ getPomodoroCount(task.priority) }}
                 </span>
               </div>
             </div>
@@ -6277,7 +6280,7 @@ watch(() => reportData.value, (newData) => {
 }
 
 .task-title {
-  font-size: 1rem;
+  font-size: 0.875rem; /* 14px */
   font-weight: 600;
   cursor: pointer;
   transition: color 0.2s;
@@ -6311,9 +6314,9 @@ watch(() => reportData.value, (newData) => {
 }
 
 .task-description {
-  font-size: 0.85rem;
+  font-size: 0.75rem; /* 12px */
   color: #888;
-  margin-top: 0.25rem; /* 压缩：从0.4rem减至0.25rem */
+  margin-top: 0.25rem;
   line-height: 1.4;
   max-width: 100%;
   word-wrap: break-word;
@@ -6322,9 +6325,9 @@ watch(() => reportData.value, (newData) => {
 .task-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem; /* 压缩：从0.6rem减至0.5rem */
+  gap: 0.3rem;
   align-items: center;
-  margin-top: 0.35rem; /* 压缩：从0.5rem减至0.35rem */
+  margin-top: 0.35rem;
   line-height: 1;
 }
 
@@ -6333,13 +6336,46 @@ watch(() => reportData.value, (newData) => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.2rem;
-  font-size: 0.75rem;
-  padding: 0.25rem 0.5rem;  /* 统一内边距 */
-  border-radius: 12px;
-  line-height: 1;  /* 统一行高 */
-  height: 24px;  /* 固定高度 */
+  gap: 0.15rem;
+  font-size: 0.625rem; /* 10px */
+  padding: 0.2rem 0.35rem;
+  border-radius: 8px;
+  line-height: 1;
+  height: auto;
   box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* 优先级背景色 */
+.priority-high {
+  background: rgba(244, 67, 54, 0.1);
+  color: #f44336;
+}
+
+.priority-medium {
+  background: rgba(255, 152, 0, 0.1);
+  color: #ff9800;
+}
+
+.priority-low {
+  background: rgba(102, 126, 234, 0.1);
+  color: var(--primary-color);
+}
+
+/* 分类背景色 */
+.category-work {
+  background: rgba(33, 150, 243, 0.1);
+  color: #2196f3;
+}
+
+.category-study {
+  background: rgba(156, 39, 176, 0.1);
+  color: #9c27b0;
+}
+
+.category-life {
+  background: rgba(76, 175, 80, 0.1);
+  color: #4caf50;
 }
 
 /* 番茄数徽章 */
@@ -6347,14 +6383,14 @@ watch(() => reportData.value, (newData) => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.2rem;
-  font-size: 0.75rem;
+  gap: 0.15rem;
+  font-size: 0.625rem; /* 10px */
   font-weight: 600;
-  padding: 0.25rem 0.5rem;  /* 统一内边距 */
-  border-radius: 12px;
+  padding: 0.2rem 0.35rem;
+  border-radius: 8px;
   transition: all 0.3s;
-  line-height: 1;  /* 统一行高 */
-  height: 24px;  /* 固定高度 */
+  line-height: 1;
+  height: auto;
   box-sizing: border-box;
 }
 
@@ -6452,13 +6488,13 @@ watch(() => reportData.value, (newData) => {
 
 /* 统一的圆形图标按钮 */
 .btn-icon-circle {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   border: none;
   background: rgba(255, 255, 255, 0.25);
   color: white;
-  font-size: 1.6rem;
+  font-size: 1.2rem;
   cursor: pointer;
   transition: all 0.3s;
   display: flex;
@@ -6491,20 +6527,20 @@ watch(() => reportData.value, (newData) => {
 
 /* 刷新按钮特殊尺寸和样式 */
 .btn-refresh-icon {
-  font-size: 2.2rem;
-  background: rgba(102, 126, 234, 0.25) !important; /* 紫色背景 */
+  font-size: 1.6rem;
+  background: rgba(102, 126, 234, 0.25) !important;
   color: white !important;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .btn-refresh-icon:hover {
-  background: rgba(102, 126, 234, 0.4) !important; /* 悬停更深 */
+  background: rgba(102, 126, 234, 0.4) !important;
   color: white !important;
 }
 
 /* 回收站按钮 */
 .btn-trash {
-  font-size: 1.4rem;
+  font-size: 1.1rem;
 }
 
 /* 数字气泡 */
@@ -6528,8 +6564,8 @@ watch(() => reportData.value, (newData) => {
 }
 
 .btn-avatar {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, 0.9);
   background: white;
@@ -6557,7 +6593,7 @@ watch(() => reportData.value, (newData) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 800;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
