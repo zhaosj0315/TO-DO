@@ -184,10 +184,10 @@
                 <!-- 时间信息（压缩格式：去掉年份） -->
                 <span class="task-time-compact" title="创建时间">📝 {{ formatCompactDateTime(task.created_at) }}</span>
                 
-                <!-- 已完成任务：计划时间 + 实际时间 + 状态 -->
+                <!-- 已完成任务：计划时间 + 实际时间 + 耗时 + 状态 -->
                 <template v-if="task.status === 'completed'">
                   <span class="task-time-compact" title="计划完成">⏰ {{ formatCompactDateTime(getPlannedDeadlineDate(task)) }}</span>
-                  <span class="task-time-compact" title="实际完成">✅ {{ formatCompactDateTime(task.completed_at) }}</span>
+                  <span class="task-time-compact" title="实际完成">✅ {{ formatCompactDateTime(task.completed_at) }} ({{ calculateActualHours(task) }})</span>
                   <span class="task-status-compact" :class="getDeadlineClass(task)">{{ getCompactStatus(task) }}</span>
                 </template>
                 <!-- 未完成任务：截止时间 -->
@@ -1074,6 +1074,13 @@
                 <div class="timeline-content">
                   <div class="timeline-label">实际完成时间</div>
                   <div class="timeline-value">{{ formatDateTime(detailTask.completed_at || detailTask.created_at) }}</div>
+                </div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-icon">⏱️</div>
+                <div class="timeline-content">
+                  <div class="timeline-label">实际耗时</div>
+                  <div class="timeline-value">{{ calculateActualHours(detailTask) }}</div>
                 </div>
               </div>
               <div class="timeline-item">
@@ -4959,6 +4966,18 @@ const formatCompactDateTime = (dateStr) => {
   const hour = String(date.getHours()).padStart(2, '0')
   const minute = String(date.getMinutes()).padStart(2, '0')
   return `${month}/${day} ${hour}:${minute}`
+}
+
+// 方法：计算实际耗时（小时）
+const calculateActualHours = (task) => {
+  if (!task.completed_at || !task.created_at) return null
+  const createdTime = new Date(task.created_at).getTime()
+  const completedTime = new Date(task.completed_at).getTime()
+  const hours = (completedTime - createdTime) / (1000 * 60 * 60)
+  
+  // 四舍五入到整数小时
+  const roundedHours = Math.round(hours)
+  return `${roundedHours}h`
 }
 
 // 方法：获取截止日期对象
