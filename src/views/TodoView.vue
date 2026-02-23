@@ -129,6 +129,23 @@
                 </select>
               </div>
 
+              <!-- 时长/规模选择器 -->
+              <div class="attr-group" v-if="['today', 'tomorrow', 'this_week'].includes(newTaskType)">
+                <select v-model="newTaskDuration" class="attr-select attr-select-short">
+                  <option value="quick">⚡快速</option>
+                  <option value="normal">⏱️正常</option>
+                  <option value="long">⏳较长</option>
+                </select>
+              </div>
+
+              <div class="attr-group" v-else-if="newTaskType === 'custom_date'">
+                <select v-model="newTaskScale" class="attr-select attr-select-short">
+                  <option value="small">📦小型</option>
+                  <option value="medium">📊中型</option>
+                  <option value="large">🎯大型</option>
+                </select>
+              </div>
+
               <!-- 提交按钮 -->
               <button class="btn-submit-main" @click="addTask" title="添加任务">✓</button>
             </div>
@@ -182,7 +199,7 @@
                 <span class="badge badge-icon" :class="`priority-${task.priority}`">⚡{{ getPriorityText(task.priority) }}</span>
                 <span class="badge badge-icon" :class="`category-${task.category}`">🏷️{{ getCategoryText(task.category) }}</span>
                 <span class="badge badge-pomodoro" :class="`pomodoro-${task.priority}`">
-                  🍅×{{ getPomodoroCount(task.priority) }}
+                  🍅×{{ getPomodoroCount(task) }}
                 </span>
               </div>
             </div>
@@ -1086,7 +1103,7 @@
             <div class="attr-item">
               <span class="attr-label">🍅 番茄钟</span>
               <span class="attr-value badge badge-pomodoro" :class="`pomodoro-${detailTask.priority}`">
-                🍅×{{ getPomodoroCount(detailTask.priority) }}
+                🍅×{{ getPomodoroCount(detailTask) }}
               </span>
             </div>
           </div>
@@ -1934,6 +1951,8 @@ const newTaskType = ref('today')
 const customDateTime = ref('')
 const newTaskCategory = ref('work')
 const newTaskPriority = ref('medium')
+const newTaskDuration = ref('normal') // 短期任务时长：quick(0.5h) / normal(2h) / long(4h)
+const newTaskScale = ref('small') // 长期任务规模：small(1-3天) / medium(1-2周) / large(1个月+)
 const selectedWeekdays = ref([])
 const currentFilter = ref('all')
 const currentCategoryFilter = ref('all')
@@ -2728,6 +2747,8 @@ const addTask = async () => {
     type: newTaskType.value,
     category: newTaskCategory.value,
     priority: newTaskPriority.value,
+    duration: newTaskDuration.value, // 新增：时长
+    scale: newTaskScale.value, // 新增：规模
     weekdays: newTaskType.value === 'weekly' ? selectedWeekdays.value : null,
     customDate: customDate,
     customTime: customTime
@@ -2742,6 +2763,8 @@ const addTask = async () => {
   customDateTime.value = ''
   newTaskCategory.value = 'work'
   newTaskPriority.value = 'medium'
+  newTaskDuration.value = 'normal'
+  newTaskScale.value = 'small'
   selectedWeekdays.value = []
   
   showNotification('任务添加成功！', 'success')
@@ -4684,13 +4707,63 @@ const getPriorityText = (priority) => {
 }
 
 // 方法：获取番茄数（根据优先级）
-const getPomodoroCount = (priority) => {
-  const pomodoroMap = {
-    high: 4,
-    medium: 2,
-    low: 1
+const getPomodoroCount = (task) => {
+  // 如果传入的是字符串（旧版兼容），按优先级返回
+  if (typeof task === 'string') {
+    const pomodoroMap = { high: 4, medium: 2, low: 1 }
+    return pomodoroMap[task] || 2
   }
-  return pomodoroMap[priority] || 2
+
+  // 优先级系数
+  const priorityMultiplier = {
+    high: 1.5,
+    medium: 1.0,
+    low: 0.75
+  }
+
+  const multiplier = priorityMultiplier[task.priority] || 1.0
+  let basePomodoros = 2
+
+  // 对于已完成的任务，基于实际时间跨度计算
+  if (task.status === 'completed' && task.completed_at && task.created_at) {
+    const createdTime = new Date(task.created_at).getTime()
+    const completedTime = new Date(task.completed_at).getTime()
+    const daySpan = (completedTime - createdTime) / (1000 * 60 * 60 * 24)
+    
+    // 如果跨度超过1天，按实际天数计算
+    if (daySpan > 1) {
+      // 每天2个番茄，最多200个封顶
+      basePomodoros = Math.min(Math.round(daySpan * 2), 200)
+      return Math.round(basePomodoros * multiplier)
+    }
+    // 否则继续按下面的逻辑计算
+  }
+
+  // 根据任务类型计算基础番茄数（未完成任务或当天完成的任务）
+  if (['today', 'tomorrow', 'this_week'].includes(task.type)) {
+    // 短期任务：基于预估时长
+    const durationMap = {
+      quick: 0.5,  // 0.5小时 = 1个番茄
+      normal: 2,   // 2小时 = 4个番茄
+      long: 4      // 4小时 = 8个番茄
+    }
+    const hours = durationMap[task.duration || 'normal']
+    basePomodoros = hours * 2
+  } else if (task.type === 'custom_date') {
+    // 长期任务：基于项目规模
+    const scaleMap = {
+      small: 10,   // 小型项目
+      medium: 30,  // 中型项目
+      large: 100   // 大型项目
+    }
+    basePomodoros = scaleMap[task.scale || 'small']
+  } else if (['daily', 'weekday', 'weekly'].includes(task.type)) {
+    // 重复任务：固定单次番茄数
+    basePomodoros = 2
+  }
+
+  // 应用优先级系数并四舍五入
+  return Math.round(basePomodoros * multiplier)
 }
 
 // 方法：获取分类文本
