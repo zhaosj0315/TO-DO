@@ -5822,7 +5822,7 @@ watch(() => reportData.value, (newData) => {
   background: transparent;
   border-radius: 0;
   padding: 0;
-  margin: 0 0 0.1rem 0;
+  margin: 0 0 0.2rem 0;
   border: none;
   box-shadow: none;
   width: 100%;
@@ -7021,7 +7021,7 @@ watch(() => reportData.value, (newData) => {
   justify-content: space-between;
   align-items: center;
   padding: 1.2rem 0.1rem;
-  margin-bottom: 0;
+  margin-bottom: 0.5rem;
   border-bottom: 1px solid var(--glass-border);
   width: 100%;
 }
@@ -8696,7 +8696,7 @@ watch(() => reportData.value, (newData) => {
 /* v1.5.6: 两行布局添加表单 - 完全扁平化 */
 .add-form-two-row {
   margin-top: 0;
-  margin-bottom: 0.1rem !important; /* 与统计区域间距一致 */
+  margin-bottom: 0.2rem !important; /* 与统计区域间距一致 */
   padding: 0;
   background: transparent;
   border-radius: 0;
