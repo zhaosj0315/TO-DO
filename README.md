@@ -40,7 +40,11 @@ This is an **offline Android To-Do management application** built with **Vue 3**
   - Filter by status (All, Pending, Completed, Overdue)
   - Filter by category (Work, Study, Life)
   - Filter by priority (High, Medium, Low)
-  - Filter by date range
+  - Filter by date range with multiple time dimensions
+  - **Multi-Time Dimension Filtering**:
+    - Filter by creation time: View tasks created in a time period
+    - Filter by deadline: View tasks due in a time period
+    - Filter by completion time: View tasks completed in a time period
   - Keyword search (fuzzy match on title and description)
   - All filters can be combined
 - **Pomodoro Statistics**:
@@ -129,6 +133,10 @@ This is an **offline Android To-Do management application** built with **Vue 3**
   - 按分类筛选（工作、学习、生活）
   - 按优先级筛选（高、中、低）
   - 按日期范围筛选
+  - **多时间维度筛选**:
+    - 按创建时间筛选：查看某时间段创建的任务
+    - 按截止时间筛选：查看某时间段需要完成的任务
+    - 按完成时间筛选：查看某时间段实际完成的任务
   - 关键字搜索（模糊匹配任务名称和描述）
   - 所有筛选条件可组合使用
 - **番茄钟统计**:
@@ -255,6 +263,9 @@ userInfo[username] = {
   customTime: String,      // 指定时间（HH:MM格式，仅custom_date类型）
   status: String,          // 状态: 'pending' | 'completed' | 'overdue'
   created_at: String,      // 创建时间（ISO格式）
+  completed_at: String,    // 实际完成时间（ISO格式，仅completed状态）
+  duration: String,        // 时长: 'quick' | 'normal' | 'long'（短期任务）
+  scale: String,           // 规模: 'small' | 'medium' | 'large'（长期任务）
   user_id: String          // 所属用户
 }
 ```
@@ -288,6 +299,21 @@ userInfo[username] = {
 - ✅ 通知提示
 
 ## 📝 版本历史 | Version History
+
+### v1.6.11 (2026-02-23)
+- ✨ **多时间维度筛选功能**:
+  - 支持按创建时间/截止时间/完成时间筛选任务
+  - 3个时间维度按钮，激活状态显示紫色渐变
+- ✨ **完成时间记录系统**:
+  - 准确记录completed_at时间戳
+  - 已完成任务按完成时间倒序排列
+- ✨ **分页器紧凑化**:
+  - 从4个箭头减少到2个，支持双击跳首/尾页
+  - 统一12px字体，添加圆形边框
+- ✨ **数据安全保障系统**:
+  - 登录页备份警告、首次登录弹窗、定期提醒
+  - Excel导出17个完整字段
+- 🎨 **番茄计算逻辑统一**: 全局22处修复
 
 ### v1.6.10 (2026-02-22)
 - 🐛 **自定义报告Bug修复**:
