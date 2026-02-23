@@ -5822,10 +5822,15 @@ watch(() => reportData.value, (newData) => {
   background: transparent;
   border-radius: 0;
   padding: 0;
-  margin: 0 0 0.8rem 0;
+  margin: 0 0 0.5rem 0;
   border: none;
   box-shadow: none;
   width: 100%;
+}
+
+/* 当添加表单展开时，dashboard-area 不需要底部间距 */
+.dashboard-area:has(.add-form-two-row) {
+  margin-bottom: 0;
 }
 
 .stats-all-in-one {
@@ -6725,7 +6730,7 @@ watch(() => reportData.value, (newData) => {
   padding: 0.8rem;
   background: white;
   border-radius: 12px;
-  margin: 0 0 1rem 0 !important; /* 增加底部间距 */
+  margin: 0 0 0.5rem 0 !important; /* 与统计区域间距一致 */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   transition: all 0.3s;
   -webkit-tap-highlight-color: transparent;
@@ -8691,6 +8696,7 @@ watch(() => reportData.value, (newData) => {
 /* v1.5.6: 两行布局添加表单 - 完全扁平化 */
 .add-form-two-row {
   margin-top: 0;
+  margin-bottom: 0.5rem !important; /* 与统计区域间距一致 */
   padding: 0;
   background: transparent;
   border-radius: 0;
