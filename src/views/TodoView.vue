@@ -1086,7 +1086,7 @@
             <div class="attr-item">
               <span class="attr-label">🍅 番茄钟</span>
               <span class="attr-value badge badge-pomodoro" :class="`pomodoro-${detailTask.priority}`">
-                <span v-for="n in getPomodoroCount(detailTask.priority)" :key="n">🍅</span>
+                🍅×{{ getPomodoroCount(detailTask.priority) }}
               </span>
             </div>
           </div>
@@ -7503,16 +7503,16 @@ watch(() => reportData.value, (newData) => {
 
 .timeline-icon {
   position: absolute;
-  left: -2rem;
-  width: 2rem;
-  height: 2rem;
+  left: -1.8rem;
+  width: 1.5rem;
+  height: 1.5rem;
   background: white;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
-  box-shadow: 0 0 0 3px #f5f5f5;
+  font-size: 0.75rem;
+  box-shadow: 0 0 0 2px #f5f5f5;
 }
 
 .timeline-content {
@@ -7520,13 +7520,13 @@ watch(() => reportData.value, (newData) => {
 }
 
 .timeline-label {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: #999;
   margin-bottom: 0.2rem;
 }
 
 .timeline-value {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: #333;
   font-weight: 500;
 }
@@ -7551,12 +7551,16 @@ watch(() => reportData.value, (newData) => {
 }
 
 .attr-label {
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   color: #666;
 }
 
 .attr-value {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
+}
+
+.attr-value.badge {
+  font-size: 0.75rem;
 }
 
 /* 操作按钮 */
