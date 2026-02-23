@@ -211,22 +211,66 @@
         </div>
         
         <!-- 分页控件 -->
-        <div v-if="totalPages > 1" class="pagination">
+        <div v-if="totalPages > 1 || filteredTasks.length > 6" class="pagination">
+          <!-- 首页 -->
+          <button 
+            class="page-btn" 
+            :disabled="currentPage === 1" 
+            @click="goToFirstPage"
+            title="首页"
+          >
+            ‹‹
+          </button>
+          <!-- 上一页 -->
           <button 
             class="page-btn" 
             :disabled="currentPage === 1" 
             @click="currentPage--"
+            title="上一页"
           >
             ‹
           </button>
+          <!-- 页码信息 -->
           <span class="page-info">{{ currentPage }} / {{ totalPages }}</span>
+          <!-- 下一页 -->
           <button 
             class="page-btn" 
             :disabled="currentPage === totalPages" 
             @click="currentPage++"
+            title="下一页"
           >
             ›
           </button>
+          <!-- 末页 -->
+          <button 
+            class="page-btn" 
+            :disabled="currentPage === totalPages" 
+            @click="goToLastPage"
+            title="末页"
+          >
+            ››
+          </button>
+          <!-- 每页条数 -->
+          <select v-model.number="pageSize" @change="changePageSize(pageSize)" class="page-size-select">
+            <option :value="6">6条/页</option>
+            <option :value="10">10条/页</option>
+            <option :value="20">20条/页</option>
+            <option :value="50">50条/页</option>
+            <option :value="0">全部</option>
+          </select>
+          <!-- 跳转 -->
+          <span class="page-jump">
+            <input 
+              v-model="jumpToPage" 
+              type="number" 
+              class="jump-input" 
+              :placeholder="`1-${totalPages}`"
+              @keyup.enter="jumpToPageNumber"
+              min="1"
+              :max="totalPages"
+            >
+            <button class="jump-btn" @click="jumpToPageNumber">Go</button>
+          </span>
         </div>
 
         <!-- 页脚版权信息 -->
@@ -1993,6 +2037,8 @@ const editCustomDateTime = ref('')
 const editWeekdays = ref([])
 const showAddForm = ref(true)
 const currentPage = ref(1)
+const pageSize = ref(6) // 改为响应式
+const jumpToPage = ref('') // 跳转页码输入
 
 // Bottom Sheet 状态
 const showTaskDetail = ref(false)
@@ -2200,7 +2246,6 @@ const radarChartOption = computed(() => {
 const currentLanguage = ref('zh') // 语言切换：zh 中文, en 英文
 const priorityMode = ref('traditional') // 优先级模式：traditional 传统三级, eisenhower 时间象限法
 const showChangelog = ref(false) // 更新日志弹窗
-const pageSize = 6
 const fileInput = ref(null)
 const mainContent = ref(null)
 const showFilterModal = ref(false)
@@ -2548,13 +2593,15 @@ const getLevelBadge = () => {
 
 // 计算属性：总页数
 const totalPages = computed(() => {
-  return Math.ceil(filteredTasks.value.length / pageSize)
+  if (pageSize.value === 0) return 1 // 全部显示时只有1页
+  return Math.ceil(filteredTasks.value.length / pageSize.value)
 })
 
 // 计算属性：当前页的任务
 const paginatedTasks = computed(() => {
-  const start = (currentPage.value - 1) * pageSize
-  const end = start + pageSize
+  if (pageSize.value === 0) return filteredTasks.value // 显示全部
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
   return filteredTasks.value.slice(start, end)
 })
 
@@ -5207,10 +5254,37 @@ const handleRefresh = async () => {
   await taskStore.setCurrentUser(userStore.currentUser)
   await loadUserInfo()
   taskStore.checkOverdueTasks()
-  
+
   setTimeout(() => {
     isRefreshing.value = false
   }, 800)
+}
+
+// 方法：跳转到首页
+const goToFirstPage = () => {
+  currentPage.value = 1
+}
+
+// 方法：跳转到末页
+const goToLastPage = () => {
+  currentPage.value = totalPages.value
+}
+
+// 方法：改变每页条数
+const changePageSize = (size) => {
+  pageSize.value = size
+  currentPage.value = 1 // 重置到第一页
+}
+
+// 方法：跳转到指定页
+const jumpToPageNumber = () => {
+  const page = parseInt(jumpToPage.value)
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
+    jumpToPage.value = ''
+  } else {
+    showNotification(`请输入1-${totalPages.value}之间的页码`, 'error')
+  }
 }
 
 // 检查并发送逾期提醒
@@ -8869,20 +8943,21 @@ watch(() => reportData.value, (newData) => {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
   margin-top: 0.25rem;
   margin-bottom: 0.25rem;
   padding: 0;
+  flex-wrap: wrap;
 }
 
 .page-btn {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   border: 1px solid rgba(102, 126, 234, 0.3);
   background: white;
   color: var(--primary-color);
-  font-size: 1.2rem;
+  font-size: 1rem;
   cursor: pointer;
   transition: all 0.3s;
   display: flex;
@@ -8902,11 +8977,62 @@ watch(() => reportData.value, (newData) => {
 }
 
 .page-info {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--text-dark);
   font-weight: 600;
-  min-width: 60px;
+  min-width: 50px;
   text-align: center;
+}
+
+.page-size-select {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  border-radius: 8px;
+  background: white;
+  color: var(--text-dark);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.page-size-select:hover {
+  border-color: var(--primary-color);
+}
+
+.page-jump {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.jump-input {
+  width: 50px;
+  padding: 0.4rem;
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  border-radius: 6px;
+  text-align: center;
+  font-size: 0.75rem;
+}
+
+.jump-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.jump-btn {
+  padding: 0.4rem 0.8rem;
+  border: none;
+  border-radius: 6px;
+  background: var(--primary-color);
+  color: white;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.jump-btn:hover {
+  background: var(--secondary-color);
+  transform: scale(1.05);
 }
 
 /* 页脚版权信息 */
