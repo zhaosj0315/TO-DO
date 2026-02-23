@@ -48,7 +48,7 @@
     "mac": {
       "target": [
         {
-          "target": "dmg",
+          "target": "zip",
           "arch": [
             "x64",
             "arm64"
@@ -57,7 +57,8 @@
       ],
       "category": "public.app-category.productivity",
       "hardenedRuntime": false,
-      "gatekeeperAssess": false
+      "gatekeeperAssess": false,
+      "identity": null
     },
     "dmg": {
       "title": "TODO App",

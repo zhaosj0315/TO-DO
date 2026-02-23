@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# macOS DMG 一键打包脚本
+# macOS ZIP 一键打包脚本
 # 用途：自动构建 TODO App 的 macOS 安装包
 
 set -e  # 遇到错误立即退出
 
 echo "=========================================="
-echo "  TODO App - macOS DMG 打包脚本"
+echo "  TODO App - macOS ZIP 打包脚本"
 echo "=========================================="
 echo ""
 
@@ -32,30 +32,31 @@ npm run build
 echo "✅ 前端构建完成"
 echo ""
 
-# 4. 打包 DMG
-echo "📦 步骤 4/5: 打包 macOS DMG..."
-CSC_IDENTITY_AUTO_DISCOVERY=false npm run electron:build-mac 2>&1 | tee /tmp/build-mac.log || true
+# 4. 打包 ZIP
+echo "📦 步骤 4/5: 打包 macOS ZIP..."
+CSC_IDENTITY_AUTO_DISCOVERY=false npm run electron:build-mac 2>&1 | tee /tmp/build-mac.log
 
 # 获取版本号
 VERSION=$(node -p "require('./package.json').version")
 
-# 检查 x64 版本是否成功
-if [ ! -f "release/TODO App-${VERSION}.dmg" ]; then
-    echo "❌ 错误: DMG 打包失败"
-    echo "查看日志: /tmp/build-mac.log"
-    exit 1
-fi
-
-echo "✅ DMG 打包完成 (x64)"
-echo "⚠️  注意: arm64 版本构建失败（已知问题），但 x64 版本可通过 Rosetta 2 在 M 芯片 Mac 上运行"
+echo "✅ ZIP 打包完成"
 echo ""
 
 # 5. 复制到项目根目录
 echo "📂 步骤 5/5: 复制安装包..."
-VERSION=$(node -p "require('./package.json').version")
-DMG_NAME="TODO-App-${VERSION}-mac.dmg"
-cp "release/TODO App-${VERSION}.dmg" "./${DMG_NAME}"
-echo "✅ 安装包已生成: ${DMG_NAME}"
+
+# 检查并复制 x64 版本
+if [ -f "release/TODO App-${VERSION}-mac.zip" ]; then
+    cp "release/TODO App-${VERSION}-mac.zip" "./TODO-App-${VERSION}-mac-x64.zip"
+    echo "✅ x64 安装包: TODO-App-${VERSION}-mac-x64.zip"
+fi
+
+# 检查并复制 arm64 版本
+if [ -f "release/TODO App-${VERSION}-arm64-mac.zip" ]; then
+    cp "release/TODO App-${VERSION}-arm64-mac.zip" "./TODO-App-${VERSION}-mac-arm64.zip"
+    echo "✅ arm64 安装包: TODO-App-${VERSION}-mac-arm64.zip"
+fi
+
 echo ""
 
 # 显示文件信息
@@ -64,13 +65,11 @@ echo "  ✅ 打包成功！"
 echo "=========================================="
 echo ""
 echo "📦 安装包信息:"
-ls -lh "./${DMG_NAME}"
-echo ""
-echo "📍 文件位置: $(pwd)/${DMG_NAME}"
+ls -lh ./TODO-App-${VERSION}-mac-*.zip 2>/dev/null || echo "未找到安装包"
 echo ""
 echo "🚀 安装方式:"
-echo "   1. 双击 ${DMG_NAME}"
-echo "   2. 将 TODO App 拖到 Applications 文件夹"
+echo "   1. 解压 ZIP 文件"
+echo "   2. 将 TODO App.app 拖到 Applications 文件夹"
 echo "   3. 从启动台打开应用"
 echo ""
 echo "⚠️  首次打开提示:"
