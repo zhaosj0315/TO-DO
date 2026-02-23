@@ -271,29 +271,30 @@
         <footer class="app-footer">
           <div class="footer-content">
             <p class="footer-main">
-              <span class="footer-version">TO-DO App v1.6.0</span>
+              <span class="footer-version">TO-DO App v1.6.11</span>
               <span class="footer-divider">·</span>
-              <span class="footer-link" @click="showChangelog = true">
-                {{ currentLanguage === 'zh' ? '📋 更新日志' : '📋 Changelog' }}
+              <span class="footer-text">
+                {{ currentLanguage === 'zh' ? '完全离线 · 本地存储' : 'Offline · Local Storage' }}
               </span>
               <span class="footer-divider">·</span>
+              <span class="footer-copyright">© 2026 TO-DO Team</span>
+            </p>
+            <p class="footer-links">
               <span class="footer-link" @click="showUserGuide = true">
                 {{ currentLanguage === 'zh' ? '📖 使用指南' : '📖 Guide' }}
               </span>
               <span class="footer-divider">·</span>
-              <span class="footer-link" @click="showPomodoroRules = true">
-                {{ currentLanguage === 'zh' ? '🍅 番茄规则' : '🍅 Rules' }}
+              <span class="footer-link" @click="showChangelog = true">
+                {{ currentLanguage === 'zh' ? '📋 更新日志' : '📋 Changelog' }}
               </span>
               <span class="footer-divider">·</span>
               <a href="https://github.com/zhaosj0315/TO-DO/releases/tag/v1.6.11" target="_blank" class="footer-link">
                 {{ currentLanguage === 'zh' ? '📦 下载安装包' : '📦 Download' }}
               </a>
               <span class="footer-divider">·</span>
-              <span class="footer-copyright">© 2026 TO-DO Team</span>
+              <a href="https://github.com/zhaosj0315/TO-DO" target="_blank" class="footer-link">GitHub</a>
             </p>
             <p class="footer-links">
-              <a href="https://github.com/zhaosj0315/TO-DO" target="_blank" class="footer-link">GitHub</a>
-              <span class="footer-divider">·</span>
               <span class="footer-link" @click="showPrivacyPolicy = true">
                 {{ currentLanguage === 'zh' ? '隐私政策' : 'Privacy' }}
               </span>
@@ -308,10 +309,6 @@
               <span class="footer-divider">·</span>
               <span class="footer-link" @click="toggleLanguage">
                 {{ currentLanguage === 'zh' ? '🌐 EN' : '🌐 中文' }}
-              </span>
-              <span class="footer-divider">·</span>
-              <span class="footer-text">
-                {{ currentLanguage === 'zh' ? '完全离线 · 本地存储' : 'Offline · Local Storage' }}
               </span>
             </p>
           </div>
