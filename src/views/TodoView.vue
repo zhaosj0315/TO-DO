@@ -6110,9 +6110,11 @@ watch(() => reportData.value, (newData) => {
 .task-status-compact {
   display: inline-flex;
   align-items: center;
-  font-size: 1rem;
+  font-size: 0.625rem;
   line-height: 1;
-  height: 22px;
+  height: auto;
+  padding: 0.2rem 0.35rem;
+  border-radius: 8px;
 }
 
 /* 完成时间徽章 */
