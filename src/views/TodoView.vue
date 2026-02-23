@@ -5792,7 +5792,7 @@ watch(() => reportData.value, (newData) => {
   width: 100%;
   max-width: 100%;
   flex: none;
-  padding: 0.5rem 0.8rem;
+  padding: 0.1rem 0.1rem;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -5822,7 +5822,7 @@ watch(() => reportData.value, (newData) => {
   background: transparent;
   border-radius: 0;
   padding: 0;
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 0.1rem 0;
   border: none;
   box-shadow: none;
   width: 100%;
@@ -6730,7 +6730,7 @@ watch(() => reportData.value, (newData) => {
   padding: 0.8rem;
   background: white;
   border-radius: 12px;
-  margin: 0 0 0.5rem 0 !important; /* 与统计区域间距一致 */
+  margin: 0 0 0.1rem 0 !important; /* 与统计区域间距一致 */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   transition: all 0.3s;
   -webkit-tap-highlight-color: transparent;
@@ -7020,7 +7020,7 @@ watch(() => reportData.value, (newData) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.2rem 0.8rem;
+  padding: 1.2rem 0.1rem;
   margin-bottom: 0;
   border-bottom: 1px solid var(--glass-border);
   width: 100%;
@@ -8696,7 +8696,7 @@ watch(() => reportData.value, (newData) => {
 /* v1.5.6: 两行布局添加表单 - 完全扁平化 */
 .add-form-two-row {
   margin-top: 0;
-  margin-bottom: 0.5rem !important; /* 与统计区域间距一致 */
+  margin-bottom: 0.1rem !important; /* 与统计区域间距一致 */
   padding: 0;
   background: transparent;
   border-radius: 0;
