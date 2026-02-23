@@ -246,7 +246,7 @@
           </button>
           <!-- 每页条数 -->
           <select v-model.number="pageSize" @change="changePageSize(pageSize)" class="page-size-select">
-            <option :value="6">6条/页</option>
+            <option :value="7">7条/页</option>
             <option :value="10">10条/页</option>
             <option :value="20">20条/页</option>
             <option :value="50">50条/页</option>
@@ -2280,7 +2280,7 @@ const editCustomDateTime = ref('')
 const editWeekdays = ref([])
 const showAddForm = ref(true)
 const currentPage = ref(1)
-const pageSize = ref(6) // 改为响应式
+const pageSize = ref(7) // 改为响应式
 const jumpToPage = ref('') // 跳转页码输入
 
 // Bottom Sheet 状态
