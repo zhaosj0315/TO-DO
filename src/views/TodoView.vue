@@ -5317,14 +5317,47 @@ const formatCompactDateTime = (dateStr) => {
 
 // 方法：计算实际耗时（小时）
 const calculateActualHours = (task) => {
-  if (!task.completed_at || !task.created_at) return null
-  const createdTime = new Date(task.created_at).getTime()
-  const completedTime = new Date(task.completed_at).getTime()
-  const hours = (completedTime - createdTime) / (1000 * 60 * 60)
+  if (!task.completed_at) return null
   
-  // 四舍五入到整数小时
-  const roundedHours = Math.round(hours)
-  return `${roundedHours}h`
+  const completedTime = new Date(task.completed_at).getTime()
+  let startTime
+  
+  // 对于重复任务，使用计划完成时间作为起点
+  if (['daily', 'weekday', 'weekly'].includes(task.type)) {
+    const deadline = calculateDeadline(task)
+    if (deadline) {
+      // 使用当天开始时间（00:00）作为起点
+      const deadlineDate = new Date(deadline)
+      deadlineDate.setHours(0, 0, 0, 0)
+      startTime = deadlineDate.getTime()
+    } else {
+      // 如果无法计算截止时间，使用完成当天的开始时间
+      const completedDate = new Date(task.completed_at)
+      completedDate.setHours(0, 0, 0, 0)
+      startTime = completedDate.getTime()
+    }
+  } else {
+    // 非重复任务使用创建时间
+    startTime = new Date(task.created_at).getTime()
+  }
+  
+  const hours = (completedTime - startTime) / (1000 * 60 * 60)
+  
+  // 如果耗时小于1小时，显示分钟
+  if (hours < 1) {
+    const minutes = Math.round(hours * 60)
+    return `${minutes}分钟`
+  }
+  
+  // 如果耗时小于24小时，显示小时
+  if (hours < 24) {
+    const roundedHours = Math.round(hours)
+    return `${roundedHours}小时`
+  }
+  
+  // 如果耗时超过24小时，显示天数
+  const days = Math.round(hours / 24)
+  return `${days}天`
 }
 
 // 方法：获取截止日期对象
