@@ -294,6 +294,10 @@
                 {{ currentLanguage === 'zh' ? '隐私政策' : 'Privacy' }}
               </span>
               <span class="footer-divider">·</span>
+              <span class="footer-link" @click="showDataInfo = true">
+                {{ currentLanguage === 'zh' ? '📊 数据说明' : '📊 Data Info' }}
+              </span>
+              <span class="footer-divider">·</span>
               <span class="footer-link" @click="showSupport = true">
                 {{ currentLanguage === 'zh' ? '💬 反馈' : '💬 Feedback' }}
               </span>
@@ -370,6 +374,109 @@
             <p><strong>📞 电话：</strong>17858441076</p>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- 数据说明弹窗 -->
+    <div v-if="showDataInfo" class="modal-overlay" @click.self="showDataInfo = false">
+      <div class="modal-content data-info-modal">
+        <div class="modal-header">
+          <h3>📊 数据存储说明</h3>
+          <button class="close-btn" @click="showDataInfo = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <h4>💾 存储方式</h4>
+          <p>本应用采用 <strong>Capacitor Preferences API</strong> 进行数据持久化，所有数据存储在您的设备本地。</p>
+          
+          <h4>📍 存储位置</h4>
+          <ul>
+            <li><strong>Android</strong>: <code>/data/data/com.todo.app/shared_prefs/</code></li>
+            <li><strong>iOS</strong>: <code>UserDefaults</code></li>
+            <li><strong>Windows/macOS</strong>: <code>localStorage</code></li>
+          </ul>
+          
+          <h4>✅ 优点</h4>
+          <div class="pros-box">
+            <p>✅ <strong>完全离线</strong>：无需网络连接，随时随地使用</p>
+            <p>✅ <strong>数据隔离</strong>：每个用户的数据完全独立</p>
+            <p>✅ <strong>隐私保护</strong>：数据不上传，不联网，不泄露</p>
+            <p>✅ <strong>快速响应</strong>：本地存储，操作即时生效</p>
+          </div>
+          
+          <h4>⚠️ 限制</h4>
+          <div class="cons-box">
+            <p>❌ <strong>无云端同步</strong>：数据仅存在当前设备</p>
+            <p>❌ <strong>卸载丢失</strong>：卸载应用会清空所有数据</p>
+            <p>❌ <strong>无加密存储</strong>：数据以明文存储在本地</p>
+            <p>❌ <strong>单设备使用</strong>：无法在多设备间同步</p>
+          </div>
+          
+          <h4>📤 数据导出</h4>
+          <div class="export-guide">
+            <p><strong>方式1：Excel 导出</strong></p>
+            <ol>
+              <li>点击右上角 <strong>👤 个人主页</strong></li>
+              <li>找到 <strong>数据管理</strong> 区域</li>
+              <li>点击 <strong>📥 导出Excel</strong> 按钮</li>
+              <li>文件会保存到设备的下载目录</li>
+            </ol>
+            
+            <p><strong>导出内容包括</strong>：</p>
+            <ul>
+              <li>任务标题、描述、分类、优先级</li>
+              <li>创建时间、完成时间、截止时间</li>
+              <li>任务类型、状态、周期设置</li>
+              <li>共 17 个完整字段</li>
+            </ul>
+          </div>
+          
+          <h4>💡 数据备份建议</h4>
+          <div class="backup-tips">
+            <p>🔸 <strong>定期导出</strong>：建议每周导出一次 Excel 备份</p>
+            <p>🔸 <strong>多处保存</strong>：将备份文件保存到云盘（如百度网盘、iCloud）</p>
+            <p>🔸 <strong>更换设备</strong>：通过 Excel 导入功能迁移数据</p>
+            <p>🔸 <strong>重装应用</strong>：务必先导出数据再卸载</p>
+          </div>
+          
+          <h4>🔒 数据安全承诺</h4>
+          <div class="security-promise">
+            <p>✓ 数据永不上传到任何服务器</p>
+            <p>✓ 不收集任何个人隐私信息</p>
+            <p>✓ 不使用任何第三方统计或广告 SDK</p>
+            <p>✓ 完全开源，代码可审计</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 首次登录备份提醒弹窗 -->
+    <div v-if="showBackupReminder" class="modal-overlay">
+      <div class="backup-reminder-modal">
+        <div class="reminder-icon">⚠️</div>
+        <h2>重要提示</h2>
+        <div class="reminder-content">
+          <p class="highlight-text">本应用为<strong>纯离线应用</strong>，所有数据存储在设备本地。</p>
+          <p class="warning-text">请定期导出数据备份，<strong>卸载应用将导致数据永久丢失！</strong></p>
+          
+          <div class="backup-guide">
+            <p class="guide-title">💡 备份方法：</p>
+            <ol>
+              <li>点击右上角 <strong>👤 头像</strong></li>
+              <li>找到 <strong>数据管理</strong> 区域</li>
+              <li>点击 <strong>📥 导出Excel</strong> 按钮</li>
+              <li>建议每周备份一次</li>
+            </ol>
+          </div>
+          
+          <div class="tips-box">
+            <p>💾 备份文件可保存到云盘（百度网盘、iCloud等）</p>
+            <p>🔄 更换设备时可通过导入功能恢复数据</p>
+          </div>
+        </div>
+        
+        <button class="confirm-btn" @click="showBackupReminder = false">
+          我知道了
+        </button>
       </div>
     </div>
 
@@ -2256,6 +2363,7 @@ const showProfile = ref(false)
 const showPomodoroStats = ref(false)
 const showSupport = ref(false)
 const showPrivacyPolicy = ref(false)
+const showDataInfo = ref(false)
 const showUserGuide = ref(false) // 使用指南弹窗
 const showPomodoroRules = ref(false) // 番茄规则弹窗
 const showWelcome = ref(false) // 首次登录欢迎弹窗
@@ -5740,6 +5848,15 @@ onMounted(async () => {
   
   // 设置任务Store的当前用户并加载该用户的任务
   await taskStore.setCurrentUser(userStore.currentUser)
+  
+  // 检查是否需要显示首次登录备份提醒
+  const { value: showReminder } = await Preferences.get({ key: 'showBackupReminder' })
+  if (showReminder === 'true') {
+    await Preferences.remove({ key: 'showBackupReminder' })
+    setTimeout(() => {
+      showBackupReminder.value = true
+    }, 500)
+  }
   
   // 检查是否首次登录
   const { value: hasSeenWelcome } = await Preferences.get({ key: `welcome_${userStore.currentUser}` })
@@ -9831,6 +9948,131 @@ watch(() => reportData.value, (newData) => {
 
 .contact-box p {
   margin: 0.5rem 0;
+}
+
+/* 数据说明弹窗样式 */
+.data-info-modal {
+  background: white;
+  max-width: 750px;
+  width: 96%;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.data-info-modal .modal-body {
+  padding: 1.5rem;
+  line-height: 1.8;
+}
+
+.data-info-modal h4 {
+  color: #333;
+  margin: 1.5rem 0 1rem 0;
+  font-size: 1.1rem;
+  border-left: 4px solid #667eea;
+  padding-left: 0.8rem;
+}
+
+.data-info-modal h4:first-child {
+  margin-top: 0;
+}
+
+.data-info-modal p {
+  margin: 0.8rem 0;
+  color: #555;
+}
+
+.data-info-modal ul {
+  margin: 0.8rem 0;
+  padding-left: 2rem;
+}
+
+.data-info-modal li {
+  margin: 0.5rem 0;
+  color: #555;
+}
+
+.data-info-modal code {
+  background: #f5f5f5;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: #e83e8c;
+  font-family: 'Courier New', monospace;
+}
+
+.pros-box {
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+  border-left: 4px solid #4caf50;
+}
+
+.pros-box p {
+  margin: 0.5rem 0;
+  color: #2e7d32;
+  font-weight: 500;
+}
+
+.cons-box {
+  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+  border-left: 4px solid #ff9800;
+}
+
+.cons-box p {
+  margin: 0.5rem 0;
+  color: #e65100;
+  font-weight: 500;
+}
+
+.export-guide {
+  background: #e3f2fd;
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+  border-left: 4px solid #2196f3;
+}
+
+.export-guide ol {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.export-guide li {
+  margin: 0.3rem 0;
+  color: #1565c0;
+}
+
+.backup-tips {
+  background: #f3e5f5;
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+  border-left: 4px solid #9c27b0;
+}
+
+.backup-tips p {
+  margin: 0.5rem 0;
+  color: #6a1b9a;
+  font-weight: 500;
+}
+
+.security-promise {
+  background: linear-gradient(135deg, #e8eaf6 0%, #c5cae9 100%);
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+  border-left: 4px solid #3f51b5;
+}
+
+.security-promise p {
+  margin: 0.5rem 0;
+  color: #283593;
+  font-weight: 500;
 }
 
 .weekly-selector-grid {

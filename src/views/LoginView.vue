@@ -478,11 +478,19 @@ const handleLogin = async () => {
   if (users[username.value] === password.value) {
     await Preferences.set({ key: 'currentUser', value: username.value })
     
+    // 检查是否首次登录
     const { value: userInfoData } = await Preferences.get({ key: 'userInfo' })
     const userInfo = userInfoData ? JSON.parse(userInfoData) : {}
+    const isFirstLogin = !userInfo[username.value]?.lastLoginTime
+    
     if (userInfo[username.value]) {
       userInfo[username.value].lastLoginTime = new Date().toISOString()
       await Preferences.set({ key: 'userInfo', value: JSON.stringify(userInfo) })
+    }
+    
+    // 标记首次登录状态
+    if (isFirstLogin) {
+      await Preferences.set({ key: 'showBackupReminder', value: 'true' })
     }
     
     emit('notify', { message: '登录成功！', type: 'success' })
@@ -768,5 +776,114 @@ const resetForm = () => {
 
 .switch-mode:hover {
   opacity: 0.8;
+}
+
+/* 数据备份提醒弹窗样式 */
+.backup-reminder-modal {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease-out;
+}
+
+.reminder-icon {
+  font-size: 4rem;
+  text-align: center;
+  margin-bottom: 1rem;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.backup-reminder-modal h2 {
+  text-align: center;
+  color: #ff6b6b;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+}
+
+.reminder-content {
+  text-align: left;
+  line-height: 1.8;
+}
+
+.highlight-text {
+  font-size: 1.05rem;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.warning-text {
+  font-size: 1.05rem;
+  color: #ff6b6b;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+}
+
+.backup-guide {
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+  border-left: 4px solid #2196f3;
+}
+
+.guide-title {
+  font-weight: 600;
+  color: #1565c0;
+  margin-bottom: 0.5rem;
+}
+
+.backup-guide ol {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.backup-guide li {
+  margin: 0.3rem 0;
+  color: #1976d2;
+}
+
+.tips-box {
+  background: #f3e5f5;
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+  border-left: 4px solid #9c27b0;
+}
+
+.tips-box p {
+  margin: 0.5rem 0;
+  color: #6a1b9a;
+  font-size: 0.95rem;
+}
+
+.confirm-btn {
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 1.5rem;
+  transition: all 0.3s;
+}
+
+.confirm-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.confirm-btn:active {
+  transform: translateY(0);
 }
 </style>
