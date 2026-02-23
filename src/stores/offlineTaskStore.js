@@ -43,7 +43,8 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         description: taskData.description || '',
         status: taskData.status || 'pending',
         created_at: taskData.created_at || new Date().toISOString(),
-        user_id: taskData.user_id || this.currentUser
+        user_id: taskData.user_id || this.currentUser,
+        is_pinned: taskData.is_pinned || false
       }
       this.tasks.push(task)
       await this.saveTasks()
@@ -71,6 +72,14 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       const task = this.tasks.find(t => t.id === taskId)
       if (task) {
         Object.assign(task, updates)
+        await this.saveTasks()
+      }
+    },
+
+    async togglePin(taskId) {
+      const task = this.tasks.find(t => t.id === taskId)
+      if (task) {
+        task.is_pinned = !task.is_pinned
         await this.saveTasks()
       }
     },
@@ -176,21 +185,58 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       }
 
       return filtered.sort((a, b) => {
-        if (a.status !== b.status) {
-          return a.status === 'completed' ? 1 : -1
+        // 计算任务权重（数字越小越靠前）
+        const getWeight = (task) => {
+          let weight = 0
+          
+          // 已完成任务：权重最低
+          if (task.status === 'completed') return 10000
+          
+          // 置顶任务：基础权重 0-2（按优先级细分）
+          if (task.is_pinned) {
+            const pinPriority = { high: 0, medium: 1, low: 2 }
+            return pinPriority[task.priority]
+          }
+          
+          // 计算距离截止时间（小时）
+          const deadline = this.calculateDeadline(task)
+          const hoursUntilDeadline = deadline ? (new Date(deadline) - new Date()) / 3600000 : 999999
+          
+          // 逾期任务：权重 100-500
+          if (task.status === 'overdue') {
+            const daysOverdue = Math.abs(hoursUntilDeadline) / 24
+            // 逾期3天内：100-200（高危区）
+            // 逾期3天以上：200-500（衰减区）
+            if (daysOverdue <= 3) {
+              weight = 100 + (task.priority === 'high' ? 0 : task.priority === 'medium' ? 30 : 60)
+            } else {
+              weight = 200 + Math.min(daysOverdue * 10, 300) + (task.priority === 'low' ? 100 : 0)
+            }
+            return weight
+          }
+          
+          // 待办任务：权重 600-900
+          // 2小时内到期：紧急预警区（600-650）
+          if (hoursUntilDeadline <= 2) {
+            weight = 600 + (task.priority === 'high' ? 0 : task.priority === 'medium' ? 20 : 40)
+            return weight
+          }
+          
+          // 正常待办：按优先级（700-900）
+          weight = 700 + (task.priority === 'high' ? 0 : task.priority === 'medium' ? 100 : 200)
+          return weight
         }
         
-        // 已完成任务：按实际完成时间倒序
+        const weightA = getWeight(a)
+        const weightB = getWeight(b)
+        
+        if (weightA !== weightB) return weightA - weightB
+        
+        // 权重相同：已完成按完成时间倒序，其他按创建时间倒序
         if (a.status === 'completed' && b.status === 'completed') {
           const aTime = a.completed_at ? new Date(a.completed_at) : new Date(a.created_at)
           const bTime = b.completed_at ? new Date(b.completed_at) : new Date(b.created_at)
           return bTime - aTime
-        }
-        
-        // 未完成任务：按优先级 + 创建时间
-        const priorityOrder = { high: 0, medium: 1, low: 2 }
-        if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
-          return priorityOrder[a.priority] - priorityOrder[b.priority]
         }
         return new Date(b.created_at) - new Date(a.created_at)
       })

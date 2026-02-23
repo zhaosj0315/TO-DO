@@ -177,7 +177,17 @@
             <div class="task-content" @click="openTaskDetail(task)" style="cursor: pointer;">
               <div class="task-title-row">
                 <span class="task-title" title="点击查看详情">{{ task.text }}</span>
-                <button class="btn-delete-inline" @click.stop="deleteTask(task.id)" title="删除任务">🗑️</button>
+                <div class="task-actions">
+                  <button 
+                    class="btn-pin-inline" 
+                    @click.stop="togglePin(task.id)" 
+                    :title="task.is_pinned ? '取消置顶' : '置顶任务'"
+                    :class="{ 'pinned': task.is_pinned }"
+                  >
+                    📌
+                  </button>
+                  <button class="btn-delete-inline" @click.stop="deleteTask(task.id)" title="删除任务">🗑️</button>
+                </div>
               </div>
               <div v-if="task.description" class="task-description">{{ task.description }}</div>
               <div class="task-meta">
@@ -3095,6 +3105,11 @@ const toggleTaskCompletion = async (taskId) => {
   // 完成任务时清除提醒记录
   notifiedTasks.delete(`urgent_${taskId}`)
   notifiedTasks.delete(`overdue_${taskId}`)
+}
+
+// 方法：置顶/取消置顶任务
+const togglePin = async (taskId) => {
+  await taskStore.togglePin(taskId)
 }
 
 // 方法：删除任务
@@ -6762,7 +6777,7 @@ watch(() => reportData.value, (newData) => {
 }
 
 /* v1.2: 字体比例优化 */
-/* 任务标题行（标题+删除按钮） */
+/* 任务标题行（标题+操作按钮） */
 .task-title-row {
   display: flex;
   align-items: center;
@@ -6781,6 +6796,40 @@ watch(() => reportData.value, (newData) => {
 
 .task-title:hover {
   color: var(--primary-color);
+}
+
+/* 任务操作按钮组 */
+.task-actions {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+/* 置顶按钮 */
+.btn-pin-inline {
+  background: none;
+  border: none;
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 0.6rem;
+  margin: -0.6rem;
+  opacity: 0.3;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  line-height: 1;
+  filter: grayscale(1);
+}
+
+.btn-pin-inline:hover {
+  opacity: 0.8;
+  transform: scale(1.15);
+  filter: grayscale(0);
+}
+
+.btn-pin-inline.pinned {
+  opacity: 1;
+  filter: grayscale(0);
+  transform: rotate(45deg);
 }
 
 /* 内联删除按钮 */
