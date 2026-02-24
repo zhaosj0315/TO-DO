@@ -218,7 +218,33 @@
                   <button class="btn-delete-inline" @click.stop="deleteTask(task.id)" title="删除任务">🗑️</button>
                 </div>
               </div>
-              <div v-if="task.description" class="task-description">{{ task.description }}</div>
+              <div 
+                v-if="task.description" 
+                class="task-description"
+                :class="{
+                  'description-collapsed': !expandedDescriptions.has(task.id) && task.description.length > 100,
+                  'description-completed': task.status === 'completed',
+                  [`description-priority-${task.priority}`]: true
+                }"
+                @click.stop="openEditModal(task)"
+                :title="task.description.length > 100 ? '点击编辑任务' : ''"
+              >
+                {{ task.description }}
+                <span 
+                  v-if="!expandedDescriptions.has(task.id) && task.description.length > 100" 
+                  class="expand-btn"
+                  @click.stop="toggleDescription(task.id)"
+                >
+                  ...展开
+                </span>
+                <span 
+                  v-if="expandedDescriptions.has(task.id) && task.description.length > 100" 
+                  class="expand-btn"
+                  @click.stop="toggleDescription(task.id)"
+                >
+                  收起
+                </span>
+              </div>
               <div class="task-meta">
                 <!-- 时间信息（压缩格式：去掉年份） -->
                 <span class="task-time-compact" title="创建时间">📝 {{ formatCompactDateTime(task.created_at) }}</span>
@@ -2668,6 +2694,9 @@ const showCustomDateModal = ref(false)
 const showReportModal = ref(false) // 数据报告弹窗
 const showBackupList = ref(false) // 备份列表弹窗
 
+// 任务描述展开状态
+const expandedDescriptions = ref(new Set())
+
 // 番茄钟状态
 const pomodoroState = ref({
   isRunning: false,
@@ -3850,6 +3879,15 @@ const clearAllTasks = async () => {
 }
 
 // 方法：打开编辑模态框
+// 切换描述展开/收起
+const toggleDescription = (taskId) => {
+  if (expandedDescriptions.value.has(taskId)) {
+    expandedDescriptions.value.delete(taskId)
+  } else {
+    expandedDescriptions.value.add(taskId)
+  }
+}
+
 const openEditModal = (task) => {
   editingTask.value = { ...task }
   editText.value = task.text
@@ -8171,6 +8209,54 @@ watch(() => reportData.value, (newData) => {
   background: rgba(0, 0, 0, 0.02); /* 浅灰背景 */
   border-radius: 6px;
   border-left: 3px solid #e0e0e0; /* 左侧边框 */
+  cursor: pointer; /* 可点击 */
+  transition: all 0.2s;
+  position: relative;
+}
+
+/* 折叠状态 */
+.task-description.description-collapsed {
+  max-height: 3.2em; /* 约2行 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 已完成任务的描述 */
+.task-description.description-completed {
+  opacity: 0.5;
+}
+
+/* 根据优先级变色左侧边框 */
+.task-description.description-priority-high {
+  border-left-color: #f44336; /* 红色 */
+}
+
+.task-description.description-priority-medium {
+  border-left-color: #ff9800; /* 橙色 */
+}
+
+.task-description.description-priority-low {
+  border-left-color: #2196f3; /* 蓝色 */
+}
+
+/* 描述悬停效果 */
+.task-description:hover {
+  background: rgba(0, 0, 0, 0.04);
+  border-left-width: 4px;
+}
+
+/* 展开/收起按钮 */
+.expand-btn {
+  color: #667eea;
+  font-weight: 600;
+  margin-left: 8px;
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.expand-btn:hover {
+  text-decoration: underline;
 }
 
 .task-meta {
