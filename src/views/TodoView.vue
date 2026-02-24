@@ -1833,13 +1833,15 @@
     </div>
 
     <!-- 任务详情编辑模态框 -->
-    <div v-if="editingTask" class="modal-overlay" @click.self="editingTask = null">
-      <div class="modal-content glass-card" style="background: white; max-width: 550px; width: 96%; padding: 1rem;">
-        <div class="modal-header">
-          <h3>{{ t('edit') }}{{ currentLanguage === 'zh' ? '任务详情' : ' Task' }}</h3>
+    <!-- 编辑任务详情 Bottom Sheet -->
+    <div v-if="editingTask" class="bottom-sheet-overlay" @click.self="editingTask = null">
+      <div class="bottom-sheet edit-bottom-sheet">
+        <div class="bottom-sheet-header">
+          <div class="sheet-handle"></div>
+          <h3>✏️ 编辑任务详情</h3>
           <button class="close-btn" @click="editingTask = null">&times;</button>
         </div>
-        <div class="modal-body edit-modal-body">
+        <div class="bottom-sheet-body edit-sheet-body">
           <!-- 基本信息组 -->
           <div class="edit-section">
             <div class="section-title">📝 基本信息</div>
@@ -3859,6 +3861,36 @@ const onPomodoroComplete = async () => {
 }
 
 // 方法：删除任务
+// 切换任务完成状态
+const toggleTaskStatus = async (taskId) => {
+  const task = taskStore.tasks.find(t => t.id === taskId)
+  if (!task) return
+  
+  if (task.status === 'completed') {
+    // 取消完成
+    task.status = 'pending'
+    task.completed_at = null
+    
+    // 重新检查是否逾期
+    const deadline = getTaskDeadline(task)
+    if (deadline && new Date() > deadline) {
+      task.status = 'overdue'
+    }
+  } else {
+    // 标记为完成
+    task.status = 'completed'
+    task.completed_at = new Date().toISOString()
+    
+    // 清除提醒
+    notifiedTasks.delete(`urgent_${taskId}`)
+    notifiedTasks.delete(`overdue_${taskId}`)
+    await cancelTaskReminder(taskId)
+  }
+  
+  await taskStore.updateTask(task)
+  await scheduleDailySummaryNotification()
+}
+
 const deleteTask = async (taskId) => {
   // 保存待删除任务信息
   const task = taskStore.tasks.find(t => t.id === taskId)
@@ -10612,6 +10644,24 @@ watch(() => reportData.value, (newData) => {
 }
 
 /* 编辑弹窗样式优化 */
+/* 编辑弹窗改为Bottom Sheet */
+.edit-bottom-sheet {
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.edit-sheet-body {
+  padding: 0 1.5rem 1.5rem 1.5rem;
+}
+
+/* 编辑弹窗宽度优化 */
+.edit-modal-wide {
+  max-width: 96% !important;
+  width: 96% !important;
+  padding: 1.5rem !important;
+  margin: 0 2%;
+}
+
 .edit-modal-body {
   padding: 0.5rem 0;
 }
