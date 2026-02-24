@@ -903,23 +903,27 @@
             <div class="data-buttons">
               <button class="btn btn-backup" @click="handleManualBackup">
                 <span class="export-icon">💾</span>
-                {{ t('manualBackup') }}
+                <span class="btn-text">{{ t('manualBackup') }}</span>
               </button>
               <button class="btn btn-restore" @click="showBackupList = true">
                 <span class="export-icon">♻️</span>
-                {{ t('restoreBackup') }}
+                <span class="btn-text">{{ t('restoreBackup') }}</span>
               </button>
               <button class="btn btn-export" @click="exportToExcel">
                 <span class="export-icon">📥</span>
-                {{ t('exportTasks') }}
+                <span class="btn-text">{{ t('exportTasks') }}</span>
               </button>
               <button class="btn btn-import" @click="triggerImport">
                 <span class="export-icon">📤</span>
-                {{ t('importTasks') }}
+                <span class="btn-text">{{ t('importTasks') }}</span>
               </button>
               <button class="btn btn-template" @click="downloadTemplate">
                 <span class="export-icon">📋</span>
-                {{ t('downloadTemplate') }}
+                <span class="btn-text">{{ t('downloadTemplate') }}</span>
+              </button>
+              <button class="btn btn-clear-all" @click="clearAllTasks">
+                <span class="export-icon">🗑️</span>
+                <span class="btn-text">{{ t('clearAllTasks') }}</span>
               </button>
             </div>
             <input 
@@ -2207,6 +2211,7 @@ const i18n = {
     exportTasks: '导出任务',
     importTasks: '导入任务',
     downloadTemplate: '下载模板',
+    clearAllTasks: '清空任务',
     contactSupportDesc: '遇到bug或想打赏？点击查看联系方式',
     logout: '退出登录',
     // 回收站
@@ -2385,6 +2390,7 @@ const i18n = {
     exportTasks: 'Export',
     importTasks: 'Import',
     downloadTemplate: 'Template',
+    clearAllTasks: 'Clear All',
     contactSupportDesc: 'Found a bug or want to donate? Click for contact info',
     logout: 'Logout',
     // 回收站
@@ -3461,6 +3467,35 @@ const clearAllTrash = async () => {
   if (confirm(`确定要清空回收站吗？\n\n将永久删除 ${count} 个任务，此操作不可撤销！`)) {
     await taskStore.clearAllDeletedTasks()
     showNotification(`已清空回收站，永久删除 ${count} 个任务`, 'success')
+  }
+}
+
+// 方法：清空所有任务
+const clearAllTasks = async () => {
+  const totalCount = taskStore.tasks.length
+  const deletedCount = taskStore.deletedTasks.length
+  const total = totalCount + deletedCount
+  
+  if (total === 0) {
+    showNotification('当前没有任务', 'info')
+    return
+  }
+  
+  const message = `⚠️ 危险操作警告 ⚠️\n\n` +
+    `即将清空所有数据：\n` +
+    `• 当前任务：${totalCount} 个\n` +
+    `• 回收站任务：${deletedCount} 个\n` +
+    `• 总计：${total} 个\n\n` +
+    `此操作不可撤销！\n` +
+    `建议先导出备份。\n\n` +
+    `确定要继续吗？`
+  
+  if (confirm(message)) {
+    // 二次确认
+    if (confirm(`最后确认：真的要删除所有 ${total} 个任务吗？`)) {
+      await taskStore.clearAllTasks()
+      showNotification(`已清空所有任务（${total} 个）`, 'success')
+    }
   }
 }
 
@@ -8470,9 +8505,32 @@ watch(() => reportData.value, (newData) => {
 }
 
 .data-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.data-buttons .btn {
   display: flex;
-  gap: 0.6rem;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
+  padding: 0.6rem 0.3rem;
+  min-height: 60px;
+}
+
+.data-buttons .export-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.2rem;
+}
+
+.data-buttons .btn-text {
+  font-size: 0.7rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 /* 备份列表样式 */
@@ -8525,7 +8583,7 @@ watch(() => reportData.value, (newData) => {
   box-shadow: 0 4px 12px rgba(138, 43, 226, 0.3);
 }
 
-.btn-restore, .btn-backup, .btn-export, .btn-import, .btn-template {
+.btn-restore, .btn-backup, .btn-export, .btn-import, .btn-template, .btn-clear-all {
 
   background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
   color: white;
@@ -8549,6 +8607,16 @@ watch(() => reportData.value, (newData) => {
 
 .btn-template {
   background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.btn-clear-all {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.btn-clear-all:hover {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
 .btn-export:hover, .btn-import:hover, .btn-template:hover {

@@ -152,6 +152,12 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       await this.saveTasks()
     },
 
+    async clearAllTasks() {
+      this.tasks = []
+      this.deletedTasks = []
+      await this.saveTasks()
+    },
+
     checkOverdueTasks() {
       const now = new Date()
       let hasChanges = false
