@@ -146,6 +146,10 @@
                     class="reminder-time-input-inline"
                     :min="getTodayDateTime()"
                   >
+                  <label v-if="enableReminder" class="force-reminder-label">
+                    <input type="checkbox" v-model="forceReminder" class="force-reminder-checkbox">
+                    <span class="force-reminder-text">🔊 强制提醒</span>
+                  </label>
                   <button 
                     v-if="enableReminder"
                     class="guide-link-btn-inline" 
@@ -693,6 +697,11 @@
           <button class="close-btn" @click="showTrash = false">&times;</button>
         </div>
         <div class="modal-body">
+          <div v-if="taskStore.deletedTasks.length > 0" style="margin-bottom: 1rem;">
+            <button class="btn btn-danger" @click="clearAllTrash" style="width: 100%;">
+              🗑️ {{ t('clearAllTrash') }}
+            </button>
+          </div>
           <ul v-if="taskStore.deletedTasks.length > 0">
             <li v-for="task in taskStore.deletedTasks" :key="task.id" class="trash-item">
               <div class="trash-info">
@@ -892,6 +901,14 @@
             
             <p class="export-desc">{{ t('dataManagementDesc') }}</p>
             <div class="data-buttons">
+              <button class="btn btn-backup" @click="handleManualBackup">
+                <span class="export-icon">💾</span>
+                {{ t('manualBackup') }}
+              </button>
+              <button class="btn btn-restore" @click="showBackupList = true">
+                <span class="export-icon">♻️</span>
+                {{ t('restoreBackup') }}
+              </button>
               <button class="btn btn-export" @click="exportToExcel">
                 <span class="export-icon">📥</span>
                 {{ t('exportTasks') }}
@@ -1658,6 +1675,35 @@
       </div>
     </div>
 
+    <!-- 备份管理弹窗 -->
+    <div v-if="showBackupList" class="modal-overlay" @click.self="showBackupList = false">
+      <div class="modal-content glass-card" style="max-width: 600px; width: 96%;">
+        <div class="modal-header">
+          <h3>♻️ {{ t('backupManagement') }}</h3>
+          <button class="close-btn" @click="showBackupList = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p style="color: #666; margin-bottom: 1rem;">{{ t('backupListDesc') }}</p>
+          
+          <div v-if="backupFiles.length === 0" style="text-align: center; padding: 2rem; color: #999;">
+            {{ t('noBackups') }}
+          </div>
+          
+          <div v-else class="backup-list">
+            <div v-for="file in backupFiles" :key="file.name" class="backup-item">
+              <div class="backup-info">
+                <div class="backup-name">{{ file.name }}</div>
+                <div class="backup-date">{{ formatBackupDate(file.name) }}</div>
+              </div>
+              <button class="btn-restore-small" @click="handleRestore(file.name)">
+                {{ t('restore') }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 数据报告弹窗 -->
     <div v-if="showReportModal" class="modal-overlay" @click.self="showReportModal = false">
       <div class="modal-content glass-card" style="background: white; max-width: 800px; width: 96%; max-height: 90vh; overflow-y: auto; padding: 1rem;">
@@ -2060,6 +2106,8 @@ import * as XLSX from 'xlsx'
 import html2canvas from 'html2canvas'
 import EChart from '../components/EChart.vue'
 import { CountUp } from 'countup.js'
+import { manualBackup, listBackups, restoreBackup } from '../utils/autoBackup'
+import { taskToExcelRow, generateTemplateData, excelRowToTask } from '../utils/excelFormat'
 
 const router = useRouter()
 const taskStore = useOfflineTaskStore()
@@ -2116,6 +2164,7 @@ const i18n = {
     bindPhone: '绑定手机号',
     advancedFilter: '高级筛选',
     recycleBin: '回收站',
+    clearAllTrash: '清空回收站',
     personalProfile: '个人主页',
     contactSupport: '联系与支持',
     pomodoroStats: '番茄钟统计',
@@ -2149,6 +2198,12 @@ const i18n = {
     notBound: '未绑定',
     dataManagement: '数据管理',
     dataManagementDesc: '导出或导入您的任务数据，轻松备份与迁移',
+    manualBackup: '立即备份',
+    restoreBackup: '恢复备份',
+    backupManagement: '备份管理',
+    backupListDesc: '选择一个备份文件进行恢复（仅支持JSON格式）',
+    noBackups: '暂无备份文件',
+    restore: '恢复',
     exportTasks: '导出任务',
     importTasks: '导入任务',
     downloadTemplate: '下载模板',
@@ -2287,6 +2342,7 @@ const i18n = {
     bindPhone: 'Bind Phone',
     advancedFilter: 'Advanced Filter',
     recycleBin: 'Recycle Bin',
+    clearAllTrash: 'Clear All',
     personalProfile: 'Profile',
     contactSupport: 'Contact & Support',
     pomodoroStats: 'Pomodoro Stats',
@@ -2320,6 +2376,12 @@ const i18n = {
     notBound: 'Not bound',
     dataManagement: 'Data Management',
     dataManagementDesc: 'Export or import your tasks for backup and migration',
+    manualBackup: 'Backup Now',
+    restoreBackup: 'Restore',
+    backupManagement: 'Backup Management',
+    backupListDesc: 'Select a backup file to restore (JSON only)',
+    noBackups: 'No backup files',
+    restore: 'Restore',
     exportTasks: 'Export',
     importTasks: 'Import',
     downloadTemplate: 'Template',
@@ -2432,6 +2494,7 @@ const newTaskCategory = ref('work')
 const newTaskPriority = ref('medium')
 const selectedWeekdays = ref([])
 const enableReminder = ref(false)
+const forceReminder = ref(false)
 const reminderDateTime = ref('')
 const currentFilter = ref('all')
 const currentCategoryFilter = ref('all')
@@ -2457,6 +2520,8 @@ const showPhoneModal = ref(false)
 const showWeeklyModal = ref(false)
 const showCustomDateModal = ref(false)
 const showReportModal = ref(false) // 数据报告弹窗
+const showBackupList = ref(false) // 备份列表弹窗
+const backupFiles = ref([]) // 备份文件列表
 const reportType = ref('weekly') // 报告类型（默认：周报）
 const customStartDate = ref('') // 自定义开始日期
 const customEndDate = ref('') // 自定义结束日期
@@ -3241,7 +3306,8 @@ const addTask = async () => {
     customDate: customDate,
     customTime: customTime,
     enableReminder: enableReminder.value,
-    reminderTime: enableReminder.value && reminderDateTime.value ? new Date(reminderDateTime.value).toISOString() : null
+    reminderTime: enableReminder.value && reminderDateTime.value ? new Date(reminderDateTime.value).toISOString() : null,
+    forceReminder: forceReminder.value
   }
   
   const createdTask = await taskStore.addTask(task)
@@ -3249,6 +3315,7 @@ const addTask = async () => {
   // 如果启用了提醒，调度通知
   console.log('🔍 检查提醒设置:', {
     enableReminder: enableReminder.value,
+    forceReminder: forceReminder.value,
     reminderDateTime: reminderDateTime.value,
     taskReminderTime: createdTask.reminderTime,
     taskId: createdTask.id
@@ -3270,6 +3337,7 @@ const addTask = async () => {
   newTaskPriority.value = 'medium'
   selectedWeekdays.value = []
   enableReminder.value = false
+  forceReminder.value = false
   reminderDateTime.value = ''
   
   showNotification('任务添加成功！', 'success')
@@ -3384,6 +3452,15 @@ const permanentDelete = async (taskId) => {
   if (confirm('确定要永久删除此任务吗？此操作不可撤销。')) {
     await taskStore.permanentDeleteTask(taskId)
     showNotification('任务已永久删除！', 'error')
+  }
+}
+
+// 方法：清空回收站
+const clearAllTrash = async () => {
+  const count = taskStore.deletedTasks.length
+  if (confirm(`确定要清空回收站吗？\n\n将永久删除 ${count} 个任务，此操作不可撤销！`)) {
+    await taskStore.clearAllDeletedTasks()
+    showNotification(`已清空回收站，永久删除 ${count} 个任务`, 'success')
   }
 }
 
@@ -5139,6 +5216,82 @@ const unbindPhone = async () => {
 
 // 方法：导出任务到Excel
 // 方法：导出任务到Excel
+// 手动备份（JSON + Excel）
+const handleManualBackup = async () => {
+  try {
+    showNotification('正在备份...', 'info')
+    const result = await manualBackup()
+    
+    if (result.success) {
+      showNotification(
+        `✅ 备份成功！\n\n` +
+        `📊 任务数量: ${result.taskCount} 条\n` +
+        `📄 JSON: ${result.jsonFile}\n` +
+        `📊 Excel: ${result.excelFile}\n\n` +
+        `📂 保存位置:\n/storage/emulated/0/Documents/TODO-App-backups/\n\n` +
+        `💡 可通过文件管理器访问`,
+        'success'
+      )
+    } else {
+      showNotification(`备份失败: ${result.error}`, 'error')
+    }
+  } catch (error) {
+    console.error('备份失败:', error)
+    showNotification('备份失败，请重试', 'error')
+  }
+}
+
+// 加载备份列表
+const loadBackupList = async () => {
+  try {
+    const files = await listBackups()
+    backupFiles.value = files
+  } catch (error) {
+    console.error('加载备份列表失败:', error)
+    backupFiles.value = []
+  }
+}
+
+// 格式化备份日期
+const formatBackupDate = (fileName) => {
+  const match = fileName.match(/TODO-App_backup_(\d{4}-\d{2}-\d{2})/)
+  if (match) {
+    return match[1]
+  }
+  return fileName
+}
+
+// 恢复备份
+const handleRestore = async (fileName) => {
+  if (!confirm(`确定要恢复备份 ${fileName} 吗？\n\n⚠️ 这将覆盖当前所有数据！`)) {
+    return
+  }
+  
+  try {
+    showNotification('正在恢复...', 'info')
+    const result = await restoreBackup(fileName)
+    
+    if (result.success) {
+      showNotification('恢复成功！即将刷新页面...', 'success')
+      setTimeout(() => {
+        window.location.reload()
+      }, 1500)
+    } else {
+      showNotification(`恢复失败: ${result.error}`, 'error')
+    }
+  } catch (error) {
+    console.error('恢复失败:', error)
+    showNotification('恢复失败，请重试', 'error')
+  }
+}
+
+// 监听备份列表弹窗打开
+watch(showBackupList, (newVal) => {
+  if (newVal) {
+    loadBackupList()
+  }
+})
+
 const exportToExcel = async () => {
   const tasks = taskStore.tasks
   
@@ -5148,45 +5301,8 @@ const exportToExcel = async () => {
   }
   
   try {
-    // 准备导出数据（完整字段）
-    const exportData = tasks.map(task => {
-      // 计算实际耗时
-      let actualHours = ''
-      if (task.status === 'completed' && task.completed_at && task.created_at) {
-        actualHours = calculateActualHours(task) || ''
-      }
-      
-      // 时长/规模
-      let durationScale = ''
-      if (task.duration) {
-        durationScale = task.duration === 'quick' ? '快速(0.5h)' : 
-                       task.duration === 'normal' ? '正常(2h)' : '较长(4h)'
-      } else if (task.scale) {
-        durationScale = task.scale === 'small' ? '小型' : 
-                       task.scale === 'medium' ? '中型' : '大型'
-      }
-      
-      const data = {
-        '任务名称': task.text || '',
-        '详细描述': task.description || '',
-        '任务类型': getTaskTypeText(task) || '',
-        '分类': getCategoryText(task.category) || '',
-        '优先级': getPriorityText(task.priority) || '',
-        '状态': task.status === 'completed' ? '已完成' : task.status === 'overdue' ? '已逾期' : '待办',
-        '创建时间': task.created_at ? formatDateTime(task.created_at) : '',
-        '截止时间': (task.status !== 'completed' && getDeadlineDate(task)) ? formatDateTime(getDeadlineDate(task)) : '',
-        '计划完成时间': (task.status === 'completed' && getPlannedDeadlineDate(task)) ? formatDateTime(getPlannedDeadlineDate(task)) : '',
-        '实际完成时间': (task.status === 'completed' && task.completed_at) ? formatDateTime(task.completed_at) : '',
-        '实际耗时': actualHours,
-        '番茄数': getPomodoroCount(task) || 0,
-        '时长/规模': durationScale,
-        '指定日期': task.customDate || '',
-        '指定时间': task.customTime || '',
-        '重复周期': (task.weekdays && task.weekdays.length > 0) ? formatSelectedWeekdays(task.weekdays) : '',
-        '任务ID': task.id || ''
-      }
-      return data
-    })
+    // 使用统一格式转换
+    const exportData = tasks.map(task => taskToExcelRow(task, false))
     
     // 创建工作簿
     const ws = XLSX.utils.json_to_sheet(exportData)
@@ -5396,13 +5512,31 @@ const triggerImport = () => {
 }
 
 // 方法：下载导入模板
-const downloadTemplate = () => {
-  const templateUrl = 'https://github.com/zhaosj0315/TO-DO/raw/main/TODO%E5%AF%BC%E5%85%A5%E6%A8%A1%E6%9D%BF%E7%A4%BA%E4%BE%8B.xlsx'
-  const link = document.createElement('a')
-  link.href = templateUrl
-  link.download = 'TODO导入模板示例.xlsx'
-  link.click()
-  showNotification('开始下载导入模板...', 'success')
+const downloadTemplate = async () => {
+  try {
+    // 生成模板数据（3个示例）
+    const templateData = generateTemplateData()
+    
+    // 创建工作簿
+    const ws = XLSX.utils.json_to_sheet(templateData)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, '任务模板')
+    
+    // 导出文件
+    const excelBuffer = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' })
+    const fileName = `TODO导入模板_${new Date().toISOString().split('T')[0]}.xlsx`
+    
+    await Filesystem.writeFile({
+      path: fileName,
+      data: excelBuffer,
+      directory: Directory.Documents
+    })
+    
+    showNotification(`模板已保存到 Documents/${fileName}`, 'success')
+  } catch (error) {
+    console.error('下载模板失败:', error)
+    showNotification('下载模板失败，请重试', 'error')
+  }
 }
 
 // 方法：导入任务
@@ -5435,30 +5569,9 @@ const importFromExcel = async (event) => {
               continue
             }
             
-            const category = parseCategoryText(row['分类'])
-            const priority = parsePriorityText(row['优先级'])
-            const type = parseTypeText(row['类型'])
-            const status = parseStatusText(row['状态'])
-            const createdAt = parseDateTime(row['创建时间'])
-            
-            const newTask = {
-              id: Date.now() + successCount,
-              text: taskName,
-              description: row['详细描述'] || '',
-              type: type,
-              category: category,
-              priority: priority,
-              weekdays: type === 'weekly' ? parseWeekdays(row['类型']) : [],
-              status: status,
-              created_at: createdAt,
-              user_id: currentUsername.value
-            }
-            
-            // 如果是已完成状态，设置完成时间
-            if (status === 'completed') {
-              const completedTime = parseDateTime(row['实际完成时间'])
-              newTask.completed_at = completedTime || createdAt
-            }
+            // 使用统一格式转换
+            const newTask = excelRowToTask(row, currentUsername.value)
+            newTask.id = Date.now() + successCount
             
             await taskStore.addTask(newTask)
             successCount++
@@ -8362,7 +8475,58 @@ watch(() => reportData.value, (newData) => {
   justify-content: center;
 }
 
-.btn-export, .btn-import, .btn-template {
+/* 备份列表样式 */
+.backup-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.backup-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.backup-info {
+  flex: 1;
+}
+
+.backup-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.backup-date {
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.btn-restore-small {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-restore-small:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(138, 43, 226, 0.3);
+}
+
+.btn-restore, .btn-backup, .btn-export, .btn-import, .btn-template {
+
   background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
   color: white;
   border: none;
@@ -9477,6 +9641,26 @@ watch(() => reportData.value, (newData) => {
   font-size: 0.9rem;
   font-weight: 500;
   color: #333;
+}
+
+.force-reminder-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-left: 1rem;
+  cursor: pointer;
+}
+
+.force-reminder-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.force-reminder-text {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #ff6b6b;
 }
 
 .reminder-config {

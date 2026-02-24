@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { Preferences } from '@capacitor/preferences'
 import { LocalNotifications } from '@capacitor/local-notifications'
+import { performBackup } from '../utils/autoBackup'
 
 export const useOfflineTaskStore = defineStore('offlineTask', {
   state: () => ({
@@ -29,6 +30,9 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       // 按用户保存任务
       await Preferences.set({ key: `tasks_${this.currentUser}`, value: JSON.stringify(this.tasks) })
       await Preferences.set({ key: `deletedTasks_${this.currentUser}`, value: JSON.stringify(this.deletedTasks) })
+      
+      // 自动备份（每天首次变动时）
+      await performBackup()
     },
 
     async addTask(taskData) {
@@ -47,7 +51,8 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         user_id: taskData.user_id || this.currentUser,
         is_pinned: taskData.is_pinned || false,
         enableReminder: taskData.enableReminder || false,
-        reminderTime: taskData.reminderTime || null
+        reminderTime: taskData.reminderTime || null,
+        forceReminder: taskData.forceReminder || false // 强制提醒
       }
       this.tasks.push(task)
       await this.saveTasks()
@@ -142,6 +147,11 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       }
     },
 
+    async clearAllDeletedTasks() {
+      this.deletedTasks = []
+      await this.saveTasks()
+    },
+
     checkOverdueTasks() {
       const now = new Date()
       let hasChanges = false
@@ -208,17 +218,32 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       try {
         const reminderTime = new Date(task.reminderTime)
         if (reminderTime > new Date()) {
+          const notification = {
+            id: task.id,
+            title: '⏰ 任务提醒',
+            body: `${task.text}`,
+            schedule: { at: reminderTime },
+            channelId: 'task-reminders-v3',
+            smallIcon: 'ic_stat_icon_config_sample',
+            iconColor: '#FF6B6B',
+            extra: { 
+              taskId: task.id,
+              forceReminder: task.forceReminder || false,
+              taskText: task.text
+            }
+          }
+
+          // 强制提醒：使用全屏Intent + 持续响铃
+          if (task.forceReminder) {
+            notification.ongoing = true // 不可滑动关闭
+            notification.autoCancel = false // 点击不自动消失
+            notification.sound = 'default'
+            notification.extra.priority = 'max'
+            notification.extra.fullScreen = true
+          }
+
           await LocalNotifications.schedule({
-            notifications: [{
-              id: task.id,
-              title: '⏰ 任务提醒',
-              body: `${task.text}`,
-              schedule: { at: reminderTime },
-              channelId: 'task-reminders-v3',
-              smallIcon: 'ic_stat_icon_config_sample',
-              iconColor: '#FF6B6B',
-              extra: { taskId: task.id }
-            }]
+            notifications: [notification]
           })
         }
       } catch (error) {
