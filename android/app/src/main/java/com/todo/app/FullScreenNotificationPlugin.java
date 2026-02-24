@@ -23,7 +23,12 @@ public class FullScreenNotificationPlugin extends Plugin {
     public void showFullScreenNotification(PluginCall call) {
         String title = call.getString("title", "任务提醒");
         String body = call.getString("body", "");
-        String details = call.getString("details", "");
+        String category = call.getString("category", "");
+        String priority = call.getString("priority", "");
+        String type = call.getString("type", "");
+        String deadline = call.getString("deadline", "");
+        String created = call.getString("created", "");
+        String description = call.getString("description", "");
         int notificationId = call.getInt("id", 1);
 
         Context context = getContext();
@@ -34,7 +39,12 @@ public class FullScreenNotificationPlugin extends Plugin {
         fullScreenIntent.putExtra("taskId", notificationId);
         fullScreenIntent.putExtra("title", title);
         fullScreenIntent.putExtra("body", body);
-        fullScreenIntent.putExtra("details", details);
+        fullScreenIntent.putExtra("category", category);
+        fullScreenIntent.putExtra("priority", priority);
+        fullScreenIntent.putExtra("type", type);
+        fullScreenIntent.putExtra("deadline", deadline);
+        fullScreenIntent.putExtra("created", created);
+        fullScreenIntent.putExtra("description", description);
         
         context.startActivity(fullScreenIntent);
 

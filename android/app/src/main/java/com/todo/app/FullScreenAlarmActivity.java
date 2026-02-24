@@ -49,19 +49,51 @@ public class FullScreenAlarmActivity extends AppCompatActivity {
         taskId = getIntent().getIntExtra("taskId", 0);
         String title = getIntent().getStringExtra("title");
         taskText = getIntent().getStringExtra("body");
-        String details = getIntent().getStringExtra("details");
+        String category = getIntent().getStringExtra("category");
+        String priority = getIntent().getStringExtra("priority");
+        String type = getIntent().getStringExtra("type");
+        String deadline = getIntent().getStringExtra("deadline");
+        String created = getIntent().getStringExtra("created");
+        String description = getIntent().getStringExtra("description");
 
         // 设置UI
         TextView titleView = findViewById(R.id.alarm_title);
         TextView bodyView = findViewById(R.id.alarm_body);
-        TextView detailsView = findViewById(R.id.alarm_details);
+        TextView categoryView = findViewById(R.id.task_category);
+        TextView priorityView = findViewById(R.id.task_priority);
+        TextView typeView = findViewById(R.id.task_type);
+        TextView deadlineView = findViewById(R.id.task_deadline);
+        TextView createdView = findViewById(R.id.task_created);
+        TextView descriptionLabel = findViewById(R.id.task_description_label);
+        TextView descriptionView = findViewById(R.id.task_description);
+        
         titleView.setText(title);
         bodyView.setText(taskText);
-        if (details != null && !details.isEmpty()) {
-            detailsView.setText(details);
-            detailsView.setVisibility(View.VISIBLE);
-        } else {
-            detailsView.setVisibility(View.GONE);
+        
+        if (category != null && !category.isEmpty()) {
+            categoryView.setText(category);
+        }
+        
+        if (priority != null && !priority.isEmpty()) {
+            priorityView.setText(priority);
+        }
+        
+        if (type != null && !type.isEmpty()) {
+            typeView.setText(type);
+        }
+        
+        if (deadline != null && !deadline.isEmpty()) {
+            deadlineView.setText(deadline);
+        }
+        
+        if (created != null && !created.isEmpty()) {
+            createdView.setText(created);
+        }
+        
+        if (description != null && !description.isEmpty()) {
+            descriptionLabel.setVisibility(View.VISIBLE);
+            descriptionView.setVisibility(View.VISIBLE);
+            descriptionView.setText(description);
         }
 
         // 按钮事件

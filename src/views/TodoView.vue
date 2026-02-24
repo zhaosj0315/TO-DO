@@ -6493,22 +6493,63 @@ onMounted(async () => {
         if (FullScreenNotification) {
           // 获取任务详情
           const task = taskStore.tasks.find(t => t.id === notification.id)
-          let details = ''
-          if (task) {
-            const categoryMap = { work: '💼 工作', study: '📚 学习', life: '🏠 生活' }
-            const priorityMap = { high: '⚡ 高', medium: '📌 中', low: '📍 低' }
-            details = `${categoryMap[task.category] || ''} | ${priorityMap[task.priority] || ''}`
-            if (task.description) {
-              details += `\n${task.description}`
-            }
-          }
           
-          await FullScreenNotification.showFullScreenNotification({
-            id: notification.id,
-            title: '🚨 紧急任务提醒',
-            body: extra.taskText || notification.body,
-            details: details
-          })
+          if (task) {
+            // 映射显示文本
+            const categoryMap = { work: '💼 工作', study: '📚 学习', life: '🏠 生活' }
+            const priorityMap = { high: '⚡ 高优先级', medium: '📌 中优先级', low: '📍 低优先级' }
+            const typeMap = { 
+              today: '📅 今天', 
+              tomorrow: '📅 明天', 
+              this_week: '📅 本周内',
+              custom_date: '📅 指定日期',
+              daily: '🔄 每天重复',
+              weekday: '🔄 工作日重复',
+              weekly: '🔄 每周重复'
+            }
+            
+            // 格式化截止时间
+            let deadlineText = '⏰ 截止：'
+            if (task.customDate && task.customTime) {
+              const date = new Date(task.customDate + 'T' + task.customTime)
+              deadlineText += `${date.getMonth() + 1}月${date.getDate()}日 ${task.customTime}`
+            } else if (task.type === 'today') {
+              deadlineText += '今天 23:59'
+            } else if (task.type === 'tomorrow') {
+              deadlineText += '明天 23:59'
+            } else {
+              deadlineText += '未设置'
+            }
+            
+            // 格式化创建时间
+            const createdDate = new Date(task.created_at)
+            const createdText = `🕐 创建于：${createdDate.getFullYear()}-${String(createdDate.getMonth() + 1).padStart(2, '0')}-${String(createdDate.getDate()).padStart(2, '0')} ${String(createdDate.getHours()).padStart(2, '0')}:${String(createdDate.getMinutes()).padStart(2, '0')}`
+            
+            await FullScreenNotification.showFullScreenNotification({
+              id: notification.id,
+              title: '🚨 紧急任务提醒',
+              body: task.text,
+              category: categoryMap[task.category] || '💼 工作',
+              priority: priorityMap[task.priority] || '📌 中优先级',
+              type: typeMap[task.type] || '📅 今天',
+              deadline: deadlineText,
+              created: createdText,
+              description: task.description || ''
+            })
+          } else {
+            // 任务未找到，使用基本信息
+            await FullScreenNotification.showFullScreenNotification({
+              id: notification.id,
+              title: '🚨 紧急任务提醒',
+              body: extra.taskText || notification.body,
+              category: '💼 工作',
+              priority: '📌 中优先级',
+              type: '📅 今天',
+              deadline: '⏰ 截止：今天 23:59',
+              created: '🕐 创建于：刚刚',
+              description: ''
+            })
+          }
           console.log('✅ 全屏通知已显示')
         } else {
           console.error('❌ FullScreenNotification插件未找到')
