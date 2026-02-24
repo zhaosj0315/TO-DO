@@ -38,7 +38,20 @@
         android:gravity="center"
         android:text="任务内容"
         android:textColor="#FFFFFF"
-        android:textSize="18sp" />
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <!-- 任务详情 -->
+    <TextView
+        android:id="@+id/alarm_details"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/alarm_body"
+        android:layout_marginTop="12dp"
+        android:gravity="center"
+        android:text="详情信息"
+        android:textColor="#FFCCCC"
+        android:textSize="14sp" />
 
     <!-- 按钮容器 -->
     <LinearLayout

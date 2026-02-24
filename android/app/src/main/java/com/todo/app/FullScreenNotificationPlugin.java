@@ -23,6 +23,7 @@ public class FullScreenNotificationPlugin extends Plugin {
     public void showFullScreenNotification(PluginCall call) {
         String title = call.getString("title", "任务提醒");
         String body = call.getString("body", "");
+        String details = call.getString("details", "");
         int notificationId = call.getInt("id", 1);
 
         Context context = getContext();
@@ -33,6 +34,7 @@ public class FullScreenNotificationPlugin extends Plugin {
         fullScreenIntent.putExtra("taskId", notificationId);
         fullScreenIntent.putExtra("title", title);
         fullScreenIntent.putExtra("body", body);
+        fullScreenIntent.putExtra("details", details);
         
         context.startActivity(fullScreenIntent);
 
@@ -51,5 +53,13 @@ public class FullScreenNotificationPlugin extends Plugin {
         JSObject ret = new JSObject();
         ret.put("success", true);
         call.resolve(ret);
+    }
+
+    // 供Activity调用的静态方法
+    public static void notifyTaskAction(Plugin plugin, String action, int taskId) {
+        JSObject data = new JSObject();
+        data.put("action", action);
+        data.put("taskId", taskId);
+        ((FullScreenNotificationPlugin) plugin).notifyListeners("alarmAction", data);
     }
 }

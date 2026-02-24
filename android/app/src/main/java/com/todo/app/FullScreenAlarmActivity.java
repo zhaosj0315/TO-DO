@@ -2,6 +2,7 @@ package com.todo.app;
 
 import android.app.KeyguardManager;
 import android.content.Context;
+import android.content.Intent;
 import android.media.AudioAttributes;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
@@ -48,12 +49,20 @@ public class FullScreenAlarmActivity extends AppCompatActivity {
         taskId = getIntent().getIntExtra("taskId", 0);
         String title = getIntent().getStringExtra("title");
         taskText = getIntent().getStringExtra("body");
+        String details = getIntent().getStringExtra("details");
 
         // 设置UI
         TextView titleView = findViewById(R.id.alarm_title);
         TextView bodyView = findViewById(R.id.alarm_body);
+        TextView detailsView = findViewById(R.id.alarm_details);
         titleView.setText(title);
         bodyView.setText(taskText);
+        if (details != null && !details.isEmpty()) {
+            detailsView.setText(details);
+            detailsView.setVisibility(View.VISIBLE);
+        } else {
+            detailsView.setVisibility(View.GONE);
+        }
 
         // 按钮事件
         Button btnComplete = findViewById(R.id.btn_complete);
@@ -62,23 +71,39 @@ public class FullScreenAlarmActivity extends AppCompatActivity {
 
         btnComplete.setOnClickListener(v -> {
             stopAlarm();
-            // TODO: 通知前端完成任务
+            executeJavaScript("window.handleAlarmAction('complete', " + taskId + ")");
             finish();
         });
 
         btnSnooze.setOnClickListener(v -> {
             stopAlarm();
-            // TODO: 通知前端稍后提醒
+            executeJavaScript("window.handleAlarmAction('snooze', " + taskId + ")");
             finish();
         });
 
         btnDismiss.setOnClickListener(v -> {
             stopAlarm();
+            executeJavaScript("window.handleAlarmAction('dismiss', " + taskId + ")");
             finish();
         });
 
         // 启动闹钟和震动
         startAlarm();
+    }
+
+    private void executeJavaScript(String script) {
+        // 通过Intent返回主Activity并执行JS
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        intent.putExtra("executeJS", script);
+        startActivity(intent);
+    }
+
+    private void sendBroadcast(String action, int taskId) {
+        Intent intent = new Intent("com.todo.app.ALARM_ACTION");
+        intent.putExtra("action", action);
+        intent.putExtra("taskId", taskId);
+        sendBroadcast(intent);
     }
 
     private void startAlarm() {

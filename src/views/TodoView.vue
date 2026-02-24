@@ -146,6 +146,14 @@
                     class="reminder-time-input-inline"
                     :min="getTodayDateTime()"
                   >
+                  <!-- 快捷时间按钮 -->
+                  <div v-if="enableReminder" class="quick-time-buttons">
+                    <button @click="setQuickTime(1)" class="quick-time-btn" type="button">1分钟</button>
+                    <button @click="setQuickTime(5)" class="quick-time-btn" type="button">5分钟</button>
+                    <button @click="setQuickTime(10)" class="quick-time-btn" type="button">10分钟</button>
+                    <button @click="setQuickTime(30)" class="quick-time-btn" type="button">30分钟</button>
+                    <button @click="setQuickTime(60)" class="quick-time-btn" type="button">1小时</button>
+                  </div>
                   <label v-if="enableReminder" class="force-reminder-label">
                     <input type="checkbox" v-model="forceReminder" class="force-reminder-checkbox">
                     <span class="force-reminder-text">🔊 强制提醒</span>
@@ -3223,6 +3231,18 @@ const getTodayDateTime = () => {
   const hours = String(now.getHours()).padStart(2, '0')
   const minutes = String(now.getMinutes()).padStart(2, '0')
   return `${year}-${month}-${day}T${hours}:${minutes}`
+}
+
+// 快捷设置提醒时间
+const setQuickTime = (minutes) => {
+  const now = new Date()
+  const futureTime = new Date(now.getTime() + minutes * 60 * 1000)
+  const year = futureTime.getFullYear()
+  const month = String(futureTime.getMonth() + 1).padStart(2, '0')
+  const day = String(futureTime.getDate()).padStart(2, '0')
+  const hours = String(futureTime.getHours()).padStart(2, '0')
+  const mins = String(futureTime.getMinutes()).padStart(2, '0')
+  reminderDateTime.value = `${year}-${month}-${day}T${hours}:${mins}`
 }
 
 // 方法：格式化显示日期时间
@@ -6471,10 +6491,23 @@ onMounted(async () => {
         
         const FullScreenNotification = Capacitor.Plugins.FullScreenNotification
         if (FullScreenNotification) {
+          // 获取任务详情
+          const task = taskStore.tasks.find(t => t.id === notification.id)
+          let details = ''
+          if (task) {
+            const categoryMap = { work: '💼 工作', study: '📚 学习', life: '🏠 生活' }
+            const priorityMap = { high: '⚡ 高', medium: '📌 中', low: '📍 低' }
+            details = `${categoryMap[task.category] || ''} | ${priorityMap[task.priority] || ''}`
+            if (task.description) {
+              details += `\n${task.description}`
+            }
+          }
+          
           await FullScreenNotification.showFullScreenNotification({
             id: notification.id,
             title: '🚨 紧急任务提醒',
-            body: extra.taskText || notification.body
+            body: extra.taskText || notification.body,
+            details: details
           })
           console.log('✅ 全屏通知已显示')
         } else {
@@ -6493,7 +6526,7 @@ onMounted(async () => {
     
     if (actionId === 'complete') {
       // 完成任务
-      await taskStore.toggleTaskStatus(taskId)
+      await taskStore.toggleTaskCompletion(taskId)
       await LocalNotifications.cancel({ notifications: [{ id: taskId }] })
       showNotification('任务已完成！', 'success')
     } else if (actionId === 'snooze') {
@@ -6510,6 +6543,57 @@ onMounted(async () => {
       await LocalNotifications.cancel({ notifications: [{ id: taskId }] })
     }
   })
+  
+  // 监听全屏提醒的操作（来自原生Activity）
+  const FullScreenNotification = Capacitor.Plugins.FullScreenNotification
+  if (FullScreenNotification) {
+    FullScreenNotification.addListener('alarmAction', async (data) => {
+      console.log('🔔 全屏提醒操作:', data)
+      const { action, taskId } = data
+      
+      if (action === 'complete') {
+        // 完成任务
+        await taskStore.toggleTaskCompletion(taskId)
+        await LocalNotifications.cancel({ notifications: [{ id: taskId }] })
+        showNotification('✅ 任务已完成！', 'success')
+      } else if (action === 'snooze') {
+        // 10分钟后再提醒
+        const snoozeTime = new Date(Date.now() + 10 * 60 * 1000)
+        const task = taskStore.tasks.find(t => t.id === taskId)
+        if (task) {
+          task.reminderTime = snoozeTime.toISOString()
+          await taskStore.scheduleTaskReminder(task)
+          showNotification('⏰ 已设置10分钟后提醒', 'info')
+        }
+      } else if (action === 'dismiss') {
+        // 关闭通知
+        await LocalNotifications.cancel({ notifications: [{ id: taskId }] })
+        showNotification('已关闭提醒', 'info')
+      }
+    })
+  }
+  
+  // 全局处理函数（供原生层直接调用）
+  window.handleAlarmAction = async (action, taskId) => {
+    console.log('🔔 全局处理提醒操作:', action, taskId)
+    
+    if (action === 'complete') {
+      await taskStore.toggleTaskCompletion(taskId)
+      await LocalNotifications.cancel({ notifications: [{ id: taskId }] })
+      showNotification('✅ 任务已完成！', 'success')
+    } else if (action === 'snooze') {
+      const snoozeTime = new Date(Date.now() + 10 * 60 * 1000)
+      const task = taskStore.tasks.find(t => t.id === taskId)
+      if (task) {
+        task.reminderTime = snoozeTime.toISOString()
+        await taskStore.scheduleTaskReminder(task)
+        showNotification('⏰ 已设置10分钟后提醒', 'info')
+      }
+    } else if (action === 'dismiss') {
+      await LocalNotifications.cancel({ notifications: [{ id: taskId }] })
+      showNotification('已关闭提醒', 'info')
+    }
+  }
   
   // 设置每日任务摘要通知
   await scheduleDailySummaryNotification()
@@ -9794,6 +9878,7 @@ watch(() => reportData.value, (newData) => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
   cursor: pointer;
   user-select: none;
 }
@@ -9868,6 +9953,32 @@ watch(() => reportData.value, (newData) => {
   font-size: 0.85rem;
   background: white;
   margin-left: 0.5rem;
+}
+
+.quick-time-buttons {
+  display: inline-flex;
+  gap: 0.3rem;
+  margin-left: 0.5rem;
+}
+
+.quick-time-btn {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.75rem;
+  border: 1px solid #9b59b6;
+  background: white;
+  color: #9b59b6;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quick-time-btn:hover {
+  background: #9b59b6;
+  color: white;
+}
+
+.quick-time-btn:active {
+  transform: scale(0.95);
 }
 
 .guide-link-btn-inline {
