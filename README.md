@@ -23,6 +23,16 @@ This is an **offline Android To-Do management application** built with **Vue 3**
   - Overdue alerts with humorous messages ("Tomatoes are escaping!")
   - 1-hour warning before deadline
   - Anti-spam mechanism (one notification per task per status)
+- **Pomodoro Timer** 🍅:
+  - **25-minute Focus Sessions**: Full-screen purple gradient timer interface
+  - **Automatic Break Mode**: 5-minute short break / 15-minute long break (every 4th)
+  - **Circular Progress Bar**: Visual countdown with SVG animation
+  - **Pause/Resume/Abandon**: Full control during focus sessions
+  - **Skip Break / Continue Next**: Quick actions after break completion
+  - **Pomodoro History**: Track all completed focus sessions with timestamps
+  - **Today's Focus Stats**: View today's focus time and completed pomodoros
+  - **Weekly Statistics**: Track weekly pomodoro completion
+  - **Task Integration**: Start pomodoro directly from task cards (🍅 button)
 - **Dashboard & Stats**:
   - Grid layout with 5 stat cards (Completion Rate, All, Completed, Pending, Overdue)
   - Search bar with filter and add buttons
@@ -122,6 +132,16 @@ This is an **offline Android To-Do management application** built with **Vue 3**
   - 逾期提醒（幽默话术："番茄要逃跑啦"）
   - 1小时前预警提醒
   - 防刷屏机制（每个任务每种状态只提醒1次）
+- **番茄钟计时器** 🍅:
+  - **25分钟专注模式**: 全屏紫色渐变计时界面
+  - **自动休息模式**: 5分钟短休息 / 15分钟长休息（每4个番茄钟）
+  - **圆形进度条**: SVG动画可视化倒计时
+  - **暂停/继续/放弃**: 专注过程中完全控制
+  - **跳过休息/继续下一个**: 休息完成后快捷操作
+  - **番茄钟历史**: 追踪所有完成的专注记录（带时间戳）
+  - **今日专注统计**: 查看今日专注时长和完成番茄钟数
+  - **本周统计**: 追踪本周番茄钟完成情况
+  - **任务集成**: 直接从任务卡片启动番茄钟（🍅按钮）
 - **任务看板**:
   - Grid布局，5列统计卡片（完成占比、全部、已完成、待办、已逾期）
   - 搜索框 + 筛选按钮 + 添加按钮
@@ -296,6 +316,15 @@ userInfo[username] = {
   completed_at: String,    // 实际完成时间（ISO格式，仅completed状态）
   duration: String,        // 时长: 'quick' | 'normal' | 'long'（短期任务）
   scale: String,           // 规模: 'small' | 'medium' | 'large'（长期任务）
+  completedPomodoros: Number,  // 已完成的番茄钟数量
+  estimatedPomodoros: Number,  // 预估番茄钟数量（基于优先级：高4/中2/低1）
+  pomodoroHistory: Array,      // 番茄钟历史记录
+  // pomodoroHistory 结构:
+  // [{
+  //   startTime: String,     // 开始时间（ISO格式）
+  //   endTime: String,       // 结束时间（ISO格式）
+  //   completed: Boolean     // 是否完成
+  // }]
   user_id: String          // 所属用户
 }
 ```
@@ -329,6 +358,50 @@ userInfo[username] = {
 - ✅ 通知提示
 
 ## 📝 版本历史 | Version History
+
+### v1.6.12 (2026-02-25)
+- ✨ **番茄钟功能（Phase 1 MVP）**:
+  - 25分钟专注计时器，全屏紫色渐变界面
+  - 自动切换休息模式（5分钟短休息/15分钟长休息）
+  - 圆形SVG进度条可视化
+  - 暂停/继续/放弃控制
+  - 任务卡片🍅按钮启动番茄钟
+  - 番茄钟历史记录（startTime/endTime/completed）
+  - 根据优先级预估番茄钟数（高4/中2/低1）
+- ✨ **番茄钟功能（Phase 2 增强）**:
+  - 今日专注统计（今日时长+完成数+本周完成数）
+  - 番茄钟历史记录展示（任务详情中）
+  - 跳过休息/继续下一个番茄钟按钮
+  - 休息模式智能按钮切换
+- ✨ **任务详情页面全面优化**:
+  - 状态徽章（✓已完成/⏳进行中/⚠️已逾期）
+  - 信息卡片化（2×2网格，彩色背景）
+  - 时间轴视觉增强（大号圆点+垂直连接线+状态颜色）
+  - 快捷操作按钮（完成/编辑/删除）
+  - 番茄钟历史记录完整展示
+- ✨ **编辑弹窗优化**:
+  - 从Modal改为Bottom Sheet（从底部滑出）
+  - 分组设计（基本信息组+任务属性组）
+  - 图标化标签（每个字段都有图标）
+  - 字符计数（任务名称X/100，描述X/500·N行）
+  - 输入框聚焦紫色光晕效果
+  - 按钮优化（取消/保存，紫色渐变）
+- ✨ **任务描述交互增强**:
+  - 长描述自动折叠（超过100字符折叠为2行）
+  - 展开/收起按钮
+  - 优先级彩色边框（高优先级红色/中优先级橙色/低优先级蓝色）
+  - 已完成任务描述透明度50%
+  - 点击描述直接编辑任务
+  - 描述保留换行格式（white-space: pre-wrap）
+- 🐛 **Bug修复**:
+  - 修复任务详情页面"完成任务"按钮无效问题
+  - 添加toggleTaskStatus方法
+  - 修复编辑弹窗重复的任务属性组
+- 🎨 **UI优化**:
+  - 任务标题加粗加深（font-weight: 700）
+  - 任务描述浅灰背景+左侧边框
+  - 编辑弹窗最大化利用屏幕宽度
+  - 所有Bottom Sheet统一风格
 
 ### v1.6.11 (2026-02-23)
 - ✨ **每日任务摘要通知**:
