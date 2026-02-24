@@ -6615,20 +6615,21 @@ onMounted(async () => {
   }
   
   // 全局处理函数（供原生层直接调用）
-  window.handleAlarmAction = async (action, taskId) => {
-    console.log('🔔 全局处理提醒操作:', action, taskId)
+  window.handleAlarmAction = async (action, taskId, minutes = 10) => {
+    console.log('🔔 全局处理提醒操作:', action, taskId, minutes)
     
     if (action === 'complete') {
       await taskStore.toggleTaskCompletion(taskId)
       await LocalNotifications.cancel({ notifications: [{ id: taskId }] })
       showNotification('✅ 任务已完成！', 'success')
     } else if (action === 'snooze') {
-      const snoozeTime = new Date(Date.now() + 10 * 60 * 1000)
+      const snoozeTime = new Date(Date.now() + minutes * 60 * 1000)
       const task = taskStore.tasks.find(t => t.id === taskId)
       if (task) {
         task.reminderTime = snoozeTime.toISOString()
         await taskStore.scheduleTaskReminder(task)
-        showNotification('⏰ 已设置10分钟后提醒', 'info')
+        const timeText = minutes >= 60 ? `${minutes / 60}小时` : `${minutes}分钟`
+        showNotification(`⏰ 已设置${timeText}后提醒`, 'info')
       }
     } else if (action === 'dismiss') {
       await LocalNotifications.cancel({ notifications: [{ id: taskId }] })

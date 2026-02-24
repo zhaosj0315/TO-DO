@@ -98,7 +98,11 @@ public class FullScreenAlarmActivity extends AppCompatActivity {
 
         // 按钮事件
         Button btnComplete = findViewById(R.id.btn_complete);
-        Button btnSnooze = findViewById(R.id.btn_snooze);
+        Button btnSnooze1 = findViewById(R.id.btn_snooze_1);
+        Button btnSnooze5 = findViewById(R.id.btn_snooze_5);
+        Button btnSnooze10 = findViewById(R.id.btn_snooze_10);
+        Button btnSnooze30 = findViewById(R.id.btn_snooze_30);
+        Button btnSnooze60 = findViewById(R.id.btn_snooze_60);
         Button btnDismiss = findViewById(R.id.btn_dismiss);
 
         btnComplete.setOnClickListener(v -> {
@@ -107,9 +111,33 @@ public class FullScreenAlarmActivity extends AppCompatActivity {
             finish();
         });
 
-        btnSnooze.setOnClickListener(v -> {
+        btnSnooze1.setOnClickListener(v -> {
             stopAlarm();
-            executeJavaScript("window.handleAlarmAction('snooze', " + taskId + ")");
+            executeJavaScript("window.handleAlarmAction('snooze', " + taskId + ", 1)");
+            finish();
+        });
+
+        btnSnooze5.setOnClickListener(v -> {
+            stopAlarm();
+            executeJavaScript("window.handleAlarmAction('snooze', " + taskId + ", 5)");
+            finish();
+        });
+
+        btnSnooze10.setOnClickListener(v -> {
+            stopAlarm();
+            executeJavaScript("window.handleAlarmAction('snooze', " + taskId + ", 10)");
+            finish();
+        });
+
+        btnSnooze30.setOnClickListener(v -> {
+            stopAlarm();
+            executeJavaScript("window.handleAlarmAction('snooze', " + taskId + ", 30)");
+            finish();
+        });
+
+        btnSnooze60.setOnClickListener(v -> {
+            stopAlarm();
+            executeJavaScript("window.handleAlarmAction('snooze', " + taskId + ", 60)");
             finish();
         });
 
