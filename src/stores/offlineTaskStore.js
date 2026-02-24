@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { Preferences } from '@capacitor/preferences'
 import { LocalNotifications } from '@capacitor/local-notifications'
 import { performBackup } from '../utils/autoBackup'
+import { Capacitor } from '@capacitor/core'
 
 export const useOfflineTaskStore = defineStore('offlineTask', {
   state: () => ({
@@ -200,18 +201,29 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
     // 触发响铃提醒
     async triggerReminderNotification(task) {
       try {
-        await LocalNotifications.schedule({
-          notifications: [{
+        // 如果是强制提醒，使用原生全屏通知
+        if (task.forceReminder && Capacitor.isPluginAvailable('FullScreenNotification')) {
+          const FullScreenNotification = Capacitor.Plugins.FullScreenNotification
+          await FullScreenNotification.showFullScreenNotification({
             id: task.id,
-            title: '⏰ 任务提醒',
-            body: `${task.text}`,
-            schedule: { at: new Date() },
-            channelId: 'task-reminders-v3',
-            smallIcon: 'ic_stat_icon_config_sample',
-            iconColor: '#FF6B6B',
-            extra: { taskId: task.id }
-          }]
-        })
+            title: '🚨 紧急任务提醒',
+            body: task.text
+          })
+        } else {
+          // 普通提醒
+          await LocalNotifications.schedule({
+            notifications: [{
+              id: task.id,
+              title: '⏰ 任务提醒',
+              body: `${task.text}`,
+              schedule: { at: new Date() },
+              channelId: 'task-reminders-v3',
+              smallIcon: 'ic_stat_icon_config_sample',
+              iconColor: '#FF6B6B',
+              extra: { taskId: task.id }
+            }]
+          })
+        }
       } catch (error) {
         console.error('提醒通知失败:', error)
       }
@@ -223,35 +235,54 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
 
       try {
         const reminderTime = new Date(task.reminderTime)
-        if (reminderTime > new Date()) {
-          const notification = {
-            id: task.id,
-            title: '⏰ 任务提醒',
-            body: `${task.text}`,
-            schedule: { at: reminderTime },
-            channelId: 'task-reminders-v3',
-            smallIcon: 'ic_stat_icon_config_sample',
-            iconColor: '#FF6B6B',
-            extra: { 
-              taskId: task.id,
-              forceReminder: task.forceReminder || false,
-              taskText: task.text
-            }
-          }
+        if (reminderTime <= new Date()) return
 
-          // 强制提醒：使用全屏Intent + 持续响铃
-          if (task.forceReminder) {
-            notification.ongoing = true // 不可滑动关闭
-            notification.autoCancel = false // 点击不自动消失
-            notification.sound = 'default'
-            notification.extra.priority = 'max'
-            notification.extra.fullScreen = true
+        const notification = {
+          id: task.id,
+          title: task.forceReminder ? '🚨 紧急任务提醒' : '⏰ 任务提醒',
+          body: task.text,
+          schedule: { at: reminderTime },
+          channelId: task.forceReminder ? 'task-urgent-alarm' : 'task-reminders-v3',
+          sound: 'default',
+          smallIcon: 'ic_stat_icon_config_sample',
+          iconColor: task.forceReminder ? '#FF0000' : '#FF6B6B',
+          extra: { 
+            taskId: task.id,
+            forceReminder: task.forceReminder || false,
+            taskText: task.text
           }
-
-          await LocalNotifications.schedule({
-            notifications: [notification]
-          })
         }
+
+        // 强制提醒：全屏配置
+        if (task.forceReminder) {
+          notification.ongoing = true // 不可滑动关闭
+          notification.autoCancel = false // 点击不消失
+          notification.priority = 5 // 最高优先级
+          notification.importance = 5
+          notification.vibrate = [0, 500, 300, 500, 300, 500, 300, 500] // 持续震动
+          notification.actions = [
+            {
+              id: 'complete',
+              title: '✅ 完成任务',
+              foreground: true
+            },
+            {
+              id: 'snooze',
+              title: '⏰ 10分钟后提醒',
+              foreground: false
+            },
+            {
+              id: 'dismiss',
+              title: '❌ 关闭',
+              foreground: true,
+              destructive: true
+            }
+          ]
+        }
+
+        await LocalNotifications.schedule({
+          notifications: [notification]
+        })
       } catch (error) {
         console.error('安排提醒失败:', error)
       }

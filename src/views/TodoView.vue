@@ -2106,6 +2106,7 @@ import { useOfflineUserStore } from '../stores/offlineUserStore'
 import { Preferences } from '@capacitor/preferences'
 import { Filesystem, Directory } from '@capacitor/filesystem'
 import { LocalNotifications } from '@capacitor/local-notifications'
+import { Capacitor } from '@capacitor/core'
 import * as XLSX from 'xlsx'
 import html2canvas from 'html2canvas'
 import EChart from '../components/EChart.vue'
@@ -6367,6 +6368,28 @@ onMounted(async () => {
   // 设置任务Store的当前用户并加载该用户的任务
   await taskStore.setCurrentUser(userStore.currentUser)
   
+  // 检查精确闹钟权限（首次使用）
+  const { value: hasCheckedAlarm } = await Preferences.get({ key: 'hasCheckedAlarmPermission' })
+  if (!hasCheckedAlarm) {
+    setTimeout(() => {
+      const needPermission = confirm(
+        '⚠️ 重要提示\n\n' +
+        '为了确保强制提醒功能正常工作，需要授权：\n\n' +
+        '📱 精确闹钟权限\n' +
+        '🔔 全屏显示权限\n\n' +
+        '点击"确定"前往设置页面授权'
+      )
+      
+      if (needPermission) {
+        // 打开系统设置
+        window.open('intent://settings#Intent;scheme=android-app;package=com.android.settings;end', '_system')
+        showNotification('请在设置中找到"TODO App"，开启"闹钟和提醒"权限', 'info')
+      }
+      
+      Preferences.set({ key: 'hasCheckedAlarmPermission', value: 'true' })
+    }, 2000)
+  }
+  
   // 检查是否需要显示首次登录备份提醒
   const { value: showReminder } = await Preferences.get({ key: 'showBackupReminder' })
   if (showReminder === 'true') {
@@ -6400,19 +6423,93 @@ onMounted(async () => {
   // 创建通知渠道（Android 8.0+）- 使用闹钟类型
   try {
     await LocalNotifications.createChannel({
-      id: 'task-reminders-v3', // 使用新ID
+      id: 'task-reminders-v3', // 普通提醒
       name: '任务提醒',
-      description: '任务到期提醒通知（闹钟模式 - 悬浮显示 + 响铃）',
-      importance: 5, // 最高优先级（IMPORTANCE_MAX）
-      visibility: 1, // 锁屏可见
+      description: '任务到期提醒通知',
+      importance: 5,
+      visibility: 1,
       vibration: true,
       lights: true,
       lightColor: '#FF0000'
     })
-    console.log('✅ 通知渠道已创建（闹钟模式），importance=5')
+    
+    // 创建紧急闹钟渠道
+    await LocalNotifications.createChannel({
+      id: 'task-urgent-alarm',
+      name: '紧急任务闹钟',
+      description: '重要任务的闹钟提醒，会全屏显示并持续响铃',
+      importance: 5, // IMPORTANCE_HIGH
+      sound: 'default',
+      vibration: true,
+      visibility: 1, // VISIBILITY_PUBLIC
+      lights: true,
+      lightColor: '#FF0000'
+    })
+    
+    console.log('✅ 通知渠道已创建（普通+紧急）')
   } catch (error) {
     console.error('❌ 创建通知渠道失败:', error)
   }
+  
+  // 监听通知触发事件
+  LocalNotifications.addListener('localNotificationReceived', async (notificationEvent) => {
+    console.log('🔔 通知触发:', notificationEvent)
+    
+    // 通知数据可能在 notification 或直接在根级别
+    const notification = notificationEvent.notification || notificationEvent
+    const extra = notification.extra
+    
+    console.log('📦 Extra数据:', extra)
+    console.log('🔍 forceReminder:', extra?.forceReminder)
+    
+    // 如果是强制提醒，显示全屏通知
+    if (extra?.forceReminder) {
+      try {
+        console.log('🚀 准备显示全屏通知...')
+        console.log('插件可用性:', Capacitor.isPluginAvailable('FullScreenNotification'))
+        console.log('Capacitor.Plugins:', Object.keys(Capacitor.Plugins))
+        
+        const FullScreenNotification = Capacitor.Plugins.FullScreenNotification
+        if (FullScreenNotification) {
+          await FullScreenNotification.showFullScreenNotification({
+            id: notification.id,
+            title: '🚨 紧急任务提醒',
+            body: extra.taskText || notification.body
+          })
+          console.log('✅ 全屏通知已显示')
+        } else {
+          console.error('❌ FullScreenNotification插件未找到')
+        }
+      } catch (error) {
+        console.error('❌ 全屏通知失败:', error)
+      }
+    }
+  })
+  
+  // 监听通知操作
+  LocalNotifications.addListener('localNotificationActionPerformed', async (notification) => {
+    const { actionId, notification: notif } = notification
+    const taskId = notif.extra?.taskId
+    
+    if (actionId === 'complete') {
+      // 完成任务
+      await taskStore.toggleTaskStatus(taskId)
+      await LocalNotifications.cancel({ notifications: [{ id: taskId }] })
+      showNotification('任务已完成！', 'success')
+    } else if (actionId === 'snooze') {
+      // 10分钟后再提醒
+      const snoozeTime = new Date(Date.now() + 10 * 60 * 1000)
+      const task = taskStore.tasks.find(t => t.id === taskId)
+      if (task) {
+        task.reminderTime = snoozeTime.toISOString()
+        await taskStore.updateTask(task)
+        showNotification('已设置10分钟后提醒', 'info')
+      }
+    } else if (actionId === 'dismiss') {
+      // 关闭通知
+      await LocalNotifications.cancel({ notifications: [{ id: taskId }] })
+    }
+  })
   
   // 设置每日任务摘要通知
   await scheduleDailySummaryNotification()
@@ -8531,6 +8628,8 @@ watch(() => reportData.value, (newData) => {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+  color: white;
+  font-weight: 600;
 }
 
 /* 备份列表样式 */
