@@ -193,11 +193,20 @@
             <div class="task-content" @click="openTaskDetail(task)" style="cursor: pointer;">
               <div class="task-title-row">
                 <span class="task-title" title="点击查看详情">{{ task.text }}</span>
-                <div class="task-actions">
+                <div class="task-actions" @click.stop>
                   <!-- 提醒状态指示器 -->
                   <span v-if="task.enableReminder && task.reminderTime" class="reminder-indicator" :title="`提醒时间: ${formatDisplayDateTime(task.reminderTime)}`">
                     🔔
                   </span>
+                  <!-- 番茄钟按钮（仅待办任务显示） -->
+                  <button 
+                    v-if="task.status === 'pending'"
+                    class="btn-pomodoro-inline" 
+                    @click.stop="startPomodoro(task)" 
+                    :title="`开始专注 (${task.completedPomodoros || 0}/${task.estimatedPomodoros || getPomodoroCount(task)})`"
+                  >
+                    🍅
+                  </button>
                   <button 
                     class="btn-pin-inline" 
                     @click.stop="togglePin(task.id)" 
@@ -569,6 +578,58 @@
         <div class="guide-actions">
           <button class="btn-secondary" @click="showNotificationGuide = false">我知道了</button>
           <button class="btn-primary" @click="openNotificationSettings">前往权限设置</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 番茄钟计时器全屏界面 -->
+    <div v-if="showPomodoroTimer" class="pomodoro-fullscreen">
+      <div class="pomodoro-container">
+        <!-- 顶部信息 -->
+        <div class="pomodoro-header">
+          <div class="pomodoro-mode-badge" :class="`mode-${pomodoroState.mode}`">
+            {{ pomodoroState.mode === 'focus' ? '🍅 专注模式' : pomodoroState.mode === 'shortBreak' ? '☕ 短休息' : '🌟 长休息' }}
+          </div>
+          <h2 class="pomodoro-task-name">{{ pomodoroState.currentTask?.text }}</h2>
+          <p class="pomodoro-progress">{{ pomodoroState.completedCount }}/{{ pomodoroState.currentTask?.estimatedPomodoros || 4 }} 个番茄钟</p>
+        </div>
+
+        <!-- 倒计时显示 -->
+        <div class="pomodoro-timer">
+          <div class="timer-circle">
+            <svg class="timer-svg" viewBox="0 0 200 200">
+              <circle cx="100" cy="100" r="90" class="timer-bg"></circle>
+              <circle 
+                cx="100" 
+                cy="100" 
+                r="90" 
+                class="timer-progress"
+                :style="{
+                  strokeDashoffset: 565.48 * (1 - pomodoroState.remainingSeconds / getTotalSeconds())
+                }"
+              ></circle>
+            </svg>
+            <div class="timer-text">
+              {{ Math.floor(pomodoroState.remainingSeconds / 60).toString().padStart(2, '0') }}:{{ (pomodoroState.remainingSeconds % 60).toString().padStart(2, '0') }}
+            </div>
+          </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="pomodoro-actions">
+          <button class="btn-pomodoro-control" @click="pausePomodoro">
+            {{ pomodoroState.isPaused ? '▶️ 继续' : '⏸️ 暂停' }}
+          </button>
+          <button class="btn-pomodoro-stop" @click="stopPomodoro">
+            ❌ 放弃
+          </button>
+        </div>
+
+        <!-- 任务详情 -->
+        <div class="pomodoro-task-info">
+          <p><strong>分类：</strong>{{ getCategoryText(pomodoroState.currentTask?.category) }}</p>
+          <p><strong>优先级：</strong>{{ getPriorityText(pomodoroState.currentTask?.priority) }}</p>
+          <p v-if="pomodoroState.currentTask?.description"><strong>描述：</strong>{{ pomodoroState.currentTask.description }}</p>
         </div>
       </div>
     </div>
@@ -2498,6 +2559,17 @@ const TaskStatus = {
   OVERDUE: 'overdue'
 }
 
+// 番茄钟配置（开发模式：改为25秒测试，生产模式：25分钟）
+const POMODORO_CONFIG = {
+  FOCUS_TIME: 25 * 60,      // 25分钟专注
+  SHORT_BREAK: 5 * 60,      // 5分钟短休息
+  LONG_BREAK: 15 * 60,      // 15分钟长休息
+  // 测试模式（取消注释下面三行）
+  // FOCUS_TIME: 25,         // 25秒测试
+  // SHORT_BREAK: 5,         // 5秒测试
+  // LONG_BREAK: 10,         // 10秒测试
+}
+
 // 响应式数据
 const newTaskText = ref('')
 const newTaskDescription = ref('')
@@ -2528,12 +2600,26 @@ const showPomodoroRules = ref(false) // 番茄规则弹窗
 const showWelcome = ref(false) // 首次登录欢迎弹窗
 const showBackupReminder = ref(false) // 定期备份提醒弹窗
 const showNotificationGuide = ref(false) // 通知设置指南弹窗
+const showPomodoroTimer = ref(false) // 番茄钟计时器弹窗
 const showPasswordModal = ref(false)
 const showPhoneModal = ref(false)
 const showWeeklyModal = ref(false)
 const showCustomDateModal = ref(false)
 const showReportModal = ref(false) // 数据报告弹窗
 const showBackupList = ref(false) // 备份列表弹窗
+
+// 番茄钟状态
+const pomodoroState = ref({
+  isRunning: false,
+  isPaused: false,
+  currentTask: null,
+  remainingSeconds: 25 * 60,
+  mode: 'focus', // 'focus' | 'shortBreak' | 'longBreak'
+  completedCount: 0,
+  startTime: null
+})
+
+let pomodoroInterval = null
 const backupFiles = ref([]) // 备份文件列表
 const reportType = ref('weekly') // 报告类型（默认：周报）
 const customStartDate = ref('') // 自定义开始日期
@@ -3416,6 +3502,95 @@ const toggleTaskCompletion = async (taskId) => {
 // 方法：置顶/取消置顶任务
 const togglePin = async (taskId) => {
   await taskStore.togglePin(taskId)
+}
+
+// 番茄钟相关方法
+const startPomodoro = (task) => {
+  pomodoroState.value = {
+    isRunning: true,
+    isPaused: false,
+    currentTask: task,
+    remainingSeconds: POMODORO_CONFIG.FOCUS_TIME,
+    mode: 'focus',
+    completedCount: task.completedPomodoros || 0,
+    startTime: new Date().toISOString()
+  }
+  showPomodoroTimer.value = true
+  startPomodoroTimer()
+}
+
+const getTotalSeconds = () => {
+  if (pomodoroState.value.mode === 'focus') return POMODORO_CONFIG.FOCUS_TIME
+  if (pomodoroState.value.mode === 'shortBreak') return POMODORO_CONFIG.SHORT_BREAK
+  return POMODORO_CONFIG.LONG_BREAK
+}
+
+const startPomodoroTimer = () => {
+  if (pomodoroInterval) clearInterval(pomodoroInterval)
+  
+  pomodoroInterval = setInterval(() => {
+    if (!pomodoroState.value.isPaused && pomodoroState.value.remainingSeconds > 0) {
+      pomodoroState.value.remainingSeconds--
+    } else if (pomodoroState.value.remainingSeconds === 0) {
+      onPomodoroComplete()
+    }
+  }, 1000)
+}
+
+const pausePomodoro = () => {
+  pomodoroState.value.isPaused = !pomodoroState.value.isPaused
+}
+
+const stopPomodoro = () => {
+  if (pomodoroInterval) {
+    clearInterval(pomodoroInterval)
+    pomodoroInterval = null
+  }
+  pomodoroState.value.isRunning = false
+  showPomodoroTimer.value = false
+}
+
+const onPomodoroComplete = async () => {
+  clearInterval(pomodoroInterval)
+  pomodoroInterval = null
+  
+  // 如果是专注模式完成
+  if (pomodoroState.value.mode === 'focus') {
+    // 记录完成的番茄钟
+    const task = pomodoroState.value.currentTask
+    if (task) {
+      const updatedTask = taskStore.tasks.find(t => t.id === task.id)
+      if (updatedTask) {
+        updatedTask.completedPomodoros = (updatedTask.completedPomodoros || 0) + 1
+        updatedTask.pomodoroHistory = updatedTask.pomodoroHistory || []
+        updatedTask.pomodoroHistory.push({
+          startTime: pomodoroState.value.startTime,
+          endTime: new Date().toISOString(),
+          completed: true
+        })
+        await taskStore.updateTask(updatedTask)
+      }
+    }
+    
+    // 切换到休息模式
+    pomodoroState.value.completedCount++
+    pomodoroState.value.mode = pomodoroState.value.completedCount % 4 === 0 ? 'longBreak' : 'shortBreak'
+    pomodoroState.value.remainingSeconds = pomodoroState.value.mode === 'longBreak' 
+      ? POMODORO_CONFIG.LONG_BREAK 
+      : POMODORO_CONFIG.SHORT_BREAK
+    
+    const breakMinutes = pomodoroState.value.mode === 'longBreak' 
+      ? Math.floor(POMODORO_CONFIG.LONG_BREAK / 60) 
+      : Math.floor(POMODORO_CONFIG.SHORT_BREAK / 60)
+    showNotification(`🎉 完成1个番茄钟！休息${breakMinutes}分钟`, 'success')
+    
+    // 自动开始休息倒计时
+    startPomodoroTimer()
+  } else {
+    // 休息完成
+    showNotification('✨ 休息结束！准备开始下一个番茄钟', 'info')
+    stopPomodoro()
+  }
 }
 
 // 方法：删除任务
@@ -7778,6 +7953,25 @@ watch(() => reportData.value, (newData) => {
   transform: rotate(45deg);
 }
 
+/* 番茄钟按钮 */
+.btn-pomodoro-inline {
+  background: none;
+  border: none;
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 0.6rem;
+  margin: -0.6rem;
+  opacity: 0.6;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.btn-pomodoro-inline:hover {
+  opacity: 1;
+  transform: scale(1.2);
+}
+
 /* 内联删除按钮 */
 .btn-delete-inline {
   background: none;
@@ -12131,5 +12325,162 @@ watch(() => reportData.value, (newData) => {
 .btn-primary:active,
 .btn-secondary:active {
   transform: translateY(0);
+}
+
+/* 番茄钟全屏界面 */
+.pomodoro-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.pomodoro-container {
+  width: 100%;
+  max-width: 500px;
+  text-align: center;
+  color: white;
+}
+
+.pomodoro-header {
+  margin-bottom: 40px;
+}
+
+.pomodoro-mode-badge {
+  display: inline-block;
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.mode-focus {
+  background: rgba(255, 107, 107, 0.3);
+}
+
+.mode-shortBreak {
+  background: rgba(76, 175, 80, 0.3);
+}
+
+.mode-longBreak {
+  background: rgba(255, 152, 0, 0.3);
+}
+
+.pomodoro-task-name {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 0 0 10px 0;
+}
+
+.pomodoro-progress {
+  font-size: 14px;
+  opacity: 0.8;
+  margin: 0;
+}
+
+.pomodoro-timer {
+  margin: 40px 0;
+}
+
+.timer-circle {
+  position: relative;
+  width: 280px;
+  height: 280px;
+  margin: 0 auto;
+}
+
+.timer-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.timer-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.2);
+  stroke-width: 8;
+}
+
+.timer-progress {
+  fill: none;
+  stroke: white;
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 565.48;
+  transition: stroke-dashoffset 1s linear;
+}
+
+.timer-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 64px;
+  font-weight: bold;
+  font-family: 'Courier New', monospace;
+}
+
+.pomodoro-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin: 40px 0;
+}
+
+.btn-pomodoro-control,
+.btn-pomodoro-stop {
+  padding: 16px 32px;
+  font-size: 18px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+.btn-pomodoro-control {
+  background: white;
+  color: #667eea;
+}
+
+.btn-pomodoro-control:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-pomodoro-stop {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.btn-pomodoro-stop:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.pomodoro-task-info {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: left;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.pomodoro-task-info p {
+  margin: 8px 0;
+}
+
+.pomodoro-task-info strong {
+  opacity: 0.7;
+  margin-right: 8px;
 }
 </style>
