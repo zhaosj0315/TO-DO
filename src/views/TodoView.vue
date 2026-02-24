@@ -1660,64 +1660,108 @@
           <button class="close-btn" @click="closeTaskDetail">&times;</button>
         </div>
         <div class="bottom-sheet-body" v-if="detailTask">
-          <!-- 任务标题和描述 -->
-          <div class="detail-section">
-            <h4 class="detail-title">{{ detailTask.text }}</h4>
-            <p v-if="detailTask.description" class="detail-description">{{ detailTask.description }}</p>
+          <!-- 任务标题和状态 -->
+          <div class="detail-header">
+            <div class="status-badge" :class="`status-${detailTask.status}`">
+              {{ detailTask.status === 'completed' ? '✓ 已完成' : detailTask.status === 'overdue' ? '⚠️ 已逾期' : '⏳ 进行中' }}
+            </div>
+            <h2 class="detail-title-large">{{ detailTask.text }}</h2>
+            <p v-if="detailTask.description" class="detail-description-large">{{ detailTask.description }}</p>
+          </div>
+
+          <!-- 任务属性卡片 -->
+          <div class="detail-cards">
+            <div class="info-card card-type">
+              <div class="card-icon">📅</div>
+              <div class="card-content">
+                <div class="card-label">任务类型</div>
+                <div class="card-value">{{ getTaskTypeText(detailTask) }}</div>
+              </div>
+            </div>
+            <div class="info-card card-category" :class="`category-${detailTask.category}`">
+              <div class="card-icon">{{ detailTask.category === 'work' ? '💼' : detailTask.category === 'study' ? '📚' : '🏠' }}</div>
+              <div class="card-content">
+                <div class="card-label">分类</div>
+                <div class="card-value">{{ getCategoryText(detailTask.category) }}</div>
+              </div>
+            </div>
+            <div class="info-card card-priority" :class="`priority-${detailTask.priority}`">
+              <div class="card-icon">⚡</div>
+              <div class="card-content">
+                <div class="card-label">优先级</div>
+                <div class="card-value">{{ getPriorityText(detailTask.priority) }}</div>
+              </div>
+            </div>
+            <div class="info-card card-pomodoro">
+              <div class="card-icon">🍅</div>
+              <div class="card-content">
+                <div class="card-label">番茄钟</div>
+                <div class="card-value">{{ detailTask.completedPomodoros || 0 }}/{{ getPomodoroCount(detailTask) }}</div>
+              </div>
+            </div>
           </div>
 
           <!-- 时间轴 -->
-          <div class="detail-section timeline">
-            <div class="timeline-item">
-              <div class="timeline-icon">📝</div>
-              <div class="timeline-content">
-                <div class="timeline-label">创建时间</div>
-                <div class="timeline-value">{{ formatDateTime(detailTask.created_at) }}</div>
+          <!-- 时间轴 -->
+          <div class="detail-section timeline-section">
+            <h4 class="section-title-new">⏰ 时间轴</h4>
+            <div class="timeline-enhanced">
+            <div class="timeline-item-enhanced">
+              <div class="timeline-dot">📝</div>
+              <div class="timeline-line"></div>
+              <div class="timeline-content-enhanced">
+                <div class="timeline-label-new">创建时间</div>
+                <div class="timeline-value-new">{{ formatDateTime(detailTask.created_at) }}</div>
               </div>
             </div>
             
-            <div class="timeline-item" v-if="detailTask.status !== 'completed'">
-              <div class="timeline-icon">⏰</div>
-              <div class="timeline-content">
-                <div class="timeline-label">截止时间</div>
-                <div class="timeline-value" :class="getDeadlineClass(detailTask)">{{ getDeadlineText(detailTask) }}</div>
+            <div class="timeline-item-enhanced" v-if="detailTask.status !== 'completed'">
+              <div class="timeline-dot" :class="detailTask.status === 'overdue' ? 'dot-danger' : ''">⏰</div>
+              <div class="timeline-line" :class="detailTask.status === 'overdue' ? 'line-danger' : ''"></div>
+              <div class="timeline-content-enhanced">
+                <div class="timeline-label-new">截止时间</div>
+                <div class="timeline-value-new" :class="getDeadlineClass(detailTask)">{{ getDeadlineText(detailTask) }}</div>
               </div>
             </div>
 
             <template v-if="detailTask.status === 'completed'">
-              <div class="timeline-item">
-                <div class="timeline-icon">⏰</div>
-                <div class="timeline-content">
-                  <div class="timeline-label">计划完成时间</div>
-                  <div class="timeline-value">{{ getPlannedDeadlineText(detailTask) }}</div>
+              <div class="timeline-item-enhanced">
+                <div class="timeline-dot">⏰</div>
+                <div class="timeline-line"></div>
+                <div class="timeline-content-enhanced">
+                  <div class="timeline-label-new">计划完成时间</div>
+                  <div class="timeline-value-new">{{ getPlannedDeadlineText(detailTask) }}</div>
                 </div>
               </div>
-              <div class="timeline-item">
-                <div class="timeline-icon">✅</div>
-                <div class="timeline-content">
-                  <div class="timeline-label">实际完成时间</div>
-                  <div class="timeline-value">{{ formatDateTime(detailTask.completed_at || detailTask.created_at) }}</div>
+              <div class="timeline-item-enhanced">
+                <div class="timeline-dot dot-success">✅</div>
+                <div class="timeline-line line-success"></div>
+                <div class="timeline-content-enhanced">
+                  <div class="timeline-label-new">实际完成时间</div>
+                  <div class="timeline-value-new">{{ formatDateTime(detailTask.completed_at || detailTask.created_at) }}</div>
                 </div>
               </div>
-              <div v-if="detailTask.completed_at && calculateActualHours(detailTask)" class="timeline-item">
-                <div class="timeline-icon">⏱️</div>
-                <div class="timeline-content">
-                  <div class="timeline-label">实际耗时</div>
-                  <div class="timeline-value">{{ calculateActualHours(detailTask) }}</div>
+              <div v-if="detailTask.completed_at && calculateActualHours(detailTask)" class="timeline-item-enhanced">
+                <div class="timeline-dot">⏱️</div>
+                <div class="timeline-line"></div>
+                <div class="timeline-content-enhanced">
+                  <div class="timeline-label-new">实际耗时</div>
+                  <div class="timeline-value-new">{{ calculateActualHours(detailTask) }}</div>
                 </div>
               </div>
-              <div class="timeline-item">
-                <div class="timeline-icon">🏁</div>
-                <div class="timeline-content">
-                  <div class="timeline-label">完成状态</div>
-                  <div class="timeline-value task-deadline-success">{{ getDeadlineText(detailTask) }}</div>
+              <div class="timeline-item-enhanced">
+                <div class="timeline-dot dot-success">🏁</div>
+                <div class="timeline-content-enhanced">
+                  <div class="timeline-label-new">完成状态</div>
+                  <div class="timeline-value-new task-deadline-success">{{ getDeadlineText(detailTask) }}</div>
                 </div>
               </div>
             </template>
           </div>
+          </div>
 
           <!-- 任务属性 -->
-          <div class="detail-section attributes">
+          <div class="detail-section attributes" style="display: none;">
             <div class="attr-item">
               <span class="attr-label">📅 任务类型</span>
               <span class="attr-value badge">{{ getTaskTypeText(detailTask) }}</span>
@@ -1762,9 +1806,26 @@
           </div>
 
           <!-- 操作按钮 -->
-          <div class="detail-actions">
-            <button class="btn btn-primary" @click="openEditModal(detailTask); closeTaskDetail()">
-              ✏️ 编辑任务
+          <div class="detail-actions-enhanced">
+            <button 
+              v-if="detailTask.status !== 'completed'" 
+              class="btn-action btn-complete" 
+              @click="toggleTaskStatus(detailTask.id); closeTaskDetail()"
+            >
+              ✓ 完成任务
+            </button>
+            <button 
+              v-else
+              class="btn-action btn-uncomplete" 
+              @click="toggleTaskStatus(detailTask.id); closeTaskDetail()"
+            >
+              ↩️ 取消完成
+            </button>
+            <button class="btn-action btn-edit" @click="openEditModal(detailTask); closeTaskDetail()">
+              ✏️ 编辑
+            </button>
+            <button class="btn-action btn-delete" @click="deleteTask(detailTask.id); closeTaskDetail()">
+              🗑️ 删除
             </button>
           </div>
         </div>
@@ -1778,55 +1839,96 @@
           <h3>{{ t('edit') }}{{ currentLanguage === 'zh' ? '任务详情' : ' Task' }}</h3>
           <button class="close-btn" @click="editingTask = null">&times;</button>
         </div>
-        <div class="modal-body">
-          <div class="edit-field">
-            <label>{{ currentLanguage === 'zh' ? '任务名称' : 'Task Name' }}</label>
-            <input 
-              v-model="editText" 
-              class="input" 
-              :placeholder="currentLanguage === 'zh' ? '任务名称' : 'Task name'"
-            >
+        <div class="modal-body edit-modal-body">
+          <!-- 基本信息组 -->
+          <div class="edit-section">
+            <div class="section-title">📝 基本信息</div>
+            <div class="edit-field">
+              <label class="field-label">✏️ 任务名称</label>
+              <input 
+                v-model="editText" 
+                class="input edit-input" 
+                :placeholder="currentLanguage === 'zh' ? '输入任务名称...' : 'Task name'"
+                maxlength="100"
+              >
+              <div class="char-count">{{ editText.length }}/100</div>
+            </div>
+            <div class="edit-field">
+              <label class="field-label">📄 详细描述</label>
+              <textarea 
+                v-model="editDescription" 
+                class="input textarea edit-textarea" 
+                :placeholder="currentLanguage === 'zh' ? '添加更多细节描述...' : 'Add more details...'"
+                rows="4"
+                maxlength="500"
+              ></textarea>
+              <div class="char-count">{{ (editDescription || '').length }}/500 · {{ (editDescription || '').split('\n').length }} 行</div>
+            </div>
           </div>
-          <div class="edit-field">
-            <label>{{ currentLanguage === 'zh' ? '详细描述' : 'Description' }}</label>
-            <textarea 
-              v-model="editDescription" 
-              class="input textarea" 
-              :placeholder="currentLanguage === 'zh' ? '添加更多细节描述...' : 'Add more details...'"
-              rows="4"
-            ></textarea>
+
+          <!-- 任务属性组 -->
+          <div class="edit-section">
+            <div class="section-title">⚙️ 任务属性</div>
+            <div class="edit-row">
+              <div class="edit-field edit-field-half">
+                <label class="field-label">🏷️ 任务分类</label>
+                <select v-model="editCategory" class="input edit-select">
+                  <option value="work">💼 {{ t('work') }}</option>
+                  <option value="study">📚 {{ t('study') }}</option>
+                  <option value="life">🏠 {{ t('life') }}</option>
+                </select>
+              </div>
+              <div class="edit-field edit-field-half">
+                <label class="field-label">⚡ 优先级</label>
+                <select v-model="editPriority" class="input edit-select">
+                  <option v-for="opt in priorityOptions" :key="opt.value" :value="opt.value">
+                    {{ opt.label }}
+                  </option>
+                </select>
+              </div>
+            </div>
           </div>
-          <div class="edit-field">
-            <label>{{ currentLanguage === 'zh' ? '任务分类' : 'Category' }}</label>
-            <select v-model="editCategory" class="input">
-              <option value="work">💼 {{ t('work') }}</option>
-              <option value="study">📚 {{ t('study') }}</option>
-              <option value="life">🏠 {{ t('life') }}</option>
-            </select>
+          <!-- 任务属性组 -->
+          <div class="edit-section">
+            <div class="section-title">⚙️ 任务属性</div>
+            <div class="edit-row">
+              <div class="edit-field edit-field-half">
+                <label class="field-label">🏷️ 任务分类</label>
+                <select v-model="editCategory" class="input edit-select">
+                  <option value="work">💼 {{ t('work') }}</option>
+                  <option value="study">📚 {{ t('study') }}</option>
+                  <option value="life">🏠 {{ t('life') }}</option>
+                </select>
+              </div>
+              <div class="edit-field edit-field-half">
+                <label class="field-label">⚡ 优先级</label>
+                <select v-model="editPriority" class="input edit-select">
+                  <option v-for="opt in priorityOptions" :key="opt.value" :value="opt.value">
+                    {{ opt.label }}
+                  </option>
+                </select>
+              </div>
+            </div>
+            <div class="edit-field">
+              <label class="field-label">📅 任务类型</label>
+              <select v-model="editType" class="input edit-select" @change="handleEditTypeChange">
+                <option value="today">📌 {{ t('today') }}</option>
+                <option value="tomorrow">🌅 {{ t('tomorrow') }}</option>
+                <option value="this_week">📆 {{ t('thisWeek') }}</option>
+                <option value="daily">🔄 {{ t('daily') }}</option>
+                <option value="weekday">💼 {{ t('weekday') }}</option>
+                <option value="custom_date">🗓️ {{ editCustomDateTime ? formatDisplayDateTime(editCustomDateTime) : t('customDate') }}</option>
+                <option value="weekly">📊 {{ editWeekdays.length > 0 ? formatSelectedWeekdays(editWeekdays) : t('weekly') }}</option>
+              </select>
+            </div>
           </div>
-          <div class="edit-field">
-            <label>{{ currentLanguage === 'zh' ? '优先级' : 'Priority' }}</label>
-            <select v-model="editPriority" class="input">
-              <option v-for="opt in priorityOptions" :key="opt.value" :value="opt.value">
-                {{ opt.label }}
-              </option>
-            </select>
-          </div>
-          <div class="edit-field">
-            <label>{{ currentLanguage === 'zh' ? '任务类型' : 'Type' }}</label>
-            <select v-model="editType" class="input" @change="handleEditTypeChange">
-              <option value="today">{{ t('today') }}</option>
-              <option value="tomorrow">{{ t('tomorrow') }}</option>
-              <option value="this_week">{{ t('thisWeek') }}</option>
-              <option value="daily">{{ t('daily') }}</option>
-              <option value="weekday">{{ t('weekday') }}</option>
-              <option value="custom_date">{{ editCustomDateTime ? formatDisplayDateTime(editCustomDateTime) : t('customDate') }}</option>
-              <option value="weekly">{{ editWeekdays.length > 0 ? formatSelectedWeekdays(editWeekdays) : t('weekly') }}</option>
-            </select>
-          </div>
-          <div class="modal-actions">
-            <button class="btn btn-secondary" @click="editingTask = null">{{ t('cancel') }}</button>
-            <button class="btn btn-primary" @click="saveTaskEdit">{{ t('save') }}{{ currentLanguage === 'zh' ? '更改' : ' Changes' }}</button>
+          <div class="modal-actions edit-actions">
+            <button class="btn btn-secondary btn-cancel" @click="editingTask = null">
+              ✕ {{ t('cancel') }}
+            </button>
+            <button class="btn btn-primary btn-save" @click="saveTaskEdit">
+              ✓ {{ t('save') }}{{ currentLanguage === 'zh' ? '更改' : ' Changes' }}
+            </button>
           </div>
         </div>
       </div>
@@ -9637,6 +9739,273 @@ watch(() => reportData.value, (newData) => {
   font-weight: bold;
 }
 
+/* 任务详情优化样式 */
+.detail-header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.status-badge.status-completed {
+  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+  color: white;
+}
+
+.status-badge.status-pending {
+  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+  color: white;
+}
+
+.status-badge.status-overdue {
+  background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+  color: white;
+}
+
+.detail-title-large {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #222;
+  margin: 0 0 0.75rem 0;
+  line-height: 1.4;
+}
+
+.detail-description-large {
+  color: #666;
+  line-height: 1.7;
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: 0.9rem;
+}
+
+/* 信息卡片 */
+.detail-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.info-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 10px;
+  background: white;
+  border: 2px solid #e0e0e0;
+  transition: all 0.2s;
+}
+
+.info-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.card-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.card-content {
+  flex: 1;
+}
+
+.card-label {
+  font-size: 0.7rem;
+  color: #999;
+  margin-bottom: 0.2rem;
+}
+
+.card-value {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.info-card.card-priority.priority-high {
+  border-color: #f44336;
+  background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%);
+}
+
+.info-card.card-priority.priority-medium {
+  border-color: #ff9800;
+  background: linear-gradient(135deg, #fff8f0 0%, #ffedd5 100%);
+}
+
+.info-card.card-priority.priority-low {
+  border-color: #2196f3;
+  background: linear-gradient(135deg, #f0f8ff 0%, #e3f2fd 100%);
+}
+
+.info-card.card-category.category-work {
+  border-color: #9c27b0;
+  background: linear-gradient(135deg, #f8f0ff 0%, #f3e5f5 100%);
+}
+
+.info-card.card-category.category-study {
+  border-color: #2196f3;
+  background: linear-gradient(135deg, #f0f8ff 0%, #e3f2fd 100%);
+}
+
+.info-card.card-category.category-life {
+  border-color: #4caf50;
+  background: linear-gradient(135deg, #f0fff4 0%, #e8f5e9 100%);
+}
+
+/* 时间轴增强 */
+.timeline-section {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.section-title-new {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 1rem 0;
+}
+
+.timeline-enhanced {
+  position: relative;
+}
+
+.timeline-item-enhanced {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.timeline-item-enhanced:last-child {
+  margin-bottom: 0;
+}
+
+.timeline-dot {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: white;
+  border: 3px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  z-index: 2;
+}
+
+.timeline-dot.dot-success {
+  border-color: #4caf50;
+  background: #e8f5e9;
+}
+
+.timeline-dot.dot-danger {
+  border-color: #f44336;
+  background: #ffebee;
+}
+
+.timeline-line {
+  position: absolute;
+  left: 17px;
+  top: 36px;
+  bottom: -24px;
+  width: 2px;
+  background: #e0e0e0;
+}
+
+.timeline-line.line-success {
+  background: #4caf50;
+}
+
+.timeline-line.line-danger {
+  background: #f44336;
+}
+
+.timeline-item-enhanced:last-child .timeline-line {
+  display: none;
+}
+
+.timeline-content-enhanced {
+  flex: 1;
+  padding-top: 0.3rem;
+}
+
+.timeline-label-new {
+  font-size: 0.75rem;
+  color: #999;
+  margin-bottom: 0.2rem;
+}
+
+.timeline-value-new {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+}
+
+/* 底部按钮增强 */
+.detail-actions-enhanced {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.btn-action {
+  padding: 0.75rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+}
+
+.btn-complete {
+  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+  color: white;
+  grid-column: span 3;
+}
+
+.btn-uncomplete {
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+  color: white;
+  grid-column: span 3;
+}
+
+.btn-edit {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-delete {
+  background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+  color: white;
+}
+
+.btn-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-action:active {
+  transform: translateY(0);
+}
+
 .detail-title {
   font-size: 1.2rem;
   font-weight: 600;
@@ -10264,8 +10633,114 @@ watch(() => reportData.value, (newData) => {
   text-align: center;
 }
 
-.edit-field {
+/* 编辑弹窗样式优化 */
+.edit-modal-body {
+  padding: 0.5rem 0;
+}
+
+.edit-section {
   margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 10px;
+}
+
+.section-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.edit-field {
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.edit-field:last-child {
+  margin-bottom: 0;
+}
+
+.field-label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+  color: #555;
+}
+
+.edit-input,
+.edit-textarea,
+.edit-select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  background: white;
+}
+
+.edit-input:focus,
+.edit-textarea:focus,
+.edit-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.edit-textarea {
+  resize: vertical;
+  min-height: 100px;
+  line-height: 1.6;
+  font-family: inherit;
+}
+
+.char-count {
+  position: absolute;
+  right: 8px;
+  bottom: -20px;
+  font-size: 0.7rem;
+  color: #999;
+}
+
+.edit-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.edit-field-half {
+  flex: 1;
+}
+
+.edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.btn-cancel {
+  min-width: 100px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+}
+
+.btn-save {
+  min-width: 120px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-save:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
 }
 
 .edit-field label {
