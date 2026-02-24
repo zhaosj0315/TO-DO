@@ -1,5 +1,6 @@
 import { Preferences } from '@capacitor/preferences';
 import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Capacitor } from '@capacitor/core';
 import * as XLSX from 'xlsx';
 import { taskToExcelRow } from './excelFormat';
 
@@ -78,12 +79,26 @@ export async function performBackup(force = false) {
     // 保存到文件
     const timestamp = force ? `${today}_${Date.now()}` : today;
     const fileName = `TODO-App_backup_${timestamp}.json`;
-    await Filesystem.writeFile({
-      path: `TODO-App-backups/${fileName}`,
-      data: content,
-      directory: Directory.Documents,
-      recursive: true
-    });
+    
+    // 在 Web 环境下使用 Blob，在原生环境下使用 base64
+    if (Capacitor.getPlatform() === 'web') {
+      // Web 环境：使用浏览器下载
+      const blob = new Blob([content], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+    } else {
+      // 原生环境：使用 Filesystem API
+      await Filesystem.writeFile({
+        path: `TODO-App-backups/${fileName}`,
+        data: content,
+        directory: Directory.Documents,
+        recursive: true
+      });
+    }
     
     // 更新备份日期
     if (!force) {

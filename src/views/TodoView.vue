@@ -226,8 +226,7 @@
                   'description-completed': task.status === 'completed',
                   [`description-priority-${task.priority}`]: true
                 }"
-                @click.stop="openEditModal(task)"
-                :title="task.description.length > 100 ? '点击编辑任务' : ''"
+                :title="task.description.length > 100 ? '点击查看详情' : ''"
               >
                 {{ task.description }}
                 <span 
@@ -248,6 +247,16 @@
               <div class="task-meta">
                 <!-- 时间信息（压缩格式：去掉年份） -->
                 <span class="task-time-compact" title="创建时间">📝 {{ formatCompactDateTime(task.created_at) }}</span>
+                
+                <!-- 日志统计 -->
+                <span v-if="task.logs && task.logs.length > 0" class="badge badge-logs" title="执行日志数量">
+                  💬 {{ task.logs.length }}条
+                </span>
+                
+                <!-- 执行进度（如果有日志记录） -->
+                <span v-if="task.stats && task.stats.progressHistory.length > 0 && task.status !== 'completed'" class="badge badge-progress" title="当前进度">
+                  📊 {{ task.stats.progressHistory[task.stats.progressHistory.length - 1] }}%
+                </span>
                 
                 <!-- 提醒时间（如果设置了提醒） -->
                 <span v-if="task.enableReminder && task.reminderTime" class="task-time-compact reminder-time" title="提醒时间">🔔 {{ formatCompactDateTime(task.reminderTime) }}</span>
@@ -1651,197 +1660,109 @@
       </div>
     </div>
 
-    <!-- 任务详情抽屉 (Bottom Sheet) -->
-    <div v-if="showTaskDetail" class="bottom-sheet-overlay" @click.self="closeTaskDetail">
-      <div class="bottom-sheet">
-        <div class="bottom-sheet-header">
-          <div class="sheet-handle"></div>
-          <h3>📋 任务详情</h3>
-          <button class="close-btn" @click="closeTaskDetail">&times;</button>
-        </div>
-        <div class="bottom-sheet-body" v-if="detailTask">
-          <!-- 任务标题和状态 -->
-          <div class="detail-header">
-            <div class="status-badge" :class="`status-${detailTask.status}`">
-              {{ detailTask.status === 'completed' ? '✓ 已完成' : detailTask.status === 'overdue' ? '⚠️ 已逾期' : '⏳ 进行中' }}
-            </div>
-            <h2 class="detail-title-large">{{ detailTask.text }}</h2>
-            <p v-if="detailTask.description" class="detail-description-large">{{ detailTask.description }}</p>
-          </div>
-
-          <!-- 任务属性卡片 -->
-          <div class="detail-cards">
-            <div class="info-card card-type">
-              <div class="card-icon">📅</div>
-              <div class="card-content">
-                <div class="card-label">任务类型</div>
-                <div class="card-value">{{ getTaskTypeText(detailTask) }}</div>
-              </div>
-            </div>
-            <div class="info-card card-category" :class="`category-${detailTask.category}`">
-              <div class="card-icon">{{ detailTask.category === 'work' ? '💼' : detailTask.category === 'study' ? '📚' : '🏠' }}</div>
-              <div class="card-content">
-                <div class="card-label">分类</div>
-                <div class="card-value">{{ getCategoryText(detailTask.category) }}</div>
-              </div>
-            </div>
-            <div class="info-card card-priority" :class="`priority-${detailTask.priority}`">
-              <div class="card-icon">⚡</div>
-              <div class="card-content">
-                <div class="card-label">优先级</div>
-                <div class="card-value">{{ getPriorityText(detailTask.priority) }}</div>
-              </div>
-            </div>
-            <div class="info-card card-pomodoro">
-              <div class="card-icon">🍅</div>
-              <div class="card-content">
-                <div class="card-label">番茄钟</div>
-                <div class="card-value">{{ detailTask.completedPomodoros || 0 }}/{{ getPomodoroCount(detailTask) }}</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 时间轴 -->
-          <!-- 时间轴 -->
-          <div class="detail-section timeline-section">
-            <h4 class="section-title-new">⏰ 时间轴</h4>
-            <div class="timeline-enhanced">
-            <div class="timeline-item-enhanced">
-              <div class="timeline-dot">📝</div>
-              <div class="timeline-line"></div>
-              <div class="timeline-content-enhanced">
-                <div class="timeline-label-new">创建时间</div>
-                <div class="timeline-value-new">{{ formatDateTime(detailTask.created_at) }}</div>
-              </div>
-            </div>
-            
-            <div class="timeline-item-enhanced" v-if="detailTask.status !== 'completed'">
-              <div class="timeline-dot" :class="detailTask.status === 'overdue' ? 'dot-danger' : ''">⏰</div>
-              <div class="timeline-line" :class="detailTask.status === 'overdue' ? 'line-danger' : ''"></div>
-              <div class="timeline-content-enhanced">
-                <div class="timeline-label-new">截止时间</div>
-                <div class="timeline-value-new" :class="getDeadlineClass(detailTask)">{{ getDeadlineText(detailTask) }}</div>
-              </div>
-            </div>
-
-            <template v-if="detailTask.status === 'completed'">
-              <div class="timeline-item-enhanced">
-                <div class="timeline-dot">⏰</div>
-                <div class="timeline-line"></div>
-                <div class="timeline-content-enhanced">
-                  <div class="timeline-label-new">计划完成时间</div>
-                  <div class="timeline-value-new">{{ getPlannedDeadlineText(detailTask) }}</div>
-                </div>
-              </div>
-              <div class="timeline-item-enhanced">
-                <div class="timeline-dot dot-success">✅</div>
-                <div class="timeline-line line-success"></div>
-                <div class="timeline-content-enhanced">
-                  <div class="timeline-label-new">实际完成时间</div>
-                  <div class="timeline-value-new">{{ formatDateTime(detailTask.completed_at || detailTask.created_at) }}</div>
-                </div>
-              </div>
-              <div v-if="detailTask.completed_at && calculateActualHours(detailTask)" class="timeline-item-enhanced">
-                <div class="timeline-dot">⏱️</div>
-                <div class="timeline-line"></div>
-                <div class="timeline-content-enhanced">
-                  <div class="timeline-label-new">实际耗时</div>
-                  <div class="timeline-value-new">{{ calculateActualHours(detailTask) }}</div>
-                </div>
-              </div>
-              <div class="timeline-item-enhanced">
-                <div class="timeline-dot dot-success">🏁</div>
-                <div class="timeline-content-enhanced">
-                  <div class="timeline-label-new">完成状态</div>
-                  <div class="timeline-value-new task-deadline-success">{{ getDeadlineText(detailTask) }}</div>
-                </div>
-              </div>
-            </template>
-          </div>
-          </div>
-
-          <!-- 任务属性 -->
-          <div class="detail-section attributes" style="display: none;">
-            <div class="attr-item">
-              <span class="attr-label">📅 任务类型</span>
-              <span class="attr-value badge">{{ getTaskTypeText(detailTask) }}</span>
-            </div>
-            <div class="attr-item">
-              <span class="attr-label">⚡ 优先级</span>
-              <span class="attr-value badge" :class="`priority-${detailTask.priority}`">{{ getPriorityText(detailTask.priority) }}</span>
-            </div>
-            <div class="attr-item">
-              <span class="attr-label">🏷️ 分类</span>
-              <span class="attr-value badge" :class="`category-${detailTask.category}`">{{ getCategoryText(detailTask.category) }}</span>
-            </div>
-            <div class="attr-item">
-              <span class="attr-label">🍅 番茄钟</span>
-              <span class="attr-value badge badge-pomodoro" :class="`pomodoro-${detailTask.priority}`">
-                🍅×{{ getPomodoroCount(detailTask) }}
-              </span>
-            </div>
-          </div>
-
-          <!-- 番茄钟历史记录 -->
-          <div v-if="detailTask.pomodoroHistory && detailTask.pomodoroHistory.length > 0" class="detail-section pomodoro-history">
-            <h4 class="section-title">🍅 专注历史记录</h4>
-            <div class="history-summary">
-              <span class="summary-item">
-                <strong>{{ detailTask.completedPomodoros || 0 }}</strong> 个番茄钟
-              </span>
-              <span class="summary-item">
-                <strong>{{ getTotalFocusMinutes(detailTask) }}</strong> 分钟
-              </span>
-            </div>
-            <div class="history-list">
-              <div v-for="(record, index) in detailTask.pomodoroHistory.slice().reverse()" :key="index" class="history-item">
-                <div class="history-icon">🍅</div>
-                <div class="history-content">
-                  <div class="history-time">{{ formatPomodoroTime(record.startTime) }}</div>
-                  <div class="history-duration">{{ formatPomodoroDate(record.startTime) }} · {{ getPomodoroMinutes(record) }}分钟</div>
-                </div>
-                <div class="history-badge">✓</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 操作按钮 -->
-          <div class="detail-actions-enhanced">
-            <button 
-              v-if="detailTask.status !== 'completed'" 
-              class="btn-action btn-complete" 
-              @click="toggleTaskStatus(detailTask.id); closeTaskDetail()"
-            >
-              ✓ 完成任务
-            </button>
-            <button 
-              v-else
-              class="btn-action btn-uncomplete" 
-              @click="toggleTaskStatus(detailTask.id); closeTaskDetail()"
-            >
-              ↩️ 取消完成
-            </button>
-            <button class="btn-action btn-edit" @click="openEditModal(detailTask); closeTaskDetail()">
-              ✏️ 编辑
-            </button>
-            <button class="btn-action btn-delete" @click="deleteTask(detailTask.id); closeTaskDetail()">
-              🗑️ 删除
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 任务详情编辑模态框 -->
-    <!-- 编辑任务详情 Bottom Sheet -->
+    <!-- 任务详情 & 编辑 Bottom Sheet（统一入口） -->
     <div v-if="editingTask" class="bottom-sheet-overlay" @click.self="editingTask = null">
       <div class="bottom-sheet edit-bottom-sheet">
         <div class="bottom-sheet-header">
           <div class="sheet-handle"></div>
-          <h3>✏️ 编辑任务详情</h3>
+          <h3>📋 {{ editingTask.text }}</h3>
           <button class="close-btn" @click="editingTask = null">&times;</button>
         </div>
         <div class="bottom-sheet-body edit-sheet-body">
+          
+          <!-- 时间轴 -->
+          <div class="edit-section timeline-section">
+            <div class="section-title">⏰ 时间进度</div>
+            <div class="timeline-container">
+              <div class="timeline-item">
+                <div class="timeline-dot created"></div>
+                <div class="timeline-content">
+                  <div class="timeline-label">创建</div>
+                  <div class="timeline-value">{{ formatTimelineMini(editingTask.created_at) }}</div>
+                </div>
+              </div>
+              <div class="timeline-line"></div>
+              <div class="timeline-item">
+                <div :class="['timeline-dot', getDeadlineClass(editingTask)]"></div>
+                <div class="timeline-content">
+                  <div class="timeline-label">截止</div>
+                  <div class="timeline-value">{{ formatDeadlineMini(editingTask) }}</div>
+                </div>
+              </div>
+              <template v-if="editingTask.completed_at">
+                <div class="timeline-line completed"></div>
+                <div class="timeline-item">
+                  <div class="timeline-dot completed"></div>
+                  <div class="timeline-content">
+                    <div class="timeline-label">完成</div>
+                    <div class="timeline-value">{{ formatTimelineMini(editingTask.completed_at) }}</div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <!-- 执行统计（如果有日志） -->
+          <div v-if="editingTask.stats && editingTask.stats.totalLogs > 0" class="edit-section stats-mini-section">
+            <div class="section-title">📈 执行统计</div>
+            <div class="stats-mini-grid">
+              <div class="stat-mini-item">
+                <span class="stat-mini-value">{{ editingTask.stats.sessionCount }}</span>
+                <span class="stat-mini-label">推进次数</span>
+              </div>
+              <div class="stat-mini-item">
+                <span class="stat-mini-value">{{ formatDurationMini(editingTask.stats.totalDuration) }}</span>
+                <span class="stat-mini-label">总耗时</span>
+              </div>
+              <div class="stat-mini-item">
+                <span class="stat-mini-value">{{ editingTask.stats.blockCount }}</span>
+                <span class="stat-mini-label">遇到阻碍</span>
+              </div>
+              <div class="stat-mini-item">
+                <span class="stat-mini-value">{{ editingTask.stats.resolvedBlockCount }}</span>
+                <span class="stat-mini-label">已解决</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 执行日志完整列表 -->
+          <div class="edit-section logs-full-section">
+            <div class="section-title">💬 执行日志 ({{ editingTask.logs?.length || 0 }}条)</div>
+            
+            <div v-if="!editingTask.logs || editingTask.logs.length === 0" class="empty-logs-mini">
+              <p>📝 还没有执行日志</p>
+              <p class="hint-mini">点击下方"添加日志"开始记录</p>
+            </div>
+
+            <div v-else class="logs-full-list">
+              <div
+                v-for="log in sortedLogs(editingTask)"
+                :key="log.id"
+                :class="['log-full-item', `log-${log.type}`]"
+              >
+                <div class="log-full-header">
+                  <span class="log-type-full">{{ getLogTypeIcon(log.type) }} {{ getLogTypeText(log.type) }}</span>
+                  <span class="log-time-full">{{ formatLogTimeFull(log.timestamp) }}</span>
+                </div>
+                <div class="log-content-full">{{ log.content }}</div>
+                <div v-if="log.duration || log.progress !== null || log.tags?.length" class="log-meta-full">
+                  <span v-if="log.duration" class="meta-item-full">⏱️ {{ formatDurationMini(log.duration) }}</span>
+                  <span v-if="log.progress !== null" class="meta-item-full">📊 {{ log.progress }}%</span>
+                  <span v-if="log.mood" class="meta-item-full">{{ getMoodIcon(log.mood) }}</span>
+                </div>
+                <div v-if="log.tags?.length" class="log-tags-full">
+                  <span v-for="tag in log.tags" :key="tag" class="log-tag-full">#{{ tag }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 添加日志按钮 -->
+            <button class="btn-add-log-inline" @click="openAddLogModal(editingTask)">
+              📝 添加执行日志
+            </button>
+          </div>
+
+          <!-- 基本信息组 -->
           <!-- 基本信息组 -->
           <div class="edit-section">
             <div class="section-title">📝 基本信息</div>
@@ -1913,6 +1834,14 @@
         </div>
       </div>
     </div>
+
+    <!-- 添加日志弹窗 -->
+    <AddLogModal
+      v-if="showAddLogModal && currentLogTask"
+      :task="currentLogTask"
+      @close="showAddLogModal = false; currentLogTask = null"
+      @submit="handleAddLog"
+    />
 
     <!-- 备份管理弹窗 -->
     <div v-if="showBackupList" class="modal-overlay" @click.self="showBackupList = false">
@@ -2345,6 +2274,7 @@ import { Capacitor } from '@capacitor/core'
 import * as XLSX from 'xlsx'
 import html2canvas from 'html2canvas'
 import EChart from '../components/EChart.vue'
+import AddLogModal from '../components/AddLogModal.vue'
 import { CountUp } from 'countup.js'
 import { manualBackup, listBackups, restoreBackup } from '../utils/autoBackup'
 import { taskToExcelRow, generateTemplateData, excelRowToTask } from '../utils/excelFormat'
@@ -2809,10 +2739,6 @@ const showAddForm = ref(true)
 const currentPage = ref(1)
 const pageSize = ref(7) // 改为响应式
 const jumpToPage = ref('') // 跳转页码输入
-
-// Bottom Sheet 状态
-const showTaskDetail = ref(false)
-const detailTask = ref(null)
 
 // 月度趋势图配置
 const monthlyTrendChartOption = computed(() => {
@@ -4018,16 +3944,9 @@ const openEditModal = (task) => {
   editWeekdays.value = task.weekdays ? [...task.weekdays] : []
 }
 
-// 方法：打开任务详情抽屉
+// 方法：打开任务详情（统一入口：复用编辑 Bottom Sheet）
 const openTaskDetail = (task) => {
-  detailTask.value = task
-  showTaskDetail.value = true
-}
-
-// 方法：关闭任务详情抽屉
-const closeTaskDetail = () => {
-  showTaskDetail.value = false
-  detailTask.value = null
+  openEditModal(task)
 }
 
 // 方法：处理编辑类型变化
@@ -5562,6 +5481,178 @@ const formatDate = (dateString) => {
   return `${year}/${month}/${day} ${hour}:${minute}`
 }
 
+// 方法：日志类型图标
+const getLogTypeIcon = (type) => {
+  const map = {
+    start: '🚀',
+    progress: '📈',
+    block: '🚫',
+    solution: '💡',
+    milestone: '🎯',
+    complete: '✅'
+  }
+  return map[type] || '📝'
+}
+
+// 方法：格式化日志时间（简短版）
+const formatLogTimeMini = (dateStr) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diff = now - date
+  const hours = Math.floor(diff / (1000 * 60 * 60))
+  
+  if (hours < 1) return '刚刚'
+  if (hours < 24) return `${hours}小时前`
+  
+  const days = Math.floor(hours / 24)
+  if (days === 1) return '昨天'
+  if (days < 7) return `${days}天前`
+  
+  return `${date.getMonth() + 1}/${date.getDate()}`
+}
+
+// 方法：格式化日志时间（完整版）
+const formatLogTimeFull = (dateStr) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diff = now - date
+  const hours = Math.floor(diff / (1000 * 60 * 60))
+  
+  const year = date.getFullYear()
+  const month = date.getMonth() + 1
+  const day = date.getDate()
+  const hour = String(date.getHours()).padStart(2, '0')
+  const minute = String(date.getMinutes()).padStart(2, '0')
+  
+  // 今天：显示时间 + 相对时间
+  if (hours < 24 && date.getDate() === now.getDate()) {
+    if (hours < 1) return `${hour}:${minute} (刚刚)`
+    return `${hour}:${minute} (${hours}小时前)`
+  }
+  
+  // 昨天
+  const yesterday = new Date(now)
+  yesterday.setDate(yesterday.getDate() - 1)
+  if (date.getDate() === yesterday.getDate() && date.getMonth() === yesterday.getMonth()) {
+    return `昨天 ${hour}:${minute}`
+  }
+  
+  // 本年内：显示月/日 时:分
+  if (year === now.getFullYear()) {
+    return `${month}/${day} ${hour}:${minute}`
+  }
+  
+  // 跨年：显示完整年/月/日 时:分
+  return `${year}/${month}/${day} ${hour}:${minute}`
+}
+
+// 方法：格式化时间轴时间
+const formatTimelineMini = (dateStr) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+}
+
+// 方法：格式化截止时间
+const formatDeadlineMini = (task) => {
+  const deadline = taskStore.calculateDeadline(task)
+  if (!deadline) return '无截止'
+  
+  const deadlineDate = new Date(deadline)
+  return `${deadlineDate.getMonth() + 1}/${deadlineDate.getDate()} ${String(deadlineDate.getHours()).padStart(2, '0')}:${String(deadlineDate.getMinutes()).padStart(2, '0')}`
+}
+
+// 方法：获取截止时间样式类
+const getDeadlineClass = (task) => {
+  const deadline = taskStore.calculateDeadline(task)
+  if (!deadline) return 'normal'
+  
+  const now = new Date()
+  const deadlineDate = new Date(deadline)
+  const diff = deadlineDate - now
+  const hours = Math.floor(diff / (1000 * 60 * 60))
+  
+  if (hours < 0) return 'overdue'
+  if (hours < 2) return 'urgent'
+  if (hours < 24) return 'warning'
+  return 'normal'
+}
+
+// 方法：日志类型文本
+const getLogTypeText = (type) => {
+  const map = {
+    start: '开始执行',
+    progress: '进展更新',
+    block: '遇到阻碍',
+    solution: '解决方案',
+    milestone: '里程碑',
+    complete: '完成总结'
+  }
+  return map[type] || type
+}
+
+// 方法：心情图标
+const getMoodIcon = (mood) => {
+  const map = {
+    good: '😊 顺利',
+    neutral: '😐 一般',
+    bad: '😓 困难'
+  }
+  return map[mood] || ''
+}
+
+// 方法：排序日志（最新在上）
+const sortedLogs = (task) => {
+  if (!task.logs) return []
+  return [...task.logs].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+}
+
+// 方法：打开添加日志弹窗
+const openAddLogModal = (task) => {
+  currentLogTask.value = task
+  showAddLogModal.value = true
+}
+
+// 方法：处理添加日志
+const handleAddLog = async (logData) => {
+  if (!currentLogTask.value) return
+  
+  const taskId = currentLogTask.value.id
+  await taskStore.addTaskLog(taskId, logData)
+  
+  showAddLogModal.value = false
+  currentLogTask.value = null
+  
+  // 如果编辑弹窗还开着，更新 editingTask
+  if (editingTask.value && editingTask.value.id === taskId) {
+    const updatedTask = taskStore.tasks.find(t => t.id === taskId)
+    if (updatedTask) {
+      editingTask.value = updatedTask
+    }
+  }
+}
+
+// 方法：格式化时长（简短版）
+const formatDurationMini = (minutes) => {
+  if (!minutes) return '0分'
+  if (minutes < 60) return `${minutes}分`
+  
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  
+  if (mins === 0) return `${hours}时`
+  return `${hours}时${mins}分`
+}
+
+// 状态：查看全部日志弹窗
+const showAllLogs = ref(false)
+
+// 状态：添加日志弹窗
+const showAddLogModal = ref(false)
+const currentLogTask = ref(null)
+
 // 方法：编辑用户名
 const editingUsername = ref(false)
 const usernameInput = ref(null)
@@ -6416,23 +6507,6 @@ const calculateDeadline = (task) => {
   }
 }
 
-// 方法：获取截止时间颜色类
-const getDeadlineClass = (task) => {
-  if (task.status === TaskStatus.COMPLETED) return 'deadline-completed'
-  
-  const deadline = calculateDeadline(task)
-  if (!deadline) return ''
-  
-  const now = new Date()
-  const diff = deadline - now
-  const hours = diff / (1000 * 60 * 60)
-  
-  if (diff < 0) return 'deadline-overdue'        // 已逾期：红色
-  if (hours <= 1) return 'deadline-urgent'       // 小于1小时：红色
-  if (hours <= 6) return 'deadline-warning'      // 小于6小时：橙色
-  return 'deadline-normal'                        // 正常：蓝色
-}
-
 // 方法：显示通知
 const emit = defineEmits(['notify'])
 const showNotification = (message, type = 'info') => {
@@ -6908,25 +6982,27 @@ onMounted(async () => {
   // 检查是否需要备份提醒
   await checkBackupReminder()
   
-  // 请求通知权限
-  await LocalNotifications.requestPermissions()
-  
-  // 删除旧的通知渠道（如果存在）
-  try {
-    await LocalNotifications.deleteChannel({ id: 'task-reminders' })
-    await LocalNotifications.deleteChannel({ id: 'task-reminders-v2' })
-  } catch (error) {
-    // 忽略错误（渠道可能不存在）
-  }
-  
-  // 创建通知渠道（Android 8.0+）- 使用闹钟类型
-  try {
-    await LocalNotifications.createChannel({
-      id: 'task-reminders-v3', // 普通提醒
-      name: '任务提醒',
-      description: '任务到期提醒通知',
-      importance: 5,
-      visibility: 1,
+  // 只在原生平台（Android/iOS）上初始化通知
+  if (Capacitor.isNativePlatform()) {
+    // 请求通知权限
+    await LocalNotifications.requestPermissions()
+    
+    // 删除旧的通知渠道（如果存在）
+    try {
+      await LocalNotifications.deleteChannel({ id: 'task-reminders' })
+      await LocalNotifications.deleteChannel({ id: 'task-reminders-v2' })
+    } catch (error) {
+      // 忽略错误（渠道可能不存在）
+    }
+    
+    // 创建通知渠道（Android 8.0+）- 使用闹钟类型
+    try {
+      await LocalNotifications.createChannel({
+        id: 'task-reminders-v3', // 普通提醒
+        name: '任务提醒',
+        description: '任务到期提醒通知',
+        importance: 5,
+        visibility: 1,
       vibration: true,
       lights: true,
       lightColor: '#FF0000'
@@ -6950,21 +7026,21 @@ onMounted(async () => {
     console.error('❌ 创建通知渠道失败:', error)
   }
   
-  // 监听通知触发事件
-  LocalNotifications.addListener('localNotificationReceived', async (notificationEvent) => {
-    console.log('🔔 通知触发:', notificationEvent)
-    
-    // 通知数据可能在 notification 或直接在根级别
-    const notification = notificationEvent.notification || notificationEvent
-    const extra = notification.extra
-    
-    console.log('📦 Extra数据:', extra)
-    console.log('🔍 forceReminder:', extra?.forceReminder)
-    
-    // 如果是强制提醒，显示全屏通知
-    if (extra?.forceReminder) {
-      try {
-        console.log('🚀 准备显示全屏通知...')
+    // 监听通知触发事件
+    LocalNotifications.addListener('localNotificationReceived', async (notificationEvent) => {
+      console.log('🔔 通知触发:', notificationEvent)
+      
+      // 通知数据可能在 notification 或直接在根级别
+      const notification = notificationEvent.notification || notificationEvent
+      const extra = notification.extra
+      
+      console.log('📦 Extra数据:', extra)
+      console.log('🔍 forceReminder:', extra?.forceReminder)
+      
+      // 如果是强制提醒，显示全屏通知
+      if (extra?.forceReminder) {
+        try {
+          console.log('🚀 准备显示全屏通知...')
         console.log('插件可用性:', Capacitor.isPluginAvailable('FullScreenNotification'))
         console.log('Capacitor.Plugins:', Object.keys(Capacitor.Plugins))
         
@@ -7115,6 +7191,8 @@ onMounted(async () => {
       showNotification('已关闭提醒', 'info')
     }
   }
+  
+  } // 结束 isNativePlatform 检查
   
   // 设置每日任务摘要通知
   await scheduleDailySummaryNotification()
@@ -8456,6 +8534,42 @@ watch(() => reportData.value, (newData) => {
 .pomodoro-low {
   background: rgba(102, 126, 234, 0.1);
   color: var(--primary-color);
+}
+
+/* 日志徽章 */
+.badge-logs {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 0.2rem 0.35rem;
+  border-radius: 8px;
+  background: rgba(102, 126, 234, 0.1);
+  color: var(--primary-color);
+  transition: all 0.3s;
+  line-height: 1;
+  height: auto;
+  box-sizing: border-box;
+}
+
+/* 进度徽章 */
+.badge-progress {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 0.2rem 0.35rem;
+  border-radius: 8px;
+  background: rgba(33, 150, 243, 0.1);
+  color: #2196f3;
+  transition: all 0.3s;
+  line-height: 1;
+  height: auto;
+  box-sizing: border-box;
 }
 
 /* 任务截止时间显示 */
@@ -10671,6 +10785,312 @@ watch(() => reportData.value, (newData) => {
   padding: 1rem;
   background: #f8f9fa;
   border-radius: 10px;
+}
+
+/* 日志预览区域 */
+.logs-preview-section {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+  border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+/* 时间轴区域 */
+.timeline-section {
+  background: white;
+  border: 1px solid #e0e0e0;
+}
+
+.timeline-container {
+  display: flex;
+  align-items: center;
+  padding: 2rem 1rem;
+  overflow-x: auto;
+}
+
+.timeline-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 100px;
+  flex: 1;
+}
+
+.timeline-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  margin-bottom: 0.75rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.timeline-dot.created {
+  background: #2196f3;
+}
+
+.timeline-dot.normal {
+  background: #4caf50;
+}
+
+.timeline-dot.warning {
+  background: #ff9800;
+}
+
+.timeline-dot.urgent {
+  background: #f44336;
+}
+
+.timeline-dot.overdue {
+  background: #9e9e9e;
+}
+
+.timeline-dot.completed {
+  background: #4caf50;
+}
+
+.timeline-content {
+  text-align: center;
+}
+
+.timeline-label {
+  font-size: 0.85rem;
+  color: #999;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.timeline-value {
+  font-size: 0.9rem;
+  color: #333;
+  font-weight: 700;
+}
+
+.timeline-line {
+  flex: 1;
+  height: 3px;
+  background: linear-gradient(to right, #2196f3, #4caf50);
+  margin: 0 1rem;
+  min-width: 50px;
+  align-self: flex-start;
+  margin-top: 10px;
+  border-radius: 2px;
+}
+
+.timeline-line.completed {
+  background: #4caf50;
+}
+
+/* 日志完整列表 */
+.logs-full-section {
+  background: #f8f9fa;
+}
+
+.empty-logs-mini {
+  text-align: center;
+  padding: 1.5rem;
+  color: #999;
+}
+
+.empty-logs-mini p {
+  margin: 0.5rem 0;
+}
+
+.hint-mini {
+  font-size: 0.85rem;
+}
+
+.logs-full-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.log-full-item {
+  background: white;
+  border-radius: 8px;
+  padding: 0.75rem;
+  border-left: 3px solid #667eea;
+}
+
+.log-full-item.log-start { border-left-color: #4caf50; }
+.log-full-item.log-progress { border-left-color: #2196f3; }
+.log-full-item.log-block { border-left-color: #f44336; }
+.log-full-item.log-solution { border-left-color: #ff9800; }
+.log-full-item.log-milestone { border-left-color: #9c27b0; }
+.log-full-item.log-complete { 
+  border-left-color: #4caf50;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+}
+
+.log-full-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.log-type-full {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #333;
+}
+
+.log-time-full {
+  font-size: 0.75rem;
+  color: #999;
+}
+
+.log-content-full {
+  font-size: 0.85rem;
+  color: #666;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  margin-bottom: 0.5rem;
+}
+
+.log-meta-full {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.meta-item-full {
+  font-size: 0.75rem;
+  color: #666;
+  background: #f8f9fa;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+}
+
+.log-tags-full {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.log-tag-full {
+  background: #e3f2fd;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  color: #667eea;
+  border: 1px solid #667eea;
+}
+
+.btn-add-log-inline {
+  width: 100%;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-add-log-inline:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.logs-preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.log-preview-item {
+  background: white;
+  border-radius: 8px;
+  padding: 0.75rem;
+  border-left: 3px solid #667eea;
+}
+
+.log-preview-item.log-start { border-left-color: #4caf50; }
+.log-preview-item.log-progress { border-left-color: #2196f3; }
+.log-preview-item.log-block { border-left-color: #f44336; }
+.log-preview-item.log-solution { border-left-color: #ff9800; }
+.log-preview-item.log-milestone { border-left-color: #9c27b0; }
+.log-preview-item.log-complete { border-left-color: #4caf50; }
+
+.log-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.log-type-mini {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.log-time-mini {
+  font-size: 0.75rem;
+  color: #999;
+}
+
+.log-content-mini {
+  font-size: 0.85rem;
+  color: #666;
+  line-height: 1.4;
+}
+
+.btn-view-all-logs {
+  width: 100%;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-view-all-logs:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* 统计迷你区域 */
+.stats-mini-section {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+  border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.stats-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+}
+
+.stat-mini-item {
+  background: white;
+  border-radius: 8px;
+  padding: 0.75rem;
+  text-align: center;
+}
+
+.stat-mini-value {
+  display: block;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #667eea;
+  margin-bottom: 0.25rem;
+}
+
+.stat-mini-label {
+  display: block;
+  font-size: 0.75rem;
+  color: #666;
 }
 
 .section-title {

@@ -47,6 +47,20 @@ This is an **offline Android To-Do management application** built with **Vue 3**
   - **Deadline Display**: Auto-calculated deadline with color-coded urgency
   - **Pomodoro System**: Visual tomato count based on priority (🍅🍅🍅🍅)
   - **Pin to Top**: Pin important tasks to stay at the top of the list (📌 button)
+- **Task Execution Logs** 💬 (NEW in v1.7.0):
+  - **6 Log Types**: Start, Progress, Block, Solution, Milestone, Complete
+  - **Unlimited Logs**: Add multiple logs per task to track execution process
+  - **Auto Timestamp**: Time automatically recorded when adding logs
+  - **Execution Stats**: Track session count, total duration, average time, blocks resolved
+  - **Progress Tracking**: Record progress percentage for each session
+  - **Tag System**: Organize logs with custom tags
+  - **Mood Tracking**: Record how you feel during execution (Good/Neutral/Bad)
+  - **Block Resolution**: Link solutions to previous blocks
+  - **Completion Summary**: Add quality rating and lessons learned when completing tasks
+  - **Task Detail View**: Bottom Sheet (drawer from bottom) showing all logs, statistics, timeline, and editing capabilities
+  - **Timeline View**: Visual timeline showing creation → deadline → completion with color-coded urgency
+  - **Unified Entry**: Click task title or description to open the same Bottom Sheet
+  - **Log Badges**: Task cards display log count (💬 X) and progress (📊 X%)
 - **Smart Sorting System**:
   - Intelligent weight-based sorting algorithm
   - Pinned tasks always on top (sorted by priority internally)
@@ -156,6 +170,18 @@ This is an **offline Android To-Do management application** built with **Vue 3**
   - **截止时间显示**: 自动计算截止时间，颜色分级提醒
   - **番茄钟系统**: 根据优先级显示番茄数（🍅🍅🍅🍅）
   - **置顶功能**: 点击📌按钮将重要任务置顶（📌 按钮）
+- **任务执行日志** 💬 (v1.7.0 新增):
+  - **6种日志类型**: 开始、进展、阻碍、方案、里程碑、完成
+  - **无限追加日志**: 每个任务可添加多条日志记录执行过程
+  - **时间自动记录**: 添加日志时自动记录时间戳
+  - **执行统计**: 追踪推进次数、总耗时、平均时长、阻碍解决情况
+  - **进度追踪**: 每次记录可标注当前进度百分比
+  - **标签系统**: 使用自定义标签组织日志
+  - **心情追踪**: 记录执行过程中的心情状态（顺利/一般/困难）
+  - **阻碍解决**: 解决方案可关联到之前的阻碍日志
+  - **完成总结**: 完成任务时可添加质量评分和经验教训
+  - **任务详情页**: 全屏弹窗展示所有日志和统计数据
+  - **日志徽章**: 任务卡片显示日志数量（💬 X条）和进度（📊 X%）
 - **智能排序系统**:
   - 智能权重排序算法
   - 置顶任务永远在最前面（内部按优先级细分）
@@ -358,6 +384,46 @@ userInfo[username] = {
 - ✅ 通知提示
 
 ## 📝 版本历史 | Version History
+
+### v1.7.0 (2026-02-25)
+- ✨ **任务执行日志系统（Phase 1 核心功能）**:
+  - 6种日志类型（开始/进展/阻碍/方案/里程碑/完成）
+  - 无限追加日志，记录任务执行全过程
+  - 时间自动记录，类型和内容必填
+  - 执行统计自动计算（推进次数、总耗时、平均时长、阻碍统计）
+  - 进度追踪（0-100%滑块）
+  - 标签系统（自定义标签组织日志）
+  - 心情追踪（顺利/一般/困难）
+  - 阻碍解决追踪（解决方案可关联阻碍）
+  - 完成总结（质量评分1-5星 + 经验教训）
+- ✨ **任务详情页面重构**:
+  - 全屏弹窗设计，最大化内容展示
+  - 任务概览卡片（状态、优先级、分类、截止时间）
+  - 执行统计网格（2×2布局，紫色渐变背景）
+  - 日志列表（时间倒序，类型颜色区分）
+  - 操作按钮（添加日志、完成任务、删除任务）
+- ✨ **添加日志弹窗**:
+  - Bottom Sheet 从底部滑出
+  - 类型选择（3×2网格按钮）
+  - 内容输入（500字限制，字符计数）
+  - 耗时选择（快速选择 + 自定义输入）
+  - 进度滑块（可视化进度选择）
+  - 标签输入（动态添加多个标签）
+  - 心情选择（3种状态）
+  - 完成类型特有字段（评分 + 经验教训）
+  - 解决方案关联阻碍（下拉选择）
+- ✨ **任务卡片增强**:
+  - 日志数量徽章（💬 X条，紫色）
+  - 进度徽章（📊 X%，蓝色）
+  - 点击卡片打开详情页面
+- 🔧 **数据结构扩展**:
+  - 任务对象新增 `logs` 数组字段
+  - 任务对象新增 `stats` 统计字段
+  - 自动数据迁移（为旧任务添加空数组）
+- 📚 **文档完善**:
+  - 新增 TASK_LOG_PHASE1.md（功能说明）
+  - 新增 TESTING_GUIDE.md（测试指南）
+  - 新增 IMPLEMENTATION_SUMMARY.md（实现总结）
 
 ### v1.6.12 (2026-02-25)
 - ✨ **番茄钟功能（Phase 1 MVP）**:

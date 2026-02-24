@@ -27,12 +27,30 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       
       // 按用户加载任务
       const { value } = await Preferences.get({ key: `tasks_${this.currentUser}` })
-      if (value) this.tasks = JSON.parse(value)
-      else this.tasks = []
+      if (value) {
+        this.tasks = JSON.parse(value)
+        // 数据迁移：为旧任务添加 logs 和 stats 字段
+        this.tasks = this.tasks.map(task => ({
+          ...task,
+          logs: task.logs || [],
+          stats: task.stats || this.calculateTaskStats([])
+        }))
+      } else {
+        this.tasks = []
+      }
       
       const { value: deleted } = await Preferences.get({ key: `deletedTasks_${this.currentUser}` })
-      if (deleted) this.deletedTasks = JSON.parse(deleted)
-      else this.deletedTasks = []
+      if (deleted) {
+        this.deletedTasks = JSON.parse(deleted)
+        // 数据迁移：为旧任务添加 logs 和 stats 字段
+        this.deletedTasks = this.deletedTasks.map(task => ({
+          ...task,
+          logs: task.logs || [],
+          stats: task.stats || this.calculateTaskStats([])
+        }))
+      } else {
+        this.deletedTasks = []
+      }
     },
 
     async saveTasks() {
@@ -66,7 +84,9 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         forceReminder: taskData.forceReminder || false, // 强制提醒
         completedPomodoros: taskData.completedPomodoros || 0, // 已完成的番茄钟数
         estimatedPomodoros: taskData.estimatedPomodoros || this.getEstimatedPomodoros(taskData.priority), // 预估番茄钟数
-        pomodoroHistory: taskData.pomodoroHistory || [] // 番茄钟历史记录
+        pomodoroHistory: taskData.pomodoroHistory || [], // 番茄钟历史记录
+        logs: taskData.logs || [], // 任务执行日志
+        stats: taskData.stats || this.calculateTaskStats([]) // 统计数据
       }
       this.tasks.push(task)
       await this.saveTasks()
@@ -471,6 +491,150 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       this.currentUser = null
       this.tasks = []
       this.deletedTasks = []
+    },
+
+    // ===== 任务日志系统 =====
+    
+    // 计算任务统计数据
+    calculateTaskStats(logs) {
+      const stats = {
+        totalLogs: logs.length,
+        totalDuration: 0,
+        sessionCount: logs.length,
+        blockCount: 0,
+        resolvedBlockCount: 0,
+        averageSessionDuration: 0,
+        progressHistory: [],
+        tags: []
+      }
+
+      const tagSet = new Set()
+      
+      logs.forEach(log => {
+        if (log.duration) {
+          stats.totalDuration += log.duration
+        }
+        if (log.type === 'block') {
+          stats.blockCount++
+          if (log.resolved) {
+            stats.resolvedBlockCount++
+          }
+        }
+        if (log.progress !== undefined && log.progress !== null) {
+          stats.progressHistory.push(log.progress)
+        }
+        if (log.tags && Array.isArray(log.tags)) {
+          log.tags.forEach(tag => tagSet.add(tag))
+        }
+      })
+
+      stats.averageSessionDuration = stats.sessionCount > 0 
+        ? Math.round(stats.totalDuration / stats.sessionCount * 10) / 10 
+        : 0
+      stats.tags = Array.from(tagSet)
+
+      return stats
+    },
+
+    // 添加任务日志
+    async addTaskLog(taskId, logData) {
+      const task = this.tasks.find(t => t.id === taskId)
+      if (!task) return null
+
+      const log = {
+        id: Date.now(),
+        type: logData.type, // start/progress/block/solution/milestone/complete
+        content: logData.content,
+        timestamp: new Date().toISOString(),
+        duration: logData.duration || null,
+        progress: logData.progress !== undefined ? logData.progress : null,
+        tags: logData.tags || [],
+        mood: logData.mood || null,
+        resolved: logData.resolved || false,
+        resolvedAt: logData.resolvedAt || null,
+        resolvedNote: logData.resolvedNote || null,
+        relatedLogId: logData.relatedLogId || null,
+        rating: logData.rating || null,
+        lessons: logData.lessons || []
+      }
+
+      if (!task.logs) {
+        task.logs = []
+      }
+      task.logs.push(log)
+
+      // 重新计算统计数据
+      task.stats = this.calculateTaskStats(task.logs)
+
+      // 如果是完成类型的日志，自动标记任务为完成
+      if (logData.type === 'complete' && task.status !== 'completed') {
+        task.status = 'completed'
+        task.completed_at = log.timestamp
+      }
+
+      await this.saveTasks()
+      return log
+    },
+
+    // 更新任务日志
+    async updateTaskLog(taskId, logId, updates) {
+      const task = this.tasks.find(t => t.id === taskId)
+      if (!task || !task.logs) return false
+
+      const log = task.logs.find(l => l.id === logId)
+      if (!log) return false
+
+      Object.assign(log, updates)
+
+      // 重新计算统计数据
+      task.stats = this.calculateTaskStats(task.logs)
+
+      await this.saveTasks()
+      return true
+    },
+
+    // 删除任务日志
+    async deleteTaskLog(taskId, logId) {
+      const task = this.tasks.find(t => t.id === taskId)
+      if (!task || !task.logs) return false
+
+      const index = task.logs.findIndex(l => l.id === logId)
+      if (index === -1) return false
+
+      task.logs.splice(index, 1)
+
+      // 重新计算统计数据
+      task.stats = this.calculateTaskStats(task.logs)
+
+      await this.saveTasks()
+      return true
+    },
+
+    // 标记阻碍为已解决
+    async resolveBlock(taskId, logId, resolvedNote) {
+      const task = this.tasks.find(t => t.id === taskId)
+      if (!task || !task.logs) return false
+
+      const log = task.logs.find(l => l.id === logId && l.type === 'block')
+      if (!log) return false
+
+      log.resolved = true
+      log.resolvedAt = new Date().toISOString()
+      log.resolvedNote = resolvedNote
+
+      // 重新计算统计数据
+      task.stats = this.calculateTaskStats(task.logs)
+
+      await this.saveTasks()
+      return true
+    },
+
+    // 获取任务的所有未解决阻碍
+    getUnresolvedBlocks(taskId) {
+      const task = this.tasks.find(t => t.id === taskId)
+      if (!task || !task.logs) return []
+
+      return task.logs.filter(log => log.type === 'block' && !log.resolved)
     }
   }
 })
