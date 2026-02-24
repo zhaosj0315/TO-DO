@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FF5252"
+    android:padding="24dp">
+
+    <!-- 顶部图标 -->
+    <ImageView
+        android:id="@+id/alarm_icon"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="60dp"
+        android:src="@android:drawable/ic_lock_idle_alarm"
+        android:tint="#FFFFFF" />
+
+    <!-- 标题 -->
+    <TextView
+        android:id="@+id/alarm_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/alarm_icon"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="24dp"
+        android:text="🚨 紧急任务提醒"
+        android:textColor="#FFFFFF"
+        android:textSize="24sp"
+        android:textStyle="bold" />
+
+    <!-- 任务内容 -->
+    <TextView
+        android:id="@+id/alarm_body"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/alarm_title"
+        android:layout_marginTop="16dp"
+        android:gravity="center"
+        android:text="任务内容"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp" />
+
+    <!-- 按钮容器 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="40dp"
+        android:orientation="vertical">
+
+        <!-- 完成按钮 -->
+        <Button
+            android:id="@+id/btn_complete"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginBottom="12dp"
+            android:background="#4CAF50"
+            android:text="✅ 完成任务"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <!-- 稍后提醒按钮 -->
+        <Button
+            android:id="@+id/btn_snooze"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginBottom="12dp"
+            android:background="#FF9800"
+            android:text="⏰ 10分钟后提醒"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp" />
+
+        <!-- 关闭按钮 -->
+        <Button
+            android:id="@+id/btn_dismiss"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:background="#757575"
+            android:text="❌ 关闭"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+</RelativeLayout>
