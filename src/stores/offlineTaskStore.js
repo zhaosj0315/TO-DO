@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { Preferences } from '@capacitor/preferences'
+import { LocalNotifications } from '@capacitor/local-notifications'
 
 export const useOfflineTaskStore = defineStore('offlineTask', {
   state: () => ({
@@ -32,7 +33,7 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
 
     async addTask(taskData) {
       const task = {
-        id: taskData.id || Date.now(),
+        id: taskData.id || Math.floor(Math.random() * 2147483647), // Java int范围内的随机ID
         text: taskData.text,
         type: taskData.type,
         category: taskData.category,
@@ -44,10 +45,19 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         status: taskData.status || 'pending',
         created_at: taskData.created_at || new Date().toISOString(),
         user_id: taskData.user_id || this.currentUser,
-        is_pinned: taskData.is_pinned || false
+        is_pinned: taskData.is_pinned || false,
+        enableReminder: taskData.enableReminder || false,
+        reminderTime: taskData.reminderTime || null
       }
       this.tasks.push(task)
       await this.saveTasks()
+      
+      // 如果启用了提醒，安排通知
+      if (task.enableReminder && task.reminderTime) {
+        await this.scheduleTaskReminder(task)
+      }
+      
+      return task // 返回创建的任务（包含ID）
     },
 
     async toggleTaskCompletion(taskId) {
@@ -59,9 +69,17 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         // 记录完成时间戳
         if (!wasCompleted) {
           task.completed_at = new Date().toISOString()
+          // 完成任务时取消提醒
+          if (task.enableReminder) {
+            await this.cancelTaskReminder(taskId)
+          }
         } else {
           // 取消完成时清除时间戳
           delete task.completed_at
+          // 重新安排提醒
+          if (task.enableReminder && task.reminderTime) {
+            await this.scheduleTaskReminder(task)
+          }
         }
         
         await this.saveTasks()
@@ -71,7 +89,17 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
     async updateTask(taskId, updates) {
       const task = this.tasks.find(t => t.id === taskId)
       if (task) {
+        const oldReminder = { enableReminder: task.enableReminder, reminderTime: task.reminderTime }
         Object.assign(task, updates)
+        
+        // 如果提醒设置有变化，重新安排
+        if (oldReminder.enableReminder !== task.enableReminder || oldReminder.reminderTime !== task.reminderTime) {
+          await this.cancelTaskReminder(taskId)
+          if (task.enableReminder && task.reminderTime && task.status !== 'completed') {
+            await this.scheduleTaskReminder(task)
+          }
+        }
+        
         await this.saveTasks()
       }
     },
@@ -89,6 +117,10 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       if (index !== -1) {
         const task = this.tasks.splice(index, 1)[0]
         this.deletedTasks.push(task)
+        // 取消提醒
+        if (task.enableReminder) {
+          await this.cancelTaskReminder(taskId)
+        }
         await this.saveTasks()
       }
     },
@@ -125,6 +157,81 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       })
       if (hasChanges) {
         this.saveTasks()
+      }
+    },
+
+    // 检查并触发任务提醒
+    async checkTaskReminders() {
+      const now = new Date()
+      const notifiedKey = `notified_reminders_${this.currentUser}`
+      const { value } = await Preferences.get({ key: notifiedKey })
+      const notifiedIds = value ? JSON.parse(value) : []
+
+      for (const task of this.tasks) {
+        if (!task.enableReminder || !task.reminderTime || task.status === 'completed') continue
+        if (notifiedIds.includes(task.id)) continue
+
+        const reminderTime = new Date(task.reminderTime)
+        if (now >= reminderTime) {
+          await this.triggerReminderNotification(task)
+          notifiedIds.push(task.id)
+        }
+      }
+
+      await Preferences.set({ key: notifiedKey, value: JSON.stringify(notifiedIds) })
+    },
+
+    // 触发响铃提醒
+    async triggerReminderNotification(task) {
+      try {
+        await LocalNotifications.schedule({
+          notifications: [{
+            id: task.id,
+            title: '⏰ 任务提醒',
+            body: `${task.text}`,
+            schedule: { at: new Date() },
+            channelId: 'task-reminders-v3',
+            smallIcon: 'ic_stat_icon_config_sample',
+            iconColor: '#FF6B6B',
+            extra: { taskId: task.id }
+          }]
+        })
+      } catch (error) {
+        console.error('提醒通知失败:', error)
+      }
+    },
+
+    // 为任务安排提醒
+    async scheduleTaskReminder(task) {
+      if (!task.enableReminder || !task.reminderTime) return
+
+      try {
+        const reminderTime = new Date(task.reminderTime)
+        if (reminderTime > new Date()) {
+          await LocalNotifications.schedule({
+            notifications: [{
+              id: task.id,
+              title: '⏰ 任务提醒',
+              body: `${task.text}`,
+              schedule: { at: reminderTime },
+              channelId: 'task-reminders-v3',
+              smallIcon: 'ic_stat_icon_config_sample',
+              iconColor: '#FF6B6B',
+              extra: { taskId: task.id }
+            }]
+          })
+        }
+      } catch (error) {
+        console.error('安排提醒失败:', error)
+      }
+    },
+
+    // 取消任务提醒
+    async cancelTaskReminder(taskId) {
+      try {
+        await LocalNotifications.cancel({ notifications: [{ id: taskId }] })
+      } catch (error) {
+        console.error('取消提醒失败:', error)
       }
     },
 

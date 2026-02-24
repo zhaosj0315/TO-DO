@@ -129,25 +129,33 @@
                 </select>
               </div>
 
-              <!-- 时长/规模选择器 -->
-              <div class="attr-group" v-if="['today', 'tomorrow', 'this_week'].includes(newTaskType)">
-                <select v-model="newTaskDuration" class="attr-select attr-select-short">
-                  <option value="quick">⚡快速</option>
-                  <option value="normal">⏱️正常</option>
-                  <option value="long">⏳较长</option>
-                </select>
-              </div>
-
-              <div class="attr-group" v-else-if="newTaskType === 'custom_date'">
-                <select v-model="newTaskScale" class="attr-select attr-select-short">
-                  <option value="small">📦小型</option>
-                  <option value="medium">📊中型</option>
-                  <option value="large">🎯大型</option>
-                </select>
-              </div>
-
               <!-- 提交按钮 -->
               <button class="btn-submit-main" @click="addTask" title="添加任务">✓</button>
+            </div>
+
+            <!-- 提醒设置区域 -->
+            <div class="reminder-section">
+              <div class="reminder-toggle">
+                <label class="switch-label">
+                  <input type="checkbox" v-model="enableReminder" class="reminder-checkbox">
+                  <span class="reminder-text">🔔 启用提醒</span>
+                  <input 
+                    v-if="enableReminder"
+                    type="datetime-local" 
+                    v-model="reminderDateTime" 
+                    class="reminder-time-input-inline"
+                    :min="getTodayDateTime()"
+                  >
+                  <button 
+                    v-if="enableReminder"
+                    class="guide-link-btn-inline" 
+                    @click="showNotificationGuide = true" 
+                    title="如何开启悬浮通知"
+                  >
+                    ❓
+                  </button>
+                </label>
+              </div>
             </div>
           </template>
         </div>
@@ -178,6 +186,10 @@
               <div class="task-title-row">
                 <span class="task-title" title="点击查看详情">{{ task.text }}</span>
                 <div class="task-actions">
+                  <!-- 提醒状态指示器 -->
+                  <span v-if="task.enableReminder && task.reminderTime" class="reminder-indicator" :title="`提醒时间: ${formatDisplayDateTime(task.reminderTime)}`">
+                    🔔
+                  </span>
                   <button 
                     class="btn-pin-inline" 
                     @click.stop="togglePin(task.id)" 
@@ -193,6 +205,9 @@
               <div class="task-meta">
                 <!-- 时间信息（压缩格式：去掉年份） -->
                 <span class="task-time-compact" title="创建时间">📝 {{ formatCompactDateTime(task.created_at) }}</span>
+                
+                <!-- 提醒时间（如果设置了提醒） -->
+                <span v-if="task.enableReminder && task.reminderTime" class="task-time-compact reminder-time" title="提醒时间">🔔 {{ formatCompactDateTime(task.reminderTime) }}</span>
                 
                 <!-- 已完成任务：计划时间 + 实际时间 + 耗时 + 状态 -->
                 <template v-if="task.status === 'completed'">
@@ -478,6 +493,73 @@
         <button class="confirm-btn" @click="showBackupReminder = false">
           我知道了
         </button>
+      </div>
+    </div>
+
+    <!-- 通知设置指南弹窗 -->
+    <div v-if="showNotificationGuide" class="modal-overlay">
+      <div class="notification-guide-modal">
+        <div class="guide-header">
+          <div class="guide-icon">🔔</div>
+          <h2>开启悬浮通知</h2>
+          <button class="close-btn" @click="showNotificationGuide = false">&times;</button>
+        </div>
+        
+        <div class="guide-content">
+          <p class="guide-intro">为了获得最佳的提醒体验（类似"灵动岛"效果），请按以下步骤设置：</p>
+          
+          <div class="guide-steps">
+            <div class="step-item">
+              <div class="step-number">1</div>
+              <div class="step-content">
+                <h4>打开系统设置</h4>
+                <p>设置 → 应用 → TODO App</p>
+              </div>
+            </div>
+            
+            <div class="step-item">
+              <div class="step-number">2</div>
+              <div class="step-content">
+                <h4>进入通知设置</h4>
+                <p>点击"通知"选项</p>
+              </div>
+            </div>
+            
+            <div class="step-item">
+              <div class="step-number">3</div>
+              <div class="step-content">
+                <h4>选择通知渠道</h4>
+                <p>点击"任务提醒"渠道</p>
+              </div>
+            </div>
+            
+            <div class="step-item">
+              <div class="step-number">4</div>
+              <div class="step-content">
+                <h4>开启悬浮通知</h4>
+                <p>开启"横幅通知"或"悬浮通知"选项</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="guide-tips">
+            <p class="tip-title">💡 提示：</p>
+            <ul>
+              <li>悬浮通知会从屏幕顶部弹出，更加醒目</li>
+              <li>建议同时开启震动和声音，提醒效果更好</li>
+              <li>部分手机需要在"通知管理"中设置应用为"重要"</li>
+            </ul>
+          </div>
+          
+          <div class="guide-note">
+            <p>⚠️ 不同品牌手机的设置路径可能略有差异，请根据实际情况调整。</p>
+          </div>
+        </div>
+        
+        <div class="guide-actions">
+          <button class="btn-secondary" @click="showNotificationGuide = false">稍后设置</button>
+          <button class="btn-primary" @click="openNotificationSettings">前往设置</button>
+        </div>
       </div>
     </div>
 
@@ -2348,9 +2430,9 @@ const newTaskType = ref('today')
 const customDateTime = ref('')
 const newTaskCategory = ref('work')
 const newTaskPriority = ref('medium')
-const newTaskDuration = ref('normal') // 短期任务时长：quick(0.5h) / normal(2h) / long(4h)
-const newTaskScale = ref('small') // 长期任务规模：small(1-3天) / medium(1-2周) / large(1个月+)
 const selectedWeekdays = ref([])
+const enableReminder = ref(false)
+const reminderDateTime = ref('')
 const currentFilter = ref('all')
 const currentCategoryFilter = ref('all')
 const currentPriorityFilter = ref('all')
@@ -2369,6 +2451,7 @@ const showUserGuide = ref(false) // 使用指南弹窗
 const showPomodoroRules = ref(false) // 番茄规则弹窗
 const showWelcome = ref(false) // 首次登录欢迎弹窗
 const showBackupReminder = ref(false) // 定期备份提醒弹窗
+const showNotificationGuide = ref(false) // 通知设置指南弹窗
 const showPasswordModal = ref(false)
 const showPhoneModal = ref(false)
 const showWeeklyModal = ref(false)
@@ -3154,14 +3237,29 @@ const addTask = async () => {
     type: newTaskType.value,
     category: newTaskCategory.value,
     priority: newTaskPriority.value,
-    duration: newTaskDuration.value, // 新增：时长
-    scale: newTaskScale.value, // 新增：规模
     weekdays: newTaskType.value === 'weekly' ? selectedWeekdays.value : null,
     customDate: customDate,
-    customTime: customTime
+    customTime: customTime,
+    enableReminder: enableReminder.value,
+    reminderTime: enableReminder.value && reminderDateTime.value ? new Date(reminderDateTime.value).toISOString() : null
   }
   
-  await taskStore.addTask(task)
+  const createdTask = await taskStore.addTask(task)
+  
+  // 如果启用了提醒，调度通知
+  console.log('🔍 检查提醒设置:', {
+    enableReminder: enableReminder.value,
+    reminderDateTime: reminderDateTime.value,
+    taskReminderTime: createdTask.reminderTime,
+    taskId: createdTask.id
+  })
+  
+  if (enableReminder.value && reminderDateTime.value) {
+    console.log('📢 开始调度提醒...')
+    await scheduleTaskReminder(createdTask)
+  } else {
+    console.log('⚠️ 未启用提醒或未设置时间')
+  }
   
   // 清空输入
   newTaskText.value = ''
@@ -3170,9 +3268,9 @@ const addTask = async () => {
   customDateTime.value = ''
   newTaskCategory.value = 'work'
   newTaskPriority.value = 'medium'
-  newTaskDuration.value = 'normal'
-  newTaskScale.value = 'small'
   selectedWeekdays.value = []
+  enableReminder.value = false
+  reminderDateTime.value = ''
   
   showNotification('任务添加成功！', 'success')
   
@@ -3214,9 +3312,10 @@ const getTodayDate = () => {
 // 方法：切换任务完成状态
 const toggleTaskCompletion = async (taskId) => {
   await taskStore.toggleTaskCompletion(taskId)
-  // 完成任务时清除提醒记录
+  // 完成任务时清除提醒记录和通知
   notifiedTasks.delete(`urgent_${taskId}`)
   notifiedTasks.delete(`overdue_${taskId}`)
+  await cancelTaskReminder(taskId)
   // 更新每日摘要通知
   await scheduleDailySummaryNotification()
 }
@@ -3237,9 +3336,10 @@ const deleteTask = async (taskId) => {
   // 立即从界面移除（视觉上删除）
   await taskStore.deleteTask(taskId)
   
-  // 清除提醒记录
+  // 清除提醒记录和通知
   notifiedTasks.delete(`urgent_${taskId}`)
   notifiedTasks.delete(`overdue_${taskId}`)
+  await cancelTaskReminder(taskId)
   
   // 更新每日摘要通知
   await scheduleDailySummaryNotification()
@@ -5844,9 +5944,17 @@ const checkAndNotifyDeadline = async () => {
       
       const minutes = Math.floor((timeLeft / (1000 * 60)) % 60)
       const randomMsg = urgentMessages[Math.floor(Math.random() * urgentMessages.length)]
+      
+      // 格式化截止时间
+      const deadlineDate = new Date(deadline)
+      const month = deadlineDate.getMonth() + 1
+      const day = deadlineDate.getDate()
+      const hours = String(deadlineDate.getHours()).padStart(2, '0')
+      const mins = String(deadlineDate.getMinutes()).padStart(2, '0')
+      
       notifications.push({
-        title: `⏰ ${task.text}`,
-        body: `还剩 ${minutes} 分钟！${randomMsg}\n${tomatoCount}个番茄岌岌可危 ${'🍅'.repeat(tomatoCount)}`,
+        title: `${task.text} (还剩${minutes}分钟)`,
+        body: `⏰ 截止：${month}/${day} ${hours}:${mins}\n${randomMsg}\n${tomatoCount}个番茄岌岌可危 ${'🍅'.repeat(tomatoCount)}`,
         id: task.id,
         schedule: { at: new Date(Date.now() + 100) }
       })
@@ -5858,9 +5966,17 @@ const checkAndNotifyDeadline = async () => {
       if (notifiedTasks.has(notifyKey)) return // 已提醒过，跳过
       
       const randomMsg = overdueMessages[Math.floor(Math.random() * overdueMessages.length)]
+      
+      // 格式化截止时间
+      const deadlineDate = new Date(deadline)
+      const month = deadlineDate.getMonth() + 1
+      const day = deadlineDate.getDate()
+      const hours = String(deadlineDate.getHours()).padStart(2, '0')
+      const mins = String(deadlineDate.getMinutes()).padStart(2, '0')
+      
       notifications.push({
-        title: `❌ ${task.text}`,
-        body: `${randomMsg}\n损失 ${tomatoCount}个番茄 ${'💔'.repeat(tomatoCount)}`,
+        title: `${task.text} (已逾期)`,
+        body: `⏰ 截止：${month}/${day} ${hours}:${mins}\n${randomMsg}\n损失 ${tomatoCount}个番茄 ${'💔'.repeat(tomatoCount)}`,
         id: task.id + 100000,
         schedule: { at: new Date(Date.now() + 100) }
       })
@@ -5869,6 +5985,111 @@ const checkAndNotifyDeadline = async () => {
   
   if (notifications.length > 0) {
     await LocalNotifications.schedule({ notifications })
+  }
+}
+
+// 调度任务提醒通知
+const scheduleTaskReminder = async (task) => {
+  try {
+    if (!task.enableReminder || !task.reminderTime) return
+    
+    const reminderTime = new Date(task.reminderTime)
+    const now = new Date()
+    const timeDiff = reminderTime - now
+    
+    // 如果提醒时间已过
+    if (timeDiff <= 0) {
+      showNotification('⚠️ 提醒时间已过，请选择未来的时间', 'warning')
+      console.log('❌ 提醒时间已过:', reminderTime, '当前时间:', now)
+      return
+    }
+    
+    // 显示还需等待多久
+    const waitMinutes = Math.ceil(timeDiff / 60000)
+    console.log(`⏰ 提醒将在 ${waitMinutes} 分钟后触发`)
+    
+    // 计算任务截止时间
+    const deadline = calculateDeadline(task)
+    let titleSuffix = ''
+    let bodyPrefix = ''
+    if (deadline) {
+      const deadlineDate = new Date(deadline)
+      const month = deadlineDate.getMonth() + 1
+      const day = deadlineDate.getDate()
+      const hours = String(deadlineDate.getHours()).padStart(2, '0')
+      const minutes = String(deadlineDate.getMinutes()).padStart(2, '0')
+      titleSuffix = ` (${month}/${day} ${hours}:${minutes})`
+      bodyPrefix = `⏰ 截止：${month}月${day}日 ${hours}:${minutes}\n`
+    }
+    
+    // Android通知ID必须是小整数（使用任务ID的后6位）
+    const notificationId = task.id % 1000000
+    
+    await LocalNotifications.schedule({
+      notifications: [{
+        title: `${task.text}${titleSuffix}`,
+        body: `${bodyPrefix}${task.description || '记得完成这个任务哦！'}`,
+        id: notificationId,
+        schedule: { at: reminderTime },
+        channelId: 'task-reminders-v3',  // 使用自定义渠道
+        sound: task.reminderMode === 'vibrate' ? null : 'default',  // 仅震动时不播放声音
+        autoCancel: true,  // 点击后自动消失
+        vibrate: [0, 1000, 500, 1000, 500, 1000, 500, 1000],  // 持续震动：震1秒，停0.5秒，重复4次
+        extra: {
+          priority: 'max',  // 最高优先级
+          visibility: 'public'  // 公开可见
+        }
+      }]
+    })
+    
+    const timeStr = formatDisplayDateTime(task.reminderTime)
+    showNotification(`✅ 提醒已设置：${timeStr}（${waitMinutes}分钟后）`, 'success')
+    console.log('✅ 提醒已设置:', task.text, '时间:', reminderTime, `(${waitMinutes}分钟后)`)
+    
+    // 查看所有待触发的通知
+    const pending = await LocalNotifications.getPending()
+    console.log('📋 当前待触发的通知列表:', pending)
+  } catch (error) {
+    console.error('❌ 设置提醒失败:', error)
+    showNotification('设置提醒失败: ' + error.message, 'error')
+  }
+}
+
+// 取消任务提醒
+const cancelTaskReminder = async (taskId) => {
+  try {
+    const notificationId = taskId % 1000000
+    await LocalNotifications.cancel({ notifications: [{ id: notificationId }] })
+  } catch (error) {
+    console.error('取消提醒失败:', error)
+  }
+}
+
+// 测试通知功能（5秒后触发）
+const testNotification = async () => {
+  try {
+    const testTime = new Date(Date.now() + 5000) // 5秒后
+    await LocalNotifications.schedule({
+      notifications: [{
+        title: '🧪 测试通知',
+        body: '如果你看到这条通知，说明通知功能正常！',
+        id: 999998,
+        schedule: { at: testTime },
+        channelId: 'task-reminders-v3',
+        sound: 'default',
+        autoCancel: true,
+        vibrate: [0, 1000, 500, 1000, 500, 1000, 500, 1000]
+      }]
+    })
+    showNotification('测试通知已设置，5秒后触发', 'success')
+    console.log('🧪 测试通知已设置，将在', testTime, '触发')
+    
+    // 查看所有待触发的通知
+    const pending = await LocalNotifications.getPending()
+    console.log('📋 当前待触发的通知列表:', pending)
+  } catch (error) {
+    console.error('测试通知失败:', error)
+    showNotification('测试通知失败: ' + error.message, 'error')
   }
 }
 
@@ -5924,7 +6145,11 @@ const scheduleDailySummaryNotification = async () => {
         schedule: { 
           at: tomorrow,
           allowWhileIdle: true
-        }
+        },
+        channelId: 'task-reminders-v3',
+        sound: 'default',
+        autoCancel: true,
+        vibrate: [0, 1000, 500, 1000, 500, 1000, 500, 1000]
       }]
     })
     
@@ -5934,12 +6159,46 @@ const scheduleDailySummaryNotification = async () => {
   }
 }
 
+// 打开系统通知设置
+const openNotificationSettings = () => {
+  try {
+    // Android: 打开应用通知设置页面
+    if (window.Capacitor && window.Capacitor.getPlatform() === 'android') {
+      // 使用 Android Intent 打开应用设置
+      const packageName = 'com.todo.app'
+      const intent = `android.settings.APP_NOTIFICATION_SETTINGS`
+      window.open(`intent://settings/notification?package=${packageName}#Intent;scheme=android-app;end`, '_system')
+    } else {
+      // 其他平台提示
+      showNotification('请手动前往系统设置 → 应用 → TODO App → 通知', 'info')
+    }
+    showNotificationGuide.value = false
+  } catch (error) {
+    console.error('打开通知设置失败:', error)
+    showNotification('请手动前往系统设置 → 应用 → TODO App → 通知', 'info')
+  }
+}
+
 // 监听报告弹窗打开，自动生成报告（已禁用，改为手动生成）
 // watch(showReportModal, (newVal) => {
 //   if (newVal) {
 //     generateReportContent()
 //   }
 // })
+
+// 监听"启用提醒"开关，自动设置默认时间为10分钟后
+watch(enableReminder, (newVal) => {
+  if (newVal && !reminderDateTime.value) {
+    const now = new Date()
+    now.setMinutes(now.getMinutes() + 10) // 默认10分钟后
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    const hours = String(now.getHours()).padStart(2, '0')
+    const minutes = String(now.getMinutes()).padStart(2, '0')
+    reminderDateTime.value = `${year}-${month}-${day}T${hours}:${minutes}`
+  }
+})
 
 onMounted(async () => {
   await userStore.checkLogin()
@@ -5982,15 +6241,42 @@ onMounted(async () => {
   // 请求通知权限
   await LocalNotifications.requestPermissions()
   
+  // 删除旧的通知渠道（如果存在）
+  try {
+    await LocalNotifications.deleteChannel({ id: 'task-reminders' })
+    await LocalNotifications.deleteChannel({ id: 'task-reminders-v2' })
+  } catch (error) {
+    // 忽略错误（渠道可能不存在）
+  }
+  
+  // 创建通知渠道（Android 8.0+）- 使用闹钟类型
+  try {
+    await LocalNotifications.createChannel({
+      id: 'task-reminders-v3', // 使用新ID
+      name: '任务提醒',
+      description: '任务到期提醒通知（闹钟模式 - 悬浮显示 + 响铃）',
+      importance: 5, // 最高优先级（IMPORTANCE_MAX）
+      visibility: 1, // 锁屏可见
+      vibration: true,
+      lights: true,
+      lightColor: '#FF0000'
+    })
+    console.log('✅ 通知渠道已创建（闹钟模式），importance=5')
+  } catch (error) {
+    console.error('❌ 创建通知渠道失败:', error)
+  }
+  
   // 设置每日任务摘要通知
   await scheduleDailySummaryNotification()
   
   countdownInterval.value = setInterval(() => {
     taskStore.checkOverdueTasks()
+    taskStore.checkTaskReminders() // 检查任务提醒
     checkAndNotifyDeadline()
   }, 60000) // 每分钟检查一次
   
   // 首次立即检查
+  taskStore.checkTaskReminders()
   checkAndNotifyDeadline()
 })
 
@@ -6879,6 +7165,13 @@ watch(() => reportData.value, (newData) => {
   white-space: nowrap;
 }
 
+/* 提醒时间样式 */
+.task-time-compact.reminder-time {
+  background: rgba(147, 51, 234, 0.1);
+  color: #9333ea;
+  font-weight: 500;
+}
+
 /* 压缩状态样式 */
 .task-status-compact {
   display: inline-flex;
@@ -7072,6 +7365,21 @@ watch(() => reportData.value, (newData) => {
   display: flex;
   gap: 0.25rem;
   flex-shrink: 0;
+  align-items: center;
+}
+
+/* 提醒状态指示器 */
+.reminder-indicator {
+  font-size: 0.875rem;
+  opacity: 0.7;
+  cursor: help;
+  transition: all 0.2s;
+  line-height: 1;
+}
+
+.reminder-indicator:hover {
+  opacity: 1;
+  transform: scale(1.15);
 }
 
 /* 置顶按钮 */
@@ -9113,6 +9421,178 @@ watch(() => reportData.value, (newData) => {
   flex-shrink: 0;
 }
 
+/* 提醒设置区域 */
+.reminder-section {
+  margin-top: 0.8rem;
+  padding: 0.8rem;
+  background: rgba(102, 126, 234, 0.05);
+  border-radius: 10px;
+  border: 1px dashed rgba(102, 126, 234, 0.2);
+}
+
+.reminder-toggle {
+  margin-bottom: 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.test-notification-btn {
+  padding: 0.4rem 0.8rem;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.test-notification-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(245, 158, 11, 0.3);
+}
+
+.test-notification-btn:active {
+  transform: scale(0.95);
+}
+
+.switch-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.reminder-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.reminder-text {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.reminder-config {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+.reminder-time-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.reminder-time-group label {
+  font-size: 0.85rem;
+  color: #666;
+  white-space: nowrap;
+}
+
+.reminder-time-input {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  background: white;
+}
+
+.reminder-time-input-inline {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  background: white;
+  margin-left: 0.5rem;
+}
+
+.guide-link-btn-inline {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #ddd;
+  background: white;
+  color: #666;
+  font-size: 1rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  margin-left: 0.5rem;
+}
+
+.guide-link-btn-inline:hover {
+  background: #f5f5f5;
+  border-color: #999;
+  transform: scale(1.05);
+}
+
+.guide-link-btn-inline:active {
+  transform: scale(0.95);
+}
+
+.reminder-mode-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.reminder-mode-group label {
+  font-size: 0.85rem;
+  color: #666;
+  white-space: nowrap;
+}
+
+.reminder-mode-select {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  background: white;
+  cursor: pointer;
+}
+
+.guide-link-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #ddd;
+  background: white;
+  color: #666;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.guide-link-btn:hover {
+  background: #f5f5f5;
+  border-color: #999;
+  transform: scale(1.05);
+}
+
+.guide-link-btn:active {
+  transform: scale(0.95);
+}
+
 .attr-select {
   border: none;
   background: transparent;
@@ -10976,5 +11456,198 @@ watch(() => reportData.value, (newData) => {
 .toast-slide-leave-to {
   transform: translate(-50%, 100px);
   opacity: 0;
+}
+
+/* 通知设置指南弹窗样式 */
+.notification-guide-modal {
+  background: white;
+  border-radius: 16px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease-out;
+  overflow: hidden;
+}
+
+.guide-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1.5rem;
+  text-align: center;
+  position: relative;
+}
+
+.guide-icon {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+  animation: ring 2s infinite;
+}
+
+@keyframes ring {
+  0%, 100% { transform: rotate(0deg); }
+  10%, 30% { transform: rotate(-15deg); }
+  20%, 40% { transform: rotate(15deg); }
+}
+
+.guide-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.guide-header .close-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.guide-header .close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(90deg);
+}
+
+.guide-content {
+  padding: 1.5rem;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.guide-intro {
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.guide-steps {
+  margin: 1.5rem 0;
+}
+
+.step-item {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  align-items: flex-start;
+}
+
+.step-number {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.step-content h4 {
+  margin: 0 0 0.3rem 0;
+  color: #333;
+  font-size: 1rem;
+}
+
+.step-content p {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.guide-tips {
+  background: #e3f2fd;
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1.5rem 0;
+  border-left: 4px solid #2196f3;
+}
+
+.tip-title {
+  font-weight: 600;
+  color: #1565c0;
+  margin: 0 0 0.5rem 0;
+}
+
+.guide-tips ul {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.guide-tips li {
+  margin: 0.5rem 0;
+  color: #1976d2;
+  line-height: 1.5;
+}
+
+.guide-note {
+  background: #fff3e0;
+  padding: 0.8rem;
+  border-radius: 6px;
+  margin-top: 1rem;
+  border-left: 4px solid #ff9800;
+}
+
+.guide-note p {
+  margin: 0;
+  color: #e65100;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.guide-actions {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: #f5f5f5;
+  border-top: 1px solid #e0e0e0;
+}
+
+.guide-actions button {
+  flex: 1;
+  padding: 0.8rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-secondary {
+  background: white;
+  color: #666;
+  border: 1px solid #ddd;
+}
+
+.btn-secondary:hover {
+  background: #f5f5f5;
+  border-color: #999;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-primary:active,
+.btn-secondary:active {
+  transform: translateY(0);
 }
 </style>
