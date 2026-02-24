@@ -8048,11 +8048,12 @@ watch(() => reportData.value, (newData) => {
 }
 
 .task-title {
-  font-size: 0.875rem; /* 14px */
-  font-weight: 600;
+  font-size: 0.9rem; /* 14.4px，稍微增大 */
+  font-weight: 700; /* 更粗 */
+  color: #333; /* 深色 */
   cursor: pointer;
   transition: color 0.2s;
-  line-height: 1.4;
+  line-height: 1.5;
   flex: 1;
 }
 
@@ -8160,11 +8161,16 @@ watch(() => reportData.value, (newData) => {
 
 .task-description {
   font-size: 0.75rem; /* 12px */
-  color: #888;
-  margin-top: 0.25rem;
-  line-height: 1.4;
+  color: #999; /* 更浅的灰色 */
+  margin-top: 0.4rem;
+  line-height: 1.6; /* 增加行高 */
   max-width: 100%;
   word-wrap: break-word;
+  white-space: pre-wrap; /* 保留换行和空格 */
+  padding: 0.5rem 0.75rem; /* 添加内边距 */
+  background: rgba(0, 0, 0, 0.02); /* 浅灰背景 */
+  border-radius: 6px;
+  border-left: 3px solid #e0e0e0; /* 左侧边框 */
 }
 
 .task-meta {
