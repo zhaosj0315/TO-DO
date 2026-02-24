@@ -138,7 +138,7 @@
               <div class="reminder-toggle">
                 <label class="switch-label">
                   <input type="checkbox" v-model="enableReminder" class="reminder-checkbox">
-                  <span class="reminder-text">🔔 启用提醒</span>
+                  <span class="reminder-text">🔔 启用提醒（全屏强制）</span>
                   <input 
                     v-if="enableReminder"
                     type="datetime-local" 
@@ -154,10 +154,6 @@
                     <button @click="setQuickTime(30)" class="quick-time-btn" type="button">30分钟</button>
                     <button @click="setQuickTime(60)" class="quick-time-btn" type="button">1小时</button>
                   </div>
-                  <label v-if="enableReminder" class="force-reminder-label">
-                    <input type="checkbox" v-model="forceReminder" class="force-reminder-checkbox">
-                    <span class="force-reminder-text">🔊 强制提醒</span>
-                  </label>
                   <button 
                     v-if="enableReminder"
                     class="guide-link-btn-inline" 
@@ -512,65 +508,67 @@
     <div v-if="showNotificationGuide" class="modal-overlay">
       <div class="notification-guide-modal">
         <div class="guide-header">
-          <div class="guide-icon">🔔</div>
-          <h2>开启悬浮通知</h2>
+          <div class="guide-icon">🚨</div>
+          <h2>全屏强制提醒说明</h2>
           <button class="close-btn" @click="showNotificationGuide = false">&times;</button>
         </div>
         
         <div class="guide-content">
-          <p class="guide-intro">为了获得最佳的提醒体验（类似"灵动岛"效果），请按以下步骤设置：</p>
+          <p class="guide-intro">启用提醒后，将在指定时间弹出全屏提醒界面，确保重要任务不被错过！</p>
           
           <div class="guide-steps">
             <div class="step-item">
-              <div class="step-number">1</div>
+              <div class="step-number">✨</div>
               <div class="step-content">
-                <h4>打开系统设置</h4>
-                <p>设置 → 应用 → TODO App</p>
+                <h4>全屏提醒特点</h4>
+                <p>• 自动点亮屏幕（包括锁屏状态）<br>
+                   • 持续播放闹钟铃声<br>
+                   • 持续震动提醒<br>
+                   • 无法通过返回键关闭</p>
               </div>
             </div>
             
             <div class="step-item">
-              <div class="step-number">2</div>
+              <div class="step-number">⚙️</div>
               <div class="step-content">
-                <h4>进入通知设置</h4>
-                <p>点击"通知"选项</p>
+                <h4>权限设置（首次使用）</h4>
+                <p>设置 → 应用 → TODO App → 权限<br>
+                   • 开启"通知"权限<br>
+                   • 开启"显示在其他应用上层"<br>
+                   • 开启"设置闹钟和提醒"</p>
               </div>
             </div>
             
             <div class="step-item">
-              <div class="step-number">3</div>
+              <div class="step-number">🎯</div>
               <div class="step-content">
-                <h4>选择通知渠道</h4>
-                <p>点击"任务提醒"渠道</p>
-              </div>
-            </div>
-            
-            <div class="step-item">
-              <div class="step-number">4</div>
-              <div class="step-content">
-                <h4>开启悬浮通知</h4>
-                <p>开启"横幅通知"或"悬浮通知"选项</p>
+                <h4>操作选项</h4>
+                <p>全屏提醒弹出后，可以：<br>
+                   • ✅ 完成任务<br>
+                   • ⏰ 稍后提醒（1/5/10/30/60分钟）<br>
+                   • ❌ 关闭提醒</p>
               </div>
             </div>
           </div>
           
           <div class="guide-tips">
-            <p class="tip-title">💡 提示：</p>
+            <p class="tip-title">💡 使用建议：</p>
             <ul>
-              <li>悬浮通知会从屏幕顶部弹出，更加醒目</li>
-              <li>建议同时开启震动和声音，提醒效果更好</li>
-              <li>部分手机需要在"通知管理"中设置应用为"重要"</li>
+              <li>适合重要任务、紧急事项的提醒</li>
+              <li>建议提前1-5分钟设置提醒，留出准备时间</li>
+              <li>可使用快捷时间按钮快速设置</li>
+              <li>提醒时间到达时，即使应用在后台也会弹出</li>
             </ul>
           </div>
           
           <div class="guide-note">
-            <p>⚠️ 不同品牌手机的设置路径可能略有差异，请根据实际情况调整。</p>
+            <p>⚠️ 部分手机品牌可能需要在"电池优化"中将本应用设为"不限制"，以确保后台提醒正常工作。</p>
           </div>
         </div>
         
         <div class="guide-actions">
-          <button class="btn-secondary" @click="showNotificationGuide = false">稍后设置</button>
-          <button class="btn-primary" @click="openNotificationSettings">前往设置</button>
+          <button class="btn-secondary" @click="showNotificationGuide = false">我知道了</button>
+          <button class="btn-primary" @click="openNotificationSettings">前往权限设置</button>
         </div>
       </div>
     </div>
@@ -2509,7 +2507,7 @@ const newTaskCategory = ref('work')
 const newTaskPriority = ref('medium')
 const selectedWeekdays = ref([])
 const enableReminder = ref(false)
-const forceReminder = ref(false)
+const forceReminder = ref(true) // 启用提醒默认就是强制提醒
 const reminderDateTime = ref('')
 const currentFilter = ref('all')
 const currentCategoryFilter = ref('all')
@@ -3334,7 +3332,7 @@ const addTask = async () => {
     customTime: customTime,
     enableReminder: enableReminder.value,
     reminderTime: enableReminder.value && reminderDateTime.value ? new Date(reminderDateTime.value).toISOString() : null,
-    forceReminder: forceReminder.value
+    forceReminder: enableReminder.value // 启用提醒就是强制提醒
   }
   
   const createdTask = await taskStore.addTask(task)
@@ -3342,7 +3340,7 @@ const addTask = async () => {
   // 如果启用了提醒，调度通知
   console.log('🔍 检查提醒设置:', {
     enableReminder: enableReminder.value,
-    forceReminder: forceReminder.value,
+    forceReminder: enableReminder.value,
     reminderDateTime: reminderDateTime.value,
     taskReminderTime: createdTask.reminderTime,
     taskId: createdTask.id
@@ -9935,26 +9933,6 @@ watch(() => reportData.value, (newData) => {
   font-size: 0.9rem;
   font-weight: 500;
   color: #333;
-}
-
-.force-reminder-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  margin-left: 1rem;
-  cursor: pointer;
-}
-
-.force-reminder-checkbox {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-}
-
-.force-reminder-text {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #ff6b6b;
 }
 
 .reminder-config {

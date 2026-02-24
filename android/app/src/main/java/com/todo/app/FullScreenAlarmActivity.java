@@ -14,6 +14,7 @@ import android.os.Vibrator;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -64,7 +65,7 @@ public class FullScreenAlarmActivity extends AppCompatActivity {
         TextView typeView = findViewById(R.id.task_type);
         TextView deadlineView = findViewById(R.id.task_deadline);
         TextView createdView = findViewById(R.id.task_created);
-        TextView descriptionLabel = findViewById(R.id.task_description_label);
+        LinearLayout descriptionSection = findViewById(R.id.description_section);
         TextView descriptionView = findViewById(R.id.task_description);
         
         titleView.setText(title);
@@ -83,16 +84,19 @@ public class FullScreenAlarmActivity extends AppCompatActivity {
         }
         
         if (deadline != null && !deadline.isEmpty()) {
-            deadlineView.setText(deadline);
+            // 移除"⏰ 截止："前缀，只显示时间
+            String deadlineTime = deadline.replace("⏰ 截止：", "⏰ ");
+            deadlineView.setText(deadlineTime);
         }
         
         if (created != null && !created.isEmpty()) {
-            createdView.setText(created);
+            // 移除"🕐 创建于："前缀
+            String createdTime = created.replace("🕐 创建于：", "🕐 ");
+            createdView.setText(createdTime);
         }
         
         if (description != null && !description.isEmpty()) {
-            descriptionLabel.setVisibility(View.VISIBLE);
-            descriptionView.setVisibility(View.VISIBLE);
+            descriptionSection.setVisibility(View.VISIBLE);
             descriptionView.setText(description);
         }
 

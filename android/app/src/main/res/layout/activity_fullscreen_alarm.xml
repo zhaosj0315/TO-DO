@@ -1,257 +1,338 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FF5252"
-    android:fillViewport="true">
+    android:background="#FF5252">
 
+    <!-- 顶部区域：图标和标题 -->
     <LinearLayout
+        android:id="@+id/header_section"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingTop="30dp"
+        android:paddingBottom="20dp">
+
+        <ImageView
+            android:id="@+id/alarm_icon"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:src="@android:drawable/ic_lock_idle_alarm"
+            android:tint="#FFFFFF" />
+
+        <TextView
+            android:id="@+id/alarm_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="🚨 紧急任务提醒"
+            android:textColor="#FFFFFF"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- 底部按钮区域 -->
+    <LinearLayout
+        android:id="@+id/button_section"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
         android:orientation="vertical"
         android:padding="20dp">
 
-        <!-- 顶部图标和标题 -->
+        <!-- 完成按钮 -->
+        <Button
+            android:id="@+id/btn_complete"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginBottom="16dp"
+            android:background="#4CAF50"
+            android:text="✅ 完成任务"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <!-- 稍后提醒标题 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:text="⏰ 稍后提醒"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <!-- 稍后提醒快捷按钮 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:paddingTop="20dp"
-            android:paddingBottom="16dp">
+            android:layout_marginBottom="16dp"
+            android:orientation="horizontal"
+            android:weightSum="5">
 
-            <ImageView
-                android:id="@+id/alarm_icon"
-                android:layout_width="56dp"
-                android:layout_height="56dp"
-                android:src="@android:drawable/ic_lock_idle_alarm"
-                android:tint="#FFFFFF" />
-
-            <TextView
-                android:id="@+id/alarm_title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="🚨 紧急任务提醒"
+            <Button
+                android:id="@+id/btn_snooze_1"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_marginEnd="6dp"
+                android:layout_weight="1"
+                android:background="#FF9800"
+                android:text="1分钟"
                 android:textColor="#FFFFFF"
-                android:textSize="20sp"
-                android:textStyle="bold" />
+                android:textSize="13sp" />
+
+            <Button
+                android:id="@+id/btn_snooze_5"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_marginEnd="6dp"
+                android:layout_weight="1"
+                android:background="#FF9800"
+                android:text="5分钟"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp" />
+
+            <Button
+                android:id="@+id/btn_snooze_10"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_marginEnd="6dp"
+                android:layout_weight="1"
+                android:background="#FF9800"
+                android:text="10分钟"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp" />
+
+            <Button
+                android:id="@+id/btn_snooze_30"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_marginEnd="6dp"
+                android:layout_weight="1"
+                android:background="#FF9800"
+                android:text="30分钟"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp" />
+
+            <Button
+                android:id="@+id/btn_snooze_60"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:background="#FF9800"
+                android:text="1小时"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp" />
         </LinearLayout>
 
-        <!-- 任务信息卡片 -->
+        <!-- 关闭按钮 -->
+        <Button
+            android:id="@+id/btn_dismiss"
+            android:layout_width="match_parent"
+            android:layout_height="54dp"
+            android:background="#757575"
+            android:text="❌ 关闭"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+    <!-- 中间内容区域：任务信息卡片（填充剩余空间） -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/button_section"
+        android:layout_below="@id/header_section"
+        android:fillViewport="true"
+        android:padding="20dp">
+
         <LinearLayout
             android:id="@+id/task_info_card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="#FFFFFF"
-            android:elevation="4dp"
+            android:elevation="6dp"
             android:orientation="vertical"
-            android:padding="16dp"
-            android:radius="12dp">
+            android:padding="24dp">
 
             <!-- 任务名称 -->
             <TextView
                 android:id="@+id/task_name_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="📋 任务"
+                android:text="📋 任务名称"
                 android:textColor="#999"
-                android:textSize="11sp" />
+                android:textSize="14sp" />
 
             <TextView
                 android:id="@+id/alarm_body"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:layout_marginBottom="12dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="24dp"
                 android:text="任务内容"
                 android:textColor="#333"
-                android:textSize="17sp"
+                android:textSize="22sp"
                 android:textStyle="bold" />
 
             <!-- 分类和优先级 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
+                android:layout_marginBottom="16dp"
                 android:orientation="horizontal">
 
-                <TextView
-                    android:id="@+id/task_category"
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="💼 工作"
-                    android:textColor="#666"
-                    android:textSize="13sp" />
+                    android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/task_priority"
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="分类"
+                        android:textColor="#999"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/task_category"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="💼 工作"
+                        android:textColor="#333"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="⚡ 高优先级"
-                    android:textColor="#666"
-                    android:textSize="13sp" />
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="优先级"
+                        android:textColor="#999"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/task_priority"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="⚡ 高优先级"
+                        android:textColor="#333"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
             </LinearLayout>
 
-            <!-- 任务类型和截止时间 -->
-            <TextView
-                android:id="@+id/task_type"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="6dp"
-                android:text="📅 今天"
-                android:textColor="#666"
-                android:textSize="13sp" />
-
-            <TextView
-                android:id="@+id/task_deadline"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="6dp"
-                android:text="⏰ 截止：今天 23:59"
-                android:textColor="#FF5252"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/task_created"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:text="🕐 创建于：2026-02-24 20:00"
-                android:textColor="#999"
-                android:textSize="11sp" />
-
-            <!-- 任务描述 -->
-            <TextView
-                android:id="@+id/task_description_label"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="📝 描述"
-                android:textColor="#999"
-                android:textSize="11sp"
-                android:visibility="gone" />
-
-            <TextView
-                android:id="@+id/task_description"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="详细描述内容"
-                android:textColor="#666"
-                android:textSize="13sp"
-                android:visibility="gone" />
-        </LinearLayout>
-
-        <!-- 操作按钮区域 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:orientation="vertical">
-
-            <!-- 完成按钮 -->
-            <Button
-                android:id="@+id/btn_complete"
-                android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:layout_marginBottom="10dp"
-                android:background="#4CAF50"
-                android:text="✅ 完成任务"
-                android:textColor="#FFFFFF"
-                android:textSize="15sp"
-                android:textStyle="bold" />
-
-            <!-- 稍后提醒标题 -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:text="⏰ 稍后提醒"
-                android:textColor="#FFFFFF"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <!-- 稍后提醒快捷按钮 -->
+            <!-- 任务类型 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="10dp"
-                android:orientation="horizontal"
-                android:weightSum="5">
+                android:layout_marginBottom="16dp"
+                android:orientation="vertical">
 
-                <Button
-                    android:id="@+id/btn_snooze_1"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_marginEnd="4dp"
-                    android:layout_weight="1"
-                    android:background="#FF9800"
-                    android:text="1分钟"
-                    android:textColor="#FFFFFF"
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="任务类型"
+                    android:textColor="#999"
                     android:textSize="12sp" />
 
-                <Button
-                    android:id="@+id/btn_snooze_5"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_marginEnd="4dp"
-                    android:layout_weight="1"
-                    android:background="#FF9800"
-                    android:text="5分钟"
-                    android:textColor="#FFFFFF"
-                    android:textSize="12sp" />
-
-                <Button
-                    android:id="@+id/btn_snooze_10"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_marginEnd="4dp"
-                    android:layout_weight="1"
-                    android:background="#FF9800"
-                    android:text="10分钟"
-                    android:textColor="#FFFFFF"
-                    android:textSize="12sp" />
-
-                <Button
-                    android:id="@+id/btn_snooze_30"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_marginEnd="4dp"
-                    android:layout_weight="1"
-                    android:background="#FF9800"
-                    android:text="30分钟"
-                    android:textColor="#FFFFFF"
-                    android:textSize="12sp" />
-
-                <Button
-                    android:id="@+id/btn_snooze_60"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_weight="1"
-                    android:background="#FF9800"
-                    android:text="1小时"
-                    android:textColor="#FFFFFF"
-                    android:textSize="12sp" />
+                <TextView
+                    android:id="@+id/task_type"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="📅 今天"
+                    android:textColor="#333"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
             </LinearLayout>
 
-            <!-- 关闭按钮 -->
-            <Button
-                android:id="@+id/btn_dismiss"
+            <!-- 截止时间 -->
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:background="#757575"
-                android:text="❌ 关闭"
-                android:textColor="#FFFFFF"
-                android:textSize="14sp" />
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="截止时间"
+                    android:textColor="#999"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/task_deadline"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="⏰ 今天 23:59"
+                    android:textColor="#FF5252"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- 创建时间 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="创建时间"
+                    android:textColor="#999"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/task_created"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="🕐 2026-02-24 20:00"
+                    android:textColor="#666"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <!-- 任务描述 -->
+            <LinearLayout
+                android:id="@+id/description_section"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/task_description_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="任务描述"
+                    android:textColor="#999"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/task_description"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="详细描述内容"
+                    android:textColor="#666"
+                    android:textSize="15sp"
+                    android:lineSpacingExtra="4dp" />
+            </LinearLayout>
         </LinearLayout>
+    </ScrollView>
 
-        <!-- 底部留白 -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="20dp" />
-
-    </LinearLayout>
-</ScrollView>
+</RelativeLayout>
