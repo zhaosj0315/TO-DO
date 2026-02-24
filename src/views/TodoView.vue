@@ -1887,28 +1887,6 @@
                 </select>
               </div>
             </div>
-          </div>
-          <!-- 任务属性组 -->
-          <div class="edit-section">
-            <div class="section-title">⚙️ 任务属性</div>
-            <div class="edit-row">
-              <div class="edit-field edit-field-half">
-                <label class="field-label">🏷️ 任务分类</label>
-                <select v-model="editCategory" class="input edit-select">
-                  <option value="work">💼 {{ t('work') }}</option>
-                  <option value="study">📚 {{ t('study') }}</option>
-                  <option value="life">🏠 {{ t('life') }}</option>
-                </select>
-              </div>
-              <div class="edit-field edit-field-half">
-                <label class="field-label">⚡ 优先级</label>
-                <select v-model="editPriority" class="input edit-select">
-                  <option v-for="opt in priorityOptions" :key="opt.value" :value="opt.value">
-                    {{ opt.label }}
-                  </option>
-                </select>
-              </div>
-            </div>
             <div class="edit-field">
               <label class="field-label">📅 任务类型</label>
               <select v-model="editType" class="input edit-select" @change="handleEditTypeChange">
