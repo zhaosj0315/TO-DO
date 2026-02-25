@@ -5529,9 +5529,6 @@ const formatLogTimeMini = (dateStr) => {
 const formatLogTimeFull = (dateStr) => {
   if (!dateStr) return ''
   const date = new Date(dateStr)
-  const now = new Date()
-  const diff = now - date
-  const hours = Math.floor(diff / (1000 * 60 * 60))
   
   const year = date.getFullYear()
   const month = date.getMonth() + 1
@@ -5539,25 +5536,7 @@ const formatLogTimeFull = (dateStr) => {
   const hour = String(date.getHours()).padStart(2, '0')
   const minute = String(date.getMinutes()).padStart(2, '0')
   
-  // 今天：显示时间 + 相对时间
-  if (hours < 24 && date.getDate() === now.getDate()) {
-    if (hours < 1) return `${hour}:${minute} (刚刚)`
-    return `${hour}:${minute} (${hours}小时前)`
-  }
-  
-  // 昨天
-  const yesterday = new Date(now)
-  yesterday.setDate(yesterday.getDate() - 1)
-  if (date.getDate() === yesterday.getDate() && date.getMonth() === yesterday.getMonth()) {
-    return `昨天 ${hour}:${minute}`
-  }
-  
-  // 本年内：显示月/日 时:分
-  if (year === now.getFullYear()) {
-    return `${month}/${day} ${hour}:${minute}`
-  }
-  
-  // 跨年：显示完整年/月/日 时:分
+  // 始终显示完整的 年/月/日 时:分
   return `${year}/${month}/${day} ${hour}:${minute}`
 }
 
@@ -5619,7 +5598,7 @@ const getMoodIcon = (mood) => {
 // 方法：排序日志（最新在上）
 const sortedLogs = (task) => {
   if (!task.logs) return []
-  return [...task.logs].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+  return [...task.logs].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
 }
 
 // 方法：打开添加日志弹窗

@@ -303,7 +303,6 @@ const formatDate = (dateStr) => {
 const formatLogTime = (dateStr) => {
   if (!dateStr) return ''
   const date = new Date(dateStr)
-  const now = new Date()
   
   const year = date.getFullYear()
   const month = date.getMonth() + 1
@@ -311,12 +310,7 @@ const formatLogTime = (dateStr) => {
   const hour = String(date.getHours()).padStart(2, '0')
   const minute = String(date.getMinutes()).padStart(2, '0')
   
-  // 本年内：显示 月/日 时:分
-  if (year === now.getFullYear()) {
-    return `${month}/${day} ${hour}:${minute}`
-  }
-  
-  // 跨年：显示 年/月/日 时:分
+  // 始终显示完整的 年/月/日 时:分
   return `${year}/${month}/${day} ${hour}:${minute}`
 }
 

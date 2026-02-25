@@ -125,16 +125,36 @@ const steps = [
     icon: '➕',
     title: '创建新任务',
     description: `
-      <strong>操作步骤</strong>：<br>
+      <strong>方式1 - 手动创建</strong>：<br>
       1. 在输入框中输入任务名称<br>
       2. 按 <strong>回车键</strong> 或点击右侧 <strong>✓</strong> 按钮<br>
       <br>
-      💡 创建任务后会自动展开属性设置区域
+      <strong>方式2 - 导入模板（推荐）</strong>：<br>
+      点击右上角头像 → 数据管理 → 下载模板 → 导入模板<br>
+      <br>
+      💡 模板包含100条示例任务，快速体验完整功能
     `,
     position: 'bottom',
     category: 'basic'
   },
-  // 5. 任务属性
+  // 5. 快速体验：导入模板数据
+  {
+    target: '.btn-avatar',
+    icon: '📦',
+    title: '快速体验：导入模板数据',
+    description: `
+      <strong>推荐新用户操作</strong>：<br>
+      1. 点击右上角头像打开个人中心<br>
+      2. 找到"数据管理"区域<br>
+      3. 点击"📥 下载导入模板"<br>
+      4. 点击"📂 导入任务"选择刚下载的文件<br>
+      <br>
+      💡 导入后可以看到完整的任务列表，包含各种类型、分类、优先级的任务示例
+    `,
+    position: 'bottom-left',
+    category: 'basic'
+  },
+  // 6. 任务属性
   {
     target: '.add-form-container',
     icon: '⚙️',
@@ -149,7 +169,7 @@ const steps = [
     position: 'bottom',
     category: 'basic'
   },
-  // 6. 搜索功能
+  // 7. 搜索功能
   {
     target: '.search-bar',
     icon: '🔍',
@@ -163,7 +183,7 @@ const steps = [
     position: 'bottom',
     category: 'basic'
   },
-  // 7. 任务卡片
+  // 8. 任务卡片
   {
     target: '.task-list',
     icon: '📝',
@@ -180,7 +200,7 @@ const steps = [
     position: 'bottom',
     category: 'basic'
   },
-  // 8. 任务详情页
+  // 9. 任务详情页
   {
     target: '.task-list',
     icon: '📋',
@@ -197,7 +217,7 @@ const steps = [
     position: 'bottom',
     category: 'advanced'
   },
-  // 9. 执行日志系统
+  // 10. 执行日志系统
   {
     target: '.task-list',
     icon: '💬',
@@ -216,7 +236,7 @@ const steps = [
     position: 'bottom',
     category: 'advanced'
   },
-  // 10. 添加日志
+  // 11. 添加日志
   {
     target: '.task-list',
     icon: '✍️',
@@ -234,7 +254,7 @@ const steps = [
     position: 'bottom',
     category: 'advanced'
   },
-  // 11. 进度追踪
+  // 12. 进度追踪
   {
     target: '.task-list',
     icon: '📊',
@@ -249,7 +269,7 @@ const steps = [
     position: 'bottom',
     category: 'advanced'
   },
-  // 12. 完成任务
+  // 13. 完成任务
   {
     target: '.task-list',
     icon: '✅',
@@ -264,7 +284,7 @@ const steps = [
     position: 'top',
     category: 'basic'
   },
-  // 13. 番茄钟计时
+  // 14. 番茄钟计时
   {
     target: '.task-list',
     icon: '🍅',
@@ -279,7 +299,7 @@ const steps = [
     position: 'bottom',
     category: 'advanced'
   },
-  // 14. 置顶任务
+  // 15. 置顶任务
   {
     target: '.task-list',
     icon: '📌',
@@ -294,7 +314,7 @@ const steps = [
     position: 'top',
     category: 'basic'
   },
-  // 15. 高级筛选
+  // 16. 高级筛选
   {
     target: '.filter-card',
     icon: '🎛️',
@@ -311,7 +331,7 @@ const steps = [
     position: 'bottom',
     category: 'advanced'
   },
-  // 16. 刷新按钮
+  // 17. 刷新按钮
   {
     target: '.btn-refresh-icon',
     icon: '🔄',
@@ -325,7 +345,7 @@ const steps = [
     position: 'bottom-left',
     category: 'basic'
   },
-  // 17. 回收站
+  // 18. 回收站
   {
     target: '.btn-trash',
     icon: '🗑️',
@@ -342,7 +362,7 @@ const steps = [
     position: 'bottom-left',
     category: 'basic'
   },
-  // 18. 数据管理
+  // 19. 数据管理
   {
     target: '.btn-avatar',
     icon: '💾',
@@ -357,7 +377,7 @@ const steps = [
     position: 'bottom-left',
     category: 'advanced'
   },
-  // 19. 个人中心
+  // 20. 个人中心
   {
     target: '.btn-avatar',
     icon: '👤',
@@ -374,7 +394,7 @@ const steps = [
     position: 'bottom-left',
     category: 'basic'
   },
-  // 20. 其他功能
+  // 21. 其他功能
   {
     target: null,
     icon: '🎁',
@@ -391,7 +411,7 @@ const steps = [
     position: 'center',
     category: 'intro'
   },
-  // 21. 完成页
+  // 22. 完成页
   {
     target: null,
     icon: '🎉',
@@ -420,12 +440,17 @@ const progressPercent = computed(() => {
 
 // 计算高亮区域位置
 const highlightStyle = ref({})
-const cardStyle = ref({})
+const cardStyle = ref({
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)'
+})
 
 const updatePositions = async () => {
   await nextTick()
   
   if (!currentStep.value.target) {
+    // 居中显示
     // 居中显示
     cardStyle.value = {
       top: '50%',
@@ -453,7 +478,8 @@ const updatePositions = async () => {
   }
   
   // 提示卡片位置
-  const cardWidth = 400
+  const maxCardWidth = 400
+  const actualCardWidth = Math.min(maxCardWidth, window.innerWidth - 40)
   const gap = 20
   const margin = 20  // 屏幕边距
   
@@ -462,27 +488,27 @@ const updatePositions = async () => {
   switch (currentStep.value.position) {
     case 'bottom':
       top = rect.bottom + gap
-      left = rect.left + rect.width / 2 - cardWidth / 2
+      left = rect.left + rect.width / 2 - actualCardWidth / 2
       break
     case 'top':
       top = rect.top - gap
-      left = rect.left + rect.width / 2 - cardWidth / 2
+      left = rect.left + rect.width / 2 - actualCardWidth / 2
       break
     case 'bottom-left':
       top = rect.bottom + gap
-      left = rect.right - cardWidth
+      left = rect.right - actualCardWidth
       break
     default:
       top = window.innerHeight / 2
-      left = window.innerWidth / 2 - cardWidth / 2
+      left = window.innerWidth / 2 - actualCardWidth / 2
   }
   
   // 水平边界检查
   if (left < margin) {
     left = margin
   }
-  if (left + cardWidth > window.innerWidth - margin) {
-    left = window.innerWidth - cardWidth - margin
+  if (left + actualCardWidth > window.innerWidth - margin) {
+    left = window.innerWidth - actualCardWidth - margin
   }
   
   // 垂直边界检查
@@ -587,7 +613,8 @@ if (typeof window !== 'undefined') {
 
 .tutorial-card {
   position: absolute;
-  width: 400px;
+  width: min(400px, calc(100vw - 40px));
+  max-width: 400px;
   max-height: 90vh;
   overflow-y: auto;
   background: white;
