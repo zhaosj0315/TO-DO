@@ -75,7 +75,7 @@
 
         <!-- 添加任务表单 - 两行布局 -->
         <div v-if="showAddForm" class="add-form-two-row">
-          <!-- 第一行：任务名称 -->
+          <!-- 第一行：任务名称 + 拍照按钮 -->
           <div class="add-form-row-main">
             <input 
               type="text" 
@@ -84,6 +84,9 @@
               :placeholder="t('addTaskPlaceholder')"
               @keyup.enter="addTask"
             >
+            <button class="btn-camera" @click="scanTextFromCamera" :title="t('scanText')">
+              📷
+            </button>
           </div>
 
           <!-- 只有输入任务名称后才显示以下部分 -->
@@ -2301,6 +2304,10 @@ import { Preferences } from '@capacitor/preferences'
 import { Filesystem, Directory } from '@capacitor/filesystem'
 import { LocalNotifications } from '@capacitor/local-notifications'
 import { Capacitor } from '@capacitor/core'
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera'
+
+// 注册中文OCR插件
+const ChineseOcr = Capacitor.registerPlugin('ChineseOcr')
 import * as XLSX from 'xlsx'
 import html2canvas from 'html2canvas'
 import EChart from '../components/EChart.vue'
@@ -2332,6 +2339,7 @@ const i18n = {
     searchPlaceholder: '🔍 搜索任务名称或描述...',
     // 添加任务
     addTaskPlaceholder: '➕ 新建任务：输入任务名称...',
+    scanText: '拍照识别文字',
     descriptionPlaceholder: '📝 添加详细描述（可选）...',
     // 按钮
     add: '添加',
@@ -2512,6 +2520,7 @@ const i18n = {
     searchPlaceholder: '🔍 Search tasks...',
     // 添加任务
     addTaskPlaceholder: '➕ New task: Enter title...',
+    scanText: 'Scan text from camera',
     descriptionPlaceholder: '📝 Add description (optional)...',
     // 按钮
     add: 'Add',
@@ -3581,6 +3590,55 @@ const addTaskAndClose = async () => {
   await addTask()
   if (newTaskText.value.trim()) {
     showAddForm.value = false
+  }
+}
+
+// 方法：拍照识别文字
+const scanTextFromCamera = async () => {
+  try {
+    // 1. 拍照
+    const photo = await Camera.getPhoto({
+      quality: 90,
+      allowEditing: false,
+      resultType: CameraResultType.Uri,
+      source: CameraSource.Camera
+    })
+    
+    console.log('照片路径:', photo.path)
+    
+    // 2. 中文OCR识别
+    const result = await ChineseOcr.detectText({ 
+      filename: photo.path
+    })
+    
+    console.log('OCR结果:', JSON.stringify(result))
+    
+    // 3. 提取文字并智能分配
+    if (result && result.textDetections && result.textDetections.length > 0) {
+      const lines = result.textDetections.map(d => d.text.trim()).filter(t => t)
+      
+      if (lines.length === 0) {
+        showNotification('未识别到文字', 'error')
+        return
+      }
+      
+      // 第一行作为标题
+      newTaskText.value = lines[0]
+      
+      // 其余行作为描述
+      if (lines.length > 1) {
+        newTaskDescription.value = lines.slice(1).join('\n')
+        showNotification(`识别成功！标题+${lines.length - 1}行描述`, 'success')
+      } else {
+        newTaskDescription.value = ''
+        showNotification('识别成功！已填充标题', 'success')
+      }
+    } else {
+      showNotification('未识别到文字，请确保照片清晰且包含文字', 'error')
+    }
+  } catch (error) {
+    console.error('拍照识别失败:', error)
+    showNotification(`识别失败: ${error.message || '未知错误'}`, 'error')
   }
 }
 
@@ -11402,6 +11460,32 @@ watch(() => reportData.value, (newData) => {
   background: transparent;
   border-radius: 0;
   box-shadow: none;
+}
+
+.btn-camera {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.btn-camera:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.btn-camera:active {
+  transform: scale(0.95);
 }
 
 .task-input-main {

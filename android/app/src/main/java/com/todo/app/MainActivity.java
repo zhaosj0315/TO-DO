@@ -16,6 +16,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(FullScreenNotificationPlugin.class);
+        registerPlugin(ChineseOcrPlugin.class);
         super.onCreate(savedInstanceState);
         
         // 注册广播接收器

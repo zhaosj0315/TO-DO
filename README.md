@@ -385,6 +385,20 @@ userInfo[username] = {
 
 ## 📝 版本历史 | Version History
 
+### v1.7.3 (2026-02-25)
+- ✨ **拍照识别文字功能（OCR）**:
+  - 新增📷拍照按钮（任务输入框旁）
+  - 集成@capacitor/camera相机插件
+  - 集成@capacitor-community/image-to-text OCR插件
+  - 使用Android MLKit离线识别（无需网络）
+  - 支持中英文混合识别
+  - 一键拍照自动填充任务标题
+- 🔧 **技术优化**:
+  - 添加相机和存储权限
+  - 配置Firebase MLKit（离线模式）
+  - 修复Java版本兼容性（强制Java 17）
+  - 优化添加日志弹窗为全屏宽度Bottom Sheet
+
 ### v1.7.2 (2026-02-25)
 - 🐛 **Bug修复**:
   - 修复演示模式第一步闪现问题（初始化居中样式）
