@@ -3625,14 +3625,10 @@ const scanTextFromCamera = async () => {
       // 第一行作为标题
       newTaskText.value = lines[0]
       
-      // 其余行作为描述
-      if (lines.length > 1) {
-        newTaskDescription.value = lines.slice(1).join('\n')
-        showNotification(`识别成功！标题+${lines.length - 1}行描述`, 'success')
-      } else {
-        newTaskDescription.value = ''
-        showNotification('识别成功！已填充标题', 'success')
-      }
+      // 所有行（包括第一行）作为描述
+      newTaskDescription.value = lines.join('\n')
+      
+      showNotification(`识别成功！标题+${lines.length}行完整内容`, 'success')
     } else {
       showNotification('未识别到文字，请确保照片清晰且包含文字', 'error')
     }
