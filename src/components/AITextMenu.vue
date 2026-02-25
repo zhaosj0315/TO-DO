@@ -3,7 +3,8 @@
     v-if="visible" 
     class="ai-text-menu"
     :style="{ top: position.top + 'px', left: position.left + 'px' }"
-    @mousedown.prevent
+    @mousedown.prevent.stop
+    @mouseup.stop
   >
     <div class="menu-row">
       <button @click="handleAction('improve')" class="menu-btn" title="改进写作">
@@ -64,38 +65,58 @@ const props = defineProps({
 const emit = defineEmits(['close', 'action'])
 
 const showToneMenu = ref(false)
+const internalText = ref('') // 内部存储的文本
 
-// 监听可见性变化，重置子菜单
+// 监听 visible 变化
 watch(() => props.visible, (newVal) => {
+  console.log('AITextMenu - visible changed to:', newVal, 'selectedText:', props.selectedText)
+  if (newVal) {
+    // 当菜单显示时，立即捕获并存储 selectedText
+    internalText.value = props.selectedText
+  }
   if (!newVal) {
     showToneMenu.value = false
   }
 })
 
 const handleAction = (action) => {
-  console.log('AITextMenu handleAction:', action, 'selectedText:', props.selectedText)
+  // 使用内部存储的文本，而不是直接从 props 读取
+  const textToProcess = internalText.value
+  console.log('AITextMenu handleAction:', action, 'props.selectedText:', props.selectedText, 'textToProcess:', textToProcess)
   
   if (action === 'tone') {
     showToneMenu.value = !showToneMenu.value
     return
   }
   
+  // 先发送 action，再关闭菜单
   emit('action', {
     action,
-    text: props.selectedText
+    text: textToProcess
   })
-  emit('close')
+  
+  // 延迟关闭，确保 action 处理完成
+  setTimeout(() => {
+    emit('close')
+  }, 0)
 }
 
 const handleTone = (tone) => {
-  console.log('AITextMenu handleTone:', tone, 'selectedText:', props.selectedText)
+  // 使用内部存储的文本
+  const textToProcess = internalText.value
+  console.log('AITextMenu handleTone:', tone, 'props.selectedText:', props.selectedText, 'textToProcess:', textToProcess)
   
+  // 先发送 action，再关闭菜单
   emit('action', {
     action: 'tone',
     tone,
-    text: props.selectedText
+    text: textToProcess
   })
-  emit('close')
+  
+  // 延迟关闭
+  setTimeout(() => {
+    emit('close')
+  }, 0)
 }
 </script>
 

@@ -85,13 +85,19 @@ export function useTextSelection(containerRef) {
     // 点击菜单外部时关闭
     if (showMenu.value) {
       showMenu.value = false
-      frozenText.value = '' // 清空冻结的文本
+      // 延迟清空
+      setTimeout(() => {
+        frozenText.value = ''
+      }, 100)
     }
   }
 
   const closeMenu = () => {
     showMenu.value = false
-    frozenText.value = '' // 清空冻结的文本
+    // 延迟清空，确保 action 处理完成
+    setTimeout(() => {
+      frozenText.value = ''
+    }, 100)
   }
 
   const replaceSelectedText = (newText) => {
@@ -99,7 +105,10 @@ export function useTextSelection(containerRef) {
       selectionRange.value.deleteContents()
       selectionRange.value.insertNode(document.createTextNode(newText))
       showMenu.value = false
-      frozenText.value = '' // 清空冻结的文本
+      // 延迟清空，确保替换完成
+      setTimeout(() => {
+        frozenText.value = ''
+      }, 100)
     }
   }
 
