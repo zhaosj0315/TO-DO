@@ -8,6 +8,10 @@
           <h1>{{ currentUsername }}{{ t('tasksSuffix') }}</h1>
         </div>
         <div class="header-actions">
+          <!-- 演示模式按钮 -->
+          <button class="btn-icon-circle btn-tutorial" @click="startTutorial" :title="t('tutorial')">
+            💡
+          </button>
           <!-- 刷新按钮 -->
           <button class="btn-icon-circle btn-refresh-icon" @click="handleRefresh" :title="t('refresh')">
             <span :class="{ spinning: isRefreshing }">⟳</span>
@@ -1843,6 +1847,13 @@
       @submit="handleAddLog"
     />
 
+    <!-- 演示模式 -->
+    <TutorialMode
+      :active="showTutorial"
+      @close="handleTutorialSkip"
+      @finish="handleTutorialFinish"
+    />
+
     <!-- 备份管理弹窗 -->
     <div v-if="showBackupList" class="modal-overlay" @click.self="showBackupList = false">
       <div class="modal-content glass-card" style="max-width: 600px; width: 96%;">
@@ -2275,6 +2286,7 @@ import * as XLSX from 'xlsx'
 import html2canvas from 'html2canvas'
 import EChart from '../components/EChart.vue'
 import AddLogModal from '../components/AddLogModal.vue'
+import TutorialMode from '../components/TutorialMode.vue'
 import { CountUp } from 'countup.js'
 import { manualBackup, listBackups, restoreBackup } from '../utils/autoBackup'
 import { taskToExcelRow, generateTemplateData, excelRowToTask } from '../utils/excelFormat'
@@ -2326,6 +2338,7 @@ const i18n = {
     medium: '中',
     low: '低',
     // 其他
+    tutorial: '演示模式',
     refresh: '刷新',
     trash: '回收站',
     profile: '个人主页',
@@ -5653,6 +5666,36 @@ const showAllLogs = ref(false)
 const showAddLogModal = ref(false)
 const currentLogTask = ref(null)
 
+// 状态：演示模式
+const showTutorial = ref(false)
+
+// 方法：开始演示模式
+const startTutorial = () => {
+  showTutorial.value = true
+}
+
+// 方法：演示模式跳过
+const handleTutorialSkip = async () => {
+  showTutorial.value = false
+  // 同样保存完成标记，避免下次登录再次触发
+  await Preferences.set({ 
+    key: `tutorial_${userStore.currentUser}`, 
+    value: 'skipped' 
+  })
+}
+
+// 方法：演示模式完成
+const handleTutorialFinish = async () => {
+  showTutorial.value = false
+  // 保存用户级别的教程完成标记
+  await Preferences.set({ 
+    key: `tutorial_${userStore.currentUser}`, 
+    value: 'true' 
+  })
+  // 显示完成提示
+  showNotification('🎉 恭喜完成新手教程！', 'success')
+}
+
 // 方法：编辑用户名
 const editingUsername = ref(false)
 const usernameInput = ref(null)
@@ -6977,6 +7020,15 @@ onMounted(async () => {
   if (!hasSeenWelcome) {
     showWelcome.value = true
     await Preferences.set({ key: `welcome_${userStore.currentUser}`, value: 'true' })
+  }
+  
+  // 检查是否需要自动启动演示模式（新用户首次登录）
+  const { value: tutorialCompleted } = await Preferences.get({ key: `tutorial_${userStore.currentUser}` })
+  if (!tutorialCompleted) {
+    // 延迟1秒启动，让用户先看到主界面
+    setTimeout(() => {
+      showTutorial.value = true
+    }, 1000)
   }
   
   // 检查是否需要备份提醒
@@ -8699,6 +8751,30 @@ watch(() => reportData.value, (newData) => {
 .btn-refresh-icon:hover {
   background: rgba(102, 126, 234, 0.4) !important;
   color: white !important;
+}
+
+/* 演示模式按钮 */
+.btn-tutorial {
+  font-size: 1.6rem;
+  background: rgba(255, 193, 7, 0.25) !important;
+  color: white !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  animation: glow 2s ease-in-out infinite;
+}
+
+.btn-tutorial:hover {
+  background: rgba(255, 193, 7, 0.4) !important;
+  color: white !important;
+  animation: none;
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(255, 193, 7, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(255, 193, 7, 0.8);
+  }
 }
 
 /* 回收站按钮 */

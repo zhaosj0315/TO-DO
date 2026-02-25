@@ -226,7 +226,7 @@ const showAddLogModal = ref(false)
 // 排序后的日志（最新的在上面）
 const sortedLogs = computed(() => {
   if (!props.task.logs) return []
-  return [...props.task.logs].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+  return [...props.task.logs].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
 })
 
 // 状态文本
@@ -304,30 +304,20 @@ const formatLogTime = (dateStr) => {
   if (!dateStr) return ''
   const date = new Date(dateStr)
   const now = new Date()
-  const diff = now - date
-  const hours = Math.floor(diff / (1000 * 60 * 60))
   
-  // 显示完整日期时间
+  const year = date.getFullYear()
   const month = date.getMonth() + 1
   const day = date.getDate()
   const hour = String(date.getHours()).padStart(2, '0')
   const minute = String(date.getMinutes()).padStart(2, '0')
   
-  // 今天：显示时间 + 相对时间
-  if (hours < 24 && date.getDate() === now.getDate()) {
-    if (hours < 1) return `${hour}:${minute} (刚刚)`
-    return `${hour}:${minute} (${hours}小时前)`
+  // 本年内：显示 月/日 时:分
+  if (year === now.getFullYear()) {
+    return `${month}/${day} ${hour}:${minute}`
   }
   
-  // 昨天
-  const yesterday = new Date(now)
-  yesterday.setDate(yesterday.getDate() - 1)
-  if (date.getDate() === yesterday.getDate() && date.getMonth() === yesterday.getMonth()) {
-    return `昨天 ${hour}:${minute}`
-  }
-  
-  // 其他：显示完整日期
-  return `${month}/${day} ${hour}:${minute}`
+  // 跨年：显示 年/月/日 时:分
+  return `${year}/${month}/${day} ${hour}:${minute}`
 }
 
 // 时长格式化
