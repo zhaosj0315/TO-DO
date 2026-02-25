@@ -14,12 +14,36 @@
 
       <!-- 滚动内容区 -->
       <div class="detail-content">
-        <!-- 任务概览 -->
+        <!-- 任务概览（紧凑版） -->
         <section class="overview-section">
-          <h3>📊 任务概览</h3>
-          <div class="overview-card">
+          <h3>📊 任务信息</h3>
+          <div class="overview-grid">
+            <div class="overview-item editable-item" @dblclick="startEditField('priority')" title="双击编辑">
+              <span class="label">优先级</span>
+              <span v-if="editingField !== 'priority'" :class="['priority-badge', task.priority]">
+                {{ getPriorityIcon(task.priority) }} {{ getPriorityText(task.priority) }}
+              </span>
+              <select v-else v-model="editingValue" @blur="saveField('priority')" @keydown.enter="saveField('priority')" @keydown.esc="cancelEdit" class="field-select" ref="fieldInput">
+                <option value="high">⚡ 高</option>
+                <option value="medium">📊 中</option>
+                <option value="low">📉 低</option>
+              </select>
+            </div>
+            
+            <div class="overview-item editable-item" @dblclick="startEditField('category')" title="双击编辑">
+              <span class="label">分类</span>
+              <span v-if="editingField !== 'category'" class="category-badge">
+                {{ getCategoryIcon(task.category) }} {{ getCategoryText(task.category) }}
+              </span>
+              <select v-else v-model="editingValue" @blur="saveField('category')" @keydown.enter="saveField('category')" @keydown.esc="cancelEdit" class="field-select" ref="fieldInput">
+                <option value="work">💼 工作</option>
+                <option value="study">📚 学习</option>
+                <option value="life">🏠 生活</option>
+              </select>
+            </div>
+            
             <div class="overview-item">
-              <span class="label">状态:</span>
+              <span class="label">状态</span>
               <span :class="['status-badge', task.status]">
                 {{ getStatusText(task.status) }}
                 <span v-if="task.status === 'pending' && task.stats?.totalLogs > 0">
@@ -27,62 +51,39 @@
                 </span>
               </span>
             </div>
+            
             <div class="overview-item">
-              <span class="label">优先级:</span>
-              <span :class="['priority-badge', task.priority]">
-                {{ getPriorityIcon(task.priority) }} {{ getPriorityText(task.priority) }}
-              </span>
-            </div>
-            <div class="overview-item">
-              <span class="label">分类:</span>
-              <span class="category-badge">
-                {{ getCategoryIcon(task.category) }} {{ getCategoryText(task.category) }}
-              </span>
-            </div>
-            <div class="overview-item">
-              <span class="label">截止:</span>
+              <span class="label">截止</span>
               <span :class="['deadline-text', getDeadlineClass(task)]">
                 {{ formatDeadline(task) }}
               </span>
             </div>
-            <div class="overview-item">
-              <span class="label">创建:</span>
-              <span>{{ formatDate(task.created_at) }}</span>
-            </div>
-            <div v-if="task.completed_at" class="overview-item">
-              <span class="label">完成:</span>
-              <span>{{ formatDate(task.completed_at) }}</span>
-            </div>
           </div>
-        </section>
-
-        <!-- 时间进度 -->
-        <section class="timeline-section">
-          <h3>⏰ 时间进度</h3>
-          <div class="timeline-container">
+          
+          <!-- 时间轴（横向版） -->
+          <div class="timeline-horizontal">
             <div class="timeline-item">
+              <div class="timeline-label">创建</div>
               <div class="timeline-dot created"></div>
-              <div class="timeline-content">
-                <div class="timeline-label">创建时间</div>
-                <div class="timeline-value">{{ formatDate(task.created_at) }}</div>
-              </div>
+              <div class="timeline-time">{{ formatDate(task.created_at) }}</div>
             </div>
-            <div class="timeline-line"></div>
+            
+            <div class="timeline-connector"></div>
+            
             <div class="timeline-item">
+              <div class="timeline-label">截止</div>
               <div :class="['timeline-dot', getDeadlineClass(task)]"></div>
-              <div class="timeline-content">
-                <div class="timeline-label">截止时间</div>
-                <div class="timeline-value">{{ formatDeadline(task) }}</div>
-              </div>
+              <div class="timeline-time">{{ formatDeadline(task) }}</div>
             </div>
-            <div v-if="task.completed_at" class="timeline-line completed"></div>
-            <div v-if="task.completed_at" class="timeline-item">
-              <div class="timeline-dot completed"></div>
-              <div class="timeline-content">
-                <div class="timeline-label">完成时间</div>
-                <div class="timeline-value">{{ formatDate(task.completed_at) }}</div>
+            
+            <template v-if="task.completed_at">
+              <div class="timeline-connector"></div>
+              <div class="timeline-item">
+                <div class="timeline-label">完成</div>
+                <div class="timeline-dot completed"></div>
+                <div class="timeline-time">{{ formatDate(task.completed_at) }}</div>
               </div>
-            </div>
+            </template>
           </div>
         </section>
 
@@ -149,20 +150,42 @@
               :key="log.id"
               :class="['log-item', `log-${log.type}`]"
             >
-              <div class="log-header">
-                <span class="log-type">{{ getLogTypeIcon(log.type) }} {{ getLogTypeText(log.type) }}</span>
-                <span class="log-time">{{ formatLogTime(log.timestamp) }}</span>
+              <!-- 日志头部：类型+进度+时间+删除 -->
+              <div class="log-header-compact">
+                <span class="log-type">
+                  {{ getLogTypeIcon(log.type) }} {{ getLogTypeText(log.type) }}
+                  <span v-if="log.progress !== null" class="progress-inline">📊 {{ log.progress }}%</span>
+                </span>
+                <div class="log-actions">
+                  <span class="log-time">{{ formatLogTime(log.timestamp) }}</span>
+                  <button class="log-delete-btn" @click="deleteLog(log.id)" title="删除">🗑️</button>
+                </div>
               </div>
-              <div class="log-content">{{ log.content }}</div>
-              <div v-if="log.duration || log.progress !== null || log.tags?.length" class="log-meta">
-                <span v-if="log.duration" class="meta-item">⏱️ 耗时 {{ formatDuration(log.duration) }}</span>
-                <span v-if="log.progress !== null" class="meta-item">📊 进度 {{ log.progress }}%</span>
+              
+              <!-- 日志内容（无标签） -->
+              <div class="log-content-edit">
+                <textarea 
+                  v-model="log.content"
+                  @blur="saveLogContent(log)"
+                  @input="autoResizeTextarea($event); updateLogContent(log)"
+                  class="input textarea log-content-textarea" 
+                  placeholder="输入日志内容..."
+                  rows="1"
+                  maxlength="500"
+                ></textarea>
+                <div class="char-count">{{ (log.content || '').length }}/500 · {{ (log.content || '').split('\n').length }} 行</div>
+              </div>
+              
+              <!-- 元数据（一行显示） -->
+              <div v-if="log.duration || log.mood || log.tags?.length || log.rating" class="log-meta-compact">
+                <span v-if="log.duration" class="meta-item">⏱️ {{ formatDuration(log.duration) }}</span>
                 <span v-if="log.mood" class="meta-item">{{ getMoodIcon(log.mood) }}</span>
                 <span v-if="log.rating" class="meta-item">{{ '⭐'.repeat(log.rating) }}</span>
+                <span v-if="log.tags?.length" class="meta-tags">
+                  <span v-for="tag in log.tags" :key="tag" class="tag-inline">#{{ tag }}</span>
+                </span>
               </div>
-              <div v-if="log.tags?.length" class="log-tags">
-                <span v-for="tag in log.tags" :key="tag" class="log-tag">#{{ tag }}</span>
-              </div>
+              
               <div v-if="log.lessons?.length" class="log-lessons">
                 <div class="lessons-title">📚 经验教训:</div>
                 <ul>
@@ -207,7 +230,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useOfflineTaskStore } from '../stores/offlineTaskStore'
 import AddLogModal from './AddLogModal.vue'
 
@@ -222,6 +245,22 @@ const emit = defineEmits(['close', 'edit', 'refresh'])
 
 const taskStore = useOfflineTaskStore()
 const showAddLogModal = ref(false)
+
+// 编辑字段状态
+const editingField = ref(null)
+const editingValue = ref('')
+const fieldInput = ref(null)
+
+// 初始化所有textarea的自适应高度
+onMounted(() => {
+  nextTick(() => {
+    const textareas = document.querySelectorAll('.log-content-textarea')
+    textareas.forEach(textarea => {
+      textarea.style.height = 'auto'
+      textarea.style.height = textarea.scrollHeight + 'px'
+    })
+  })
+})
 
 // 排序后的日志（最新的在上面）
 const sortedLogs = computed(() => {
@@ -300,6 +339,21 @@ const formatDate = (dateStr) => {
   return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 }
 
+// 日期格式化（简短版，用于时间轴）
+const formatDateShort = (dateStr) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return `${date.getMonth() + 1}/${date.getDate()}`
+}
+
+// 截止时间格式化（简短版）
+const formatDeadlineShort = (task) => {
+  const deadline = getTaskDeadline(task)
+  if (!deadline) return '无'
+  const date = new Date(deadline)
+  return `${date.getMonth() + 1}/${date.getDate()}`
+}
+
 const formatLogTime = (dateStr) => {
   if (!dateStr) return ''
   const date = new Date(dateStr)
@@ -324,6 +378,70 @@ const formatDuration = (minutes) => {
   
   if (mins === 0) return `${hours}小时`
   return `${hours}小时${mins}分钟`
+}
+
+// 自适应textarea高度
+const autoResizeTextarea = (event) => {
+  const textarea = event.target
+  textarea.style.height = 'auto'
+  textarea.style.height = textarea.scrollHeight + 'px'
+}
+
+// 更新日志内容（实时）
+const updateLogContent = (log) => {
+  // 实时更新，不需要额外操作
+}
+
+// 保存日志内容（失焦时）
+const saveLogContent = (log) => {
+  if (log.content && log.content.trim()) {
+    const updatedTask = { ...props.task }
+    const logIndex = updatedTask.logs.findIndex(l => l.id === log.id)
+    if (logIndex !== -1) {
+      updatedTask.logs[logIndex].content = log.content.trim()
+      taskStore.updateTask(updatedTask)
+      emit('refresh')
+    }
+  }
+}
+
+// 开始编辑字段
+const startEditField = (field) => {
+  editingField.value = field
+  editingValue.value = props.task[field]
+  setTimeout(() => {
+    if (fieldInput.value) {
+      fieldInput.value.focus()
+    }
+  }, 50)
+}
+
+// 保存字段
+const saveField = (field) => {
+  if (editingValue.value) {
+    const updatedTask = { ...props.task }
+    updatedTask[field] = editingValue.value
+    taskStore.updateTask(updatedTask)
+    emit('refresh')
+  }
+  editingField.value = null
+  editingValue.value = ''
+}
+
+// 取消编辑
+const cancelEdit = () => {
+  editingField.value = null
+  editingValue.value = ''
+}
+
+// 删除日志
+const deleteLog = (logId) => {
+  if (confirm('确定要删除这条日志吗？')) {
+    const updatedTask = { ...props.task }
+    updatedTask.logs = updatedTask.logs.filter(l => l.id !== logId)
+    taskStore.updateTask(updatedTask)
+    emit('refresh')
+  }
 }
 
 // 日志类型
@@ -509,10 +627,110 @@ section h3 {
   padding: 1rem;
 }
 
+/* 概览网格（紧凑版） */
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* 时间轴（横向版） */
+.timeline-horizontal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border-radius: 12px;
+  padding: 1.5rem 1rem;
+  position: relative;
+}
+
+.timeline-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+  z-index: 2;
+}
+
+.timeline-label {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 600;
+}
+
+.timeline-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.timeline-dot.created {
+  background: #4caf50;
+  box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.2);
+}
+
+.timeline-dot.completed {
+  background: #2196f3;
+  box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.2);
+}
+
+.timeline-dot.normal {
+  background: #667eea;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2);
+}
+
+.timeline-dot.warning {
+  background: #ff9800;
+  box-shadow: 0 0 0 4px rgba(255, 152, 0, 0.2);
+}
+
+.timeline-dot.urgent {
+  background: #f44336;
+  box-shadow: 0 0 0 4px rgba(244, 67, 54, 0.2);
+}
+
+.timeline-dot.overdue {
+  background: #d32f2f;
+  box-shadow: 0 0 0 4px rgba(211, 47, 47, 0.2);
+}
+
+.timeline-time {
+  font-size: 0.9rem;
+  color: #333;
+  font-weight: 500;
+}
+
+.timeline-connector {
+  flex: 1;
+  height: 2px;
+  background: linear-gradient(to right, rgba(102, 126, 234, 0.3), rgba(102, 126, 234, 0.1));
+  margin: 0 0.5rem;
+  position: relative;
+  top: -12px;
+}
+
 .overview-item {
   display: flex;
   align-items: center;
   margin-bottom: 0.5rem;
+}
+
+.overview-item.editable-item {
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.overview-item.editable-item:hover {
+  background: rgba(102, 126, 234, 0.05);
 }
 
 .overview-item:last-child {
@@ -523,6 +741,21 @@ section h3 {
   font-weight: 600;
   color: #666;
   min-width: 60px;
+}
+
+.field-select {
+  padding: 0.25rem 0.5rem;
+  border: 2px solid #667eea;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  background: white;
+  cursor: pointer;
+}
+
+.field-select:focus {
+  outline: none;
+  border-color: #764ba2;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .status-badge {
@@ -809,10 +1042,56 @@ section h3 {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0.5rem;
+  gap: 0.5rem;
+}
+
+/* 日志头部（紧凑版） */
+.log-header-compact {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  gap: 0.5rem;
+}
+
+.log-header-compact .log-type {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #333;
+  flex: 1;
+}
+
+.log-header-compact .log-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.log-header-compact .progress-inline {
+  margin-left: 0.5rem;
+  font-size: 0.75rem;
+  color: #667eea;
+  font-weight: 500;
+}
+
+.log-delete-btn {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+  padding: 0.25rem;
+}
+
+.log-delete-btn:hover {
+  opacity: 1;
 }
 
 .log-type {
   font-weight: 600;
+  flex: 1;
+}
   font-size: 0.9rem;
   color: #333;
 }
@@ -826,6 +1105,43 @@ section h3 {
   color: #333;
   line-height: 1.6;
   margin-bottom: 0.5rem;
+}
+
+.log-content-edit {
+  margin: 0.5rem 0;
+}
+
+.log-content-edit .edit-field {
+  margin-bottom: 0;
+}
+
+.log-content-textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: none;
+  min-height: 36px;
+  max-height: 200px;
+  overflow-y: auto;
+  transition: border-color 0.2s;
+  line-height: 1.5;
+}
+
+.log-content-textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.char-count {
+  font-size: 0.75rem;
+  color: #999;
+  text-align: right;
+  margin-top: 0.25rem;
+}
   white-space: pre-wrap;
 }
 
@@ -834,6 +1150,38 @@ section h3 {
   flex-wrap: wrap;
   gap: 0.75rem;
   margin-top: 0.5rem;
+}
+
+/* 元数据（紧凑版） */
+.log-meta-compact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.log-meta-compact .meta-item {
+  font-size: 0.75rem;
+  color: #666;
+  background: #f8f9fa;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+}
+
+.log-meta-compact .meta-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.log-meta-compact .tag-inline {
+  display: inline-block;
+  background: rgba(102, 126, 234, 0.1);
+  color: #667eea;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
 }
 
 .meta-item {

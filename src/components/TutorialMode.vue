@@ -622,18 +622,7 @@ if (typeof window !== 'undefined') {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   pointer-events: auto;
   z-index: 10001;
-  animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  opacity: 1;
 }
 
 .tutorial-header {

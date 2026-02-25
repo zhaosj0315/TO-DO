@@ -1744,18 +1744,37 @@
                 :key="log.id"
                 :class="['log-full-item', `log-${log.type}`]"
               >
+                <!-- 第一行：类型、进度、时间、删除按钮 -->
                 <div class="log-full-header">
-                  <span class="log-type-full">{{ getLogTypeIcon(log.type) }} {{ getLogTypeText(log.type) }}</span>
+                  <span class="log-type-full">
+                    {{ getLogTypeIcon(log.type) }} {{ getLogTypeText(log.type) }}
+                    <span v-if="log.progress !== null" class="progress-inline">📊 {{ log.progress }}%</span>
+                  </span>
                   <span class="log-time-full">{{ formatLogTimeFull(log.timestamp) }}</span>
+                  <button class="log-delete-btn-mini" @click="deleteLogFromEdit(log.id)" title="删除日志">🗑️</button>
                 </div>
-                <div class="log-content-full">{{ log.content }}</div>
-                <div v-if="log.duration || log.progress !== null || log.tags?.length" class="log-meta-full">
+                
+                <!-- 第二行：日志内容编辑区 -->
+                <div class="edit-field" style="margin-top: 0.5rem;">
+                  <textarea 
+                    v-model="log.content"
+                    @blur="saveEditingTask"
+                    @input="autoResizeTextarea($event)"
+                    class="input textarea log-content-textarea-mini" 
+                    placeholder="输入日志内容..."
+                    rows="1"
+                    maxlength="500"
+                  ></textarea>
+                  <div class="char-count">{{ (log.content || '').length }}/500 · {{ (log.content || '').split('\n').length }} 行</div>
+                </div>
+                
+                <!-- 第三行：元数据（耗时、心情、标签） -->
+                <div v-if="log.duration || log.mood || log.tags?.length" class="log-meta-full">
                   <span v-if="log.duration" class="meta-item-full">⏱️ {{ formatDurationMini(log.duration) }}</span>
-                  <span v-if="log.progress !== null" class="meta-item-full">📊 {{ log.progress }}%</span>
                   <span v-if="log.mood" class="meta-item-full">{{ getMoodIcon(log.mood) }}</span>
-                </div>
-                <div v-if="log.tags?.length" class="log-tags-full">
-                  <span v-for="tag in log.tags" :key="tag" class="log-tag-full">#{{ tag }}</span>
+                  <span v-if="log.tags?.length" class="meta-item-full">
+                    <span v-for="tag in log.tags" :key="tag" class="log-tag-inline">#{{ tag }}</span>
+                  </span>
                 </div>
               </div>
             </div>
@@ -3955,6 +3974,15 @@ const openEditModal = (task) => {
   }
   
   editWeekdays.value = task.weekdays ? [...task.weekdays] : []
+  
+  // 初始化所有textarea的自适应高度
+  nextTick(() => {
+    const textareas = document.querySelectorAll('.log-content-textarea-mini')
+    textareas.forEach(textarea => {
+      textarea.style.height = 'auto'
+      textarea.style.height = textarea.scrollHeight + 'px'
+    })
+  })
 }
 
 // 方法：打开任务详情（统一入口：复用编辑 Bottom Sheet）
@@ -5525,6 +5553,13 @@ const formatLogTimeMini = (dateStr) => {
   return `${date.getMonth() + 1}/${date.getDate()}`
 }
 
+// 自适应textarea高度
+const autoResizeTextarea = (event) => {
+  const textarea = event.target
+  textarea.style.height = 'auto'
+  textarea.style.height = textarea.scrollHeight + 'px'
+}
+
 // 方法：格式化日志时间（完整版）
 const formatLogTimeFull = (dateStr) => {
   if (!dateStr) return ''
@@ -5605,6 +5640,16 @@ const sortedLogs = (task) => {
 const openAddLogModal = (task) => {
   currentLogTask.value = task
   showAddLogModal.value = true
+}
+
+// 方法：从编辑弹窗删除日志
+const deleteLogFromEdit = (logId) => {
+  if (confirm('确定要删除这条日志吗？')) {
+    if (editingTask.value) {
+      editingTask.value.logs = editingTask.value.logs.filter(l => l.id !== logId)
+      saveEditingTask()
+    }
+  }
 }
 
 // 方法：处理添加日志
@@ -10983,17 +11028,61 @@ watch(() => reportData.value, (newData) => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0.5rem;
+  gap: 0.5rem;
 }
 
 .log-type-full {
   font-weight: 600;
   font-size: 0.85rem;
   color: #333;
+  flex: 1;
+}
+
+.progress-inline {
+  margin-left: 0.5rem;
+  font-size: 0.75rem;
+  color: #667eea;
+  font-weight: 500;
 }
 
 .log-time-full {
   font-size: 0.75rem;
   color: #999;
+}
+
+.log-delete-btn-mini {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+  padding: 0.25rem;
+}
+
+.log-delete-btn-mini:hover {
+  opacity: 1;
+}
+
+.log-content-textarea-mini {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  resize: none;
+  min-height: 36px;
+  max-height: 200px;
+  overflow-y: auto;
+  transition: border-color 0.2s;
+  line-height: 1.5;
+}
+
+.log-content-textarea-mini:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .log-content-full {
@@ -11008,7 +11097,18 @@ watch(() => reportData.value, (newData) => {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  align-items: center;
   margin-top: 0.5rem;
+}
+
+.log-tag-inline {
+  display: inline-block;
+  background: rgba(102, 126, 234, 0.1);
+  color: #667eea;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  margin-left: 0.25rem;
 }
 
 .meta-item-full {
