@@ -10,6 +10,15 @@
 This is an **offline Android To-Do management application** built with **Vue 3** and **Capacitor**. All data is stored locally on the device using Capacitor Preferences API, requiring **no internet connection or backend server**.
 
 ### 🌟 Key Features
+- **AI Chat Assistant** 🤖 (NEW in v1.7.4):
+  - **Intelligent Q&A**: Ask questions about your tasks in natural language
+  - **Multi-Model Support**: Pangu AI, OpenAI, or local models (Ollama)
+  - **Complete Data Context**: AI has access to all task data, logs, and statistics
+  - **Quick Questions**: 6 built-in common questions for instant insights
+  - **Smart Analysis**: Get efficiency analysis, suggestions, and task recommendations
+  - **Time-based Queries**: "What did I do today/this week/this month?"
+  - **Status Queries**: Check pending, completed, or overdue tasks
+  - **Execution Insights**: Analyze blocks, solutions, and progress
 - **User Registration & Login**: 
   - Dynamic gradient avatar based on username initials
   - Auto-login with session persistence
@@ -133,6 +142,15 @@ This is an **offline Android To-Do management application** built with **Vue 3**
 这是一个基于 **Vue 3** 和 **Capacitor** 构建的 **Android离线待办事项管理应用**。所有数据使用 Capacitor Preferences API 存储在设备本地，**无需网络连接或后端服务器**。
 
 ### 🌟 核心功能
+- **AI智能问答** 🤖 (v1.7.4 新增):
+  - **自然语言问答**: 用自然语言询问任务相关问题
+  - **多模型支持**: 盘古大模型、OpenAI、本地模型（Ollama）
+  - **完整数据上下文**: AI可访问所有任务数据、日志、统计信息
+  - **快捷问题**: 6个内置常用问题，一键获取洞察
+  - **智能分析**: 获取效率分析、建议和任务推荐
+  - **时间维度查询**: "今天/本周/本月做了什么？"
+  - **状态查询**: 查看待办、已完成、已逾期任务
+  - **执行洞察**: 分析阻碍、解决方案和进度
 - **用户注册与登录**: 
   - 动态首字母渐变头像
   - 自动登录和会话保持
@@ -384,6 +402,26 @@ userInfo[username] = {
 - ✅ 通知提示
 
 ## 📝 版本历史 | Version History
+
+### v1.7.4 (2026-02-25)
+- ✨ **AI智能问答功能**:
+  - 新增🤖 AI问答按钮（演示模式左侧）
+  - 支持盘古大模型、OpenAI、本地模型（Ollama）
+  - 完整的任务数据上下文（任务、日志、番茄钟、统计）
+  - 6个快捷问题按钮（今日完成、本周情况、高优先级等）
+  - 智能分析和建议功能
+  - 时间维度查询（今天/本周/本月）
+  - 状态和分类查询
+  - 执行洞察（阻碍、解决方案、进度）
+- 📊 **数据上下文优化**:
+  - 结构化Markdown格式数据
+  - 包含整体统计、时间维度统计、任务详情
+  - 执行日志和番茄钟历史完整展示
+- 🎨 **UI优化**:
+  - 紫色渐变AI按钮
+  - 对话式界面设计
+  - 快捷问题卡片
+  - 消息气泡样式
 
 ### v1.7.3 (2026-02-25)
 - ✨ **拍照识别文字功能（OCR）**:

@@ -8,6 +8,10 @@
           <h1>{{ currentUsername }}{{ t('tasksSuffix') }}</h1>
         </div>
         <div class="header-actions">
+          <!-- AI问答按钮 -->
+          <button class="btn-icon-circle btn-ai" @click="showAIChat = true" :title="t('aiChat')">
+            🤖
+          </button>
           <!-- 演示模式按钮 -->
           <button class="btn-icon-circle btn-tutorial" @click="startTutorial" :title="t('tutorial')">
             💡
@@ -99,6 +103,11 @@
                 placeholder="📝 任务描述（可选）..."
                 rows="2"
               ></textarea>
+              <AIAssistButton 
+                :context="`任务：${newTaskText}`"
+                placeholder="生成任务描述"
+                @generated="(text) => newTaskDescription = text"
+              />
             </div>
 
             <!-- 第二行：属性配置 -->
@@ -1081,6 +1090,18 @@
             <div class="entry-arrow">›</div>
           </div>
 
+          <!-- AI配置入口 -->
+          <div class="profile-entry" @click="showAIConfig = true">
+            <div class="entry-icon">✨</div>
+            <div class="entry-content">
+              <div class="entry-title">AI配置</div>
+              <div class="entry-summary">
+                配置本地Ollama或云端API
+              </div>
+            </div>
+            <div class="entry-arrow">›</div>
+          </div>
+
           <!-- 退出登录按钮 -->
           <div style="margin-top: 1.5rem; text-align: center;">
             <button class="btn btn-danger" @click="handleLogout" style="width: 100%;">
@@ -1090,6 +1111,9 @@
         </div>
       </div>
     </div>
+
+    <!-- AI配置弹窗 -->
+    <AIConfigModal v-if="showAIConfig" @close="showAIConfig = false" @saved="handleAIConfigSaved" />
 
     <!-- 联系与支持详情弹窗 -->
     <div v-if="showSupport" class="modal-overlay" @click.self="showSupport = false">
@@ -1869,11 +1893,26 @@
       @submit="handleAddLog"
     />
 
+    <!-- 任务详情弹窗 -->
+    <TaskDetailModal
+      v-if="showTaskDetail && selectedTask"
+      :task="selectedTask"
+      @close="showTaskDetail = false; selectedTask = null"
+      @edit="openEditModal"
+    />
+
     <!-- 演示模式 -->
     <TutorialMode
       :active="showTutorial"
       @close="handleTutorialSkip"
       @finish="handleTutorialFinish"
+    />
+
+    <!-- AI问答 -->
+    <AIChat
+      :visible="showAIChat"
+      :tasks-data="{ tasks: taskStore.tasks, deletedTasks: taskStore.deletedTasks }"
+      @close="showAIChat = false"
     />
 
     <!-- 备份管理弹窗 -->
@@ -2301,6 +2340,8 @@ import { useRouter } from 'vue-router'
 import { useOfflineTaskStore } from '../stores/offlineTaskStore'
 import { useOfflineUserStore } from '../stores/offlineUserStore'
 import { Preferences } from '@capacitor/preferences'
+import AIAssistButton from '../components/AIAssistButton.vue'
+import AIConfigModal from '../components/AIConfigModal.vue'
 import { Filesystem, Directory } from '@capacitor/filesystem'
 import { LocalNotifications } from '@capacitor/local-notifications'
 import { Capacitor } from '@capacitor/core'
@@ -2312,7 +2353,9 @@ import * as XLSX from 'xlsx'
 import html2canvas from 'html2canvas'
 import EChart from '../components/EChart.vue'
 import AddLogModal from '../components/AddLogModal.vue'
+import TaskDetailModal from '../components/TaskDetailModal.vue'
 import TutorialMode from '../components/TutorialMode.vue'
+import AIChat from '../components/AIChat.vue'
 import { CountUp } from 'countup.js'
 import { manualBackup, listBackups, restoreBackup } from '../utils/autoBackup'
 import { taskToExcelRow, generateTemplateData, excelRowToTask } from '../utils/excelFormat'
@@ -2365,6 +2408,7 @@ const i18n = {
     medium: '中',
     low: '低',
     // 其他
+    aiChat: 'AI问答',
     tutorial: '演示模式',
     refresh: '刷新',
     trash: '回收站',
@@ -2546,6 +2590,8 @@ const i18n = {
     medium: 'Medium',
     low: 'Low',
     // 其他
+    aiChat: 'AI Chat',
+    tutorial: 'Tutorial',
     refresh: 'Refresh',
     trash: 'Trash',
     profile: 'Profile',
@@ -2732,6 +2778,12 @@ const showTrash = ref(false)
 const showProfile = ref(false)
 const showPomodoroStats = ref(false)
 const showSupport = ref(false)
+const showAIConfig = ref(false)
+const showAIChat = ref(false)
+
+const handleAIConfigSaved = () => {
+  alert('AI配置已保存')
+}
 const showPrivacyPolicy = ref(false)
 const showDataInfo = ref(false)
 const showUserGuide = ref(false) // 使用指南弹窗
@@ -3606,6 +3658,9 @@ const scanTextFromCamera = async () => {
     
     console.log('照片路径:', photo.path)
     
+    // 显示识别中提示
+    showNotification('正在识别文字...', 'info')
+    
     // 2. 中文OCR识别
     const result = await ChineseOcr.detectText({ 
       filename: photo.path
@@ -4041,7 +4096,8 @@ const openEditModal = (task) => {
 
 // 方法：打开任务详情（统一入口：复用编辑 Bottom Sheet）
 const openTaskDetail = (task) => {
-  openEditModal(task)
+  selectedTask.value = task
+  showTaskDetail.value = true
 }
 
 // 方法：处理编辑类型变化
@@ -5742,6 +5798,8 @@ const showAllLogs = ref(false)
 
 // 状态：添加日志弹窗
 const showAddLogModal = ref(false)
+const showTaskDetail = ref(false)
+const selectedTask = ref(null)
 const currentLogTask = ref(null)
 
 // 状态：演示模式
@@ -8820,7 +8878,7 @@ watch(() => reportData.value, (newData) => {
 
 /* 刷新按钮特殊尺寸和样式 */
 .btn-refresh-icon {
-  font-size: 1.6rem;
+  font-size: 1.3rem;
   background: rgba(102, 126, 234, 0.25) !important;
   color: white !important;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
@@ -8831,9 +8889,22 @@ watch(() => reportData.value, (newData) => {
   color: white !important;
 }
 
+/* AI问答按钮 */
+.btn-ai {
+  font-size: 1.3rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.btn-ai:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
 /* 演示模式按钮 */
 .btn-tutorial {
-  font-size: 1.6rem;
+  font-size: 1.3rem;
   background: rgba(255, 193, 7, 0.25) !important;
   color: white !important;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
@@ -8857,7 +8928,7 @@ watch(() => reportData.value, (newData) => {
 
 /* 回收站按钮 */
 .btn-trash {
-  font-size: 1.1rem;
+  font-size: 1.3rem;
 }
 
 /* 数字气泡 */
@@ -11516,6 +11587,9 @@ watch(() => reportData.value, (newData) => {
 /* 任务描述输入框 */
 .add-form-row-desc {
   margin-top: 0.5rem;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
 }
 
 .task-textarea-desc {
