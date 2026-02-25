@@ -13,7 +13,9 @@ echo ""
 # 1. 清理旧文件
 echo "🧹 步骤 1/3: 清理旧文件..."
 rm -rf dist
-rm -rf release
+# 只清理 Windows 相关文件，不删除整个 release 目录
+rm -f release/*.exe release/*.exe.blockmap release/*.yml release/*.yaml
+rm -rf release/win-unpacked
 echo "✅ 清理完成"
 echo ""
 

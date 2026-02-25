@@ -22,7 +22,9 @@ echo ""
 # 2. 清理旧文件
 echo "🧹 步骤 2/5: 清理旧文件..."
 rm -rf dist
-rm -rf release
+# 只清理 macOS 相关文件，不删除整个 release 目录
+rm -f release/TODO-App-*-mac*.zip
+rm -rf release/mac release/mac-arm64
 echo "✅ 清理完成"
 echo ""
 

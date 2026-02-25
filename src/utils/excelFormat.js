@@ -19,7 +19,13 @@ export const EXCEL_COLUMNS = [
   { key: 'is_pinned', label: '是否置顶', required: false },
   { key: 'enableReminder', label: '启用提醒', required: false },
   { key: 'reminderTime', label: '提醒时间', required: false },
-  { key: 'forceReminder', label: '强制提醒', required: false }
+  { key: 'forceReminder', label: '强制提醒', required: false },
+  // 新增字段
+  { key: 'completedPomodoros', label: '已完成番茄钟', required: false },
+  { key: 'estimatedPomodoros', label: '预估番茄钟', required: false },
+  { key: 'logCount', label: '执行日志数', required: false },
+  { key: 'latestProgress', label: '最新进度', required: false },
+  { key: 'hasAISummary', label: '有AI总结', required: false }
 ]
 
 // 任务类型映射
@@ -88,7 +94,13 @@ export function taskToExcelRow(task, includeUser = false) {
     '是否置顶': task.is_pinned ? '是' : '否',
     '启用提醒': task.enableReminder ? '是' : '否',
     '提醒时间': task.reminderTime || '',
-    '强制提醒': task.forceReminder ? '是' : '否'
+    '强制提醒': task.forceReminder ? '是' : '否',
+    // 新增字段
+    '已完成番茄钟': task.completedPomodoros || 0,
+    '预估番茄钟': task.estimatedPomodoros || 0,
+    '执行日志数': task.logs?.length || 0,
+    '最新进度': task.stats?.progressHistory?.[task.stats.progressHistory.length - 1] || 0,
+    '有AI总结': task.aiSummary ? '是' : '否'
   }
   
   // 多用户备份时添加用户字段
@@ -141,7 +153,12 @@ export function generateTemplateData() {
       '是否置顶': '否',
       '启用提醒': '否',
       '提醒时间': '',
-      '强制提醒': '否'
+      '强制提醒': '否',
+      '已完成番茄钟': 0,
+      '预估番茄钟': 4,
+      '执行日志数': 0,
+      '最新进度': 0,
+      '有AI总结': '否'
     },
     {
       '任务名称': '学习Vue3新特性',
@@ -158,7 +175,12 @@ export function generateTemplateData() {
       '是否置顶': '否',
       '启用提醒': '是',
       '提醒时间': '09:00',
-      '强制提醒': '否'
+      '强制提醒': '否',
+      '已完成番茄钟': 0,
+      '预估番茄钟': 2,
+      '执行日志数': 0,
+      '最新进度': 0,
+      '有AI总结': '否'
     },
     {
       '任务名称': '周末聚餐',
@@ -175,7 +197,12 @@ export function generateTemplateData() {
       '是否置顶': '否',
       '启用提醒': '是',
       '提醒时间': '17:00',
-      '强制提醒': '是'
+      '强制提醒': '是',
+      '已完成番茄钟': 0,
+      '预估番茄钟': 1,
+      '执行日志数': 0,
+      '最新进度': 0,
+      '有AI总结': '否'
     }
   ]
 }
