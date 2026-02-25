@@ -79,7 +79,7 @@
 
         <!-- 添加任务表单 - 两行布局 -->
         <div v-if="showAddForm" class="add-form-two-row">
-          <!-- 第一行：任务名称 + 拍照按钮 -->
+          <!-- 第一行：任务名称 + AI按钮 + 拍照按钮 -->
           <div class="add-form-row-main">
             <input 
               type="text" 
@@ -87,22 +87,45 @@
               class="task-input-main"
               :placeholder="t('addTaskPlaceholder')"
               @keyup.enter="addTask"
+              @blur="handleTaskInputBlur"
             >
+            <button class="btn-ai-assist" @click="triggerAIAssist" :title="t('aiAssist')" :disabled="aiGenerating">
+              {{ aiGenerating ? '⏳' : '🤖' }}
+            </button>
             <button class="btn-camera" @click="scanTextFromCamera" :title="t('scanText')">
               📷
             </button>
+          </div>
+
+          <!-- AI 建议气泡 -->
+          <div v-if="aiSuggestion" class="ai-suggestion-bubble">
+            <div class="suggestion-content">
+              <span class="suggestion-icon">💡</span>
+              <span class="suggestion-text">
+                AI建议：{{ getCategoryLabel(aiSuggestion.category) }} · {{ getPriorityLabel(aiSuggestion.priority) }}
+              </span>
+            </div>
+            <div class="suggestion-actions">
+              <button @click="applySuggestion" class="btn-apply">采纳</button>
+              <button @click="dismissSuggestion" class="btn-dismiss">忽略</button>
+            </div>
           </div>
 
           <!-- 只有输入任务名称后才显示以下部分 -->
           <template v-if="newTaskText.trim()">
             <!-- 任务描述（可选） -->
             <div class="add-form-row-desc">
-              <textarea 
-                v-model="newTaskDescription" 
-                class="task-textarea-desc"
-                placeholder="📝 任务描述（可选）..."
-                rows="2"
-              ></textarea>
+              <div class="textarea-with-ai">
+                <textarea 
+                  v-model="newTaskDescription" 
+                  class="task-textarea-desc"
+                  placeholder="📝 任务描述（可选）..."
+                  rows="2"
+                ></textarea>
+                <button class="btn-ai-desc" @click="generateDescription" :title="t('aiGenerateDesc')" :disabled="aiGenerating">
+                  {{ aiGenerating ? '⏳' : '🤖' }}
+                </button>
+              </div>
             </div>
 
             <!-- 第二行：属性配置 -->
@@ -2519,6 +2542,14 @@
       @close="closeTextMenu"
       @action="handleTextAction"
     />
+
+    <!-- 任务预览弹窗 -->
+    <TaskPreviewModal
+      :visible="showTaskPreview"
+      :extracted-tasks="extractedTasks"
+      @close="showTaskPreview = false"
+      @create="handleCreateTasks"
+    />
   </div>
 </template>
 
@@ -2532,7 +2563,11 @@ import AIAssistButton from '../components/AIAssistButton.vue'
 import AITextMenu from '../components/AITextMenu.vue'
 import { useTextSelection } from '../composables/useTextSelection'
 import { AITextService } from '../services/aiTextService'
+import { AITaskExtractor } from '../services/aiTaskExtractor'
+import { AITaskGenerator } from '../services/aiTaskGenerator'
+import { AIClassifier } from '../services/aiClassifier'
 import AIConfigModal from '../components/AIConfigModal.vue'
+import TaskPreviewModal from '../components/TaskPreviewModal.vue'
 import { Filesystem, Directory } from '@capacitor/filesystem'
 import { LocalNotifications } from '@capacitor/local-notifications'
 import { Capacitor } from '@capacitor/core'
@@ -2575,6 +2610,8 @@ const i18n = {
     // 添加任务
     addTaskPlaceholder: '➕ 新建任务：输入任务名称...',
     scanText: '拍照识别文字',
+    aiAssist: 'AI 写作助手',
+    aiGenerateDesc: 'AI 生成描述',
     descriptionPlaceholder: '📝 添加详细描述（可选）...',
     // 按钮
     add: '添加',
@@ -2757,6 +2794,8 @@ const i18n = {
     // 添加任务
     addTaskPlaceholder: '➕ New task: Enter title...',
     scanText: 'Scan text from camera',
+    aiAssist: 'AI Writing Assistant',
+    aiGenerateDesc: 'AI Generate Description',
     descriptionPlaceholder: '📝 Add description (optional)...',
     // 按钮
     add: 'Add',
@@ -2961,6 +3000,11 @@ const reminderDateTime = ref('')
 const currentFilter = ref('all')
 const currentCategoryFilter = ref('all')
 const currentPriorityFilter = ref('all')
+
+// AI 相关状态
+const aiGenerating = ref(false)
+const aiSuggestion = ref(null)
+let suggestionTimeout = null
 const searchKeyword = ref('')
 const startDate = ref('')
 const endDate = ref('')
@@ -2980,6 +3024,10 @@ const aiResultAction = ref('')
 const todoLayoutRef = ref(null)
 const { showMenu: showTextMenu, menuPosition, selectedText: selectedTextNew, closeTextMenu, replaceSelectedText } = useTextSelection(todoLayoutRef)
 
+// 任务预览弹窗
+const showTaskPreview = ref(false)
+const extractedTasks = ref([])
+
 // 处理 AI 文本操作
 const handleTextAction = async ({ action, text, tone }) => {
   console.log('TodoView handleTextAction called:', { action, text, tone })
@@ -2989,6 +3037,29 @@ const handleTextAction = async ({ action, text, tone }) => {
     return
   }
   
+  // 特殊处理：提取任务
+  if (action === 'extract_tasks') {
+    try {
+      showNotification('AI 正在分析文本...', 'info')
+      const tasks = await AITaskExtractor.extractTasks(text)
+      console.log('Extracted tasks:', tasks)
+      
+      if (tasks.length === 0) {
+        showNotification('未识别到任务', 'warning')
+        return
+      }
+      
+      extractedTasks.value = tasks
+      showTaskPreview.value = true
+      closeTextMenu()
+    } catch (error) {
+      console.error('AI提取任务失败:', error)
+      alert(`AI提取任务失败：${error.message}`)
+    }
+    return
+  }
+  
+  // 其他文本处理操作
   try {
     const result = await AITextService.processText(action, text, { tone })
     replaceSelectedText(result)
@@ -2996,6 +3067,174 @@ const handleTextAction = async ({ action, text, tone }) => {
     console.error('AI处理失败:', error)
     alert(`AI处理失败：${error.message}`)
   }
+}
+
+// 批量创建任务
+const handleCreateTasks = (tasks) => {
+  console.log('Creating tasks:', tasks)
+  
+  tasks.forEach(task => {
+    const newTask = {
+      id: Date.now() + Math.random(),
+      text: task.title,
+      description: task.description || '',
+      type: task.deadline ? 'custom_date' : 'today',
+      category: task.category || 'life',
+      priority: task.priority || 'medium',
+      customDate: task.deadline ? task.deadline.split(' ')[0] : null,
+      customTime: task.deadline ? task.deadline.split(' ')[1] : null,
+      status: 'pending',
+      created_at: new Date().toISOString(),
+      completed_at: null,
+      completedPomodoros: 0,
+      estimatedPomodoros: task.priority === 'high' ? 4 : task.priority === 'medium' ? 2 : 1,
+      pomodoroHistory: [],
+      logs: [],
+      stats: {
+        sessionCount: 0,
+        totalDuration: 0,
+        avgDuration: 0,
+        blockCount: 0,
+        resolvedBlockCount: 0,
+        latestProgress: 0
+      }
+    }
+    
+    taskStore.addTask(newTask)
+  })
+  
+  showNotification(`✅ 已创建 ${tasks.length} 个任务`, 'success')
+}
+
+// AI 写作助手 - 智能提取任务信息
+const triggerAIAssist = async () => {
+  const inputText = newTaskText.value.trim()
+  
+  if (!inputText) {
+    alert('请先输入文本或关键词')
+    return
+  }
+  
+  aiGenerating.value = true
+  try {
+    // 如果输入文本较长（超过20字），使用提取模式
+    if (inputText.length > 20) {
+      showNotification('AI 正在分析文本...', 'info')
+      
+      // 调用 AI 提取任务
+      const tasks = await AITaskExtractor.extractTasks(inputText)
+      
+      if (tasks.length > 0) {
+        // 使用第一个提取的任务填充表单
+        const task = tasks[0]
+        newTaskText.value = task.title
+        newTaskDescription.value = task.description || ''
+        newTaskCategory.value = task.category || 'life'
+        newTaskPriority.value = task.priority || 'medium'
+        
+        // 如果有截止时间，设置为指定日期
+        if (task.deadline) {
+          newTaskType.value = 'custom_date'
+          customDateTime.value = task.deadline.replace(' ', 'T')
+        }
+        
+        showNotification('✨ AI 已智能填充任务信息', 'success')
+      } else {
+        // 没有提取到任务，使用生成模式
+        const generatedTitle = await AITaskGenerator.generateTask(inputText)
+        newTaskText.value = generatedTitle
+        showNotification('✨ AI 已生成任务标题', 'success')
+      }
+    } else {
+      // 短文本使用生成模式
+      const generatedTitle = await AITaskGenerator.generateTask(inputText)
+      newTaskText.value = generatedTitle
+      showNotification('✨ AI 已生成任务标题', 'success')
+    }
+  } catch (error) {
+    console.error('AI处理失败:', error)
+    alert(`AI处理失败：${error.message}`)
+  } finally {
+    aiGenerating.value = false
+  }
+}
+
+// 生成任务描述
+const generateDescription = async () => {
+  const title = newTaskText.value.trim()
+  
+  if (!title) {
+    alert('请先输入任务标题')
+    return
+  }
+  
+  aiGenerating.value = true
+  try {
+    const generatedDesc = await AITaskGenerator.generateDescription(title)
+    newTaskDescription.value = generatedDesc
+    showNotification('✨ AI 已生成任务描述', 'success')
+  } catch (error) {
+    console.error('AI生成失败:', error)
+    alert(`AI生成失败：${error.message}`)
+  } finally {
+    aiGenerating.value = false
+  }
+}
+
+// 任务输入框失焦时触发智能分类
+const handleTaskInputBlur = () => {
+  const title = newTaskText.value.trim()
+  
+  if (!title || title.length < 3) {
+    return
+  }
+  
+  // 防抖：500ms 后触发
+  clearTimeout(suggestionTimeout)
+  suggestionTimeout = setTimeout(async () => {
+    try {
+      const classification = await AIClassifier.classifyTask(title, newTaskDescription.value)
+      aiSuggestion.value = classification
+    } catch (error) {
+      console.error('AI分类失败:', error)
+      // 静默失败，不影响用户体验
+    }
+  }, 500)
+}
+
+// 采纳 AI 建议
+const applySuggestion = () => {
+  if (aiSuggestion.value) {
+    newTaskCategory.value = aiSuggestion.value.category
+    newTaskPriority.value = aiSuggestion.value.priority
+    showNotification('✅ 已采纳 AI 建议', 'success')
+    aiSuggestion.value = null
+  }
+}
+
+// 忽略 AI 建议
+const dismissSuggestion = () => {
+  aiSuggestion.value = null
+}
+
+// 获取分类标签
+const getCategoryLabel = (category) => {
+  const labels = {
+    work: '💼 工作',
+    study: '📚 学习',
+    life: '🏠 生活'
+  }
+  return labels[category] || category
+}
+
+// 获取优先级标签
+const getPriorityLabel = (priority) => {
+  const labels = {
+    high: '⚡ 高优先级',
+    medium: '📌 中优先级',
+    low: '📋 低优先级'
+  }
+  return labels[priority] || priority
 }
 
 const copyAIResult = () => {
@@ -3391,15 +3630,6 @@ const priorityOptions = computed(() => {
     ]
   }
 })
-
-// 获取优先级显示文本（传统模式下 urgent 也显示为"高"）
-const getPriorityLabel = (priority) => {
-  if (priorityMode.value === 'traditional' && priority === 'urgent') {
-    return t('high')
-  }
-  const option = priorityOptions.value.find(opt => opt.value === priority)
-  return option ? option.label : priority
-}
 
 // 分类统计（基于当前时间筛选）
 const getCategoryCount = (category) => {
@@ -3944,13 +4174,32 @@ const scanTextFromCamera = async () => {
         return
       }
       
-      // 第一行作为标题
-      newTaskText.value = lines[0]
+      // 合并所有识别的文字
+      const fullText = lines.join('\n')
       
-      // 所有行（包括第一行）作为描述
-      newTaskDescription.value = lines.join('\n')
-      
-      showNotification(`识别成功！标题+${lines.length}行完整内容`, 'success')
+      // 使用 AI 提取任务
+      try {
+        showNotification('AI 正在分析识别的文字...', 'info')
+        const tasks = await AITaskExtractor.extractTasks(fullText)
+        
+        if (tasks.length > 0) {
+          // 显示任务预览弹窗
+          extractedTasks.value = tasks
+          showTaskPreview.value = true
+          showNotification(`✨ AI 识别到 ${tasks.length} 个任务`, 'success')
+        } else {
+          // 如果没有识别到任务，使用传统方式
+          newTaskText.value = lines[0]
+          newTaskDescription.value = lines.join('\n')
+          showNotification(`识别成功！标题+${lines.length}行完整内容`, 'success')
+        }
+      } catch (aiError) {
+        console.error('AI 提取失败，使用传统方式:', aiError)
+        // AI 失败时使用传统方式
+        newTaskText.value = lines[0]
+        newTaskDescription.value = lines.join('\n')
+        showNotification(`识别成功！标题+${lines.length}行完整内容`, 'success')
+      }
     } else {
       showNotification('未识别到文字，请确保照片清晰且包含文字', 'error')
     }
@@ -7981,7 +8230,7 @@ watch(() => reportData.value, (newData) => {
   width: 100%;
   max-width: 100%;
   flex: none;
-  padding: 0.1rem 0.1rem;
+  padding: 0.1rem 0;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -12651,6 +12900,7 @@ watch(() => reportData.value, (newData) => {
   box-shadow: none;
 }
 
+.btn-ai-assist,
 .btn-camera {
   width: 36px;
   height: 36px;
@@ -12668,13 +12918,133 @@ watch(() => reportData.value, (newData) => {
   flex-shrink: 0;
 }
 
+.btn-ai-assist:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-ai-assist:hover:not(:disabled),
 .btn-camera:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
 }
 
+.btn-ai-assist:active:not(:disabled),
 .btn-camera:active {
   transform: scale(0.95);
+}
+
+/* AI 建议气泡 */
+.ai-suggestion-bubble {
+  background: linear-gradient(135deg, #fff5e6 0%, #ffe6f0 100%);
+  border: 2px solid #ffd700;
+  border-radius: 12px;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.suggestion-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.suggestion-icon {
+  font-size: 1.2rem;
+}
+
+.suggestion-text {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.suggestion-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-apply,
+.btn-dismiss {
+  padding: 0.4rem 0.75rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 600;
+}
+
+.btn-apply {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-apply:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.btn-dismiss {
+  background: #f0f0f0;
+  color: #666;
+}
+
+.btn-dismiss:hover {
+  background: #e0e0e0;
+}
+
+/* 描述框带 AI 按钮 */
+.textarea-with-ai {
+  position: relative;
+  width: 100%;
+  flex: 1;
+}
+
+.btn-ai-desc {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.btn-ai-desc:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-ai-desc:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
 .task-input-main {
@@ -12709,6 +13079,7 @@ watch(() => reportData.value, (newData) => {
 /* 任务描述输入框 */
 .add-form-row-desc {
   margin-top: 0.5rem;
+  padding: 0;
   display: flex;
   gap: 8px;
   align-items: flex-start;
@@ -12716,7 +13087,7 @@ watch(() => reportData.value, (newData) => {
 
 .task-textarea-desc {
   width: 100%;
-  padding: 0.5rem 1.2rem;
+  padding: 0.75rem 1.5rem;
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 12px;
   background: white;

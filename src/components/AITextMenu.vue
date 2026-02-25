@@ -39,6 +39,11 @@
         🤖 续写
       </button>
     </div>
+    <div class="menu-row">
+      <button @click="handleAction('extract_tasks')" class="menu-btn menu-btn-highlight" title="AI提取任务">
+        📋 提取任务
+      </button>
+    </div>
     
     <!-- 语气子菜单 -->
     <div v-if="showToneMenu" class="tone-submenu">
@@ -168,6 +173,18 @@ const handleTone = (tone) => {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   transform: translateY(-1px);
+}
+
+.menu-btn-highlight {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: 600;
+}
+
+.menu-btn-highlight:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .tone-submenu {
