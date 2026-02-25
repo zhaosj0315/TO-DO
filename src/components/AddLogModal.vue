@@ -29,12 +29,20 @@
           <label class="required">
             💬 日志内容 ({{ formData.content.length }}/500 · {{ contentLines }}行)
           </label>
-          <textarea
-            v-model="formData.content"
-            placeholder="详细描述本次执行的内容..."
-            maxlength="500"
-            rows="4"
-          ></textarea>
+          <div style="display: flex; gap: 8px; align-items: flex-start;">
+            <textarea
+              v-model="formData.content"
+              placeholder="详细描述本次执行的内容..."
+              maxlength="500"
+              rows="4"
+              style="flex: 1;"
+            ></textarea>
+            <AIAssistButton 
+              :context="`任务：${task?.text || ''}\n类型：${logTypeLabels[formData.type]}`"
+              placeholder="生成日志内容"
+              @generated="(text) => formData.content = text"
+            />
+          </div>
         </div>
 
         <!-- 本次耗时 -->
@@ -188,6 +196,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useOfflineTaskStore } from '../stores/offlineTaskStore'
+import AIAssistButton from './AIAssistButton.vue'
 
 const props = defineProps({
   task: {
@@ -230,6 +239,16 @@ const logTypes = [
   { value: 'milestone', icon: '🎯', label: '里程碑' },
   { value: 'complete', icon: '✅', label: '完成' }
 ]
+
+// 日志类型标签映射
+const logTypeLabels = {
+  start: '开始执行',
+  progress: '进展更新',
+  block: '遇到阻碍',
+  solution: '解决方案',
+  milestone: '里程碑',
+  complete: '完成总结'
+}
 
 // 快速时长选项
 const quickDurations = [15, 30, 60, 120]

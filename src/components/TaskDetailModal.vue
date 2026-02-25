@@ -6,9 +6,20 @@
         <button class="back-btn" @click="$emit('close')">
           <span>← 返回</span>
         </button>
-        <h2>{{ task.text }}</h2>
-        <button class="edit-btn" @click="$emit('edit', task)">
-          <span>编辑</span>
+        <h2 v-if="!editingField || editingField !== 'title'" @dblclick="startEditField('title')" class="editable-title" title="双击编辑">
+          {{ task.text }}
+        </h2>
+        <input 
+          v-else
+          v-model="editingValue"
+          @blur="saveField('title')"
+          @keydown.enter="saveField('title')"
+          @keydown.esc="cancelEdit"
+          class="title-input"
+          ref="fieldInput"
+        />
+        <button class="ai-summary-btn-header" @click="handleAISummary" title="AI智能总结">
+          ✨
         </button>
       </div>
 
@@ -60,26 +71,38 @@
             </div>
           </div>
           
-          <!-- 时间轴（横向版） -->
+          <!-- 时间轴（增强版） -->
           <div class="timeline-horizontal">
             <div class="timeline-item">
-              <div class="timeline-label">创建</div>
+              <div class="timeline-label">📅 创建</div>
               <div class="timeline-dot created"></div>
               <div class="timeline-time">{{ formatDate(task.created_at) }}</div>
             </div>
             
-            <div class="timeline-connector"></div>
+            <div class="timeline-connector">
+              <div v-if="task.logs && task.logs.length > 0" class="timeline-progress-bar" :style="{ width: getProgressWidth() }"></div>
+            </div>
+            
+            <div v-if="task.logs && task.logs.length > 0" class="timeline-item timeline-logs">
+              <div class="timeline-label">💬 {{ task.logs.length }}条日志</div>
+              <div class="timeline-dot progress"></div>
+              <div class="timeline-time">{{ getLatestProgress() }}</div>
+            </div>
+            
+            <div class="timeline-connector">
+              <div v-if="task.completed_at" class="timeline-progress-bar" style="width: 100%"></div>
+            </div>
             
             <div class="timeline-item">
-              <div class="timeline-label">截止</div>
+              <div class="timeline-label">⏰ 截止</div>
               <div :class="['timeline-dot', getDeadlineClass(task)]"></div>
               <div class="timeline-time">{{ formatDeadline(task) }}</div>
             </div>
             
             <template v-if="task.completed_at">
-              <div class="timeline-connector"></div>
+              <div class="timeline-connector completed-line"></div>
               <div class="timeline-item">
-                <div class="timeline-label">完成</div>
+                <div class="timeline-label">✅ 完成</div>
                 <div class="timeline-dot completed"></div>
                 <div class="timeline-time">{{ formatDate(task.completed_at) }}</div>
               </div>
@@ -133,6 +156,21 @@
           </div>
         </section>
 
+        <!-- AI总结 -->
+        <section v-if="task.aiSummary" class="ai-summary-section">
+          <div class="summary-header">
+            <h3>✨ AI智能总结</h3>
+            <span class="summary-time">{{ formatDateTime(task.aiSummary.createdAt) }}</span>
+          </div>
+          <div class="summary-content">
+            <p>{{ task.aiSummary.content }}</p>
+          </div>
+          <div class="summary-meta">
+            <span>📊 分析了 {{ task.aiSummary.logsCount }} 条日志</span>
+            <span>🤖 模型: {{ task.aiSummary.modelName }}</span>
+          </div>
+        </section>
+
         <!-- 执行日志 -->
         <section class="logs-section">
           <div class="logs-header">
@@ -150,15 +188,21 @@
               :key="log.id"
               :class="['log-item', `log-${log.type}`]"
             >
-              <!-- 日志头部：类型+进度+时间+删除 -->
+              <!-- 日志头部：类型+进度+时间+字符统计+心情+评分+删除 -->
               <div class="log-header-compact">
-                <span class="log-type">
-                  {{ getLogTypeIcon(log.type) }} {{ getLogTypeText(log.type) }}
-                  <span v-if="log.progress !== null" class="progress-inline">📊 {{ log.progress }}%</span>
-                </span>
-                <div class="log-actions">
-                  <span class="log-time">{{ formatLogTime(log.timestamp) }}</span>
-                  <button class="log-delete-btn" @click="deleteLog(log.id)" title="删除">🗑️</button>
+                <div class="log-type-line">
+                  <span class="log-type">
+                    {{ getLogTypeIcon(log.type) }} {{ getLogTypeText(log.type) }}
+                    <span v-if="log.progress !== null" class="progress-inline">📊 {{ log.progress }}%</span>
+                    <span v-if="log.duration" class="duration-inline">⏱️ {{ formatDuration(log.duration) }}</span>
+                    <span class="char-count-inline">{{ (log.content || '').length }}/500 · {{ (log.content || '').split('\n').length }}行</span>
+                    <span v-if="log.mood" class="mood-inline">{{ getMoodIcon(log.mood) }}</span>
+                    <span v-if="log.rating" class="rating-inline">{{ '⭐'.repeat(log.rating) }}</span>
+                  </span>
+                  <div class="log-actions">
+                    <span class="log-time">{{ formatLogTime(log.timestamp) }}</span>
+                    <button class="log-delete-btn" @click="deleteLog(log.id)" title="删除">🗑️</button>
+                  </div>
                 </div>
               </div>
               
@@ -173,15 +217,11 @@
                   rows="1"
                   maxlength="500"
                 ></textarea>
-                <div class="char-count">{{ (log.content || '').length }}/500 · {{ (log.content || '').split('\n').length }} 行</div>
               </div>
               
-              <!-- 元数据（一行显示） -->
-              <div v-if="log.duration || log.mood || log.tags?.length || log.rating" class="log-meta-compact">
-                <span v-if="log.duration" class="meta-item">⏱️ {{ formatDuration(log.duration) }}</span>
-                <span v-if="log.mood" class="meta-item">{{ getMoodIcon(log.mood) }}</span>
-                <span v-if="log.rating" class="meta-item">{{ '⭐'.repeat(log.rating) }}</span>
-                <span v-if="log.tags?.length" class="meta-tags">
+              <!-- 标签（如果有） -->
+              <div v-if="log.tags?.length" class="log-meta-compact">
+                <span class="meta-tags">
                   <span v-for="tag in log.tags" :key="tag" class="tag-inline">#{{ tag }}</span>
                 </span>
               </div>
@@ -203,7 +243,7 @@
 
       <!-- 底部操作栏 -->
       <div class="detail-footer">
-        <button class="add-log-btn" @click="showAddLogModal = true">
+        <button class="add-log-btn" @click="handleAddLogClick">
           📝 添加日志
         </button>
         <button
@@ -233,6 +273,9 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useOfflineTaskStore } from '../stores/offlineTaskStore'
 import AddLogModal from './AddLogModal.vue'
+import { registerPlugin } from '@capacitor/core'
+
+const AIAssistant = registerPlugin('AIAssistant')
 
 const props = defineProps({
   task: {
@@ -346,6 +389,18 @@ const formatDateShort = (dateStr) => {
   return `${date.getMonth() + 1}/${date.getDate()}`
 }
 
+// 获取进度宽度
+const getProgressWidth = () => {
+  const progress = props.task.stats?.progressHistory?.[props.task.stats.progressHistory.length - 1] || 0
+  return `${progress}%`
+}
+
+// 获取最新进度
+const getLatestProgress = () => {
+  const progress = props.task.stats?.progressHistory?.[props.task.stats.progressHistory.length - 1] || 0
+  return `进度 ${progress}%`
+}
+
 // 截止时间格式化（简短版）
 const formatDeadlineShort = (task) => {
   const deadline = getTaskDeadline(task)
@@ -380,6 +435,18 @@ const formatDuration = (minutes) => {
   return `${hours}小时${mins}分钟`
 }
 
+// 格式化日期时间
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${year}/${month}/${day} ${hours}:${minutes}`
+}
+
 // 自适应textarea高度
 const autoResizeTextarea = (event) => {
   const textarea = event.target
@@ -399,7 +466,7 @@ const saveLogContent = (log) => {
     const logIndex = updatedTask.logs.findIndex(l => l.id === log.id)
     if (logIndex !== -1) {
       updatedTask.logs[logIndex].content = log.content.trim()
-      taskStore.updateTask(updatedTask)
+      taskStore.updateTask(props.task.id, { logs: updatedTask.logs })
       emit('refresh')
     }
   }
@@ -408,7 +475,11 @@ const saveLogContent = (log) => {
 // 开始编辑字段
 const startEditField = (field) => {
   editingField.value = field
-  editingValue.value = props.task[field]
+  if (field === 'title') {
+    editingValue.value = props.task.text
+  } else {
+    editingValue.value = props.task[field]
+  }
   setTimeout(() => {
     if (fieldInput.value) {
       fieldInput.value.focus()
@@ -420,8 +491,12 @@ const startEditField = (field) => {
 const saveField = (field) => {
   if (editingValue.value) {
     const updatedTask = { ...props.task }
-    updatedTask[field] = editingValue.value
-    taskStore.updateTask(updatedTask)
+    if (field === 'title') {
+      updatedTask.text = editingValue.value
+    } else {
+      updatedTask[field] = editingValue.value
+    }
+    taskStore.updateTask(props.task.id, updatedTask)
     emit('refresh')
   }
   editingField.value = null
@@ -439,7 +514,7 @@ const deleteLog = (logId) => {
   if (confirm('确定要删除这条日志吗？')) {
     const updatedTask = { ...props.task }
     updatedTask.logs = updatedTask.logs.filter(l => l.id !== logId)
-    taskStore.updateTask(updatedTask)
+    taskStore.updateTask(props.task.id, { logs: updatedTask.logs })
     emit('refresh')
   }
 }
@@ -479,27 +554,149 @@ const getMoodIcon = (mood) => {
   return map[mood] || ''
 }
 
+// 添加日志点击
+const handleAddLogClick = () => {
+  console.log('添加日志按钮被点击')
+  showAddLogModal.value = true
+}
+
 // 添加日志
 const handleAddLog = async (logData) => {
+  console.log('handleAddLog called', logData)
   await taskStore.addTaskLog(props.task.id, logData)
   showAddLogModal.value = false
   emit('refresh')
 }
 
 // 完成任务
-const handleComplete = () => {
-  showAddLogModal.value = true
-  // 可以在 AddLogModal 中默认选择 'complete' 类型
-}
-
-// 删除任务
-const handleDelete = async () => {
-  if (confirm('确定要删除这个任务吗？')) {
-    await taskStore.deleteTask(props.task.id)
+const handleComplete = async () => {
+  console.log('handleComplete called')
+  if (confirm('确定要标记任务为已完成吗？')) {
+    await taskStore.updateTask(props.task.id, { 
+      status: 'completed',
+      completed_at: new Date().toISOString()
+    })
     emit('close')
     emit('refresh')
   }
 }
+
+// 删除任务
+const handleDelete = async () => {
+  console.log('handleDelete called')
+  if (confirm('确定要删除这个任务吗？')) {
+    const taskId = props.task.id
+    emit('close') // 先关闭弹窗
+    await taskStore.deleteTask(taskId) // 再删除任务
+    emit('refresh')
+  }
+}
+
+// AI总结功能
+const handleAISummary = async () => {
+  try {
+    // 准备总结文本
+    const logs = props.task.logs || []
+    const logsText = logs.map(log => 
+      `[${log.type}] ${log.content} (进度:${log.progress}%, 耗时:${log.duration}分钟)`
+    ).join('\n')
+    
+    const summaryText = `任务名称：${props.task.text}
+任务描述：${props.task.description || '无'}
+优先级：${props.task.priority}
+分类：${props.task.category}
+执行日志数量：${logs.length}条
+
+执行日志详情：
+${logsText || '暂无日志'}
+
+请根据以上信息，生成一份简洁的任务执行总结（100字以内）。`
+    
+    // 获取默认模型配置
+    const models = JSON.parse(localStorage.getItem('ai_models') || '[]')
+    const defaultModelId = localStorage.getItem('ai_default_model')
+    const model = models.find(m => m.id === defaultModelId) || models[0]
+    
+    if (!model) {
+      alert('请先在个人主页配置AI模型')
+      return
+    }
+    
+    // 显示加载提示
+    if (!confirm(`AI正在分析任务执行情况...\n\n使用模型：${model.name}\n需要10-30秒。\n\n点击确定开始分析。`)) {
+      return
+    }
+    
+    console.log('使用模型:', model.name, model.url)
+    
+    // 确保 OpenAI URL 包含完整路径
+    let apiUrl = model.url
+    if (model.type === 'openai' && !apiUrl.includes('/chat/completions')) {
+      apiUrl = apiUrl.replace(/\/$/, '') + '/chat/completions'
+    }
+    
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        ...(model.apiKey ? { 'Authorization': `Bearer ${model.apiKey}` } : {})
+      },
+      body: JSON.stringify(
+        model.type === 'openai' 
+          ? {
+              model: model.modelName || 'gpt-3.5-turbo',
+              messages: [{ role: 'user', content: summaryText }]
+            }
+          : {
+              model: model.modelName || 'gemma2:2b',
+              prompt: summaryText,
+              stream: false
+            }
+      )
+    })
+    
+    console.log('API响应状态:', response.status)
+    
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('API错误响应:', errorText)
+      
+      // 特殊处理 ngrok 403 错误
+      if (response.status === 403 && model.url.includes('ngrok')) {
+        throw new Error(`Ngrok访问被拒绝\n\n请先在浏览器中访问：\n${model.url.split('/api')[0]}\n\n点击"Visit Site"后再试`)
+      }
+      
+      throw new Error(`API错误: ${response.status}`)
+    }
+    
+    const result = await response.json()
+    console.log('API返回结果:', result)
+    
+    const summary = model.type === 'openai' 
+      ? result.choices[0].message.content 
+      : result.response
+    
+    // 保存总结到任务
+    const aiSummary = {
+      content: summary,
+      createdAt: new Date().toISOString(),
+      logsCount: logs.length,
+      modelName: model.name
+    }
+    
+    await taskStore.updateTask(props.task.id, { aiSummary })
+    
+    // 刷新页面
+    emit('refresh')
+    
+    alert(`✨ AI总结完成！\n\n${summary}`)
+    
+  } catch (error) {
+    console.error('AI总结失败:', error)
+    alert(`AI总结失败：${error.message}\n\n请确保：\n1. Mac上运行了 ollama serve\n2. 手机和Mac在同一WiFi\n3. 输入了正确的Mac IP地址\n4. 查看控制台日志了解详情`)
+  }
+}
+
 </script>
 
 <style scoped>
@@ -529,14 +726,12 @@ const handleDelete = async () => {
 .task-detail-sheet {
   background: white;
   border-radius: 20px 20px 0 0;
-  width: 96%;
-  max-width: 100%;
+  width: 100%;
   max-height: 92vh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.2);
   animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  margin: 0 auto;
 }
 
 @keyframes slideUp {
@@ -596,10 +791,37 @@ const handleDelete = async () => {
   margin-top: 0.5rem;
 }
 
+.ai-summary-btn-header {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 165, 0, 0.3));
+  border: none;
+  padding: 0.5rem 0.8rem;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  font-size: 1.2rem;
+  transition: all 0.2s;
+  margin-top: 0.5rem;
+  animation: glow-ai 2s ease-in-out infinite;
+}
+
+@keyframes glow-ai {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+  }
+}
+
 .back-btn:hover,
 .edit-btn:hover {
   background: rgba(255, 255, 255, 0.3);
   transform: translateY(-1px);
+}
+
+.ai-summary-btn-header:hover {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.5), rgba(255, 165, 0, 0.5));
+  animation: none;
 }
 
 /* 内容区 */
@@ -619,6 +841,59 @@ section h3 {
   margin: 0 0 0.75rem 0;
   color: #333;
 }
+
+/* AI总结区域 */
+.ai-summary-section {
+  background: linear-gradient(135deg, #fff9e6 0%, #fff3cc 100%);
+  border-radius: 12px;
+  padding: 1rem;
+  border: 2px solid #ffd700;
+  margin-bottom: 1.5rem;
+}
+
+.summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.summary-header h3 {
+  margin: 0;
+  color: #d97706;
+}
+
+.summary-time {
+  font-size: 0.75rem;
+  color: #92400e;
+}
+
+.summary-content {
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  line-height: 1.6;
+}
+
+.summary-content p {
+  margin: 0;
+  color: #333;
+}
+
+.summary-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: #92400e;
+}
+
+.summary-meta span {
+  background: rgba(255, 255, 255, 0.6);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
 
 /* 概览卡片 */
 .overview-card {
@@ -833,39 +1108,39 @@ section h3 {
 /* 统计网格 */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .stat-item {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  border-radius: 12px;
-  padding: 1rem;
+  border-radius: 8px;
+  padding: 0.6rem;
   text-align: center;
 }
 
 .stat-icon {
-  font-size: 1.5rem;
-  margin-bottom: 0.5rem;
+  font-size: 1.2rem;
+  margin-bottom: 0.3rem;
 }
 
 .stat-value {
-  font-size: 1.2rem;
+  font-size: 1rem;
   font-weight: 700;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.2rem;
 }
 
 .sub-value {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   opacity: 0.9;
   display: block;
-  margin-top: 0.25rem;
+  margin-top: 0.2rem;
 }
 
 .stat-label {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   opacity: 0.9;
 }
 
@@ -1007,9 +1282,10 @@ section h3 {
 
 .log-item {
   background: #f8f9fa;
-  border-radius: 12px;
-  padding: 1rem;
-  border-left: 4px solid #667eea;
+  border-radius: 8px;
+  padding: 0.75rem;
+  border-left: 3px solid #667eea;
+  margin-bottom: 0.75rem;
 }
 
 .log-item.log-start {
@@ -1047,16 +1323,20 @@ section h3 {
 
 /* 日志头部（紧凑版） */
 .log-header-compact {
+  margin-bottom: 0.4rem;
+}
+
+.log-type-line {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.5rem;
+  width: 100%;
   gap: 0.5rem;
 }
 
 .log-header-compact .log-type {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: #333;
   flex: 1;
 }
@@ -1065,13 +1345,18 @@ section h3 {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-shrink: 0;
 }
 
-.log-header-compact .progress-inline {
+.log-header-compact .progress-inline,
+.log-header-compact .duration-inline,
+.log-header-compact .char-count-inline,
+.log-header-compact .mood-inline,
+.log-header-compact .rating-inline {
   margin-left: 0.5rem;
-  font-size: 0.75rem;
-  color: #667eea;
-  font-weight: 500;
+  font-size: 0.7rem;
+  color: #999;
+  font-weight: 400;
 }
 
 .log-delete-btn {
@@ -1094,7 +1379,6 @@ section h3 {
 }
   font-size: 0.9rem;
   color: #333;
-}
 
 .log-time {
   font-size: 0.8rem;
@@ -1108,7 +1392,7 @@ section h3 {
 }
 
 .log-content-edit {
-  margin: 0.5rem 0;
+  margin: 0.4rem 0;
 }
 
 .log-content-edit .edit-field {
@@ -1117,48 +1401,47 @@ section h3 {
 
 .log-content-textarea {
   width: 100%;
-  padding: 0.5rem;
+  padding: 0.4rem;
   border: 1px solid #ddd;
   border-radius: 6px;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-family: inherit;
   resize: none;
-  min-height: 36px;
-  max-height: 200px;
+  min-height: 32px;
+  max-height: 150px;
   overflow-y: auto;
   transition: border-color 0.2s;
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
 .log-content-textarea:focus {
   outline: none;
   border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
 }
 
 .char-count {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: #999;
   text-align: right;
-  margin-top: 0.25rem;
+  margin-top: 0.2rem;
 }
   white-space: pre-wrap;
-}
 
 .log-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
 }
 
 /* 元数据（紧凑版） */
 .log-meta-compact {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.4rem;
   align-items: center;
-  margin-top: 0.5rem;
+  margin-top: 0.4rem;
 }
 
 .log-meta-compact .meta-item {

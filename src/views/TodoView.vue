@@ -697,9 +697,9 @@
       </div>
     </div>
 
-    <!-- 筛选弹窗 -->
+    <!-- 筛选弹窗 (Bottom Sheet) -->
     <div v-if="showFilterModal" class="modal-overlay" @click.self="showFilterModal = false">
-      <div class="modal-content filter-modal">
+      <div class="filter-bottom-sheet">
         <div class="modal-header">
           <h3>🎛️ {{ t('advancedFilter') }}</h3>
           <button class="close-btn" @click="showFilterModal = false">&times;</button>
@@ -916,8 +916,9 @@
     </div>
 
     <!-- 个人主页弹窗 -->
+    <!-- 个人主页 (Bottom Sheet) -->
     <div v-if="showProfile" class="modal-overlay" @click.self="showProfile = false">
-      <div class="modal-content glass-card profile-modal" style="background: white;">
+      <div class="profile-bottom-sheet">
         <div class="modal-header">
           <h3>{{ t('personalProfile') }}</h3>
           <button class="close-btn" @click="showProfile = false">&times;</button>
@@ -989,6 +990,18 @@
               <div class="entry-title">{{ t('dataReport') }}</div>
               <div class="entry-summary">
                 {{ t('dataReportDesc') }}
+              </div>
+            </div>
+            <div class="entry-arrow">›</div>
+          </div>
+
+          <!-- AI配置入口 -->
+          <div class="pomodoro-entry" @click="showAIConfig = true">
+            <div class="entry-icon">🤖</div>
+            <div class="entry-content">
+              <div class="entry-title">AI模型配置</div>
+              <div class="entry-summary">
+                配置本地Ollama或云端API
               </div>
             </div>
             <div class="entry-arrow">›</div>
@@ -1077,7 +1090,6 @@
             <div class="entry-arrow">›</div>
           </div>
 
-          <!-- 联系与支持 -->
           <!-- 联系与支持入口 -->
           <div class="support-entry" @click="showSupport = true">
             <div class="entry-icon">💝</div>
@@ -1085,18 +1097,6 @@
               <div class="entry-title">{{ t('contactSupport') }}</div>
               <div class="entry-summary">
                 {{ t('contactSupportDesc') }}
-              </div>
-            </div>
-            <div class="entry-arrow">›</div>
-          </div>
-
-          <!-- AI配置入口 -->
-          <div class="profile-entry" @click="showAIConfig = true">
-            <div class="entry-icon">✨</div>
-            <div class="entry-content">
-              <div class="entry-title">AI配置</div>
-              <div class="entry-summary">
-                配置本地Ollama或云端API
               </div>
             </div>
             <div class="entry-arrow">›</div>
@@ -1116,8 +1116,9 @@
     <AIConfigModal v-if="showAIConfig" @close="showAIConfig = false" @saved="handleAIConfigSaved" />
 
     <!-- 联系与支持详情弹窗 -->
+    <!-- 联系与支持 (Bottom Sheet) -->
     <div v-if="showSupport" class="modal-overlay" @click.self="showSupport = false">
-      <div class="modal-content glass-card" style="background: white; max-width: 550px; width: 96%; padding: 0.8rem;">
+      <div class="support-bottom-sheet">
         <div class="modal-header">
           <h3>💬 {{ currentLanguage === 'zh' ? '问题反馈' : 'Feedback' }}</h3>
           <button class="close-btn" @click="showSupport = false">&times;</button>
@@ -1328,8 +1329,9 @@
     </div>
 
     <!-- 修改密码弹窗 -->
+    <!-- 修改密码 (Bottom Sheet) -->
     <div v-if="showPasswordModal" class="modal-overlay" @click.self="showPasswordModal = false">
-      <div class="modal-content glass-card" style="background: white; max-width: 450px; width: 96%; padding: 1rem;">
+      <div class="settings-bottom-sheet">
         <div class="modal-header">
           <h3>🔒 {{ t('changePassword') }}</h3>
           <button class="close-btn" @click="showPasswordModal = false">&times;</button>
@@ -1362,8 +1364,9 @@
     </div>
 
     <!-- 绑定手机号弹窗 -->
+    <!-- 绑定手机号 (Bottom Sheet) -->
     <div v-if="showPhoneModal" class="modal-overlay" @click.self="showPhoneModal = false">
-      <div class="modal-content glass-card" style="background: white; max-width: 450px; width: 96%; padding: 1rem;">
+      <div class="settings-bottom-sheet">
         <div class="modal-header">
           <h3>📱 {{ t('bindPhone') }}</h3>
           <button class="close-btn" @click="showPhoneModal = false">&times;</button>
@@ -1420,8 +1423,9 @@
     </div>
 
     <!-- 番茄统计详情弹窗 -->
+    <!-- 番茄钟统计 (Bottom Sheet) -->
     <div v-if="showPomodoroStats" class="modal-overlay" @click.self="showPomodoroStats = false">
-      <div class="modal-content glass-card" style="background: white; max-width: 650px; width: 96%; padding: 1rem;">
+      <div class="stats-bottom-sheet">
         <div class="modal-header">
           <h3>🍅 {{ t('pomodoroOverview') }}</h3>
           <button class="close-btn" @click="showPomodoroStats = false">&times;</button>
@@ -1898,7 +1902,7 @@
       v-if="showTaskDetail && selectedTask"
       :task="selectedTask"
       @close="showTaskDetail = false; selectedTask = null"
-      @edit="openEditModal"
+      @refresh="handleTaskDetailRefresh"
     />
 
     <!-- 演示模式 -->
@@ -1913,7 +1917,40 @@
       :visible="showAIChat"
       :tasks-data="{ tasks: taskStore.tasks, deletedTasks: taskStore.deletedTasks }"
       @close="showAIChat = false"
+      @openConfig="showAIConfig = true"
     />
+
+    <!-- AI模型配置 -->
+    <AIModelConfig
+      :visible="showAIConfig"
+      @close="showAIConfig = false"
+    />
+
+    <!-- 文本AI菜单 -->
+    <TextAIMenu
+      :visible="showTextAIMenu"
+      :position="textAIMenuPosition"
+      :selected-text="selectedText"
+      @action="handleTextAI"
+      @close="showTextAIMenu = false"
+    />
+
+    <!-- AI结果弹窗 -->
+    <div v-if="showAIResult" class="modal-overlay" @click.self="showAIResult = false">
+      <div class="modal-content glass-card" style="max-width: 600px; width: 96%;">
+        <div class="modal-header">
+          <h3>✨ AI{{ aiResultAction }}结果</h3>
+          <button class="close-btn" @click="showAIResult = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="ai-result-text">{{ aiResultText }}</div>
+          <div class="ai-result-actions">
+            <button @click="copyAIResult" class="btn btn-primary">📋 复制</button>
+            <button @click="showAIResult = false" class="btn btn-secondary">关闭</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- 备份管理弹窗 -->
     <div v-if="showBackupList" class="modal-overlay" @click.self="showBackupList = false">
@@ -1945,8 +1982,9 @@
     </div>
 
     <!-- 数据报告弹窗 -->
+    <!-- 数据报告 (Bottom Sheet) -->
     <div v-if="showReportModal" class="modal-overlay" @click.self="showReportModal = false">
-      <div class="modal-content glass-card" style="background: white; max-width: 800px; width: 96%; max-height: 90vh; overflow-y: auto; padding: 1rem;">
+      <div class="report-bottom-sheet">
         <div class="modal-header">
           <h3>📊 {{ t('dataReport') }}</h3>
           <button class="close-btn" @click="showReportModal = false">&times;</button>
@@ -2356,6 +2394,8 @@ import AddLogModal from '../components/AddLogModal.vue'
 import TaskDetailModal from '../components/TaskDetailModal.vue'
 import TutorialMode from '../components/TutorialMode.vue'
 import AIChat from '../components/AIChat.vue'
+import AIModelConfig from '../components/AIModelConfig.vue'
+import TextAIMenu from '../components/TextAIMenu.vue'
 import { CountUp } from 'countup.js'
 import { manualBackup, listBackups, restoreBackup } from '../utils/autoBackup'
 import { taskToExcelRow, generateTemplateData, excelRowToTask } from '../utils/excelFormat'
@@ -2780,6 +2820,137 @@ const showPomodoroStats = ref(false)
 const showSupport = ref(false)
 const showAIConfig = ref(false)
 const showAIChat = ref(false)
+const showTextAIMenu = ref(false)
+const textAIMenuPosition = ref({ x: 0, y: 0 })
+const selectedText = ref('')
+const showAIResult = ref(false)
+const aiResultText = ref('')
+const aiResultAction = ref('')
+
+// 监听文本选中
+onMounted(() => {
+  document.addEventListener('mouseup', handleTextSelection)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('mouseup', handleTextSelection)
+})
+
+const handleTextSelection = (e) => {
+  console.log('handleTextSelection triggered')
+  
+  // 如果点击的是菜单本身，不处理
+  if (e.target.closest('.text-ai-menu')) {
+    console.log('Clicked on menu, ignoring')
+    return
+  }
+  
+  // 延迟一点获取选中文本，避免 mouseup 时文本还未选中
+  setTimeout(() => {
+    const selection = window.getSelection()
+    const text = selection.toString().trim()
+    console.log('Selected text:', text)
+    
+    if (text && text.length > 0 && text.length < 500) {
+      selectedText.value = text
+      textAIMenuPosition.value = {
+        x: e.pageX + 10,
+        y: e.pageY + 10
+      }
+      showTextAIMenu.value = true
+      console.log('Menu should show at:', textAIMenuPosition.value)
+    } else if (!e.target.closest('.text-ai-menu')) {
+      // 只有在不是点击菜单时才隐藏
+      showTextAIMenu.value = false
+    }
+  }, 10)
+}
+
+const handleTextAI = async ({ action, text }) => {
+  console.log('handleTextAI called:', action, text)
+  const models = JSON.parse(localStorage.getItem('ai_models') || '[]')
+  const defaultModelId = localStorage.getItem('ai_default_model')
+  const model = models.find(m => m.id === defaultModelId) || models[0]
+  
+  if (!model) {
+    alert('请先在个人主页配置AI模型')
+    return
+  }
+  
+  const actionNames = {
+    summarize: '总结',
+    expand: '扩写',
+    shorten: '缩短',
+    improve: '改进',
+    translate: '翻译'
+  }
+  
+  const prompts = {
+    summarize: `请用一句话总结以下内容：\n\n${text}`,
+    expand: `请扩写以下内容，使其更详细：\n\n${text}`,
+    shorten: `请精简以下内容：\n\n${text}`,
+    improve: `请改进以下内容的表达：\n\n${text}`,
+    translate: `请将以下内容翻译成${text.match(/[\u4e00-\u9fa5]/) ? '英文' : '中文'}：\n\n${text}`
+  }
+  
+  // 显示加载提示
+  const loadingMsg = `AI正在${actionNames[action]}中...`
+  showNotification(loadingMsg, 'info')
+  
+  try {
+    // 确保 OpenAI URL 包含完整路径
+    let apiUrl = model.url
+    if (model.type === 'openai' && !apiUrl.includes('/chat/completions')) {
+      apiUrl = apiUrl.replace(/\/$/, '') + '/chat/completions'
+    }
+    
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        ...(model.apiKey ? { 'Authorization': `Bearer ${model.apiKey}` } : {})
+      },
+      body: JSON.stringify(
+        model.type === 'openai' 
+          ? {
+              model: model.modelName || 'gpt-3.5-turbo',
+              messages: [{ role: 'user', content: prompts[action] }]
+            }
+          : {
+              model: model.modelName || 'gemma2:2b',
+              prompt: prompts[action],
+              stream: false
+            }
+      )
+    })
+    
+    if (!response.ok) throw new Error(`API错误: ${response.status}`)
+    
+    const result = await response.json()
+    console.log('AI result:', result)
+    const aiText = model.type === 'openai' 
+      ? result.choices[0].message.content 
+      : result.response
+    
+    console.log('AI text:', aiText)
+    
+    // 显示结果弹窗
+    showAIResult.value = true
+    aiResultText.value = aiText
+    aiResultAction.value = actionNames[action]
+    
+    console.log('showAIResult set to true, text:', aiResultText.value)
+    
+  } catch (error) {
+    showNotification(`AI${actionNames[action]}失败: ${error.message}`, 'error')
+  }
+}
+
+const copyAIResult = () => {
+  navigator.clipboard.writeText(aiResultText.value)
+  showNotification('已复制到剪贴板', 'success')
+  showAIResult.value = false
+}
 
 const handleAIConfigSaved = () => {
   alert('AI配置已保存')
@@ -3648,7 +3819,51 @@ const addTaskAndClose = async () => {
 // 方法：拍照识别文字
 const scanTextFromCamera = async () => {
   try {
-    // 1. 拍照
+    const platform = Capacitor.getPlatform()
+    
+    if (platform === 'web') {
+      // Web 端：选择图片文件
+      const input = document.createElement('input')
+      input.type = 'file'
+      input.accept = 'image/*'
+      
+      input.onchange = async (e) => {
+        const file = e.target.files[0]
+        if (!file) return
+        
+        try {
+          showNotification('正在识别文字...', 'info')
+          
+          // 使用 Tesseract.js 进行 OCR（需要先安装）
+          // 或者调用在线 OCR API
+          // 这里先用简单的方法：让用户手动输入
+          
+          // 创建图片预览
+          const reader = new FileReader()
+          reader.onload = async (event) => {
+            const img = new Image()
+            img.src = event.target.result
+            
+            // 简单方案：提示用户手动输入
+            // 未来可以集成 Tesseract.js 或调用 OCR API
+            showNotification('Web 端暂不支持自动识别，请手动输入文字', 'info')
+            
+            // TODO: 集成 OCR 库
+            // const text = await recognizeText(img)
+            // newTaskText.value = text
+          }
+          reader.readAsDataURL(file)
+          
+        } catch (error) {
+          showNotification(`识别失败: ${error.message}`, 'error')
+        }
+      }
+      
+      input.click()
+      return
+    }
+    
+    // Android 端：使用相机拍照
     const photo = await Camera.getPhoto({
       quality: 90,
       allowEditing: false,
@@ -3689,7 +3904,12 @@ const scanTextFromCamera = async () => {
     }
   } catch (error) {
     console.error('拍照识别失败:', error)
-    showNotification(`识别失败: ${error.message || '未知错误'}`, 'error')
+    
+    if (error.message && error.message.includes('not implemented on web')) {
+      showNotification('📱 拍照识别功能仅在 Android 应用中可用', 'error')
+    } else {
+      showNotification(`识别失败: ${error.message || '未知错误'}`, 'error')
+    }
   }
 }
 
@@ -4098,6 +4318,21 @@ const openEditModal = (task) => {
 const openTaskDetail = (task) => {
   selectedTask.value = task
   showTaskDetail.value = true
+}
+
+// 方法：处理任务详情刷新
+const handleTaskDetailRefresh = () => {
+  // 重新加载任务数据
+  if (selectedTask.value) {
+    const updatedTask = taskStore.tasks.find(t => t.id === selectedTask.value.id)
+    if (updatedTask) {
+      selectedTask.value = updatedTask
+    } else {
+      // 任务已被删除，关闭详情页
+      showTaskDetail.value = false
+      selectedTask.value = null
+    }
+  }
 }
 
 // 方法：处理编辑类型变化
@@ -9926,7 +10161,7 @@ watch(() => reportData.value, (newData) => {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 10002;
   backdrop-filter: blur(8px);
 }
 
@@ -9942,12 +10177,15 @@ watch(() => reportData.value, (newData) => {
   backdrop-filter: blur(8px);
   display: flex;
   align-items: flex-end;
+  justify-content: stretch;
   animation: fadeIn 0.2s ease;
 }
 
 .bottom-sheet {
   background: white;
   width: 100%;
+  margin: 0;
+  padding: 0;
   max-height: 75vh;
   border-radius: 20px 20px 0 0;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
@@ -9955,11 +10193,12 @@ watch(() => reportData.value, (newData) => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 
 .bottom-sheet-header {
   position: relative;
-  padding: 1rem 1.5rem 0.8rem;
+  padding: 1rem 0.8rem 0.8rem;
   border-bottom: 1px solid #f0f0f0;
   text-align: center;
 }
@@ -9995,7 +10234,7 @@ watch(() => reportData.value, (newData) => {
 
 .bottom-sheet-body {
   overflow-y: auto;
-  padding: 1.5rem;
+  padding: 0.8rem;
   flex: 1;
 }
 
@@ -10489,6 +10728,273 @@ watch(() => reportData.value, (newData) => {
 }
 
 /* v1.5.6: 筛选弹窗 - 极致空间利用，边距压缩至极限 */
+/* 设置类 Bottom Sheet（修改密码、绑定手机号） */
+.settings-bottom-sheet {
+  background: white;
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.settings-bottom-sheet .modal-header {
+  padding: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 20px 20px 0 0;
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.settings-bottom-sheet .modal-header::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 2px;
+}
+
+.settings-bottom-sheet .modal-header h3 {
+  margin: 0;
+  padding-top: 0.5rem;
+}
+
+.settings-bottom-sheet .modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+/* 联系与支持 Bottom Sheet */
+.support-bottom-sheet {
+  background: white;
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.support-bottom-sheet .modal-header {
+  padding: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 20px 20px 0 0;
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.support-bottom-sheet .modal-header::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 2px;
+}
+
+.support-bottom-sheet .modal-header h3 {
+  margin: 0;
+  padding-top: 0.5rem;
+}
+
+.support-bottom-sheet .modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+/* 番茄钟统计 Bottom Sheet */
+.stats-bottom-sheet {
+  background: white;
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.stats-bottom-sheet .modal-header {
+  padding: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 20px 20px 0 0;
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stats-bottom-sheet .modal-header::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 2px;
+}
+
+.stats-bottom-sheet .modal-header h3 {
+  margin: 0;
+  padding-top: 0.5rem;
+}
+
+.stats-bottom-sheet .modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+/* 数据报告 Bottom Sheet */
+.report-bottom-sheet {
+  background: white;
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.report-bottom-sheet .modal-header {
+  padding: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 20px 20px 0 0;
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.report-bottom-sheet .modal-header::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 2px;
+}
+
+.report-bottom-sheet .modal-header h3 {
+  margin: 0;
+  padding-top: 0.5rem;
+}
+
+.report-bottom-sheet .modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+/* 筛选 Bottom Sheet */
+.filter-bottom-sheet {
+  background: white;
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.filter-bottom-sheet .modal-header {
+  padding: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 20px 20px 0 0;
+  position: relative;
+}
+
+.filter-bottom-sheet .modal-header::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 2px;
+}
+
+.filter-bottom-sheet .modal-header h3 {
+  margin: 0;
+  padding-top: 0.5rem;
+}
+
+.filter-bottom-sheet .modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.filter-bottom-sheet .modal-footer {
+  padding: 1rem;
+  border-top: 1px solid #e0e0e0;
+  background: white;
+}
+
 .filter-modal {
   max-width: 600px; /* 放宽上限 */
   width: 98%;      /* 进一步贴合屏幕边缘 */
@@ -10898,6 +11404,57 @@ watch(() => reportData.value, (newData) => {
   transform: scale(0.98);
 }
 
+/* 个人主页 Bottom Sheet */
+.profile-bottom-sheet {
+  background: white;
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.profile-bottom-sheet .modal-header {
+  padding: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 20px 20px 0 0;
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.profile-bottom-sheet .modal-header::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 2px;
+}
+
+.profile-bottom-sheet .modal-header h3 {
+  margin: 0;
+  padding-top: 0.5rem;
+}
+
+.profile-bottom-sheet .modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
 .profile-modal {
   max-width: 96%;
   width: 96%;
@@ -10990,7 +11547,7 @@ watch(() => reportData.value, (newData) => {
 }
 
 .edit-sheet-body {
-  padding: 0 1.5rem 1.5rem 1.5rem;
+  padding: 0 0.8rem 1.5rem 0.8rem;
 }
 
 /* 编辑弹窗宽度优化 */
@@ -11007,7 +11564,7 @@ watch(() => reportData.value, (newData) => {
 
 .edit-section {
   margin-bottom: 1.5rem;
-  padding: 1rem;
+  padding: 0.5rem;
   background: #f8f9fa;
   border-radius: 10px;
 }

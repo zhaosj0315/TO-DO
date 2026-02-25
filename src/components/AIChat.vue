@@ -6,38 +6,12 @@
         <button @click="$emit('close')" class="btn-close">✕</button>
       </div>
 
-      <div class="ai-chat-settings">
-        <select v-model="apiType" class="api-select">
-          <option value="pangu">盘古大模型</option>
-          <option value="openai">OpenAI</option>
-          <option value="local">本地模型</option>
-        </select>
-        <input 
-          v-if="apiType === 'openai'" 
-          v-model="apiKey" 
-          type="password" 
-          placeholder="OpenAI API Key"
-          class="api-input"
-        />
-        <input 
-          v-else-if="apiType === 'pangu'"
-          v-model="panguUrl" 
-          type="text" 
-          placeholder="本地: http://192.168.31.159:11434/api/generate"
-          class="api-input"
-        />
-        <input 
-          v-else
-          v-model="localUrl" 
-          type="text" 
-          placeholder="http://192.168.31.159:11434"
-          class="api-input"
-        />
-      </div>
-
       <div class="ai-chat-messages" ref="messagesContainer">
         <div v-for="(msg, idx) in messages" :key="idx" :class="['message', msg.role]">
           <div class="message-content">{{ msg.content }}</div>
+          <div v-if="msg.role === 'assistant' && msg.modelName" class="message-meta">
+            🤖 {{ msg.modelName }}
+          </div>
         </div>
         <div v-if="loading" class="message assistant">
           <div class="message-content">思考中...</div>
@@ -71,7 +45,7 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 
 const props = defineProps({
   visible: Boolean,
@@ -80,27 +54,29 @@ const props = defineProps({
 
 const emit = defineEmits(['close'])
 
-const apiType = ref(localStorage.getItem('ai_api_type') || 'local')
-const apiKey = ref(localStorage.getItem('ai_api_key') || '')
-const panguUrl = ref(localStorage.getItem('ai_pangu_url') || 'http://192.168.31.159:11434/api/generate')
-const localUrl = ref(localStorage.getItem('ai_local_url') || 'http://192.168.31.159:11434')
+// 从localStorage加载模型配置
+const models = ref(JSON.parse(localStorage.getItem('ai_models') || '[{"id":"default","name":"本地Ollama","url":"http://192.168.31.159:11434/api/generate","type":"local"}]'))
+const selectedModelId = ref(localStorage.getItem('ai_default_model') || models.value[0]?.id)
 const messages = ref([])
 const userInput = ref('')
 const loading = ref(false)
 const messagesContainer = ref(null)
 
-watch([apiType, apiKey, panguUrl, localUrl], () => {
-  localStorage.setItem('ai_api_type', apiType.value)
-  localStorage.setItem('ai_api_key', apiKey.value)
-  localStorage.setItem('ai_pangu_url', panguUrl.value)
-  localStorage.setItem('ai_local_url', localUrl.value)
+// 监听配置变化
+watch(selectedModelId, (val) => {
+  localStorage.setItem('ai_default_model', val)
+})
+
+const currentModel = computed(() => {
+  return models.value.find(m => m.id === selectedModelId.value) || models.value[0]
 })
 
 watch(() => props.visible, (val) => {
   if (val && messages.value.length === 0) {
+    const modelName = currentModel.value?.name || '默认模型'
     messages.value.push({
       role: 'assistant',
-      content: '你好！我是你的AI任务助手 🤖\n\n我已经读取了你的所有任务数据，包括：\n• 任务详情（标题、描述、状态）\n• 执行日志和进度\n• 番茄钟记录\n• 时间统计\n\n你可以问我任何关于任务的问题，比如：\n"今天完成了什么？"\n"本周效率如何？"\n"有哪些逾期任务？"'
+      content: `你好！我是你的AI任务助手 🤖\n\n当前使用模型：${modelName}\n\n我已经读取了你的所有任务数据，包括：\n• 任务详情（标题、描述、状态）\n• 执行日志和进度\n• 番茄钟记录\n• 时间统计\n\n你可以问我任何关于任务的问题，比如：\n"今天完成了什么？"\n"本周效率如何？"\n"有哪些逾期任务？"\n\n💡 点击右上角⚙️可以更换模型`
     })
   }
 })
@@ -247,17 +223,20 @@ const sendMessage = async () => {
 
   try {
     const context = buildContext()
+    const model = currentModel.value
     let response
 
-    if (apiType.value === 'pangu') {
-      response = await callPangu(context, question)
-    } else if (apiType.value === 'openai') {
-      response = await callOpenAI(context, question)
+    if (model.type === 'openai') {
+      response = await callOpenAI(context, question, model)
     } else {
-      response = await callLocalModel(context, question)
+      response = await callOllama(context, question, model)
     }
 
-    messages.value.push({ role: 'assistant', content: response })
+    messages.value.push({ 
+      role: 'assistant', 
+      content: response,
+      modelName: model.name // 添加模型名称
+    })
   } catch (error) {
     messages.value.push({ 
       role: 'error', 
@@ -271,66 +250,53 @@ const sendMessage = async () => {
   }
 }
 
-const callPangu = async (context, question) => {
-  if (!panguUrl.value) throw new Error('请先配置盘古API地址')
-  
+const callOllama = async (context, question, model) => {
   try {
-    // 检测是否是Ollama格式（包含/api/generate）
-    const isOllama = panguUrl.value.includes('/api/generate')
-    
-    if (isOllama) {
-      // 使用Ollama格式
-      const res = await fetch(panguUrl.value, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'gemma2:2b',
-          prompt: `${context}\n\n用户问题：${question}\n\n回答：`,
-          stream: false
-        })
+    const res = await fetch(model.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: model.modelName || 'gemma2:2b',
+        prompt: `${context}\n\n用户问题：${question}\n\n回答：`,
+        stream: false
       })
-      
-      if (!res.ok) throw new Error(`API错误 (${res.status}): ${res.statusText}`)
-      const data = await res.json()
-      return data.response || '无响应'
-    } else {
-      // 使用标准聊天格式
-      const res = await fetch(panguUrl.value, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: [
-            { role: 'system', content: context },
-            { role: 'user', content: question }
-          ],
-          stream: false
-        })
-      })
+    })
 
-      if (!res.ok) throw new Error(`API错误 (${res.status}): ${res.statusText}`)
-      const data = await res.json()
-      return data.response || data.message || data.content || '无响应'
+    if (!res.ok) {
+      // 特殊处理 ngrok 403 错误
+      if (res.status === 403 && model.url.includes('ngrok')) {
+        throw new Error(`Ngrok访问被拒绝\n\n请先在浏览器中访问：\n${model.url.split('/api')[0]}\n\n点击"Visit Site"后再试`)
+      }
+      throw new Error(`API错误 (${res.status})`)
     }
+    const data = await res.json()
+    return data.response || '无响应'
   } catch (error) {
-    if (error.message.includes('Failed to fetch') || error.message.includes('ERR_FAILED')) {
-      throw new Error(`无法连接到API (${panguUrl.value})，请检查：\n1. 代理服务是否运行: ./start-ollama-proxy.sh\n2. 公网隧道是否建立\n3. 地址是否正确`)
+    if (error.message.includes('Failed to fetch')) {
+      throw new Error(`无法连接到 ${model.name}\n请检查：\n1. 模型服务是否运行\n2. 地址是否正确\n3. 网络是否通畅`)
     }
     throw error
   }
 }
 
-const callOpenAI = async (context, question) => {
-  if (!apiKey.value) throw new Error('请先配置 OpenAI API Key')
+const callOpenAI = async (context, question, model) => {
+  if (!model.apiKey) throw new Error('请在配置中填写API Key')
   
   try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    // 确保 URL 包含完整路径
+    let apiUrl = model.url
+    if (!apiUrl.includes('/chat/completions')) {
+      apiUrl = apiUrl.replace(/\/$/, '') + '/chat/completions'
+    }
+    
+    const res = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey.value}`
+        'Authorization': `Bearer ${model.apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
+        model: model.modelName || 'gpt-3.5-turbo',
         messages: [
           { role: 'system', content: context },
           { role: 'user', content: question }
@@ -338,38 +304,12 @@ const callOpenAI = async (context, question) => {
       })
     })
 
-    if (!res.ok) {
-      const error = await res.json().catch(() => ({}))
-      throw new Error(`OpenAI API错误 (${res.status}): ${error.error?.message || res.statusText}`)
-    }
+    if (!res.ok) throw new Error(`OpenAI错误 (${res.status})`)
     const data = await res.json()
     return data.choices[0].message.content
   } catch (error) {
     if (error.message.includes('Failed to fetch')) {
-      throw new Error('无法连接到OpenAI，请检查网络连接')
-    }
-    throw error
-  }
-}
-
-const callLocalModel = async (context, question) => {
-  try {
-    const res = await fetch(`${localUrl.value}/api/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'gemma2:2b',
-        prompt: `${context}\n\n用户问题：${question}\n\n回答：`,
-        stream: false
-      })
-    })
-
-    if (!res.ok) throw new Error(`本地模型错误 (${res.status}): ${res.statusText}`)
-    const data = await res.json()
-    return data.response
-  } catch (error) {
-    if (error.message.includes('Failed to fetch') || error.message.includes('404')) {
-      throw new Error(`无法连接到本地模型 (${localUrl.value})，请检查：\n1. Ollama是否已安装并运行\n2. 运行命令: ollama serve\n3. 确认gemma2:2b模型已下载: ollama pull gemma2:2b`)
+      throw new Error('无法连接到OpenAI，请检查网络')
     }
     throw error
   }
@@ -383,35 +323,64 @@ const callLocalModel = async (context, question) => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   z-index: 10000;
+  backdrop-filter: blur(8px);
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }
 
 .ai-chat-container {
   background: white;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 600px;
-  height: 80vh;
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  margin: 0;
+  max-height: 85vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.3s ease;
+  overflow: hidden;
 }
 
 .ai-chat-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem;
+  padding: 1rem 0.8rem 0.8rem;
   border-bottom: 1px solid #eee;
+  position: relative;
+}
+
+.ai-chat-header::before {
+  content: '';
+  position: absolute;
+  top: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 4px;
+  background: #d0d0d0;
+  border-radius: 2px;
 }
 
 .ai-chat-header h3 {
   margin: 0;
   font-size: 1.1rem;
+  flex: 1;
+  text-align: center;
 }
 
 .btn-close {
@@ -420,25 +389,10 @@ const callLocalModel = async (context, question) => {
   font-size: 1.5rem;
   cursor: pointer;
   color: #999;
-}
-
-.ai-chat-settings {
-  display: flex;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid #eee;
-  background: #f9f9f9;
-}
-
-.api-select, .api-input {
-  padding: 0.4rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 0.85rem;
-}
-
-.api-select {
-  width: 120px;
+  position: absolute;
+  right: 0.8rem;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .api-input {
@@ -448,7 +402,7 @@ const callLocalModel = async (context, question) => {
 .ai-chat-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 1rem;
+  padding: 0.8rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -474,6 +428,13 @@ const callLocalModel = async (context, question) => {
   word-wrap: break-word;
 }
 
+.message-meta {
+  font-size: 0.7rem;
+  color: #999;
+  margin-top: 0.25rem;
+  text-align: right;
+}
+
 .message.user .message-content {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
@@ -493,7 +454,7 @@ const callLocalModel = async (context, question) => {
 .ai-chat-input {
   display: flex;
   gap: 0.5rem;
-  padding: 1rem;
+  padding: 0.8rem;
   border-top: 1px solid #eee;
 }
 
