@@ -233,22 +233,22 @@
                 v-if="task.description" 
                 class="task-description"
                 :class="{
-                  'description-collapsed': !expandedDescriptions.has(task.id) && task.description.length > 100,
+                  'description-collapsed': !expandedDescriptions.has(task.id) && task.description.length > 180,
                   'description-completed': task.status === 'completed',
                   [`description-priority-${task.priority}`]: true
                 }"
-                :title="task.description.length > 100 ? '点击查看详情' : ''"
+                :title="task.description.length > 180 ? '点击查看详情' : ''"
               >
                 {{ task.description }}
                 <span 
-                  v-if="!expandedDescriptions.has(task.id) && task.description.length > 100" 
+                  v-if="!expandedDescriptions.has(task.id) && task.description.length > 180" 
                   class="expand-btn"
                   @click.stop="toggleDescription(task.id)"
                 >
                   ...展开
                 </span>
                 <span 
-                  v-if="expandedDescriptions.has(task.id) && task.description.length > 100" 
+                  v-if="expandedDescriptions.has(task.id) && task.description.length > 180" 
                   class="expand-btn"
                   @click.stop="toggleDescription(task.id)"
                 >
@@ -1041,32 +1041,56 @@
             </div>
             
             <p class="export-desc">{{ t('dataManagementDesc') }}</p>
-            <div class="data-buttons">
-              <button class="btn btn-backup" @click="handleManualBackup">
-                <span class="export-icon">💾</span>
-                <span class="btn-text">{{ t('manualBackup') }}</span>
-              </button>
-              <button class="btn btn-restore" @click="showBackupList = true">
-                <span class="export-icon">♻️</span>
-                <span class="btn-text">{{ t('restoreBackup') }}</span>
-              </button>
-              <button class="btn btn-export" @click="exportToExcel">
-                <span class="export-icon">📥</span>
-                <span class="btn-text">{{ t('exportTasks') }}</span>
-              </button>
-              <button class="btn btn-import" @click="triggerImport">
-                <span class="export-icon">📤</span>
-                <span class="btn-text">{{ t('importTasks') }}</span>
-              </button>
-              <button class="btn btn-template" @click="downloadTemplate">
-                <span class="export-icon">📋</span>
-                <span class="btn-text">{{ t('downloadTemplate') }}</span>
-              </button>
-              <button class="btn btn-clear-all" @click="clearAllTasks">
-                <span class="export-icon">🗑️</span>
-                <span class="btn-text">{{ t('clearAllTasks') }}</span>
-              </button>
+            
+            <!-- 完整备份区域 -->
+            <div class="backup-group">
+              <div class="group-label">🔒 完整备份（推荐）</div>
+              <div class="group-desc">保留所有数据：执行日志、番茄钟历史、AI总结</div>
+              <div class="data-buttons">
+                <button class="btn btn-backup-full" @click="handleManualBackup">
+                  <span class="export-icon">💾</span>
+                  <span class="btn-text">完整备份 (JSON)</span>
+                </button>
+                <button class="btn btn-restore" @click="showBackupList = true">
+                  <span class="export-icon">♻️</span>
+                  <span class="btn-text">恢复备份</span>
+                </button>
+              </div>
             </div>
+            
+            <!-- Excel 导入导出区域 -->
+            <div class="backup-group">
+              <div class="group-label">📊 Excel 导入导出</div>
+              <div class="group-desc warning-text-small">
+                ⚠️ 仅包含基础数据，不含执行日志、番茄钟历史、AI总结
+              </div>
+              <div class="data-buttons">
+                <button class="btn btn-export" @click="exportToExcel">
+                  <span class="export-icon">📥</span>
+                  <span class="btn-text">导出 Excel</span>
+                </button>
+                <button class="btn btn-import" @click="showImportWarning">
+                  <span class="export-icon">📤</span>
+                  <span class="btn-text">导入 Excel</span>
+                </button>
+                <button class="btn btn-template" @click="downloadTemplate">
+                  <span class="export-icon">📋</span>
+                  <span class="btn-text">下载模板</span>
+                </button>
+              </div>
+            </div>
+            
+            <!-- 危险操作区域 -->
+            <div class="backup-group danger-group">
+              <div class="group-label">⚠️ 危险操作</div>
+              <div class="data-buttons">
+                <button class="btn btn-clear-all" @click="showClearWarning">
+                  <span class="export-icon">🗑️</span>
+                  <span class="btn-text">清空所有任务</span>
+                </button>
+              </div>
+            </div>
+            
             <input 
               ref="fileInput" 
               type="file" 
@@ -1971,12 +1995,125 @@
             <div v-for="file in backupFiles" :key="file.name" class="backup-item">
               <div class="backup-info">
                 <div class="backup-name">{{ file.name }}</div>
-                <div class="backup-date">{{ formatBackupDate(file.name) }}</div>
+                <div class="backup-date">{{ formatBackupDate(file.name) }} · {{ file.taskCount || '?' }} 个任务</div>
               </div>
-              <button class="btn-restore-small" @click="handleRestore(file.name)">
-                {{ t('restore') }}
-              </button>
+              <div class="backup-actions">
+                <button class="btn-restore-small" @click="handleRestore(file.name)">
+                  恢复
+                </button>
+                <button class="btn-delete-small" @click="handleDeleteBackup(file.name)">
+                  删除
+                </button>
+              </div>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 导入预览弹窗 -->
+    <div v-if="showImportPreview" class="modal-overlay" @click.self="cancelImport">
+      <div class="import-preview-sheet">
+        <div class="modal-header">
+          <button class="back-btn" @click="cancelImport">
+            <span>← 返回</span>
+          </button>
+          <h3>📋 导入预览</h3>
+          <div style="width: 80px;"></div>
+        </div>
+        
+        <div class="modal-body" v-if="importPreviewData">
+          <!-- 统计摘要 -->
+          <div class="import-summary">
+            <div class="summary-item">
+              <div class="summary-icon">📊</div>
+              <div class="summary-content">
+                <div class="summary-label">总计</div>
+                <div class="summary-value">{{ importPreviewData.analysis.total }} 条</div>
+              </div>
+            </div>
+            <div class="summary-item success">
+              <div class="summary-icon">✅</div>
+              <div class="summary-content">
+                <div class="summary-label">新增</div>
+                <div class="summary-value">{{ importPreviewData.analysis.newTasks.length }} 条</div>
+              </div>
+            </div>
+            <div class="summary-item warning">
+              <div class="summary-icon">⚠️</div>
+              <div class="summary-content">
+                <div class="summary-label">重复</div>
+                <div class="summary-value">{{ importPreviewData.analysis.duplicates.length }} 条</div>
+              </div>
+            </div>
+            <div class="summary-item error">
+              <div class="summary-icon">❌</div>
+              <div class="summary-content">
+                <div class="summary-label">错误</div>
+                <div class="summary-value">{{ importPreviewData.analysis.errors.length }} 条</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 详细列表 -->
+          <div class="import-details">
+            <!-- 新增任务 -->
+            <div v-if="importPreviewData.analysis.newTasks.length > 0" class="detail-section">
+              <h4>✅ 新增任务 ({{ importPreviewData.analysis.newTasks.length }})</h4>
+              <div class="task-preview-list">
+                <div v-for="task in importPreviewData.analysis.newTasks.slice(0, 5)" :key="task.row" class="task-preview-item">
+                  <span class="task-name">{{ task.name }}</span>
+                  <span class="task-meta">{{ task.category }} · {{ task.priority }}</span>
+                </div>
+                <div v-if="importPreviewData.analysis.newTasks.length > 5" class="more-hint">
+                  还有 {{ importPreviewData.analysis.newTasks.length - 5 }} 条...
+                </div>
+              </div>
+            </div>
+            
+            <!-- 重复任务 -->
+            <div v-if="importPreviewData.analysis.duplicates.length > 0" class="detail-section">
+              <h4>⚠️ 重复任务 (将跳过，{{ importPreviewData.analysis.duplicates.length }})</h4>
+              <div class="task-preview-list">
+                <div v-for="task in importPreviewData.analysis.duplicates.slice(0, 3)" :key="task.row" class="task-preview-item duplicate">
+                  <span class="task-name">{{ task.name }}</span>
+                  <span class="task-meta">第{{ task.row }}行</span>
+                </div>
+                <div v-if="importPreviewData.analysis.duplicates.length > 3" class="more-hint">
+                  还有 {{ importPreviewData.analysis.duplicates.length - 3 }} 条...
+                </div>
+              </div>
+            </div>
+            
+            <!-- 错误任务 -->
+            <div v-if="importPreviewData.analysis.errors.length > 0" class="detail-section">
+              <h4>❌ 错误任务 (将跳过，{{ importPreviewData.analysis.errors.length }})</h4>
+              <div class="task-preview-list">
+                <div v-for="error in importPreviewData.analysis.errors.slice(0, 5)" :key="error.row" class="task-preview-item error">
+                  <div class="error-content">
+                    <span class="error-row">第{{ error.row }}行</span>
+                    <span class="error-reason">{{ error.reason }}</span>
+                  </div>
+                </div>
+                <div v-if="importPreviewData.analysis.errors.length > 5" class="more-hint">
+                  还有 {{ importPreviewData.analysis.errors.length - 5 }} 条错误...
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 操作按钮 -->
+          <div class="import-actions">
+            <button class="btn btn-secondary" @click="cancelImport">
+              取消导入
+            </button>
+            <button 
+              class="btn btn-primary" 
+              @click="confirmImport"
+              :disabled="importPreviewData.analysis.newTasks.length === 0"
+            >
+              确认导入 ({{ importPreviewData.analysis.newTasks.length }} 条)
+            </button>
           </div>
         </div>
       </div>
@@ -2378,7 +2515,7 @@
     <AITextMenu
       :visible="showTextMenu"
       :position="menuPosition"
-      :selected-text="selectedText"
+      :selected-text="selectedTextNew"
       @close="closeTextMenu"
       @action="handleTextAction"
     />
@@ -2412,7 +2549,7 @@ import TutorialMode from '../components/TutorialMode.vue'
 import AIChat from '../components/AIChat.vue'
 import AIModelConfig from '../components/AIModelConfig.vue'
 import { CountUp } from 'countup.js'
-import { manualBackup, listBackups, restoreBackup } from '../utils/autoBackup'
+import { manualBackup, listBackups, restoreBackup, deleteBackup } from '../utils/autoBackup'
 import { taskToExcelRow, generateTemplateData, excelRowToTask } from '../utils/excelFormat'
 
 const router = useRouter()
@@ -2835,9 +2972,6 @@ const showPomodoroStats = ref(false)
 const showSupport = ref(false)
 const showAIConfig = ref(false)
 const showAIChat = ref(false)
-const showTextAIMenu = ref(false)
-const textAIMenuPosition = ref({ x: 0, y: 0 })
-const selectedText = ref('')
 const showAIResult = ref(false)
 const aiResultText = ref('')
 const aiResultAction = ref('')
@@ -2848,6 +2982,13 @@ const { showMenu: showTextMenu, menuPosition, selectedText: selectedTextNew, clo
 
 // 处理 AI 文本操作
 const handleTextAction = async ({ action, text, tone }) => {
+  console.log('TodoView handleTextAction called:', { action, text, tone })
+  
+  if (!text || text.trim() === '') {
+    alert('未检测到选中的文本，请重新选择')
+    return
+  }
+  
   try {
     const result = await AITextService.processText(action, text, { tone })
     replaceSelectedText(result)
@@ -6236,6 +6377,28 @@ const handleRestore = async (fileName) => {
   }
 }
 
+// 删除备份
+const handleDeleteBackup = async (fileName) => {
+  if (!confirm(`确定要删除备份 ${fileName} 吗？\n\n此操作不可恢复！`)) {
+    return
+  }
+  
+  try {
+    const result = await deleteBackup(fileName)
+    
+    if (result.success) {
+      showNotification('删除成功', 'success')
+      // 刷新备份列表
+      await loadBackupList()
+    } else {
+      showNotification(`删除失败: ${result.error}`, 'error')
+    }
+  } catch (error) {
+    console.error('删除失败:', error)
+    showNotification('删除失败，请重试', 'error')
+  }
+}
+
 // 监听备份列表弹窗打开
 watch(showBackupList, (newVal) => {
   if (newVal) {
@@ -6462,6 +6625,68 @@ const triggerImport = () => {
   fileInput.value?.click()
 }
 
+// 方法：显示导入警告
+const showImportWarning = () => {
+  const confirmed = confirm(
+    `⚠️ 导入 Excel 数据警告\n\n` +
+    `Excel 导入仅包含基础任务信息，以下数据将丢失：\n\n` +
+    `❌ 执行日志（所有推进记录）\n` +
+    `❌ 番茄钟历史（专注记录）\n` +
+    `❌ AI 总结（智能分析）\n` +
+    `❌ 执行统计（进度、耗时等）\n\n` +
+    `如需完整备份恢复，请使用"完整备份(JSON)"功能！\n\n` +
+    `确定要继续导入 Excel 吗？`
+  )
+  
+  if (confirmed) {
+    triggerImport()
+  }
+}
+
+// 方法：显示清空警告
+const showClearWarning = async () => {
+  const taskCount = taskStore.tasks.length
+  
+  // 第一次确认
+  const firstConfirm = confirm(
+    `⚠️ 危险操作警告\n\n` +
+    `您即将清空所有 ${taskCount} 个任务！\n\n` +
+    `此操作不可撤销，建议先备份数据。\n\n` +
+    `是否要自动创建备份？`
+  )
+  
+  if (!firstConfirm) {
+    return
+  }
+  
+  // 自动备份
+  try {
+    await handleManualBackup()
+    showNotification('已自动备份数据', 'success')
+  } catch (error) {
+    console.error('自动备份失败:', error)
+    const continueWithoutBackup = confirm(
+      `自动备份失败：${error.message}\n\n` +
+      `是否继续清空任务？（不推荐）`
+    )
+    if (!continueWithoutBackup) {
+      return
+    }
+  }
+  
+  // 第二次确认 - 要求输入确认文字
+  const confirmText = prompt(
+    `⚠️ 最后确认\n\n` +
+    `请输入"确认清空"四个字以继续：`
+  )
+  
+  if (confirmText === '确认清空') {
+    clearAllTasks()
+  } else {
+    showNotification('已取消清空操作', 'info')
+  }
+}
+
 // 方法：下载导入模板
 const downloadTemplate = async () => {
   try {
@@ -6491,6 +6716,75 @@ const downloadTemplate = async () => {
 }
 
 // 方法：导入任务
+// 导入预览数据
+const importPreviewData = ref(null)
+const showImportPreview = ref(false)
+
+// 数据验证函数
+const validateTaskData = (row, rowIndex) => {
+  const errors = []
+  
+  // 1. 验证任务名称（必填）
+  const taskName = row['任务名称']?.trim()
+  if (!taskName) {
+    return { valid: false, errors: ['任务名称为空'] }
+  }
+  
+  // 2. 验证分类
+  const category = row['分类']
+  const validCategories = { '工作': 'work', '学习': 'study', '生活': 'life' }
+  if (category && !validCategories[category]) {
+    errors.push(`分类"${category}"无效，应为：工作/学习/生活`)
+  }
+  
+  // 3. 验证优先级
+  const priority = row['优先级']
+  const validPriorities = { '高': 'high', '中': 'medium', '低': 'low' }
+  if (priority && !validPriorities[priority]) {
+    errors.push(`优先级"${priority}"无效，应为：高/中/低`)
+  }
+  
+  // 4. 验证状态
+  const status = row['状态']
+  const validStatuses = { '待办': 'pending', '已完成': 'completed', '已逾期': 'overdue' }
+  if (status && !validStatuses[status]) {
+    errors.push(`状态"${status}"无效，应为：待办/已完成/已逾期`)
+  }
+  
+  // 5. 验证日期格式
+  const createdAt = row['创建时间']
+  if (createdAt && !isValidDate(createdAt)) {
+    errors.push(`创建时间"${createdAt}"格式无效，应为：YYYY-MM-DD 或 YYYY-MM-DD HH:mm:ss`)
+  }
+  
+  const completedAt = row['完成时间']
+  if (completedAt && !isValidDate(completedAt)) {
+    errors.push(`完成时间"${completedAt}"格式无效`)
+  }
+  
+  const customDate = row['指定日期']
+  if (customDate && !isValidDate(customDate)) {
+    errors.push(`指定日期"${customDate}"格式无效`)
+  }
+  
+  return {
+    valid: errors.length === 0,
+    errors
+  }
+}
+
+// 日期格式验证
+const isValidDate = (dateStr) => {
+  if (!dateStr) return true
+  
+  // 支持格式：YYYY-MM-DD 或 YYYY-MM-DD HH:mm:ss
+  const datePattern = /^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?$/
+  if (!datePattern.test(dateStr)) return false
+  
+  const date = new Date(dateStr)
+  return date instanceof Date && !isNaN(date)
+}
+
 const importFromExcel = async (event) => {
   const file = event.target.files?.[0]
   if (!file) return
@@ -6509,30 +6803,72 @@ const importFromExcel = async (event) => {
           return
         }
         
-        let successCount = 0
-        let errorCount = 0
+        // 分析导入数据
+        const analysis = {
+          total: rows.length,
+          newTasks: [],
+          duplicates: [],
+          errors: []
+        }
         
-        for (const row of rows) {
+        const existingTasks = taskStore.tasks
+        
+        for (let i = 0; i < rows.length; i++) {
+          const row = rows[i]
+          const rowNum = i + 2 // Excel行号（从第2行开始）
+          
           try {
-            const taskName = row['任务名称']?.trim()
-            if (!taskName) {
-              errorCount++
+            // 数据验证
+            const validation = validateTaskData(row, rowNum)
+            if (!validation.valid) {
+              analysis.errors.push({ 
+                row: rowNum, 
+                reason: validation.errors.join('；') 
+              })
               continue
             }
             
-            // 使用统一格式转换
-            const newTask = excelRowToTask(row, currentUsername.value)
-            newTask.id = Date.now() + successCount
+            const taskName = row['任务名称'].trim()
+            const categoryMap = { '工作': 'work', '学习': 'study', '生活': 'life' }
+            const category = categoryMap[row['分类']] || 'work'
             
-            await taskStore.addTask(newTask)
-            successCount++
+            // 检查是否重复
+            const isDuplicate = existingTasks.some(t => 
+              t.text === taskName && t.category === category
+            )
+            
+            const taskPreview = {
+              row: rowNum,
+              name: taskName,
+              category: row['分类'] || '工作',
+              priority: row['优先级'] || '中',
+              type: row['任务类型'] || '今天'
+            }
+            
+            if (isDuplicate) {
+              analysis.duplicates.push(taskPreview)
+            } else {
+              analysis.newTasks.push(taskPreview)
+            }
           } catch (err) {
-            console.error('导入单条任务失败:', err)
-            errorCount++
+            analysis.errors.push({ 
+              row: rowNum, 
+              reason: `解析失败：${err.message}` 
+            })
           }
         }
         
-        showNotification(`导入完成：成功 ${successCount} 条，失败 ${errorCount} 条`, 'success')
+        // 保存预览数据和原始文件
+        importPreviewData.value = {
+          analysis,
+          file,
+          rows
+        }
+        
+        // 显示预览弹窗
+        showImportPreview.value = true
+        
+        // 清空文件输入
         fileInput.value.value = ''
       } catch (error) {
         console.error('解析文件失败:', error)
@@ -6544,6 +6880,47 @@ const importFromExcel = async (event) => {
     console.error('读取文件失败:', error)
     showNotification('读取文件失败', 'error')
   }
+}
+
+// 确认导入
+const confirmImport = async () => {
+  if (!importPreviewData.value) return
+  
+  const { rows } = importPreviewData.value
+  let successCount = 0
+  let errorCount = 0
+  
+  for (const row of rows) {
+    try {
+      const taskName = row['任务名称']?.trim()
+      if (!taskName) {
+        errorCount++
+        continue
+      }
+      
+      // 使用统一格式转换
+      const newTask = excelRowToTask(row, currentUsername.value)
+      newTask.id = Date.now() + successCount
+      
+      await taskStore.addTask(newTask)
+      successCount++
+    } catch (err) {
+      console.error('导入单条任务失败:', err)
+      errorCount++
+    }
+  }
+  
+  showNotification(`导入完成：成功 ${successCount} 条，失败 ${errorCount} 条`, 'success')
+  
+  // 关闭预览
+  showImportPreview.value = false
+  importPreviewData.value = null
+}
+
+// 取消导入
+const cancelImport = () => {
+  showImportPreview.value = false
+  importPreviewData.value = null
 }
 
 // 解析分类文本
@@ -9816,9 +10193,44 @@ watch(() => reportData.value, (newData) => {
   line-height: 1.3;
 }
 
+/* 备份分组 */
+.backup-group {
+  margin-bottom: 1rem;
+  padding: 0.8rem;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.backup-group.danger-group {
+  background: rgba(244, 67, 54, 0.05);
+  border-color: rgba(244, 67, 54, 0.3);
+}
+
+.group-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.4rem;
+  text-align: left;
+}
+
+.group-desc {
+  font-size: 0.7rem;
+  color: #666;
+  margin-bottom: 0.6rem;
+  text-align: left;
+  line-height: 1.4;
+}
+
+.warning-text-small {
+  color: #d32f2f;
+  font-weight: 500;
+}
+
 .data-buttons {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 0.5rem;
   width: 100%;
 }
@@ -9845,6 +10257,15 @@ watch(() => reportData.value, (newData) => {
   max-width: 100%;
   color: white;
   font-weight: 600;
+}
+
+/* 按钮颜色 */
+.btn-backup-full {
+  background: linear-gradient(135deg, #4caf50, #45a049);
+}
+
+.btn-backup-full:hover {
+  background: linear-gradient(135deg, #45a049, #3d8b40);
 }
 
 /* 备份列表样式 */
@@ -9887,6 +10308,203 @@ watch(() => reportData.value, (newData) => {
   padding: 0.4rem 0.8rem;
   border-radius: 6px;
   font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-restore-small:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(138, 43, 226, 0.3);
+}
+
+.backup-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-delete-small {
+  background: #f44336;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-delete-small:hover {
+  background: #d32f2f;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+}
+
+/* 导入预览弹窗 */
+.import-preview-sheet {
+  background: white;
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.import-summary {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.summary-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 2px solid #e0e0e0;
+}
+
+.summary-item.success {
+  background: rgba(76, 175, 80, 0.1);
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+.summary-item.warning {
+  background: rgba(255, 152, 0, 0.1);
+  border-color: rgba(255, 152, 0, 0.3);
+}
+
+.summary-item.error {
+  background: rgba(244, 67, 54, 0.1);
+  border-color: rgba(244, 67, 54, 0.3);
+}
+
+.summary-icon {
+  font-size: 1.5rem;
+}
+
+.summary-content {
+  flex: 1;
+}
+
+.summary-label {
+  font-size: 0.75rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+}
+
+.summary-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #333;
+}
+
+.import-details {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+}
+
+.detail-section {
+  margin-bottom: 1.5rem;
+}
+
+.detail-section h4 {
+  font-size: 0.9rem;
+  margin: 0 0 0.75rem 0;
+  color: #333;
+}
+
+.task-preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.task-preview-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border-left: 3px solid #4caf50;
+}
+
+.task-preview-item.duplicate {
+  border-left-color: #ff9800;
+  opacity: 0.7;
+}
+
+.task-preview-item.error {
+  border-left-color: #f44336;
+  opacity: 0.7;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.error-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 100%;
+}
+
+.error-row {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #f44336;
+}
+
+.error-reason {
+  font-size: 0.8rem;
+  color: #666;
+  line-height: 1.4;
+}
+
+.task-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #333;
+  flex: 1;
+}
+
+.task-meta {
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.more-hint {
+  text-align: center;
+  padding: 0.5rem;
+  font-size: 0.75rem;
+  color: #999;
+}
+
+.import-actions {
+  display: flex;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.import-actions .btn {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.import-actions .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s;

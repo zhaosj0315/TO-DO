@@ -86,6 +86,9 @@
               placeholder="API Key"
               class="form-input"
             />
+            <div v-if="newModel.type === 'openai' || newModel.type === 'custom'" class="api-hint">
+              💡 没有 API Key？我用的是 <a href="https://cn.gptapi.asia/register?aff=Okck" target="_blank" class="api-link">这个服务</a>，你也可以试试
+            </div>
             
             <!-- 4. 选择模型（自动获取） -->
             <select 
@@ -690,5 +693,26 @@ const addQuickConfig = (type) => {
 
 .btn-fetch:active {
   transform: scale(0.95);
+}
+
+.api-hint {
+  font-size: 0.85rem;
+  color: #666;
+  padding: 0.5rem 0.75rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border-left: 3px solid #667eea;
+}
+
+.api-link {
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.api-link:hover {
+  color: #764ba2;
+  text-decoration: underline;
 }
 </style>

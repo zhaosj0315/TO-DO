@@ -1,6 +1,12 @@
 // AI 文本处理服务
 export class AITextService {
   static async processText(action, text, options = {}) {
+    console.log('AITextService.processText called with:', { action, text, options })
+    
+    if (!text || text.trim() === '') {
+      throw new Error('请先选中要处理的文本')
+    }
+    
     const models = JSON.parse(localStorage.getItem('ai_models') || '[]')
     const defaultModelId = localStorage.getItem('ai_default_model')
     const model = models.find(m => m.id === defaultModelId) || models[0]
@@ -10,6 +16,7 @@ export class AITextService {
     }
 
     const prompt = this.buildPrompt(action, text, options)
+    console.log('Generated prompt:', prompt)
     
     let apiUrl = model.url
     if (model.type === 'openai' && !apiUrl.includes('/chat/completions')) {

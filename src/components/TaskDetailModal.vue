@@ -304,6 +304,11 @@ const { showMenu: showTextMenu, menuPosition, selectedText, closeTextMenu, repla
 const handleTextAction = async ({ action, text, tone }) => {
   console.log('TaskDetailModal handleTextAction:', { action, text, tone })
   
+  if (!text || text.trim() === '') {
+    alert('未检测到选中的文本，请重新选择')
+    return
+  }
+  
   try {
     const result = await AITextService.processText(action, text, { tone })
     console.log('AI result:', result)
