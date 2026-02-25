@@ -1,5 +1,5 @@
 <template>
-  <div class="todo-layout">
+  <div class="todo-layout" ref="todoLayoutRef">
     <!-- 核心内容区 -->
     <main class="main-content glass-card" ref="mainContent">
       <!-- 顶部标题栏 -->
@@ -103,11 +103,6 @@
                 placeholder="📝 任务描述（可选）..."
                 rows="2"
               ></textarea>
-              <AIAssistButton 
-                :context="`任务：${newTaskText}`"
-                placeholder="生成任务描述"
-                @generated="(text) => newTaskDescription = text"
-              />
             </div>
 
             <!-- 第二行：属性配置 -->
@@ -920,8 +915,11 @@
     <div v-if="showProfile" class="modal-overlay" @click.self="showProfile = false">
       <div class="profile-bottom-sheet">
         <div class="modal-header">
+          <button class="back-btn" @click="showProfile = false">
+            <span>← 返回</span>
+          </button>
           <h3>{{ t('personalProfile') }}</h3>
-          <button class="close-btn" @click="showProfile = false">&times;</button>
+          <div style="width: 80px;"></div>
         </div>
         <div class="modal-body">
           <!-- 用户信息展示 -->
@@ -1120,8 +1118,11 @@
     <div v-if="showSupport" class="modal-overlay" @click.self="showSupport = false">
       <div class="support-bottom-sheet">
         <div class="modal-header">
+          <button class="back-btn" @click="showSupport = false">
+            <span>← 返回</span>
+          </button>
           <h3>💬 {{ currentLanguage === 'zh' ? '问题反馈' : 'Feedback' }}</h3>
-          <button class="close-btn" @click="showSupport = false">&times;</button>
+          <div style="width: 80px;"></div>
         </div>
         <div class="modal-body">
           <p class="support-desc">{{ currentLanguage === 'zh' ? '遇到bug或有功能建议？欢迎反馈！' : 'Found a bug or have suggestions? Feel free to contact!' }}</p>
@@ -1333,8 +1334,11 @@
     <div v-if="showPasswordModal" class="modal-overlay" @click.self="showPasswordModal = false">
       <div class="settings-bottom-sheet">
         <div class="modal-header">
+          <button class="back-btn" @click="showPasswordModal = false">
+            <span>← 返回</span>
+          </button>
           <h3>🔒 {{ t('changePassword') }}</h3>
-          <button class="close-btn" @click="showPasswordModal = false">&times;</button>
+          <div style="width: 80px;"></div>
         </div>
         <div class="modal-body">
           <div class="form-group">
@@ -1368,8 +1372,11 @@
     <div v-if="showPhoneModal" class="modal-overlay" @click.self="showPhoneModal = false">
       <div class="settings-bottom-sheet">
         <div class="modal-header">
+          <button class="back-btn" @click="showPhoneModal = false">
+            <span>← 返回</span>
+          </button>
           <h3>📱 {{ t('bindPhone') }}</h3>
-          <button class="close-btn" @click="showPhoneModal = false">&times;</button>
+          <div style="width: 80px;"></div>
         </div>
         <div class="modal-body">
           <div v-if="userProfileInfo.boundPhone">
@@ -1427,8 +1434,11 @@
     <div v-if="showPomodoroStats" class="modal-overlay" @click.self="showPomodoroStats = false">
       <div class="stats-bottom-sheet">
         <div class="modal-header">
+          <button class="back-btn" @click="showPomodoroStats = false">
+            <span>← 返回</span>
+          </button>
           <h3>🍅 {{ t('pomodoroOverview') }}</h3>
-          <button class="close-btn" @click="showPomodoroStats = false">&times;</button>
+          <div style="width: 80px;"></div>
         </div>
         <div class="modal-body">
           <!-- 今日专注统计 -->
@@ -1926,15 +1936,6 @@
       @close="showAIConfig = false"
     />
 
-    <!-- 文本AI菜单 -->
-    <TextAIMenu
-      :visible="showTextAIMenu"
-      :position="textAIMenuPosition"
-      :selected-text="selectedText"
-      @action="handleTextAI"
-      @close="showTextAIMenu = false"
-    />
-
     <!-- AI结果弹窗 -->
     <div v-if="showAIResult" class="modal-overlay" @click.self="showAIResult = false">
       <div class="modal-content glass-card" style="max-width: 600px; width: 96%;">
@@ -1986,8 +1987,11 @@
     <div v-if="showReportModal" class="modal-overlay" @click.self="showReportModal = false">
       <div class="report-bottom-sheet">
         <div class="modal-header">
+          <button class="back-btn" @click="showReportModal = false">
+            <span>← 返回</span>
+          </button>
           <h3>📊 {{ t('dataReport') }}</h3>
-          <button class="close-btn" @click="showReportModal = false">&times;</button>
+          <div style="width: 80px;"></div>
         </div>
         <div class="modal-body">
           <!-- 报告配置 -->
@@ -2369,6 +2373,15 @@
     </transition>
 
     <!-- 底部抽屉 - 添加任务 -->
+
+    <!-- AI 文本选择菜单 -->
+    <AITextMenu
+      :visible="showTextMenu"
+      :position="menuPosition"
+      :selected-text="selectedText"
+      @close="closeTextMenu"
+      @action="handleTextAction"
+    />
   </div>
 </template>
 
@@ -2379,6 +2392,9 @@ import { useOfflineTaskStore } from '../stores/offlineTaskStore'
 import { useOfflineUserStore } from '../stores/offlineUserStore'
 import { Preferences } from '@capacitor/preferences'
 import AIAssistButton from '../components/AIAssistButton.vue'
+import AITextMenu from '../components/AITextMenu.vue'
+import { useTextSelection } from '../composables/useTextSelection'
+import { AITextService } from '../services/aiTextService'
 import AIConfigModal from '../components/AIConfigModal.vue'
 import { Filesystem, Directory } from '@capacitor/filesystem'
 import { LocalNotifications } from '@capacitor/local-notifications'
@@ -2395,7 +2411,6 @@ import TaskDetailModal from '../components/TaskDetailModal.vue'
 import TutorialMode from '../components/TutorialMode.vue'
 import AIChat from '../components/AIChat.vue'
 import AIModelConfig from '../components/AIModelConfig.vue'
-import TextAIMenu from '../components/TextAIMenu.vue'
 import { CountUp } from 'countup.js'
 import { manualBackup, listBackups, restoreBackup } from '../utils/autoBackup'
 import { taskToExcelRow, generateTemplateData, excelRowToTask } from '../utils/excelFormat'
@@ -2827,122 +2842,18 @@ const showAIResult = ref(false)
 const aiResultText = ref('')
 const aiResultAction = ref('')
 
-// 监听文本选中
-onMounted(() => {
-  document.addEventListener('mouseup', handleTextSelection)
-})
+// 文本选择菜单（使用新的 composable）
+const todoLayoutRef = ref(null)
+const { showMenu: showTextMenu, menuPosition, selectedText: selectedTextNew, closeTextMenu, replaceSelectedText } = useTextSelection(todoLayoutRef)
 
-onUnmounted(() => {
-  document.removeEventListener('mouseup', handleTextSelection)
-})
-
-const handleTextSelection = (e) => {
-  console.log('handleTextSelection triggered')
-  
-  // 如果点击的是菜单本身，不处理
-  if (e.target.closest('.text-ai-menu')) {
-    console.log('Clicked on menu, ignoring')
-    return
-  }
-  
-  // 延迟一点获取选中文本，避免 mouseup 时文本还未选中
-  setTimeout(() => {
-    const selection = window.getSelection()
-    const text = selection.toString().trim()
-    console.log('Selected text:', text)
-    
-    if (text && text.length > 0 && text.length < 500) {
-      selectedText.value = text
-      textAIMenuPosition.value = {
-        x: e.pageX + 10,
-        y: e.pageY + 10
-      }
-      showTextAIMenu.value = true
-      console.log('Menu should show at:', textAIMenuPosition.value)
-    } else if (!e.target.closest('.text-ai-menu')) {
-      // 只有在不是点击菜单时才隐藏
-      showTextAIMenu.value = false
-    }
-  }, 10)
-}
-
-const handleTextAI = async ({ action, text }) => {
-  console.log('handleTextAI called:', action, text)
-  const models = JSON.parse(localStorage.getItem('ai_models') || '[]')
-  const defaultModelId = localStorage.getItem('ai_default_model')
-  const model = models.find(m => m.id === defaultModelId) || models[0]
-  
-  if (!model) {
-    alert('请先在个人主页配置AI模型')
-    return
-  }
-  
-  const actionNames = {
-    summarize: '总结',
-    expand: '扩写',
-    shorten: '缩短',
-    improve: '改进',
-    translate: '翻译'
-  }
-  
-  const prompts = {
-    summarize: `请用一句话总结以下内容：\n\n${text}`,
-    expand: `请扩写以下内容，使其更详细：\n\n${text}`,
-    shorten: `请精简以下内容：\n\n${text}`,
-    improve: `请改进以下内容的表达：\n\n${text}`,
-    translate: `请将以下内容翻译成${text.match(/[\u4e00-\u9fa5]/) ? '英文' : '中文'}：\n\n${text}`
-  }
-  
-  // 显示加载提示
-  const loadingMsg = `AI正在${actionNames[action]}中...`
-  showNotification(loadingMsg, 'info')
-  
+// 处理 AI 文本操作
+const handleTextAction = async ({ action, text, tone }) => {
   try {
-    // 确保 OpenAI URL 包含完整路径
-    let apiUrl = model.url
-    if (model.type === 'openai' && !apiUrl.includes('/chat/completions')) {
-      apiUrl = apiUrl.replace(/\/$/, '') + '/chat/completions'
-    }
-    
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        ...(model.apiKey ? { 'Authorization': `Bearer ${model.apiKey}` } : {})
-      },
-      body: JSON.stringify(
-        model.type === 'openai' 
-          ? {
-              model: model.modelName || 'gpt-3.5-turbo',
-              messages: [{ role: 'user', content: prompts[action] }]
-            }
-          : {
-              model: model.modelName || 'gemma2:2b',
-              prompt: prompts[action],
-              stream: false
-            }
-      )
-    })
-    
-    if (!response.ok) throw new Error(`API错误: ${response.status}`)
-    
-    const result = await response.json()
-    console.log('AI result:', result)
-    const aiText = model.type === 'openai' 
-      ? result.choices[0].message.content 
-      : result.response
-    
-    console.log('AI text:', aiText)
-    
-    // 显示结果弹窗
-    showAIResult.value = true
-    aiResultText.value = aiText
-    aiResultAction.value = actionNames[action]
-    
-    console.log('showAIResult set to true, text:', aiResultText.value)
-    
+    const result = await AITextService.processText(action, text, { tone })
+    replaceSelectedText(result)
   } catch (error) {
-    showNotification(`AI${actionNames[action]}失败: ${error.message}`, 'error')
+    console.error('AI处理失败:', error)
+    alert(`AI处理失败：${error.message}`)
   }
 }
 
@@ -10733,7 +10644,7 @@ watch(() => reportData.value, (newData) => {
   background: white;
   border-radius: 20px 20px 0 0;
   width: 100%;
-  max-height: 85vh;
+  max-height: 92vh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.2);
@@ -10745,15 +10656,16 @@ watch(() => reportData.value, (newData) => {
 }
 
 .settings-bottom-sheet .modal-header {
-  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 1.5rem 1rem 1rem;
   border-bottom: 1px solid #e0e0e0;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border-radius: 20px 20px 0 0;
   position: relative;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .settings-bottom-sheet .modal-header::before {
@@ -10770,7 +10682,10 @@ watch(() => reportData.value, (newData) => {
 
 .settings-bottom-sheet .modal-header h3 {
   margin: 0;
-  padding-top: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  flex: 1;
+  text-align: center;
 }
 
 .settings-bottom-sheet .modal-body {
@@ -10784,7 +10699,7 @@ watch(() => reportData.value, (newData) => {
   background: white;
   border-radius: 20px 20px 0 0;
   width: 100%;
-  max-height: 85vh;
+  max-height: 92vh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.2);
@@ -10796,15 +10711,16 @@ watch(() => reportData.value, (newData) => {
 }
 
 .support-bottom-sheet .modal-header {
-  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 1.5rem 1rem 1rem;
   border-bottom: 1px solid #e0e0e0;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border-radius: 20px 20px 0 0;
   position: relative;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .support-bottom-sheet .modal-header::before {
@@ -10821,7 +10737,10 @@ watch(() => reportData.value, (newData) => {
 
 .support-bottom-sheet .modal-header h3 {
   margin: 0;
-  padding-top: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  flex: 1;
+  text-align: center;
 }
 
 .support-bottom-sheet .modal-body {
@@ -10835,7 +10754,7 @@ watch(() => reportData.value, (newData) => {
   background: white;
   border-radius: 20px 20px 0 0;
   width: 100%;
-  max-height: 85vh;
+  max-height: 92vh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.2);
@@ -10847,15 +10766,16 @@ watch(() => reportData.value, (newData) => {
 }
 
 .stats-bottom-sheet .modal-header {
-  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 1.5rem 1rem 1rem;
   border-bottom: 1px solid #e0e0e0;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border-radius: 20px 20px 0 0;
   position: relative;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .stats-bottom-sheet .modal-header::before {
@@ -10872,7 +10792,10 @@ watch(() => reportData.value, (newData) => {
 
 .stats-bottom-sheet .modal-header h3 {
   margin: 0;
-  padding-top: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  flex: 1;
+  text-align: center;
 }
 
 .stats-bottom-sheet .modal-body {
@@ -10886,7 +10809,7 @@ watch(() => reportData.value, (newData) => {
   background: white;
   border-radius: 20px 20px 0 0;
   width: 100%;
-  max-height: 85vh;
+  max-height: 92vh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.2);
@@ -10898,15 +10821,16 @@ watch(() => reportData.value, (newData) => {
 }
 
 .report-bottom-sheet .modal-header {
-  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 1.5rem 1rem 1rem;
   border-bottom: 1px solid #e0e0e0;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border-radius: 20px 20px 0 0;
   position: relative;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .report-bottom-sheet .modal-header::before {
@@ -10923,7 +10847,10 @@ watch(() => reportData.value, (newData) => {
 
 .report-bottom-sheet .modal-header h3 {
   margin: 0;
-  padding-top: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  flex: 1;
+  text-align: center;
 }
 
 .report-bottom-sheet .modal-body {
@@ -10937,7 +10864,7 @@ watch(() => reportData.value, (newData) => {
   background: white;
   border-radius: 20px 20px 0 0;
   width: 100%;
-  max-height: 85vh;
+  max-height: 92vh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.2);
@@ -11409,7 +11336,7 @@ watch(() => reportData.value, (newData) => {
   background: white;
   border-radius: 20px 20px 0 0;
   width: 100%;
-  max-height: 90vh;
+  max-height: 92vh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.2);
@@ -11482,6 +11409,26 @@ watch(() => reportData.value, (newData) => {
   color: #999;
 }
 
+.back-btn {
+  height: 44px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  padding: 0 1rem;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
 .trash-item {
   display: flex;
   justify-content: space-between;
@@ -11542,7 +11489,7 @@ watch(() => reportData.value, (newData) => {
 /* 编辑弹窗样式优化 */
 /* 编辑弹窗改为Bottom Sheet */
 .edit-bottom-sheet {
-  max-height: 85vh;
+  max-height: 92vh;
   overflow-y: auto;
 }
 

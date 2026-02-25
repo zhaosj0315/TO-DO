@@ -2,8 +2,11 @@
   <div v-if="visible" class="ai-chat-overlay" @click.self="$emit('close')">
     <div class="ai-chat-container">
       <div class="ai-chat-header">
+        <button class="back-btn" @click="$emit('close')">
+          <span>← 返回</span>
+        </button>
         <h3>🤖 AI 任务助手</h3>
-        <button @click="$emit('close')" class="btn-close">✕</button>
+        <div style="width: 80px;"></div>
       </div>
 
       <div class="ai-chat-messages" ref="messagesContainer">
@@ -347,7 +350,7 @@ const callOpenAI = async (context, question, model) => {
   border-radius: 20px 20px 0 0;
   width: 100%;
   margin: 0;
-  max-height: 85vh;
+  max-height: 92vh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
@@ -359,40 +362,52 @@ const callOpenAI = async (context, question, model) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 0.8rem 0.8rem;
-  border-bottom: 1px solid #eee;
+  gap: 0.5rem;
+  padding: 1.5rem 1rem 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
   position: relative;
 }
 
 .ai-chat-header::before {
   content: '';
   position: absolute;
-  top: 0.5rem;
+  top: 8px;
   left: 50%;
   transform: translateX(-50%);
   width: 40px;
   height: 4px;
-  background: #d0d0d0;
+  background: rgba(255, 255, 255, 0.5);
   border-radius: 2px;
 }
 
 .ai-chat-header h3 {
   margin: 0;
   font-size: 1.1rem;
+  font-weight: 700;
   flex: 1;
   text-align: center;
 }
 
-.btn-close {
-  background: none;
+.back-btn {
+  height: 44px;
+  background: rgba(255, 255, 255, 0.2);
   border: none;
-  font-size: 1.5rem;
+  padding: 0 1rem;
+  border-radius: 8px;
+  color: white;
   cursor: pointer;
-  color: #999;
-  position: absolute;
-  right: 0.8rem;
-  top: 50%;
-  transform: translateY(-50%);
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
 }
 
 .api-input {

@@ -2,8 +2,11 @@
   <div v-if="visible" class="modal-overlay" @click.self="$emit('close')">
     <div class="ai-config-modal">
       <div class="modal-header">
+        <button class="back-btn" @click="$emit('close')">
+          <span>← 返回</span>
+        </button>
         <h3>🤖 AI模型配置</h3>
-        <button @click="$emit('close')" class="btn-close">✕</button>
+        <div style="width: 80px;"></div>
       </div>
 
       <div class="modal-body">
@@ -218,7 +221,14 @@ const fetchAvailableModels = async () => {
     // 根据类型构造正确的API端点
     if (newModel.value.type === 'local') {
       // Ollama: http://host:11434/api/tags
-      apiUrl = newModel.value.url.replace('/api/generate', '/api/tags')
+      if (apiUrl.includes('/api/generate')) {
+        apiUrl = apiUrl.replace('/api/generate', '/api/tags')
+      } else if (apiUrl.includes('/api/')) {
+        apiUrl = apiUrl.replace(/\/api\/.*/, '/api/tags')
+      } else {
+        // 如果只是 http://localhost:11434，自动添加 /api/tags
+        apiUrl = apiUrl.replace(/\/$/, '') + '/api/tags'
+      }
     } else if (newModel.value.type === 'openai' || newModel.value.type === 'custom') {
       // OpenAI 兼容: /v1/models
       if (apiUrl.includes('/v1/chat/completions')) {
@@ -382,7 +392,7 @@ const addQuickConfig = (type) => {
   width: 100%;
   margin: 0;
   padding: 0;
-  max-height: 85vh;
+  max-height: 92vh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.2);
@@ -397,7 +407,8 @@ const addQuickConfig = (type) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem;
+  gap: 0.5rem;
+  padding: 1.5rem 1rem 1rem;
   border-bottom: 1px solid #e0e0e0;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
@@ -419,48 +430,36 @@ const addQuickConfig = (type) => {
 
 .modal-header h3 {
   margin: 0;
-  padding-top: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  flex: 1;
+  text-align: center;
+}
+
+.back-btn {
+  height: 44px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  padding: 0 1rem;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
 }
 
 .modal-body {
   flex: 1;
   overflow-y: auto;
   padding: 1rem;
-}
-
-.modal-header::before {
-  content: '';
-  position: absolute;
-  top: 0.5rem;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 40px;
-  height: 4px;
-  background: #d0d0d0;
-  border-radius: 2px;
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 1.2rem;
-  flex: 1;
-  text-align: center;
-}
-
-.btn-close {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: #999;
-  position: absolute;
-  right: 0.8rem;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.modal-body {
-  padding: 0.8rem;
 }
 
 .hint-text {

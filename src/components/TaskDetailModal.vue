@@ -6,17 +6,11 @@
         <button class="back-btn" @click="$emit('close')">
           <span>← 返回</span>
         </button>
-        <h2 v-if="!editingField || editingField !== 'title'" @dblclick="startEditField('title')" class="editable-title" title="双击编辑">
-          {{ task.text }}
-        </h2>
         <input 
-          v-else
-          v-model="editingValue"
-          @blur="saveField('title')"
-          @keydown.enter="saveField('title')"
-          @keydown.esc="cancelEdit"
+          v-model="localTask.text"
+          @blur="saveField('text')"
           class="title-input"
-          ref="fieldInput"
+          placeholder="任务标题"
         />
         <button class="ai-summary-btn-header" @click="handleAISummary" title="AI智能总结">
           ✨
@@ -24,29 +18,23 @@
       </div>
 
       <!-- 滚动内容区 -->
-      <div class="detail-content">
+      <div class="detail-content" ref="detailContentRef">
         <!-- 任务概览（紧凑版） -->
         <section class="overview-section">
           <h3>📊 任务信息</h3>
           <div class="overview-grid">
-            <div class="overview-item editable-item" @dblclick="startEditField('priority')" title="双击编辑">
+            <div class="overview-item">
               <span class="label">优先级</span>
-              <span v-if="editingField !== 'priority'" :class="['priority-badge', task.priority]">
-                {{ getPriorityIcon(task.priority) }} {{ getPriorityText(task.priority) }}
-              </span>
-              <select v-else v-model="editingValue" @blur="saveField('priority')" @keydown.enter="saveField('priority')" @keydown.esc="cancelEdit" class="field-select" ref="fieldInput">
+              <select v-model="localTask.priority" @change="saveField('priority')" class="field-select">
                 <option value="high">⚡ 高</option>
                 <option value="medium">📊 中</option>
                 <option value="low">📉 低</option>
               </select>
             </div>
             
-            <div class="overview-item editable-item" @dblclick="startEditField('category')" title="双击编辑">
+            <div class="overview-item">
               <span class="label">分类</span>
-              <span v-if="editingField !== 'category'" class="category-badge">
-                {{ getCategoryIcon(task.category) }} {{ getCategoryText(task.category) }}
-              </span>
-              <select v-else v-model="editingValue" @blur="saveField('category')" @keydown.enter="saveField('category')" @keydown.esc="cancelEdit" class="field-select" ref="fieldInput">
+              <select v-model="localTask.category" @change="saveField('category')" class="field-select">
                 <option value="work">💼 工作</option>
                 <option value="study">📚 学习</option>
                 <option value="life">🏠 生活</option>
@@ -111,11 +99,15 @@
         </section>
 
         <!-- 任务描述 -->
-        <section v-if="task.description" class="description-section">
+        <section class="description-section">
           <h3>📝 任务描述</h3>
-          <div class="description-card">
-            {{ task.description }}
-          </div>
+          <textarea 
+            v-model="localTask.description"
+            @blur="saveField('description')"
+            class="description-textarea"
+            placeholder="输入任务描述..."
+            rows="3"
+          ></textarea>
         </section>
 
         <!-- 执行统计 -->
@@ -266,6 +258,15 @@
       @close="showAddLogModal = false"
       @submit="handleAddLog"
     />
+
+    <!-- AI 文本选择菜单 -->
+    <AITextMenu
+      :visible="showTextMenu"
+      :position="menuPosition"
+      :selected-text="selectedText"
+      @close="closeTextMenu"
+      @action="handleTextAction"
+    />
   </div>
 </template>
 
@@ -273,6 +274,9 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useOfflineTaskStore } from '../stores/offlineTaskStore'
 import AddLogModal from './AddLogModal.vue'
+import AITextMenu from './AITextMenu.vue'
+import { useTextSelection } from '../composables/useTextSelection'
+import { AITextService } from '../services/aiTextService'
 import { registerPlugin } from '@capacitor/core'
 
 const AIAssistant = registerPlugin('AIAssistant')
@@ -289,10 +293,31 @@ const emit = defineEmits(['close', 'edit', 'refresh'])
 const taskStore = useOfflineTaskStore()
 const showAddLogModal = ref(false)
 
-// 编辑字段状态
-const editingField = ref(null)
-const editingValue = ref('')
-const fieldInput = ref(null)
+// 本地任务副本（用于编辑）
+const localTask = ref({ ...props.task })
+
+// 文本选择菜单
+const detailContentRef = ref(null)
+const { showMenu: showTextMenu, menuPosition, selectedText, closeTextMenu, replaceSelectedText } = useTextSelection(detailContentRef)
+
+// 处理 AI 文本操作
+const handleTextAction = async ({ action, text, tone }) => {
+  console.log('TaskDetailModal handleTextAction:', { action, text, tone })
+  
+  try {
+    const result = await AITextService.processText(action, text, { tone })
+    console.log('AI result:', result)
+    
+    // 替换选中的文本
+    replaceSelectedText(result)
+    
+    // 触发保存（如果是在可编辑字段中）
+    emit('refresh')
+  } catch (error) {
+    console.error('AI处理失败:', error)
+    alert(`AI处理失败：${error.message}`)
+  }
+}
 
 // 初始化所有textarea的自适应高度
 onMounted(() => {
@@ -306,9 +331,11 @@ onMounted(() => {
 })
 
 // 排序后的日志（最新的在上面）
+
+// 排序后的日志（最新的在上面）
 const sortedLogs = computed(() => {
-  if (!props.task.logs) return []
-  return [...props.task.logs].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+  if (!localTask.value.logs) return []
+  return [...localTask.value.logs].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
 })
 
 // 状态文本
@@ -391,13 +418,13 @@ const formatDateShort = (dateStr) => {
 
 // 获取进度宽度
 const getProgressWidth = () => {
-  const progress = props.task.stats?.progressHistory?.[props.task.stats.progressHistory.length - 1] || 0
+  const progress = localTask.value.stats?.progressHistory?.[localTask.value.stats.progressHistory.length - 1] || 0
   return `${progress}%`
 }
 
 // 获取最新进度
 const getLatestProgress = () => {
-  const progress = props.task.stats?.progressHistory?.[props.task.stats.progressHistory.length - 1] || 0
+  const progress = localTask.value.stats?.progressHistory?.[localTask.value.stats.progressHistory.length - 1] || 0
   return `进度 ${progress}%`
 }
 
@@ -462,59 +489,34 @@ const updateLogContent = (log) => {
 // 保存日志内容（失焦时）
 const saveLogContent = (log) => {
   if (log.content && log.content.trim()) {
-    const updatedTask = { ...props.task }
-    const logIndex = updatedTask.logs.findIndex(l => l.id === log.id)
+    const logIndex = localTask.value.logs.findIndex(l => l.id === log.id)
     if (logIndex !== -1) {
-      updatedTask.logs[logIndex].content = log.content.trim()
-      taskStore.updateTask(props.task.id, { logs: updatedTask.logs })
+      localTask.value.logs[logIndex].content = log.content.trim()
+      taskStore.updateTask(props.task.id, { logs: localTask.value.logs })
       emit('refresh')
     }
   }
 }
 
-// 开始编辑字段
-const startEditField = (field) => {
-  editingField.value = field
-  if (field === 'title') {
-    editingValue.value = props.task.text
-  } else {
-    editingValue.value = props.task[field]
-  }
-  setTimeout(() => {
-    if (fieldInput.value) {
-      fieldInput.value.focus()
-    }
-  }, 50)
-}
-
 // 保存字段
 const saveField = (field) => {
-  if (editingValue.value) {
-    const updatedTask = { ...props.task }
-    if (field === 'title') {
-      updatedTask.text = editingValue.value
-    } else {
-      updatedTask[field] = editingValue.value
-    }
-    taskStore.updateTask(props.task.id, updatedTask)
-    emit('refresh')
+  const updates = {}
+  if (field === 'text') {
+    updates.text = localTask.value.text
+  } else if (field === 'description') {
+    updates.description = localTask.value.description
+  } else {
+    updates[field] = localTask.value[field]
   }
-  editingField.value = null
-  editingValue.value = ''
-}
-
-// 取消编辑
-const cancelEdit = () => {
-  editingField.value = null
-  editingValue.value = ''
+  taskStore.updateTask(props.task.id, updates)
+  emit('refresh')
 }
 
 // 删除日志
 const deleteLog = (logId) => {
   if (confirm('确定要删除这条日志吗？')) {
-    const updatedTask = { ...props.task }
-    updatedTask.logs = updatedTask.logs.filter(l => l.id !== logId)
-    taskStore.updateTask(props.task.id, { logs: updatedTask.logs })
+    localTask.value.logs = localTask.value.logs.filter(l => l.id !== logId)
+    taskStore.updateTask(props.task.id, { logs: localTask.value.logs })
     emit('refresh')
   }
 }
@@ -596,15 +598,15 @@ const handleDelete = async () => {
 const handleAISummary = async () => {
   try {
     // 准备总结文本
-    const logs = props.task.logs || []
+    const logs = localTask.value.logs || []
     const logsText = logs.map(log => 
       `[${log.type}] ${log.content} (进度:${log.progress}%, 耗时:${log.duration}分钟)`
     ).join('\n')
     
-    const summaryText = `任务名称：${props.task.text}
-任务描述：${props.task.description || '无'}
-优先级：${props.task.priority}
-分类：${props.task.category}
+    const summaryText = `任务名称：${localTask.value.text}
+任务描述：${localTask.value.description || '无'}
+优先级：${localTask.value.priority}
+分类：${localTask.value.category}
 执行日志数量：${logs.length}条
 
 执行日志详情：
@@ -748,7 +750,8 @@ ${logsText || '暂无日志'}
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem;
+  gap: 0.5rem;
+  padding: 1.5rem 1rem 1rem;
   border-bottom: 1px solid #e0e0e0;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
@@ -778,29 +781,51 @@ ${logsText || '暂无日志'}
   padding: 0.5rem 1rem 0 1rem;
 }
 
+.title-input {
+  flex: 1;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 0 1rem;
+  border-radius: 8px;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-align: center;
+  margin: 0 0.5rem;
+}
+
+.title-input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.title-input:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
 .back-btn,
-.edit-btn {
+.edit-btn,
+.ai-summary-btn-header {
+  height: 44px;
   background: rgba(255, 255, 255, 0.2);
   border: none;
-  padding: 0.5rem 1rem;
+  padding: 0 1rem;
   border-radius: 8px;
   color: white;
   cursor: pointer;
   font-size: 0.9rem;
   transition: all 0.2s;
-  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .ai-summary-btn-header {
   background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 165, 0, 0.3));
-  border: none;
-  padding: 0.5rem 0.8rem;
-  border-radius: 8px;
-  color: white;
-  cursor: pointer;
   font-size: 1.2rem;
-  transition: all 0.2s;
-  margin-top: 0.5rem;
+  padding: 0 0.8rem;
   animation: glow-ai 2s ease-in-out infinite;
 }
 
@@ -997,17 +1022,6 @@ section h3 {
   margin-bottom: 0.5rem;
 }
 
-.overview-item.editable-item {
-  cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 6px;
-  transition: background 0.2s;
-}
-
-.overview-item.editable-item:hover {
-  background: rgba(102, 126, 234, 0.05);
-}
-
 .overview-item:last-child {
   margin-bottom: 0;
 }
@@ -1019,8 +1033,9 @@ section h3 {
 }
 
 .field-select {
-  padding: 0.25rem 0.5rem;
-  border: 2px solid #667eea;
+  flex: 1;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #e0e0e0;
   border-radius: 6px;
   font-size: 0.85rem;
   background: white;
@@ -1029,7 +1044,7 @@ section h3 {
 
 .field-select:focus {
   outline: none;
-  border-color: #764ba2;
+  border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -1096,13 +1111,32 @@ section h3 {
 }
 
 /* 描述卡片 */
-.description-card {
+.description-section {
+  margin-bottom: 1.5rem;
+}
+
+.description-textarea {
+  width: 100%;
   background: #f8f9fa;
+  border: 1px solid #e0e0e0;
   border-radius: 12px;
   padding: 1rem;
-  white-space: pre-wrap;
+  font-size: 0.9rem;
   line-height: 1.6;
   color: #333;
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+}
+
+.description-textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.description-textarea::placeholder {
+  color: #999;
 }
 
 /* 统计网格 */

@@ -3,12 +3,15 @@
     <div class="add-log-container">
       <!-- 头部 -->
       <div class="log-header">
+        <button class="back-btn" @click="$emit('close')">
+          <span>← 返回</span>
+        </button>
         <h3>添加执行日志</h3>
-        <button class="close-btn" @click="$emit('close')">× 关闭</button>
+        <div style="width: 80px;"></div>
       </div>
 
       <!-- 表单内容 -->
-      <div class="log-form">
+      <div class="log-form" ref="logFormRef">
         <!-- 日志类型 -->
         <div class="form-group">
           <label class="required">📋 日志类型</label>
@@ -29,20 +32,13 @@
           <label class="required">
             💬 日志内容 ({{ formData.content.length }}/500 · {{ contentLines }}行)
           </label>
-          <div style="display: flex; gap: 8px; align-items: flex-start;">
-            <textarea
-              v-model="formData.content"
-              placeholder="详细描述本次执行的内容..."
-              maxlength="500"
-              rows="4"
-              style="flex: 1;"
-            ></textarea>
-            <AIAssistButton 
-              :context="`任务：${task?.text || ''}\n类型：${logTypeLabels[formData.type]}`"
-              placeholder="生成日志内容"
-              @generated="(text) => formData.content = text"
-            />
-          </div>
+          <textarea
+            v-model="formData.content"
+            placeholder="详细描述本次执行的内容..."
+            maxlength="500"
+            rows="4"
+            ref="contentTextarea"
+          ></textarea>
         </div>
 
         <!-- 本次耗时 -->
@@ -190,13 +186,24 @@
         </button>
       </div>
     </div>
+
+    <!-- AI 文本选择菜单 -->
+    <AITextMenu
+      :visible="showTextMenu"
+      :position="menuPosition"
+      :selected-text="selectedText"
+      @close="closeTextMenu"
+      @action="handleTextAction"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
 import { useOfflineTaskStore } from '../stores/offlineTaskStore'
-import AIAssistButton from './AIAssistButton.vue'
+import AITextMenu from './AITextMenu.vue'
+import { useTextSelection } from '../composables/useTextSelection'
+import { AITextService } from '../services/aiTextService'
 
 const props = defineProps({
   task: {
@@ -212,6 +219,21 @@ const props = defineProps({
 const emit = defineEmits(['close', 'submit'])
 
 const taskStore = useOfflineTaskStore()
+
+// 文本选择菜单
+const logFormRef = ref(null)
+const { showMenu: showTextMenu, menuPosition, selectedText, closeTextMenu, replaceSelectedText } = useTextSelection(logFormRef)
+
+// 处理 AI 文本操作
+const handleTextAction = async ({ action, text, tone }) => {
+  try {
+    const result = await AITextService.processText(action, text, { tone })
+    replaceSelectedText(result)
+  } catch (error) {
+    console.error('AI处理失败:', error)
+    alert(`AI处理失败：${error.message}`)
+  }
+}
 
 // 表单数据
 const formData = ref({
@@ -347,7 +369,7 @@ const handleSubmit = () => {
   background: white;
   border-radius: 20px 20px 0 0;
   width: 100%;
-  max-height: 85vh;
+  max-height: 92vh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.2);
@@ -368,27 +390,54 @@ const handleSubmit = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.25rem 1.5rem;
+  gap: 0.5rem;
+  padding: 1.5rem 1rem 1rem;
   border-bottom: 1px solid #e0e0e0;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border-radius: 20px 20px 0 0;
+  position: relative;
+}
+
+/* 拖动手柄 */
+.log-header::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 2px;
 }
 
 .log-header h3 {
   margin: 0;
   font-size: 1.1rem;
   font-weight: 700;
+  flex: 1;
+  text-align: center;
 }
 
-.close-btn {
+.back-btn {
+  height: 44px;
   background: rgba(255, 255, 255, 0.2);
   border: none;
-  padding: 0.5rem 1rem;
+  padding: 0 1rem;
   border-radius: 8px;
   color: white;
   cursor: pointer;
   font-size: 0.9rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
 }
 
 /* 表单 */

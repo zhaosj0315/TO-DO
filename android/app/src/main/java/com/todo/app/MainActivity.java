@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
 import android.os.Bundle;
+import android.webkit.WebSettings;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.Plugin;
 
@@ -17,7 +18,18 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(FullScreenNotificationPlugin.class);
         registerPlugin(ChineseOcrPlugin.class);
+        registerPlugin(AIAssistantPlugin.class);
         super.onCreate(savedInstanceState);
+        
+        // 允许混合内容（HTTPS页面访问HTTP资源）- 必须在super.onCreate()之后
+        try {
+            if (getBridge() != null && getBridge().getWebView() != null) {
+                WebSettings webSettings = getBridge().getWebView().getSettings();
+                webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         
         // 注册广播接收器
         alarmActionReceiver = new BroadcastReceiver() {
