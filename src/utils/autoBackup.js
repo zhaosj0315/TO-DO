@@ -33,13 +33,13 @@ async function getAllData() {
   const keys = ['users', 'currentUser', 'userInfo', 'phoneMapping', 'security', 'lastBackupDate'];
   const data = {};
   
-  // 获取基础数据
+  // 1. 获取 Preferences 基础数据
   for (const key of keys) {
     const { value } = await Preferences.get({ key });
     if (value) data[key] = value;
   }
   
-  // 获取所有用户的任务数据
+  // 2. 获取所有用户的任务数据（Preferences）
   const { value: usersStr } = await Preferences.get({ key: 'users' });
   if (usersStr) {
     const users = JSON.parse(usersStr);
@@ -55,6 +55,23 @@ async function getAllData() {
       if (tasks) data[tasksKey] = tasks;
       if (deleted) data[deletedKey] = deleted;
       if (notified) data[notifiedKey] = notified;
+    }
+  }
+  
+  // 3. 获取 localStorage 数据（AI相关）
+  const localStorageKeys = [
+    'weekly_reports',      // AI周报历史
+    'ai_chat_list',        // AI对话历史
+    'ai_models',           // AI模型配置
+    'ai_default_model',    // 默认AI模型
+    'backupFiles'          // Web端备份文件列表
+  ];
+  
+  data._localStorage = {};
+  for (const key of localStorageKeys) {
+    const value = localStorage.getItem(key);
+    if (value) {
+      data._localStorage[key] = value;
     }
   }
   
@@ -139,9 +156,17 @@ export async function restoreBackup(fileName) {
       backupData = JSON.parse(data);
     }
     
-    // 恢复所有数据
+    // 1. 恢复 Preferences 数据
     for (const key in backupData) {
+      if (key === '_localStorage') continue; // 跳过localStorage标记
       await Preferences.set({ key, value: backupData[key] });
+    }
+    
+    // 2. 恢复 localStorage 数据
+    if (backupData._localStorage) {
+      for (const key in backupData._localStorage) {
+        localStorage.setItem(key, backupData._localStorage[key]);
+      }
     }
     
     return { success: true };
@@ -190,7 +215,7 @@ export async function manualBackup() {
     const platform = Capacitor.getPlatform();
     
     if (platform === 'web') {
-      // Web 环境：使用浏览器下载
+      // Web 环境：使用浏览器下载 + 保存到localStorage
       // 1. 下载 JSON 格式
       const jsonContent = JSON.stringify(data, null, 2);
       const jsonBlob = new Blob([jsonContent], { type: 'application/json' });
@@ -201,6 +226,21 @@ export async function manualBackup() {
       jsonLink.download = jsonFileName;
       jsonLink.click();
       URL.revokeObjectURL(jsonUrl);
+      
+      // 同时保存到localStorage（用于恢复功能）
+      const backupsStr = localStorage.getItem('backupFiles') || '[]';
+      const backups = JSON.parse(backupsStr);
+      backups.push({
+        name: jsonFileName,
+        data: data,
+        timestamp: timestamp,
+        date: today
+      });
+      // 只保留最近10个备份
+      if (backups.length > 10) {
+        backups.shift();
+      }
+      localStorage.setItem('backupFiles', JSON.stringify(backups));
       
       // 2. 下载 Excel 格式
       const { value: usersStr } = await Preferences.get({ key: 'users' });

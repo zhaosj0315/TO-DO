@@ -1121,7 +1121,25 @@
             <!-- 完整备份区域 -->
             <div class="backup-group">
               <div class="group-label">🔒 完整备份（推荐）</div>
-              <div class="group-desc">保留所有数据：执行日志、番茄钟历史、AI总结</div>
+              <div class="group-desc">
+                <strong>✅ 包含所有数据（100%完整）：</strong>
+                <ul style="margin: 0.5rem 0 0 1.5rem; font-size: 0.85rem; line-height: 1.6;">
+                  <li><strong>任务数据</strong>：标题、描述、分类、优先级、状态、时间</li>
+                  <li><strong>执行日志</strong>：6种日志类型、进度、标签、心情、阻碍解决</li>
+                  <li><strong>番茄钟历史</strong>：专注记录、时长统计、完成数量</li>
+                  <li><strong>回收站数据</strong>：已删除任务（可恢复）</li>
+                  <li><strong>AI周报历史</strong>：所有生成的周报记录</li>
+                  <li><strong>AI对话历史</strong>：所有AI问答记录</li>
+                  <li><strong>AI模型配置</strong>：模型列表和默认模型</li>
+                  <li><strong>用户信息</strong>：账号、密码、手机号、安全问题</li>
+                </ul>
+                <div style="margin-top: 0.5rem; padding: 0.5rem; background: rgba(102, 126, 234, 0.1); border-radius: 6px; font-size: 0.85rem;">
+                  💡 <strong>备份说明</strong>：<br>
+                  • Web端：下载JSON文件 + 自动保存到浏览器（最近10个）<br>
+                  • 移动端：保存到 Documents/TODO-App-backups/<br>
+                  • 建议每周备份一次，重要操作前备份
+                </div>
+              </div>
               <div class="data-buttons">
                 <button class="btn btn-backup-full" @click="handleManualBackup">
                   <span class="export-icon">💾</span>
@@ -1136,9 +1154,11 @@
             
             <!-- Excel 导入导出区域 -->
             <div class="backup-group">
-              <div class="group-label">📊 Excel 导入导出</div>
+              <div class="group-label">📊 Excel 导入导出（基础数据）</div>
               <div class="group-desc warning-text-small">
-                ⚠️ 仅包含基础数据，不含执行日志、番茄钟历史、AI总结
+                ⚠️ 仅包含任务基础字段（标题、描述、分类、优先级、状态、时间）<br>
+                ❌ 不含：执行日志、番茄钟历史、标签、心情、进度、AI数据等扩展数据<br>
+                💡 适用场景：批量导入任务、与其他工具交换数据
               </div>
               <div class="data-buttons">
                 <button class="btn btn-export" @click="exportToExcel">
@@ -7969,25 +7989,37 @@ const validateTaskData = (row, rowIndex) => {
     return { valid: false, errors: ['任务名称为空'] }
   }
   
-  // 2. 验证分类
+  // 2. 验证分类（支持中英文）
   const category = row['分类']
-  const validCategories = { '工作': 'work', '学习': 'study', '生活': 'life' }
+  const validCategories = { 
+    '工作': 'work', '学习': 'study', '生活': 'life',
+    'work': 'work', 'study': 'study', 'life': 'life',
+    '💼': 'work', '📚': 'study', '🏠': 'life'
+  }
   if (category && !validCategories[category]) {
-    errors.push(`分类"${category}"无效，应为：工作/学习/生活`)
+    errors.push(`分类"${category}"无效，应为：工作/学习/生活 或 work/study/life`)
   }
   
-  // 3. 验证优先级
+  // 3. 验证优先级（支持中英文）
   const priority = row['优先级']
-  const validPriorities = { '高': 'high', '中': 'medium', '低': 'low' }
+  const validPriorities = { 
+    '高': 'high', '中': 'medium', '低': 'low',
+    'high': 'high', 'medium': 'medium', 'low': 'low',
+    'High': 'high', 'Medium': 'medium', 'Low': 'low'
+  }
   if (priority && !validPriorities[priority]) {
-    errors.push(`优先级"${priority}"无效，应为：高/中/低`)
+    errors.push(`优先级"${priority}"无效，应为：高/中/低 或 high/medium/low`)
   }
   
-  // 4. 验证状态
+  // 4. 验证状态（支持中英文）
   const status = row['状态']
-  const validStatuses = { '待办': 'pending', '已完成': 'completed', '已逾期': 'overdue' }
+  const validStatuses = { 
+    '待办': 'pending', '已完成': 'completed', '已逾期': 'overdue',
+    'pending': 'pending', 'completed': 'completed', 'overdue': 'overdue',
+    'Pending': 'pending', 'Completed': 'completed', 'Overdue': 'overdue'
+  }
   if (status && !validStatuses[status]) {
-    errors.push(`状态"${status}"无效，应为：待办/已完成/已逾期`)
+    errors.push(`状态"${status}"无效，应为：待办/已完成/已逾期 或 pending/completed/overdue`)
   }
   
   // 5. 验证日期格式
@@ -8065,7 +8097,12 @@ const importFromExcel = async (event) => {
             }
             
             const taskName = row['任务名称'].trim()
-            const categoryMap = { '工作': 'work', '学习': 'study', '生活': 'life' }
+            const categoryMap = { 
+              '工作': 'work', '学习': 'study', '生活': 'life',
+              'work': 'work', 'study': 'study', 'life': 'life',
+              'Work': 'work', 'Study': 'study', 'Life': 'life',
+              '💼': 'work', '📚': 'study', '🏠': 'life'
+            }
             const category = categoryMap[row['分类']] || 'work'
             
             // 检查是否重复
@@ -11472,6 +11509,11 @@ watch(() => reportData.value, (newData) => {
 .backup-group.danger-group {
   background: rgba(244, 67, 54, 0.05);
   border-color: rgba(244, 67, 54, 0.3);
+}
+
+.backup-group.info-group {
+  background: rgba(59, 130, 246, 0.05);
+  border-color: rgba(59, 130, 246, 0.3);
 }
 
 .group-label {

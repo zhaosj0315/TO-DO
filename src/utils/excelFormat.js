@@ -39,10 +39,18 @@ export const TASK_TYPE_MAP = {
   'weekly': '每周重复'
 }
 
-// 反向映射
-export const TASK_TYPE_REVERSE = Object.fromEntries(
-  Object.entries(TASK_TYPE_MAP).map(([k, v]) => [v, k])
-)
+// 反向映射（支持中英文）
+export const TASK_TYPE_REVERSE = {
+  ...Object.fromEntries(Object.entries(TASK_TYPE_MAP).map(([k, v]) => [v, k])),
+  // 英文支持
+  'today': 'today',
+  'tomorrow': 'tomorrow',
+  'this_week': 'this_week',
+  'custom_date': 'custom_date',
+  'daily': 'daily',
+  'weekday': 'weekday',
+  'weekly': 'weekly'
+}
 
 // 分类映射
 export const CATEGORY_MAP = {
@@ -51,9 +59,20 @@ export const CATEGORY_MAP = {
   'life': '生活'
 }
 
-export const CATEGORY_REVERSE = Object.fromEntries(
-  Object.entries(CATEGORY_MAP).map(([k, v]) => [v, k])
-)
+export const CATEGORY_REVERSE = {
+  ...Object.fromEntries(Object.entries(CATEGORY_MAP).map(([k, v]) => [v, k])),
+  // 英文支持（大小写不敏感）
+  'work': 'work',
+  'Work': 'work',
+  'study': 'study',
+  'Study': 'study',
+  'life': 'life',
+  'Life': 'life',
+  // emoji支持
+  '💼': 'work',
+  '📚': 'study',
+  '🏠': 'life'
+}
 
 // 优先级映射
 export const PRIORITY_MAP = {
@@ -62,9 +81,19 @@ export const PRIORITY_MAP = {
   'low': '低'
 }
 
-export const PRIORITY_REVERSE = Object.fromEntries(
-  Object.entries(PRIORITY_MAP).map(([k, v]) => [v, k])
-)
+export const PRIORITY_REVERSE = {
+  ...Object.fromEntries(Object.entries(PRIORITY_MAP).map(([k, v]) => [v, k])),
+  // 英文支持（大小写不敏感）
+  'high': 'high',
+  'High': 'high',
+  'HIGH': 'high',
+  'medium': 'medium',
+  'Medium': 'medium',
+  'MEDIUM': 'medium',
+  'low': 'low',
+  'Low': 'low',
+  'LOW': 'low'
+}
 
 // 状态映射
 export const STATUS_MAP = {
@@ -73,9 +102,19 @@ export const STATUS_MAP = {
   'overdue': '已逾期'
 }
 
-export const STATUS_REVERSE = Object.fromEntries(
-  Object.entries(STATUS_MAP).map(([k, v]) => [v, k])
-)
+export const STATUS_REVERSE = {
+  ...Object.fromEntries(Object.entries(STATUS_MAP).map(([k, v]) => [v, k])),
+  // 英文支持（大小写不敏感）
+  'pending': 'pending',
+  'Pending': 'pending',
+  'PENDING': 'pending',
+  'completed': 'completed',
+  'Completed': 'completed',
+  'COMPLETED': 'completed',
+  'overdue': 'overdue',
+  'Overdue': 'overdue',
+  'OVERDUE': 'overdue'
+}
 
 // 转换任务为Excel行数据
 export function taskToExcelRow(task, includeUser = false) {

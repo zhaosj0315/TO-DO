@@ -1676,6 +1676,17 @@ const getPriorityLabel = (priority) => {
 .message.assistant .message-content {
   background: #f8f9fa;
   color: #333;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* emoji 统一样式 */
+.message.assistant .message-content img.emoji {
+  display: inline-block;
+  width: 1.2em;
+  height: 1.2em;
+  vertical-align: -0.2em;
+  margin: 0 0.1em;
 }
 
 .message.assistant .message-content * {
@@ -1713,12 +1724,25 @@ const getPriorityLabel = (priority) => {
 .message.assistant .message-content ul,
 .message.assistant .message-content ol {
   margin: 0.75rem 0;
-  padding-left: 2rem;
+  padding-left: 1.5rem;
 }
 
 .message.assistant .message-content li {
-  margin: 0.4rem 0;
-  line-height: 1.6;
+  margin: 0.3rem 0;
+  line-height: 1.7;
+  padding-left: 0.5rem;
+}
+
+/* 嵌套列表 */
+.message.assistant .message-content li > ul,
+.message.assistant .message-content li > ol {
+  margin: 0.3rem 0;
+  padding-left: 1.5rem;
+}
+
+/* 列表项内的段落 */
+.message.assistant .message-content li > p {
+  margin: 0.2rem 0;
 }
 
 /* 行内代码 */
@@ -1777,24 +1801,36 @@ const getPriorityLabel = (priority) => {
   border-collapse: collapse;
   width: 100%;
   margin: 1rem 0;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .message.assistant .message-content th,
 .message.assistant .message-content td {
   border: 1px solid #ddd;
-  padding: 0.6rem 0.8rem;
+  padding: 0.5rem 0.75rem;
   text-align: left;
+  vertical-align: middle;
 }
 
 .message.assistant .message-content th {
   background: #667eea;
   color: white;
   font-weight: 600;
+  font-size: 0.85rem;
 }
 
-.message.assistant .message-content tr:nth-child(even) {
+.message.assistant .message-content td {
+  font-size: 0.85rem;
+  background: white;
+}
+
+.message.assistant .message-content tr:nth-child(even) td {
   background: #f9f9f9;
+}
+
+/* 表格容器（支持横向滚动） */
+.message.assistant .message-content {
+  overflow-x: auto;
 }
 
 /* 链接 */
