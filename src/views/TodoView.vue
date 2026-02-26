@@ -2096,21 +2096,18 @@
     <div v-if="showFullscreenDesc" class="fullscreen-desc-overlay">
       <div class="fullscreen-desc-header">
         <div class="header-left">
-          <span class="task-name-preview">{{ newTaskText || '新任务' }}</span>
+          <span v-if="newTaskDescription.length > 0" class="meta-text">{{ newTaskDescription.length }} 字</span>
+          <span v-if="descEditDuration > 0" class="meta-text">{{ descEditTime }}</span>
         </div>
-        <div class="datetime-display">
-          {{ currentDateTime }}
-          <span v-if="newTaskDescription.length > 0" class="char-count-inline">
-            · {{ newTaskDescription.length }} 字
-          </span>
-          <span v-if="descEditDuration > 0" class="edit-time-inline">
-            · {{ descEditTime }}
-          </span>
+        <div class="header-info">
+          <div class="task-name">{{ newTaskText || '新任务' }}</div>
         </div>
-        <button class="nav-btn-icon" @click="continueDescription" :disabled="aiGenerating" title="AI 续写">
-          {{ aiGenerating ? '⏳' : '🤖' }}
-        </button>
-        <button class="nav-btn nav-btn-primary" @click="closeFullscreenDesc">完成</button>
+        <div class="header-right">
+          <button class="nav-btn-icon" @click="continueDescription" :disabled="aiGenerating" title="AI 续写">
+            {{ aiGenerating ? '⏳' : '🤖' }}
+          </button>
+          <button class="nav-btn nav-btn-primary" @click="closeFullscreenDesc">完成</button>
+        </div>
       </div>
       <textarea
         v-model="newTaskDescription"
@@ -14100,40 +14097,49 @@ watch(() => reportData.value, (newData) => {
   border-bottom: 0.5px solid #c6c6c8;
   flex-shrink: 0;
   min-height: 44px;
-  gap: 0.5rem;
+  gap: 1rem;
 }
 
 .fullscreen-desc-header .header-left {
   flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  justify-content: flex-start;
+}
+
+.fullscreen-desc-header .header-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   min-width: 0;
 }
 
-.fullscreen-desc-header .task-name-preview {
-  font-size: 0.9rem;
-  color: #333;
+.fullscreen-desc-header .task-name {
+  font-size: 0.95rem;
+  color: #000;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  display: block;
+  max-width: 100%;
+  text-align: center;
 }
 
-.fullscreen-desc-header .datetime-display {
-  font-size: 0.85rem;
-  color: #666;
-  font-weight: 500;
-  text-align: center;
+.fullscreen-desc-header .meta-text {
+  font-size: 0.75rem;
+  color: #999;
+  font-weight: 400;
   white-space: nowrap;
 }
 
-.fullscreen-desc-header .datetime-display .char-count-inline {
-  color: #999;
-  font-weight: 400;
-}
-
-.fullscreen-desc-header .datetime-display .edit-time-inline {
-  color: #999;
-  font-weight: 400;
+.fullscreen-desc-header .header-right {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: flex-end;
 }
 
 .fullscreen-desc-header .nav-btn-icon {
@@ -14143,7 +14149,6 @@ watch(() => reportData.value, (newData) => {
   padding: 0.3rem 0.5rem;
   cursor: pointer;
   transition: opacity 0.2s;
-  flex-shrink: 0;
 }
 
 .fullscreen-desc-header .nav-btn-icon:active {
@@ -14164,7 +14169,6 @@ watch(() => reportData.value, (newData) => {
   cursor: pointer;
   font-weight: 400;
   transition: opacity 0.2s;
-  flex-shrink: 0;
 }
 
 .fullscreen-desc-header .nav-btn:active {
