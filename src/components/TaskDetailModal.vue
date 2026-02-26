@@ -42,19 +42,35 @@
             </div>
             
             <div class="overview-item">
+              <span class="label">类型</span>
+              <select v-model="localTask.type" @change="handleTypeChange" class="field-select">
+                <option value="today">📅 今天</option>
+                <option value="tomorrow">📆 明天</option>
+                <option value="this_week">📋 本周内</option>
+                <option value="custom_date">🗓️ 指定日期</option>
+                <option value="daily">🔄 每天重复</option>
+                <option value="weekday">💼 工作日重复</option>
+                <option value="weekly">📆 每周重复</option>
+              </select>
+            </div>
+            
+            <div v-if="localTask.type === 'custom_date'" class="overview-item overview-item-full">
+              <span class="label">截止时间</span>
+              <input 
+                type="datetime-local" 
+                v-model="customDateTime"
+                @change="handleDateTimeChange"
+                class="field-input"
+              />
+            </div>
+            
+            <div class="overview-item">
               <span class="label">状态</span>
               <span :class="['status-badge', task.status]">
                 {{ getStatusText(task.status) }}
                 <span v-if="task.status === 'pending' && task.stats?.totalLogs > 0">
                   ({{ task.stats.progressHistory[task.stats.progressHistory.length - 1] || 0 }}%)
                 </span>
-              </span>
-            </div>
-            
-            <div class="overview-item">
-              <span class="label">截止</span>
-              <span :class="['deadline-text', getDeadlineClass(task)]">
-                {{ formatDeadline(task) }}
               </span>
             </div>
           </div>
@@ -302,6 +318,46 @@ const showAddLogModal = ref(false)
 
 // 本地任务副本（用于编辑）
 const localTask = ref({ ...props.task })
+
+// 自定义日期时间
+const customDateTime = ref('')
+
+// 初始化自定义日期时间
+if (props.task.type === 'custom_date' && props.task.customDate) {
+  const dateStr = props.task.customDate
+  const timeStr = props.task.customTime || '23:59'
+  customDateTime.value = `${dateStr}T${timeStr}`
+}
+
+// 处理任务类型变更
+const handleTypeChange = () => {
+  if (localTask.value.type === 'custom_date') {
+    // 如果切换到指定日期，设置默认时间为今天 23:59
+    if (!customDateTime.value) {
+      const today = new Date()
+      const dateStr = today.toISOString().split('T')[0]
+      customDateTime.value = `${dateStr}T23:59`
+      localTask.value.customDate = dateStr
+      localTask.value.customTime = '23:59'
+    }
+  } else {
+    // 清除自定义日期时间
+    localTask.value.customDate = null
+    localTask.value.customTime = null
+  }
+  saveField('type')
+}
+
+// 处理日期时间变更
+const handleDateTimeChange = () => {
+  if (customDateTime.value) {
+    const [date, time] = customDateTime.value.split('T')
+    localTask.value.customDate = date
+    localTask.value.customTime = time
+    saveField('customDate')
+    saveField('customTime')
+  }
+}
 
 // 文本选择菜单
 const detailContentRef = ref(null)
@@ -953,6 +1009,25 @@ section h3 {
   border-radius: 12px;
   padding: 1rem;
   margin-bottom: 1rem;
+}
+
+.overview-item-full {
+  grid-column: 1 / -1;
+}
+
+.field-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.field-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 /* 时间轴（横向版） */
