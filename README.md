@@ -12,7 +12,12 @@
 This is an **offline Android To-Do management application** built with **Vue 3** and **Capacitor**. All data is stored locally on the device using Capacitor Preferences API, requiring **no internet connection or backend server**.
 
 ### 🌟 Key Features
-- **AI Chat Assistant** 🤖 (NEW in v1.7.4):
+- **AI Proactive Assistant** 🤖 (NEW in v1.7.6):
+  - **Smart Reminder Card**: Auto-detect overdue and pending tasks with proactive reminders
+  - **Daily Smart Summary**: Daily work summary with AI insights and tomorrow's plan
+  - **Weekly/Monthly Report Generator**: Auto-generate structured reports with export options
+  - **Smart Task Splitter**: AI-powered task decomposition with 4 templates and time estimation
+- **AI Chat Assistant** 🤖 (v1.7.4):
   - **Intelligent Q&A**: Ask questions about your tasks in natural language
   - **Multi-Model Support**: Pangu AI, OpenAI, or local models (Ollama)
   - **Complete Data Context**: AI has access to all task data, logs, and statistics
@@ -144,6 +149,11 @@ This is an **offline Android To-Do management application** built with **Vue 3**
 这是一个基于 **Vue 3** 和 **Capacitor** 构建的 **Android离线待办事项管理应用**。所有数据使用 Capacitor Preferences API 存储在设备本地，**无需网络连接或后端服务器**。
 
 ### 🌟 核心功能
+- **AI主动式助手** 🤖 (v1.7.6 新增):
+  - **智能提醒卡片**: 自动检测逾期和待办任务，主动提醒
+  - **每日智能总结**: 每日工作总结，AI 建议，明日计划
+  - **周报/月报生成**: 自动生成结构化报告，支持导出
+  - **智能任务分解**: AI 驱动的任务拆解，4种模板，时间估算
 - **AI智能问答** 🤖 (v1.7.4 新增):
   - **自然语言问答**: 用自然语言询问任务相关问题
   - **多模型支持**: 盘古大模型、OpenAI、本地模型（Ollama）
@@ -404,6 +414,39 @@ userInfo[username] = {
 - ✅ 通知提示
 
 ## 📝 版本历史 | Version History
+
+### v1.7.6 (2026-02-26)
+- ✨ **AI 主动式助手系统（4个Phase完整实现）**:
+  - **Phase 1: AI 主动式提醒卡片**
+    - 智能检测逾期/待办任务
+    - 每日一次触发，1小时snooze
+    - 3种建议类型（逾期/待办/激励）
+    - 查看详情/稍后提醒/关闭操作
+  - **Phase 2: 每日智能总结**
+    - 4项核心统计（完成/逾期/专注/完成率）
+    - 今日完成任务列表
+    - AI 智能建议生成
+    - 明日计划预览
+    - 跳转周报生成
+  - **Phase 3: AI 周报/月报生成器**
+    - 周报/月报切换功能
+    - 完成情况统计（总数/完成/进行中/逾期）
+    - 关键工作提取（高优先级Top 10）
+    - 问题分析（逾期任务+AI建议）
+    - 下周/下月计划（待办+高优先级Top 5）
+    - 复制为纯文本/导出PDF
+  - **Phase 4: 智能任务分解**
+    - AI 驱动的任务拆解
+    - 4种任务模板（项目开发/报告撰写/学习计划/活动策划）
+    - 子任务数量可选（3/5/7/10个）
+    - 时间估算（0.5-8小时）
+    - 优先级自动分配
+    - 实时编辑所有字段
+    - 一键创建所有子任务
+- 🔧 **技术优化**:
+  - 添加 @ 别名配置到 vite.config.js
+  - 修复 AIReportModal 导入路径大小写
+  - 添加 aiReportGenerator.js 服务文件
 
 ### v1.7.5.2 (2026-02-26)
 - ✨ **AI 对话历史记录功能**:
