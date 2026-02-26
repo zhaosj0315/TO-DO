@@ -152,4 +152,75 @@ export class AITaskGenerator {
 
 现在请生成任务描述：`
   }
+
+  static async continueText(currentText) {
+    console.log('AITaskGenerator.continueText called with:', currentText)
+    
+    if (!currentText || currentText.trim() === '') {
+      return { success: false, error: '请先输入一些内容' }
+    }
+    
+    try {
+      const models = JSON.parse(localStorage.getItem('ai_models') || '[]')
+      const defaultModelId = localStorage.getItem('ai_default_model')
+      const model = models.find(m => m.id === defaultModelId) || models[0]
+
+      if (!model) {
+        return { success: false, error: '请先在个人主页配置AI模型' }
+      }
+
+      const prompt = `请根据以下内容，自然地续写下去。保持风格一致，内容连贯。
+
+已有内容：
+${currentText}
+
+要求：
+1. 续写50-100字
+2. 保持语气和风格一致
+3. 内容要有逻辑性和连贯性
+4. 只返回续写的内容，不要重复已有内容
+
+续写内容：`
+      
+      let apiUrl = model.url
+      if (model.type === 'openai' && !apiUrl.includes('/chat/completions')) {
+        apiUrl = apiUrl.replace(/\/$/, '') + '/chat/completions'
+      }
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(model.apiKey ? { 'Authorization': `Bearer ${model.apiKey}` } : {})
+        },
+        body: JSON.stringify(
+          model.type === 'openai' 
+            ? {
+                model: model.modelName || 'gpt-3.5-turbo',
+                messages: [{ role: 'user', content: prompt }],
+                temperature: 0.8
+              }
+            : {
+                model: model.modelName || 'gemma2:2b',
+                prompt: prompt,
+                stream: false
+              }
+        )
+      })
+
+      if (!response.ok) {
+        return { success: false, error: `API错误: ${response.status}` }
+      }
+
+      const result = await response.json()
+      const generatedText = model.type === 'openai' 
+        ? result.choices[0].message.content 
+        : result.response
+
+      return { success: true, text: '\n' + generatedText.trim() }
+    } catch (error) {
+      console.error('AI续写失败:', error)
+      return { success: false, error: error.message }
+    }
+  }
 }

@@ -8,28 +8,28 @@
           <h1>{{ currentUsername }}{{ t('tasksSuffix') }}</h1>
         </div>
         <div class="header-actions">
-          <!-- AI问答按钮 -->
-          <button class="btn-icon-circle btn-ai" @click="showAIChat = true" :title="t('aiChat')">
-            🤖
-          </button>
-          <!-- 数据统计按钮 -->
-          <button class="btn-icon-circle btn-stats" @click="showDataStats = true" title="数据统计">
-            📊
-          </button>
-          <!-- 演示模式按钮 -->
-          <button class="btn-icon-circle btn-tutorial" @click="startTutorial" :title="t('tutorial')">
-            💡
-          </button>
-          <!-- 刷新按钮 -->
+          <!-- 刷新按钮 - 最常用，放最左 -->
           <button class="btn-icon-circle btn-refresh-icon" @click="handleRefresh" :title="t('refresh')">
             <span :class="{ spinning: isRefreshing }">⟳</span>
           </button>
-          <!-- 回收站按钮（带数字气泡） -->
+          <!-- 回收站按钮（带数字气泡）- 常用功能 -->
           <button class="btn-icon-circle btn-trash" @click="showTrash = true" :title="t('trash')">
             🗑️
             <span v-if="taskStore.deletedTasks.length > 0" class="badge-count">{{ taskStore.deletedTasks.length }}</span>
           </button>
-          <!-- 个人头像 -->
+          <!-- 数据统计按钮 - 查看数据 -->
+          <button class="btn-icon-circle btn-stats" @click="showDataStats = true" title="数据统计">
+            📊
+          </button>
+          <!-- AI问答按钮 - AI功能 -->
+          <button class="btn-icon-circle btn-ai" @click="showAIChat = true" :title="t('aiChat')">
+            🤖
+          </button>
+          <!-- 演示模式按钮 - 辅助功能 -->
+          <button class="btn-icon-circle btn-tutorial" @click="startTutorial" :title="t('tutorial')">
+            💡
+          </button>
+          <!-- 个人头像 - 最右侧 -->
           <button class="btn-avatar" @click="showProfile = true" :title="t('profile')">
             <div class="avatar-mini">{{ currentUsername ? currentUsername.charAt(0).toUpperCase() : 'U' }}</div>
           </button>
@@ -2092,26 +2092,32 @@
       :sub-text="aiLoadingSubText"
     />
 
-    <!-- 全屏任务描述编辑 -->
-    <div v-if="showFullscreenDesc" class="fullscreen-desc-overlay" @click.self="closeFullscreenDesc">
-      <div class="fullscreen-desc-container">
-        <div class="fullscreen-desc-header">
-          <h3>📝 任务描述</h3>
-          <button class="close-btn" @click="closeFullscreenDesc">✕</button>
+    <!-- 全屏任务描述编辑 (Apple Notes 风格) -->
+    <div v-if="showFullscreenDesc" class="fullscreen-desc-overlay">
+      <div class="fullscreen-desc-header">
+        <div class="header-left">
+          <span class="task-name-preview">{{ newTaskText || '新任务' }}</span>
         </div>
-        <div class="fullscreen-desc-body">
-          <textarea
-            v-model="newTaskDescription"
-            class="fullscreen-desc-textarea"
-            placeholder="详细描述任务内容、目标、注意事项等..."
-            autofocus
-          ></textarea>
-          <div class="char-count">{{ newTaskDescription.length }} 字符</div>
+        <div class="datetime-display">
+          {{ currentDateTime }}
+          <span v-if="newTaskDescription.length > 0" class="char-count-inline">
+            · {{ newTaskDescription.length }} 字
+          </span>
+          <span v-if="descEditDuration > 0" class="edit-time-inline">
+            · {{ descEditTime }}
+          </span>
         </div>
-        <div class="fullscreen-desc-footer">
-          <button class="btn btn-secondary" @click="closeFullscreenDesc">完成</button>
-        </div>
+        <button class="nav-btn-icon" @click="continueDescription" :disabled="aiGenerating" title="AI 续写">
+          {{ aiGenerating ? '⏳' : '🤖' }}
+        </button>
+        <button class="nav-btn nav-btn-primary" @click="closeFullscreenDesc">完成</button>
       </div>
+      <textarea
+        v-model="newTaskDescription"
+        class="fullscreen-desc-textarea"
+        placeholder=""
+        autofocus
+      ></textarea>
     </div>
 
     <!-- AI结果弹窗 -->
@@ -3782,11 +3788,68 @@ const aiLoadingSubText = ref('')
 
 // 全屏任务描述编辑
 const showFullscreenDesc = ref(false)
+const descEditStartTime = ref(null)
+const descEditDuration = ref(0)
+let descEditTimer = null
+
+const currentDateTime = computed(() => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = now.getMonth() + 1
+  const day = now.getDate()
+  const hours = String(now.getHours()).padStart(2, '0')
+  const minutes = String(now.getMinutes()).padStart(2, '0')
+  return `${year}年${month}月${day}日 ${hours}:${minutes}`
+})
+
+const descEditTime = computed(() => {
+  const seconds = descEditDuration.value
+  if (seconds < 60) return `编辑 ${seconds} 秒`
+  const minutes = Math.floor(seconds / 60)
+  return `编辑 ${minutes} 分钟`
+})
+
 const openFullscreenDesc = () => {
   showFullscreenDesc.value = true
+  descEditStartTime.value = Date.now()
+  descEditDuration.value = 0
+  
+  // 每秒更新编辑时长
+  descEditTimer = setInterval(() => {
+    descEditDuration.value = Math.floor((Date.now() - descEditStartTime.value) / 1000)
+  }, 1000)
 }
+
 const closeFullscreenDesc = () => {
   showFullscreenDesc.value = false
+  if (descEditTimer) {
+    clearInterval(descEditTimer)
+    descEditTimer = null
+  }
+}
+
+// AI 续写描述
+const continueDescription = async () => {
+  if (!newTaskDescription.value.trim()) {
+    showNotification('请先输入一些内容', 'error')
+    return
+  }
+  
+  try {
+    aiGenerating.value = true
+    const result = await AITaskGenerator.continueText(newTaskDescription.value)
+    if (result.success) {
+      newTaskDescription.value += result.text
+      showNotification('✨ AI 续写完成', 'success')
+    } else {
+      showNotification(result.error || 'AI 续写失败', 'error')
+    }
+  } catch (error) {
+    console.error('AI 续写失败:', error)
+    showNotification('AI 续写失败', 'error')
+  } finally {
+    aiGenerating.value = false
+  }
 }
 
 // AI 周报生成
@@ -14022,18 +14085,8 @@ watch(() => reportData.value, (newData) => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: #ffffff;
   z-index: 10002;
-  backdrop-filter: blur(4px);
-}
-
-.fullscreen-desc-container {
-  background: white;
-  width: 100%;
-  height: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -14042,77 +14095,106 @@ watch(() => reportData.value, (newData) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem;
-  border-bottom: 1px solid #e0e0e0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  padding: 0.5rem 1rem;
+  background: #f9f9f9;
+  border-bottom: 0.5px solid #c6c6c8;
+  flex-shrink: 0;
+  min-height: 44px;
+  gap: 0.5rem;
 }
 
-.fullscreen-desc-header h3 {
-  margin: 0;
-  font-size: 1.2rem;
-}
-
-.fullscreen-desc-header .close-btn {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: none;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  font-size: 1.5rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.fullscreen-desc-header .close-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-.fullscreen-desc-body {
+.fullscreen-desc-header .header-left {
   flex: 1;
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
+  min-width: 0;
+}
+
+.fullscreen-desc-header .task-name-preview {
+  font-size: 0.9rem;
+  color: #333;
+  font-weight: 600;
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.fullscreen-desc-header .datetime-display {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 500;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.fullscreen-desc-header .datetime-display .char-count-inline {
+  color: #999;
+  font-weight: 400;
+}
+
+.fullscreen-desc-header .datetime-display .edit-time-inline {
+  color: #999;
+  font-weight: 400;
+}
+
+.fullscreen-desc-header .nav-btn-icon {
+  background: transparent;
+  border: none;
+  font-size: 1.3rem;
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+}
+
+.fullscreen-desc-header .nav-btn-icon:active {
+  opacity: 0.4;
+}
+
+.fullscreen-desc-header .nav-btn-icon:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fullscreen-desc-header .nav-btn {
+  background: transparent;
+  border: none;
+  color: #007aff;
+  font-size: 1rem;
+  padding: 0.5rem 0.8rem;
+  cursor: pointer;
+  font-weight: 400;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+}
+
+.fullscreen-desc-header .nav-btn:active {
+  opacity: 0.4;
+}
+
+.fullscreen-desc-header .nav-btn-primary {
+  font-weight: 600;
 }
 
 .fullscreen-desc-textarea {
   flex: 1;
   width: 100%;
-  padding: 1rem;
-  border: 2px solid #e0e0e0;
-  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  border: none;
   font-size: 1rem;
-  font-family: inherit;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
   resize: none;
   line-height: 1.6;
-  transition: border-color 0.2s;
+  background: white;
+  color: #000;
 }
 
 .fullscreen-desc-textarea:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-.fullscreen-desc-body .char-count {
-  margin-top: 0.5rem;
-  text-align: right;
-  font-size: 0.85rem;
-  color: #999;
-}
-
-.fullscreen-desc-footer {
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #e0e0e0;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.fullscreen-desc-footer .btn {
-  padding: 0.75rem 2rem;
-  font-size: 1rem;
+.fullscreen-desc-textarea::placeholder {
+  color: #c7c7cc;
+  white-space: pre-line;
 }
 
 .task-input-main {
