@@ -2062,6 +2062,13 @@
       @generate-report="handleGenerateWeeklyReport"
     />
 
+    <!-- AI 报告 -->
+    <AIReportModal
+      :visible="showAIReport"
+      :tasks="taskStore.tasks"
+      @close="showAIReport = false"
+    />
+
     <!-- AI问答 -->
     <AIChat
       :visible="showAIChat"
@@ -2945,6 +2952,7 @@ import DailyPlanModal from '../components/DailyPlanModal.vue'
 import AIChatCreate from '../components/AIChatCreate.vue'
 import AISuggestionCard from '../components/AISuggestionCard.vue'
 import DailySummaryModal from '../components/DailySummaryModal.vue'
+import AIReportModal from '../components/AIReportModal.vue'
 import { Filesystem, Directory } from '@capacitor/filesystem'
 import { LocalNotifications } from '@capacitor/local-notifications'
 import { Capacitor } from '@capacitor/core'
@@ -3398,6 +3406,7 @@ const aiResultText = ref('')
 const aiResultAction = ref('')
 const showAISuggestion = ref(false)
 const showDailySummary = ref(false)
+const showAIReport = ref(false)
 
 // 文本选择菜单（使用新的 composable）
 const todoLayoutRef = ref(null)
@@ -3446,8 +3455,8 @@ const handleViewSuggestion = (suggestion) => {
 
 // 处理生成周报
 const handleGenerateWeeklyReport = () => {
-  // 这里将在 Phase 3 实现
-  alert('周报生成功能即将推出！')
+  showDailySummary.value = false
+  showAIReport.value = true
 }
 
 // 每日规划
