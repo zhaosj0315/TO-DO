@@ -121,21 +121,23 @@ const generateTrendData = (days) => {
   for (let i = days - 1; i >= 0; i--) {
     const date = new Date()
     date.setDate(date.getDate() - i)
-    const dateStr = date.toLocaleDateString('zh-CN', { month: 'M', day: 'D' })
+    const dateStr = `${date.getMonth() + 1}/${date.getDate()}`
     dateMap.set(dateStr, { completed: 0, created: 0 })
   }
   
   // 统计每天的任务
   tasks.forEach(task => {
-    const createdDate = new Date(task.created_at).toLocaleDateString('zh-CN', { month: 'M', day: 'D' })
-    if (dateMap.has(createdDate)) {
-      dateMap.get(createdDate).created++
+    const createdDate = new Date(task.created_at)
+    const createdStr = `${createdDate.getMonth() + 1}/${createdDate.getDate()}`
+    if (dateMap.has(createdStr)) {
+      dateMap.get(createdStr).created++
     }
     
     if (task.status === 'completed' && task.completed_at) {
-      const completedDate = new Date(task.completed_at).toLocaleDateString('zh-CN', { month: 'M', day: 'D' })
-      if (dateMap.has(completedDate)) {
-        dateMap.get(completedDate).completed++
+      const completedDate = new Date(task.completed_at)
+      const completedStr = `${completedDate.getMonth() + 1}/${completedDate.getDate()}`
+      if (dateMap.has(completedStr)) {
+        dateMap.get(completedStr).completed++
       }
     }
   })
