@@ -16,6 +16,10 @@
           <button class="btn-icon-circle btn-summary" @click="showDailySummary = true" title="今日总结">
             📊
           </button>
+          <!-- 任务分解按钮 -->
+          <button class="btn-icon-circle btn-split" @click="openTaskSplitterForNew" title="任务分解">
+            🧩
+          </button>
           <!-- AI 对话创建按钮 -->
           <button class="btn-icon-circle btn-ai-chat" @click="showAIChatCreate = true" title="AI 对话创建">
             💬
@@ -2069,6 +2073,16 @@
       @close="showAIReport = false"
     />
 
+    <!-- 智能任务分解 -->
+    <SmartTaskSplitter
+      v-if="taskToSplit"
+      :visible="showTaskSplitter"
+      :task-title="taskToSplit.text"
+      :task-description="taskToSplit.description"
+      @close="showTaskSplitter = false; taskToSplit = null"
+      @create="createSubtasks"
+    />
+
     <!-- AI问答 -->
     <AIChat
       :visible="showAIChat"
@@ -2953,6 +2967,7 @@ import AIChatCreate from '../components/AIChatCreate.vue'
 import AISuggestionCard from '../components/AISuggestionCard.vue'
 import DailySummaryModal from '../components/DailySummaryModal.vue'
 import AIReportModal from '../components/AIReportModal.vue'
+import SmartTaskSplitter from '../components/SmartTaskSplitter.vue'
 import { Filesystem, Directory } from '@capacitor/filesystem'
 import { LocalNotifications } from '@capacitor/local-notifications'
 import { Capacitor } from '@capacitor/core'
@@ -3407,6 +3422,8 @@ const aiResultAction = ref('')
 const showAISuggestion = ref(false)
 const showDailySummary = ref(false)
 const showAIReport = ref(false)
+const showTaskSplitter = ref(false)
+const taskToSplit = ref(null)
 
 // 文本选择菜单（使用新的 composable）
 const todoLayoutRef = ref(null)
@@ -3457,6 +3474,63 @@ const handleViewSuggestion = (suggestion) => {
 const handleGenerateWeeklyReport = () => {
   showDailySummary.value = false
   showAIReport.value = true
+}
+
+// 打开任务分解
+const openTaskSplitter = (task) => {
+  taskToSplit.value = task
+  showTaskSplitter.value = true
+}
+
+// 打开任务分解（新任务）
+const openTaskSplitterForNew = () => {
+  const title = prompt('请输入要分解的任务标题：')
+  if (!title || title.trim() === '') return
+  
+  const description = prompt('请输入任务描述（可选）：')
+  
+  taskToSplit.value = {
+    text: title.trim(),
+    description: description?.trim() || '',
+    category: 'work',
+    priority: 'medium'
+  }
+  showTaskSplitter.value = true
+}
+
+// 创建子任务
+const createSubtasks = (subtasks) => {
+  if (!taskToSplit.value || subtasks.length === 0) return
+  
+  const parentTask = taskToSplit.value
+  const now = new Date()
+  
+  subtasks.forEach((subtask, index) => {
+    const newTask = {
+      id: Date.now() + index,
+      text: subtask.title,
+      description: subtask.description || '',
+      type: 'today',
+      category: parentTask.category,
+      priority: subtask.priority || 'medium',
+      status: 'pending',
+      created_at: now.toISOString(),
+      user_id: taskStore.currentUser,
+      parentTaskId: parentTask.id,
+      estimatedHours: subtask.estimatedHours || 1
+    }
+    
+    taskStore.addTask(newTask)
+  })
+  
+  // 如果有父任务ID，标记为已分解
+  if (parentTask.id) {
+    parentTask.hasSplitted = true
+    parentTask.subtaskCount = subtasks.length
+    taskStore.updateTask(parentTask)
+  }
+  
+  alert(`成功创建 ${subtasks.length} 个子任务！`)
 }
 
 // 每日规划
