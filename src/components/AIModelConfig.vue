@@ -81,9 +81,8 @@
                 @click="testConnection" 
                 :disabled="testing"
                 class="btn-test-inline"
-                :title="testing ? '测试中...' : '测试连接'"
               >
-                {{ testing ? '⏳' : '🔍' }}
+                {{ testing ? '测试中...' : '🔍 测试连接' }}
               </button>
             </div>
             
@@ -799,9 +798,9 @@ const addQuickConfig = (type) => {
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 1.2rem;
+  font-size: 0.9rem;
   transition: all 0.2s;
-  min-width: 50px;
+  white-space: nowrap;
 }
 
 .btn-test-inline:hover {
