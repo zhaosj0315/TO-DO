@@ -370,9 +370,9 @@ const logTypes = [
 
 // 过滤后的日志
 const filteredLogs = computed(() => {
-  if (!task.value?.logs) return []
+  if (!props.task?.logs) return []
   
-  let logs = task.value.logs
+  let logs = props.task.logs
   
   // 按类型过滤
   if (filterType.value) {
