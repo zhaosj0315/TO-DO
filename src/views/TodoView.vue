@@ -1033,6 +1033,17 @@
                 自动生成本周工作总结
               </div>
             </div>
+          </div>
+
+          <!-- 周报历史入口 -->
+          <div class="pomodoro-entry" @click="showReportHistory">
+            <div class="entry-icon">📚</div>
+            <div class="entry-content">
+              <div class="entry-title">周报历史</div>
+              <div class="entry-summary">
+                查看历史周报记录
+              </div>
+            </div>
             <div class="entry-arrow">›</div>
           </div>
 
@@ -2661,6 +2672,45 @@
       </div>
     </div>
 
+    <!-- 周报历史弹窗 -->
+    <div v-if="showReportHistoryModal" class="modal-overlay" @click.self="showReportHistoryModal = false">
+      <div class="report-bottom-sheet">
+        <div class="modal-header">
+          <button class="back-btn" @click="showReportHistoryModal = false">
+            <span>← 返回</span>
+          </button>
+          <h3>📚 周报历史</h3>
+          <div style="width: 80px;"></div>
+        </div>
+        
+        <div class="modal-body">
+          <div v-if="reportHistoryList.length === 0" class="empty-state">
+            <div class="empty-icon">📭</div>
+            <p>暂无历史周报</p>
+            <p style="font-size: 0.9rem; color: #999;">生成周报后会自动保存</p>
+          </div>
+
+          <div v-else class="report-history-list">
+            <div 
+              v-for="report in reportHistoryList" 
+              :key="report.id"
+              class="history-item"
+              @click="viewHistoryReport(report)"
+            >
+              <div class="history-header">
+                <div class="history-title">{{ report.title }}</div>
+                <button @click.stop="deleteHistoryReport(report.id)" class="btn-delete-small">🗑️</button>
+              </div>
+              <div class="history-meta">
+                <span>📅 {{ formatDate(report.createdAt) }}</span>
+                <span>📋 {{ report.taskCount }} 个任务</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 撤销Toast -->
     <transition name="toast-slide">
       <div v-if="showUndoToast" class="undo-toast">
@@ -3340,6 +3390,32 @@ const handleCreateSubtasks = (subtaskList) => {
   showTaskDetail.value = false
 }
 
+// 显示周报历史
+const showReportHistory = () => {
+  reportHistoryList.value = JSON.parse(localStorage.getItem('weekly_reports') || '[]')
+  showReportHistoryModal.value = true
+}
+
+// 查看历史周报
+const viewHistoryReport = (report) => {
+  weeklyReportContent.value = report.content
+  weeklyReportTitle.value = report.title
+  showReportHistoryModal.value = false
+  showWeeklyReportModal.value = true
+}
+
+// 删除历史周报
+const deleteHistoryReport = (reportId) => {
+  if (!confirm('确定要删除这条周报吗？')) return
+  
+  const history = JSON.parse(localStorage.getItem('weekly_reports') || '[]')
+  const filtered = history.filter(r => r.id !== reportId)
+  localStorage.setItem('weekly_reports', JSON.stringify(filtered))
+  reportHistoryList.value = filtered
+  
+  showNotification('周报已删除', 'success')
+}
+
 // AI 周报生成
 const generateWeeklyReport = async () => {
   // 获取本周完成的任务
@@ -3367,12 +3443,32 @@ const generateWeeklyReport = async () => {
     
     const report = await AIReportGenerator.generateWeeklyReport(completedTasks, startDate, endDate)
     
-    // 使用弹窗显示周报（参考数据报告布局）
+    // 保存到历史记录
+    const reportHistory = JSON.parse(localStorage.getItem('weekly_reports') || '[]')
+    const newReport = {
+      id: Date.now(),
+      title: `工作周报 (${startDate} ~ ${endDate})`,
+      startDate,
+      endDate,
+      content: report,
+      createdAt: new Date().toISOString(),
+      taskCount: completedTasks.length
+    }
+    reportHistory.unshift(newReport) // 最新的在前面
+    
+    // 只保留最近20条
+    if (reportHistory.length > 20) {
+      reportHistory.splice(20)
+    }
+    
+    localStorage.setItem('weekly_reports', JSON.stringify(reportHistory))
+    
+    // 使用弹窗显示周报
     weeklyReportContent.value = report
-    weeklyReportTitle.value = `工作周报 (${startDate} ~ ${endDate})`
+    weeklyReportTitle.value = newReport.title
     showWeeklyReportModal.value = true
     
-    showNotification('✨ 周报已生成', 'success')
+    showNotification('✨ 周报已生成并保存', 'success')
   } catch (error) {
     console.error('AI生成周报失败:', error)
     alert(`AI生成周报失败：${error.message}`)
@@ -3642,6 +3738,8 @@ const reportData = ref({}) // 报告数据（结构化）
 const showWeeklyReportModal = ref(false) // 周报弹窗显示状态
 const weeklyReportContent = ref('') // 周报内容
 const weeklyReportTitle = ref('') // 周报标题
+const showReportHistoryModal = ref(false) // 周报历史弹窗
+const reportHistoryList = ref([]) // 周报历史列表
 const editingTask = ref(null)
 const editDescription = ref('')
 const editText = ref('')
@@ -16175,6 +16273,77 @@ watch(() => reportData.value, (newData) => {
   padding: 1.5rem;
   border-radius: 8px;
   border: 1px solid #e0e0e0;
+}
+
+/* 周报历史样式 */
+.report-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.history-item {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.history-item:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+  transform: translateY(-2px);
+}
+
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.history-title {
+  font-weight: 600;
+  color: #333;
+  font-size: 1rem;
+}
+
+.btn-delete-small {
+  background: #ff4444;
+  border: none;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.btn-delete-small:hover {
+  background: #cc0000;
+  transform: scale(1.1);
+}
+
+.history-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #999;
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
 }
 
 </style>
