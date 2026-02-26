@@ -7,6 +7,18 @@
 
 ---
 
+## [1.7.5.1] - 2026-02-26 (Hotfix)
+
+### 修复 (Fixed)
+- 🐛 **修复任务详情白屏崩溃问题**:
+  - 修复 TaskDetailModal.vue 中 `task.stats.tags` 空值检查
+  - 修复 TodoView.vue 中 `task.stats.progressHistory` 空值检查
+  - 问题根源：旧任务数据缺少 stats 子字段导致访问 `.length` 时崩溃
+  - 影响：点击任务卡片时应用白屏
+  - 测试：已在真机验证修复成功
+
+---
+
 ## [1.7.5] - 2026-02-25
 
 ### 新增 (Added)

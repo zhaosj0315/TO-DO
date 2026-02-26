@@ -1,108 +1,143 @@
-# 文档导航 | Documentation Guide
+# 文档索引 | Documentation Index
 
-本项目包含多个文档，本指南帮助您快速找到所需信息。
-
-**当前版本**: v1.6.11  
-**最后更新**: 2026-02-23
-
----
-
-## 📚 核心文档
-
-### [README.md](./README.md)
-**用途**: 项目总览和快速开始 (v1.6.11)
-**内容**: 项目简介、核心功能、技术栈、安装指南、版本历史。
+**版本**: v1.7.5.1  
+**更新日期**: 2026-02-26  
+**维护**: 开发团队
 
 ---
 
-### [RELEASE_NOTES_v1.6.11.md](./RELEASE_NOTES_v1.6.11.md) ⭐ 最新
-**用途**: v1.6.11 版本发布说明
-**内容**: 每日摘要通知、首次登录备份提醒、数据说明弹窗、导出兼容性优化、页脚布局重构、Windows 打包支持、重复任务耗时修复、UI 优化。
+## 📚 核心文档（必读）
+
+### 项目概览
+- **[README.md](README.md)** - 项目完整说明（功能、安装、使用）
+- **[CHANGELOG.md](CHANGELOG.md)** - 版本变更记录
+- **[LICENSE](LICENSE)** - MIT 开源协议
+
+### 用户文档
+- **[USER_MANUAL.md](USER_MANUAL.md)** - 用户使用手册
+- **[QUICK_START.md](QUICK_START.md)** - 快速开始指南
+- **[FEATURES.md](FEATURES.md)** - 功能详细说明
+
+### 开发文档
+- **[DEVELOPER.md](DEVELOPER.md)** - 开发者指南
+- **[TESTING_GUIDE.md](TESTING_GUIDE.md)** - 测试指南
+- **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** - 实现总结
 
 ---
 
-### [CHANGELOG.md](./CHANGELOG.md)
-**用途**: 版本变更记录  
-**内容**: 记录从 v1.0.0 到最新版本的所有功能更新。
+## 🔧 构建文档
+
+### Android
+- **[APK_BUILD_GUIDE.md](APK_BUILD_GUIDE.md)** - APK 完整构建指南
+- **[APK_BUILD_QUICK.md](APK_BUILD_QUICK.md)** - APK 快速构建指南
+- **[build-apk.sh](build-apk.sh)** - 一键打包脚本
+
+### Windows
+- **[WINDOWS_BUILD_GUIDE.md](WINDOWS_BUILD_GUIDE.md)** - Windows 构建指南
+- **[build-windows.sh](build-windows.sh)** - Windows 打包脚本（macOS/Linux）
+- **[build-windows.bat](build-windows.bat)** - Windows 打包脚本（Windows）
+
+### 多平台
+- **[BUILD_SCRIPTS_GUIDE.md](BUILD_SCRIPTS_GUIDE.md)** - 构建脚本使用指南
+- **[build-all.sh](build-all.sh)** - 全平台一键打包
 
 ---
 
-### [FEATURES.md](./FEATURES.md)
-**用途**: 完整功能说明 (v1.6.11)
-**内容**: 任务类型、截止时间、番茄钟、筛选功能、添加表单、右上角按钮组、扁平化设计、通知系统。
+## ✨ 功能文档
+
+### 核心功能
+- **[TASK_LOG_PHASE1.md](TASK_LOG_PHASE1.md)** - 任务执行日志系统（v1.7.0）
+- **[TUTORIAL_MODE_FEATURE.md](TUTORIAL_MODE_FEATURE.md)** - 演示模式系统（v1.7.1）
+
+### AI 功能
+- **[AI_CHAT_GUIDE.md](AI_CHAT_GUIDE.md)** - AI 智能问答使用指南
+- **[OLLAMA_PROXY_GUIDE.md](OLLAMA_PROXY_GUIDE.md)** - Ollama 代理配置指南
+- **[OLLAMA_PROXY_QUICKREF.md](OLLAMA_PROXY_QUICKREF.md)** - Ollama 快速参考
+- **[start-ngrok.sh](start-ngrok.sh)** - Ngrok 启动脚本
+- **[start-ollama-lan.sh](start-ollama-lan.sh)** - Ollama 局域网启动
+- **[start-ollama-optimized.sh](start-ollama-optimized.sh)** - Ollama 优化启动
+- **[ollama-proxy.py](ollama-proxy.py)** - Ollama 代理服务器
 
 ---
 
-### [USER_MANUAL.md](./USER_MANUAL.md)
-**用途**: 用户使用手册  
-**内容**: 包含番茄钟系统、数据导入导出、账户安全、通知设置的操作指南。
+## 📋 规范文档
+
+### 开发规范
+- **[DOC_MANAGEMENT_POLICY.md](DOC_MANAGEMENT_POLICY.md)** - 文档开发管理规范
+- **[GIT_PUSH_POLICY.md](GIT_PUSH_POLICY.md)** - Git 推送规范
+- **[DOC_STANDARDS.md](DOC_STANDARDS.md)** - 文档标准
+
+### 发布文档
+- **[RELEASE_NOTES_v1.7.5.md](RELEASE_NOTES_v1.7.5.md)** - v1.7.5 发布说明
 
 ---
 
-## 🛠️ 技术文档
+## 📦 归档文档
 
-### [DEVELOPER.md](./DEVELOPER.md)
-**用途**: 开发者指南  
-**内容**: 架构概览、代码结构、本地存储 (Preferences) 逻辑、跨平台打包。
+历史版本文档已归档至 `docs/archive/` 目录：
 
----
+### 版本归档
+- **[docs/archive/v1.7.5/](docs/archive/v1.7.5/)** - v1.7.5 审计和推送记录
+- **[docs/archive/v1.7.0/](docs/archive/v1.7.0/)** - v1.7.0-v1.7.2 文档
+- **[docs/archive/v1.6.x/](docs/archive/v1.6.x/)** - v1.6.x 发布说明
+- **[docs/archive/v1.5.x/](docs/archive/v1.5.x/)** - v1.5.x 文档
 
-## 📦 打包指南
+### 功能归档
+- **[docs/archive/ai-features/](docs/archive/ai-features/)** - AI 功能开发文档
+- **[docs/archive/reminders/](docs/archive/reminders/)** - 提醒功能文档
+- **[docs/archive/platform-builds/](docs/archive/platform-builds/)** - 平台构建文档
+- **[docs/archive/import-feature/](docs/archive/import-feature/)** - 导入功能文档
+- **[docs/archive/misc/](docs/archive/misc/)** - 杂项文档
 
-### [APK_BUILD_QUICK.md](./APK_BUILD_QUICK.md) ⭐ 推荐
-**用途**: APK 快速打包指南  
-**内容**: 一键打包脚本使用方法、常见问题。
-
----
-
-### [APK_BUILD_GUIDE.md](./APK_BUILD_GUIDE.md)
-**用途**: APK 详细打包指南  
-**内容**: 完整的打包流程、Java 17 环境要求、修复脚本说明。
-
----
-
-### [WINDOWS_BUILD_GUIDE.md](./WINDOWS_BUILD_GUIDE.md) ⭐ 新增
-**用途**: Windows 打包指南  
-**内容**: Windows 安装包打包流程、NSIS 配置、常见问题。
+### 草稿文档
+- **[docs/drafts/](docs/drafts/)** - 未完成功能文档（v1.8.0-alpha）
 
 ---
 
-### [MAC_BUILD_GUIDE.md](./MAC_BUILD_GUIDE.md)
-**用途**: macOS 打包指南  
-**内容**: macOS ZIP 打包流程、代码签名配置。
+## 🔍 文档查找指南
+
+### 我想了解...
+
+**如何使用应用？**
+→ [USER_MANUAL.md](USER_MANUAL.md) 或 [QUICK_START.md](QUICK_START.md)
+
+**如何打包 APK？**
+→ [APK_BUILD_QUICK.md](APK_BUILD_QUICK.md)
+
+**如何配置 AI 功能？**
+→ [AI_CHAT_GUIDE.md](AI_CHAT_GUIDE.md)
+
+**如何参与开发？**
+→ [DEVELOPER.md](DEVELOPER.md)
+
+**版本更新了什么？**
+→ [CHANGELOG.md](CHANGELOG.md)
+
+**如何编写文档？**
+→ [DOC_MANAGEMENT_POLICY.md](DOC_MANAGEMENT_POLICY.md)
 
 ---
 
-### [CROSS_PLATFORM_BUILD.md](./CROSS_PLATFORM_BUILD.md)
-**用途**: 跨平台打包总览  
-**内容**: Android/Windows/macOS 打包流程对比。
+## 📝 文档维护
+
+### 更新原则
+1. **代码为准**: 文档必须无条件适配代码
+2. **及时同步**: 代码变更后立即更新文档
+3. **版本一致**: 文档版本号与 package.json 保持一致
+
+### 归档规则
+- 每个主版本发布后，将旧版本文档移至 `docs/archive/`
+- 保留最新版本的核心文档在根目录
+- 草稿文档放在 `docs/drafts/`
+
+### 文档分类
+- **核心文档**: 项目必备文档，永久保留在根目录
+- **功能文档**: 特定功能说明，可归档
+- **版本文档**: 发布说明和审计报告，必须归档
+- **草稿文档**: 未完成功能，放在 drafts 目录
 
 ---
 
-## 🔍 审计报告
-
-### [DOC_AUDIT_REPORT_V1.6.11_FINAL.md](./DOC_AUDIT_REPORT_V1.6.11_FINAL.md) ⭐ 最新
-**用途**: v1.6.11版本文档审计报告（当前）
-**内容**: 文档-代码一致性检查、问题清单、修复计划。
-
----
-
-### [NOTIFICATION_AUDIT_REPORT.md](./NOTIFICATION_AUDIT_REPORT.md)
-**用途**: 通知系统审计报告
-**内容**: 6种通知类型详细说明、触发条件、防刷屏机制。
-
----
-
-### 历史审计报告
-- [DOC_AUDIT_REPORT_V1.6.10.md](./DOC_AUDIT_REPORT_V1.6.10.md) - v1.6.10审计
-- [DOC_AUDIT_REPORT_V1.6.5_FINAL.md](./DOC_AUDIT_REPORT_V1.6.5_FINAL.md) - v1.6.5审计
-- [AUDIT_REPORT_V1.4.0.md](./AUDIT_REPORT_V1.4.0.md) - v1.4.0审计
-- [AUDIT_REPORT_V1.3.1.md](./AUDIT_REPORT_V1.3.1.md) - v1.3.1审计
-- [AUDIT_REPORT_V1.3.0.md](./AUDIT_REPORT_V1.3.0.md) - v1.3.0审计
-- [AUDIT_REPORT.md](./AUDIT_REPORT.md) - 早期审计
-
----
-
-**维护者**: External Auditor  
-**最后更新**: 2026-02-23  
-**文档版本**: v1.6.11
+**最后更新**: 2026-02-26  
+**维护团队**: 开发团队  
+**反馈渠道**: GitHub Issues
