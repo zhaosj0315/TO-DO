@@ -1555,8 +1555,8 @@ const callOpenAI = async (context, question, model) => {
 
 .quick-btn-small {
   padding: 0.6rem 0.8rem;
-  background: white;
-  border: 1px solid #e0e0e0;
+  background: #f5f5f5;
+  border: none;
   border-radius: 8px;
   font-size: 0.75rem;
   cursor: pointer;
@@ -1571,7 +1571,6 @@ const callOpenAI = async (context, question, model) => {
 .quick-btn-small:hover {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  border-color: transparent;
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
