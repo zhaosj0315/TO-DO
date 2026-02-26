@@ -2101,6 +2101,8 @@
     <AIReportModal
       :visible="showAIReport"
       :tasks="taskStore.tasks"
+      :initialReportType="customReportConfig.type"
+      :customDateRange="customReportConfig.type === 'custom' ? { startDate: customReportConfig.startDate, endDate: customReportConfig.endDate } : null"
       @close="showAIReport = false"
     />
 
@@ -3990,7 +3992,9 @@ const handleCreateSubtasks = (subtaskList) => {
 // 显示周报历史
 const showReportHistory = () => {
   reportHistoryList.value = JSON.parse(localStorage.getItem('weekly_reports') || '[]')
-  showReportHistoryModal.value = true
+  setTimeout(() => {
+    showReportHistoryModal.value = true
+  }, 0)
 }
 
 // 分组周报历史
@@ -4215,23 +4219,29 @@ const generateWeeklyReport = async () => {
     aiLoadingText.value = 'AI 正在生成周报...'
     aiLoadingSubText.value = `分析 ${completedTasks.length} 个任务`
     
-    const startDate = weekStart.toISOString().split('T')[0]
-    const endDate = now.toISOString().split('T')[0]
+    const weekEnd = new Date(now)
+    weekEnd.setHours(23, 59, 59, 999)
     
-    // 传入所有任务，让生成器自己筛选
+    // 传入Date对象，不是字符串
     const generator = new AIReportGenerator(taskStore.tasks)
-    const report = generator.generateWeeklyReport(startDate, endDate, completedTasks)
+    const report = generator.generateWeeklyReport(weekStart, weekEnd, completedTasks)
+    
+    const startDateStr = weekStart.toISOString().split('T')[0]
+    const endDateStr = weekEnd.toISOString().split('T')[0]
     
     // 保存到历史记录
     const reportHistory = JSON.parse(localStorage.getItem('weekly_reports') || '[]')
     const newReport = {
       id: Date.now(),
-      title: `工作周报 (${startDate} ~ ${endDate})`,
-      startDate,
-      endDate,
+      title: `工作周报 (${startDateStr} ~ ${endDateStr})`,
+      period: `${startDateStr} ~ ${endDateStr}`,
+      reportType: 'weekly',
+      startDate: startDateStr,
+      endDate: endDateStr,
       content: report,
       createdAt: new Date().toISOString(),
-      taskCount: completedTasks.length
+      taskCount: completedTasks.length,
+      completedCount: completedTasks.length
     }
     reportHistory.unshift(newReport) // 最新的在前面
     

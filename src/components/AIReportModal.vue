@@ -7,8 +7,8 @@
       </div>
       
       <div class="report-body" ref="reportContent">
-        <!-- 报告类型选择 -->
-        <div class="report-type-selector">
+        <!-- 报告类型选择（仅在未指定类型时显示） -->
+        <div v-if="!initialReportType || initialReportType === 'weekly' || initialReportType === 'monthly'" class="report-type-selector">
           <button 
             :class="['type-btn', { active: reportType === 'weekly' }]"
             @click="reportType = 'weekly'; generateReport()"
@@ -85,20 +85,20 @@
           </div>
 
           <!-- 下周计划 -->
-          <div class="report-section">
+          <div v-if="report.nextPlan" class="report-section">
             <div class="section-title">🎯 {{ reportType === 'weekly' ? '下周计划' : '下月计划' }}</div>
             <div class="plan-summary">
               待办任务：<strong>{{ report.nextPlan.total }}</strong> 个
               &nbsp;|&nbsp;
               高优先级：<strong>{{ report.nextPlan.highPriority }}</strong> 个
             </div>
-            <ul v-if="report.nextPlan.tasks.length > 0" class="plan-list">
+            <ul v-if="report.nextPlan.tasks?.length > 0" class="plan-list">
               <li v-for="task in report.nextPlan.tasks" :key="task.id">
                 <span class="priority-badge high">高</span>
                 {{ task.text }}
               </li>
             </ul>
-            <div class="recommendations">
+            <div v-if="report.nextPlan.recommendations" class="recommendations">
               <div class="rec-title">💡 建议</div>
               <ul>
                 <li v-for="(rec, index) in report.nextPlan.recommendations" :key="index">
@@ -128,6 +128,14 @@ const props = defineProps({
   tasks: {
     type: Array,
     default: () => []
+  },
+  initialReportType: {
+    type: String,
+    default: 'weekly'
+  },
+  customDateRange: {
+    type: Object,
+    default: null
   }
 })
 
@@ -138,16 +146,23 @@ const report = ref(null)
 const reportContent = ref(null)
 
 const reportTitle = computed(() => {
-  return reportType.value === 'weekly' ? '📊 周报' : '📊 月报'
+  const titles = {
+    weekly: '📊 周报',
+    monthly: '📊 月报',
+    quarterly: '📊 季报',
+    yearly: '📊 年报',
+    custom: '📊 自定义报告'
+  }
+  return titles[reportType.value] || '📊 报告'
 })
 
 // 生成报告
 const generateReport = () => {
   const generator = new AIReportGenerator(props.tasks)
+  const now = new Date()
   
   if (reportType.value === 'weekly') {
     // 计算本周时间范围
-    const now = new Date()
     const weekStart = new Date(now)
     weekStart.setDate(now.getDate() - now.getDay())
     weekStart.setHours(0, 0, 0, 0)
@@ -163,8 +178,29 @@ const generateReport = () => {
     })
     
     report.value = generator.generateWeeklyReport(weekStart, weekEnd, weekCompletedTasks)
-  } else {
+  } else if (reportType.value === 'monthly') {
     report.value = generator.generateMonthlyReport()
+  } else if (reportType.value === 'quarterly') {
+    // 季报：最近3个月
+    const quarterStart = new Date(now.getFullYear(), now.getMonth() - 2, 1)
+    quarterStart.setHours(0, 0, 0, 0)
+    const quarterEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    quarterEnd.setHours(23, 59, 59, 999)
+    report.value = generator.generateReport(quarterStart, quarterEnd, 'quarterly')
+  } else if (reportType.value === 'yearly') {
+    // 年报：今年1月1日到现在
+    const yearStart = new Date(now.getFullYear(), 0, 1)
+    yearStart.setHours(0, 0, 0, 0)
+    const yearEnd = new Date(now)
+    yearEnd.setHours(23, 59, 59, 999)
+    report.value = generator.generateReport(yearStart, yearEnd, 'yearly')
+  } else if (reportType.value === 'custom' && props.customDateRange) {
+    // 自定义日期范围
+    const customStart = new Date(props.customDateRange.startDate)
+    customStart.setHours(0, 0, 0, 0)
+    const customEnd = new Date(props.customDateRange.endDate)
+    customEnd.setHours(23, 59, 59, 999)
+    report.value = generator.generateReport(customStart, customEnd, 'custom')
   }
 }
 
@@ -236,6 +272,8 @@ const exportPDF = () => {
 // 监听弹窗显示，自动生成报告
 watch(() => props.visible, (newVal) => {
   if (newVal) {
+    // 使用传入的报告类型
+    reportType.value = props.initialReportType || 'weekly'
     generateReport()
   }
 })
