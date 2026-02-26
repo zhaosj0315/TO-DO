@@ -7,9 +7,17 @@
           <button class="btn-new-chat" @click="createNewChat">
             ➕ 新对话
           </button>
+          <div class="search-box">
+            <input 
+              v-model="searchQuery" 
+              type="text"
+              placeholder="🔍 搜索对话..."
+              @input="handleSearch"
+            />
+          </div>
         </div>
         <div class="sidebar-list">
-          <template v-for="(group, groupName) in groupedChats" :key="groupName">
+          <template v-for="(group, groupName) in filteredGroupedChats" :key="groupName">
             <div class="chat-group-title">{{ groupName }}</div>
             <div 
               v-for="chat in group" 
@@ -18,7 +26,7 @@
               @click="switchChat(chat.id)"
             >
               <div class="chat-item-content">
-                <div class="chat-item-title">{{ chat.title }}</div>
+                <div class="chat-item-title" v-html="highlightText(chat.title)"></div>
                 <div class="chat-item-time">{{ formatChatTime(chat.updatedAt) }}</div>
               </div>
               <button class="btn-delete-chat" @click.stop="deleteChat(chat.id)" title="删除">
@@ -26,6 +34,9 @@
               </button>
             </div>
           </template>
+          <div v-if="Object.keys(filteredGroupedChats).length === 0" class="no-results">
+            😕 未找到匹配的对话
+          </div>
         </div>
       </div>
 
@@ -46,9 +57,15 @@
 
         <div class="ai-chat-messages" ref="messagesContainer">
           <div v-for="(msg, idx) in messages" :key="idx" :class="['message', msg.role]">
-            <div class="message-content">{{ msg.content }}</div>
-            <div v-if="msg.role === 'assistant' && msg.modelName" class="message-meta">
-              🤖 {{ msg.modelName }}
+            <div 
+              class="message-content" 
+              v-html="msg.role === 'assistant' ? renderMarkdown(msg.content) : escapeHtml(msg.content)"
+            ></div>
+            <div v-if="msg.role === 'assistant'" class="message-actions">
+              <button class="action-btn" @click="copyMessage(msg.content)" title="复制">
+                📋
+              </button>
+              <span v-if="msg.modelName" class="model-name">🤖 {{ msg.modelName }}</span>
             </div>
           </div>
         <div v-if="loading" class="message assistant">
@@ -66,12 +83,12 @@
         <div class="quick-questions">
           <div class="quick-label">💡 继续提问：</div>
           <div class="quick-categories-compact">
-            <button @click="askQuick('今天完成了什么？')" class="quick-btn-small">📊 今日完成</button>
-            <button @click="askQuick('本周情况如何？')" class="quick-btn-small">📅 本周情况</button>
-            <button @click="askQuick('效率分析')" class="quick-btn-small">⚡ 效率分析</button>
-            <button @click="askQuick('高优先级待办')" class="quick-btn-small">🎯 高优先级</button>
-            <button @click="askQuick('即将逾期的任务')" class="quick-btn-small">⏰ 即将逾期</button>
-            <button @click="askQuick('管理建议')" class="quick-btn-small">💡 管理建议</button>
+            <button @click="askQuick('今天完成了什么？')" class="quick-btn-small">📊 今日任务</button>
+            <button @click="askQuick('本周情况如何？')" class="quick-btn-small">📅 本周总结</button>
+            <button @click="askQuick('分析我的效率')" class="quick-btn-small">⚡ 效率分析</button>
+            <button @click="askQuick('有哪些高优先级待办？')" class="quick-btn-small">🎯 重要待办</button>
+            <button @click="askQuick('哪些任务即将逾期？')" class="quick-btn-small">⏰ 逾期预警</button>
+            <button @click="askQuick('给我一些任务管理建议')" class="quick-btn-small">💡 优化建议</button>
           </div>
         </div>
         </div>
@@ -94,6 +111,25 @@
 
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
+import { marked } from 'marked'
+import hljs from 'highlight.js'
+import 'highlight.js/styles/github.css'
+
+// 简化配置：使用 marked 默认渲染 + highlight.js
+marked.setOptions({
+  highlight: function(code, lang) {
+    if (lang && hljs.getLanguage(lang)) {
+      try {
+        return hljs.highlight(code, { language: lang }).value
+      } catch (e) {
+        return code
+      }
+    }
+    return code
+  },
+  breaks: true,
+  gfm: true
+})
 
 const props = defineProps({
   visible: Boolean,
@@ -114,6 +150,65 @@ const messagesContainer = ref(null)
 const showSidebar = ref(true)
 const chatHistoryList = ref([])
 const currentChatId = ref(null)
+const searchQuery = ref('')
+
+// 搜索处理（防抖）
+let searchTimeout = null
+const handleSearch = () => {
+  clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(() => {
+    // 搜索逻辑在 computed 中处理
+  }, 300)
+}
+
+// 高亮搜索关键词
+const highlightText = (text) => {
+  if (!searchQuery.value.trim()) return text
+  const regex = new RegExp(`(${searchQuery.value})`, 'gi')
+  return text.replace(regex, '<mark>$1</mark>')
+}
+
+// Markdown 渲染函数
+const renderMarkdown = (content) => {
+  try {
+    const html = marked(content)
+    
+    // 手动高亮代码块
+    return html.replace(/<pre><code class="language-(\w+)">([\s\S]*?)<\/code><\/pre>/g, (match, lang, code) => {
+      const decodedCode = code.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"')
+      
+      let highlighted = decodedCode
+      if (hljs.getLanguage(lang)) {
+        try {
+          highlighted = hljs.highlight(decodedCode, { language: lang }).value
+        } catch (e) {
+          console.error('高亮失败:', e)
+        }
+      }
+      
+      return `<pre><code class="hljs language-${lang}">${highlighted}</code></pre>`
+    })
+  } catch (e) {
+    console.error('Markdown 渲染失败:', e)
+    return escapeHtml(content)
+  }
+}
+
+// 复制消息内容
+const copyMessage = (content) => {
+  navigator.clipboard.writeText(content).then(() => {
+    alert('✓ 已复制到剪贴板')
+  }).catch(err => {
+    console.error('复制失败:', err)
+  })
+}
+
+// HTML 转义函数（用户消息）
+const escapeHtml = (text) => {
+  const div = document.createElement('div')
+  div.textContent = text
+  return div.innerHTML.replace(/\n/g, '<br>')
+}
 
 // 加载所有对话历史
 const loadAllChats = () => {
@@ -258,6 +353,44 @@ const groupedChats = computed(() => {
   )
 })
 
+// 过滤后的分组聊天记录（支持搜索）
+const filteredGroupedChats = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase()
+  if (!query) return groupedChats.value
+  
+  const groups = {
+    '今天': [],
+    '昨天': [],
+    '最近7天': [],
+    '更早': []
+  }
+  
+  const now = new Date()
+  chatHistoryList.value.forEach(chat => {
+    // 搜索标题和消息内容
+    const titleMatch = chat.title.toLowerCase().includes(query)
+    const messageMatch = chat.messages.some(msg => 
+      msg.content.toLowerCase().includes(query)
+    )
+    
+    if (titleMatch || messageMatch) {
+      const date = new Date(chat.updatedAt)
+      const diff = now - date
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+      
+      if (days === 0) groups['今天'].push(chat)
+      else if (days === 1) groups['昨天'].push(chat)
+      else if (days < 7) groups['最近7天'].push(chat)
+      else groups['更早'].push(chat)
+    }
+  })
+  
+  // 只返回非空分组
+  return Object.fromEntries(
+    Object.entries(groups).filter(([_, chats]) => chats.length > 0)
+  )
+})
+
 // 旧的加载/保存方法（兼容）
 const loadChatHistory = () => {
   const history = localStorage.getItem('ai_chat_history')
@@ -332,6 +465,143 @@ watch(() => props.visible, (val) => {
 const askQuick = (question) => {
   userInput.value = question
   sendMessage()
+}
+
+// 智能上下文分析
+const analyzeQuestion = (question) => {
+  const q = question.toLowerCase()
+  
+  // 时间维度检测
+  const isToday = /今天|今日|当天/.test(q)
+  const isWeek = /本周|这周|这星期|week/.test(q)
+  const isMonth = /本月|这月|这个月|month/.test(q)
+  
+  // 状态检测
+  const needCompleted = /完成|已完成|做完|finished|completed/.test(q)
+  const needPending = /待办|未完成|进行中|pending|todo/.test(q)
+  const needOverdue = /逾期|过期|超时|overdue/.test(q)
+  
+  // 分类检测
+  const needWork = /工作|work|job/.test(q)
+  const needStudy = /学习|study|learn/.test(q)
+  const needLife = /生活|life|daily/.test(q)
+  
+  // 优先级检测
+  const needHigh = /高优先级|重要|紧急|high/.test(q)
+  const needMedium = /中优先级|一般|medium/.test(q)
+  const needLow = /低优先级|不急|low/.test(q)
+  
+  // 特殊功能检测
+  const needLogs = /日志|记录|执行|log|progress/.test(q)
+  const needPomodoro = /番茄|专注|pomodoro/.test(q)
+  const needStats = /统计|数据|分析|stat|report/.test(q)
+  
+  return {
+    timeScope: isToday ? 'today' : isWeek ? 'week' : isMonth ? 'month' : 'all',
+    status: needCompleted ? 'completed' : needPending ? 'pending' : needOverdue ? 'overdue' : null,
+    category: needWork ? 'work' : needStudy ? 'study' : needLife ? 'life' : null,
+    priority: needHigh ? 'high' : needMedium ? 'medium' : needLow ? 'low' : null,
+    needLogs,
+    needPomodoro,
+    needStats,
+    isSimple: isToday || isWeek || needCompleted || needPending // 简单查询
+  }
+}
+
+// 智能构建上下文
+const buildSmartContext = (question) => {
+  const analysis = analyzeQuestion(question)
+  const { tasks = [], deletedTasks = [] } = props.tasksData
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const weekStart = new Date(today)
+  weekStart.setDate(today.getDate() - today.getDay())
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+
+  // 根据时间范围过滤
+  let filteredTasks = tasks
+  if (analysis.timeScope === 'today') {
+    filteredTasks = tasks.filter(t => {
+      const date = new Date(t.completed_at || t.created_at)
+      return date >= today
+    })
+  } else if (analysis.timeScope === 'week') {
+    filteredTasks = tasks.filter(t => {
+      const date = new Date(t.completed_at || t.created_at)
+      return date >= weekStart
+    })
+  } else if (analysis.timeScope === 'month') {
+    filteredTasks = tasks.filter(t => {
+      const date = new Date(t.completed_at || t.created_at)
+      return date >= monthStart
+    })
+  }
+
+  // 根据状态过滤
+  if (analysis.status) {
+    filteredTasks = filteredTasks.filter(t => t.status === analysis.status)
+  }
+
+  // 根据分类过滤
+  if (analysis.category) {
+    filteredTasks = filteredTasks.filter(t => t.category === analysis.category)
+  }
+
+  // 根据优先级过滤
+  if (analysis.priority) {
+    filteredTasks = filteredTasks.filter(t => t.priority === analysis.priority)
+  }
+
+  // 构建精简上下文
+  const timeLabel = analysis.timeScope === 'today' ? '今日' : 
+                    analysis.timeScope === 'week' ? '本周' : 
+                    analysis.timeScope === 'month' ? '本月' : '全部'
+
+  let context = `# ${timeLabel}任务数据（${now.toLocaleString('zh-CN')}）\n\n`
+  context += `## 📊 统计\n`
+  context += `- 任务数：${filteredTasks.length}\n`
+  context += `- 已完成：${filteredTasks.filter(t => t.status === 'completed').length}\n`
+  context += `- 待办中：${filteredTasks.filter(t => t.status === 'pending').length}\n`
+  context += `- 已逾期：${filteredTasks.filter(t => t.status === 'overdue').length}\n\n`
+
+  // 如果需要统计信息
+  if (analysis.needStats || analysis.needPomodoro) {
+    const totalPomodoros = filteredTasks.reduce((sum, t) => sum + (t.completedPomodoros || 0), 0)
+    context += `- 番茄钟：${totalPomodoros}个\n`
+  }
+
+  if (analysis.needStats || analysis.needLogs) {
+    const totalLogs = filteredTasks.reduce((sum, t) => sum + (t.logs?.length || 0), 0)
+    context += `- 执行日志：${totalLogs}条\n`
+  }
+
+  context += `\n## 📋 任务列表\n`
+  
+  // 只包含必要的任务详情
+  filteredTasks.forEach(t => {
+    context += `\n### ${t.text}\n`
+    context += `- 状态：${t.status === 'completed' ? '✅' : t.status === 'pending' ? '⏳' : '⚠️'}\n`
+    context += `- 分类：${t.category} | 优先级：${t.priority}\n`
+    
+    if (t.description) {
+      context += `- 描述：${t.description.slice(0, 100)}${t.description.length > 100 ? '...' : ''}\n`
+    }
+    
+    if (analysis.needLogs && t.logs?.length > 0) {
+      context += `- 日志：${t.logs.length}条，进度${t.stats?.progress || 0}%\n`
+      t.logs.slice(-3).forEach(log => {
+        context += `  [${log.type}] ${log.content.slice(0, 50)}\n`
+      })
+    }
+    
+    if (analysis.needPomodoro && t.completedPomodoros) {
+      context += `- 番茄钟：${t.completedPomodoros}个\n`
+    }
+  })
+
+  context += `\n---\n你是任务管理AI助手，基于以上数据回答问题。`
+  
+  return context
 }
 
 const buildContext = () => {
@@ -481,7 +751,12 @@ const sendMessage = async () => {
   })
 
   try {
-    const context = buildContext()
+    // 使用智能上下文（简单查询）或完整上下文（复杂查询）
+    const analysis = analyzeQuestion(question)
+    const context = analysis.isSimple ? buildSmartContext(question) : buildContext()
+    
+    console.log(`📊 上下文大小: ${(context.length / 1024).toFixed(2)} KB (${analysis.isSimple ? '智能' : '完整'})`)
+    
     const model = currentModel.value
 
     if (model.type === 'openai') {
@@ -766,6 +1041,7 @@ const callOpenAI = async (context, question, model) => {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  margin-bottom: 0.75rem;
 }
 
 .btn-new-chat:hover {
@@ -773,10 +1049,47 @@ const callOpenAI = async (context, question, model) => {
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
+.search-box {
+  width: 100%;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.search-box input::placeholder {
+  color: #999;
+}
+
 .sidebar-list {
   flex: 1;
   overflow-y: auto;
   padding: 0.5rem;
+}
+
+.no-results {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: #999;
+  font-size: 0.9rem;
+}
+
+.chat-item-title mark {
+  background: #fff59d;
+  color: #333;
+  padding: 0 2px;
+  border-radius: 2px;
 }
 
 .chat-group-title {
@@ -964,39 +1277,221 @@ const callOpenAI = async (context, question, model) => {
 
 .message {
   display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 
 .message.user {
-  justify-content: flex-end;
+  align-items: stretch;
 }
 
 .message.assistant {
-  justify-content: flex-start;
+  align-items: stretch;
 }
 
 .message-content {
-  max-width: 75%;
+  width: 100%;
   padding: 0.75rem 1rem;
   border-radius: 12px;
-  white-space: pre-wrap;
   word-wrap: break-word;
+  line-height: 1.6;
 }
 
-.message-meta {
+/* Markdown 样式 */
+.message.assistant .message-content {
+  background: #f8f9fa;
+  color: #333;
+}
+
+.message.assistant .message-content * {
+  max-width: 100%;
+}
+
+/* 标题 */
+.message.assistant .message-content h1,
+.message.assistant .message-content h2,
+.message.assistant .message-content h3 {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.message.assistant .message-content h1 { 
+  font-size: 1.5rem; 
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 0.3rem;
+}
+.message.assistant .message-content h2 { 
+  font-size: 1.3rem; 
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 0.2rem;
+}
+.message.assistant .message-content h3 { font-size: 1.1rem; }
+
+/* 段落和列表 */
+.message.assistant .message-content p {
+  margin: 0.75rem 0;
+  line-height: 1.7;
+}
+
+.message.assistant .message-content ul,
+.message.assistant .message-content ol {
+  margin: 0.75rem 0;
+  padding-left: 2rem;
+}
+
+.message.assistant .message-content li {
+  margin: 0.4rem 0;
+  line-height: 1.6;
+}
+
+/* 行内代码 */
+.message.assistant .message-content code {
+  background: #e8eaf6;
+  color: #5e35b1;
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
+/* 代码块 */
+.message.assistant .message-content pre {
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  margin: 1rem 0;
+  padding: 1rem;
+  overflow-x: auto;
+}
+
+.message.assistant .message-content pre code {
+  display: block;
+  background: transparent;
+  color: #333;
+  padding: 0;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+/* 代码高亮颜色覆盖（浅色主题） */
+.message.assistant .message-content pre code .hljs-keyword { color: #d73a49; }
+.message.assistant .message-content pre code .hljs-string { color: #22863a; }
+.message.assistant .message-content pre code .hljs-function { color: #6f42c1; }
+.message.assistant .message-content pre code .hljs-number { color: #005cc5; }
+.message.assistant .message-content pre code .hljs-comment { color: #6a737d; font-style: italic; }
+.message.assistant .message-content pre code .hljs-attr { color: #005cc5; }
+.message.assistant .message-content pre code .hljs-tag { color: #22863a; }
+.message.assistant .message-content pre code .hljs-name { color: #22863a; }
+
+/* 引用 */
+.message.assistant .message-content blockquote {
+  border-left: 4px solid #667eea;
+  padding: 0.5rem 1rem;
+  margin: 1rem 0;
+  color: #666;
+  font-style: italic;
+  background: #f5f5f5;
+  border-radius: 0 4px 4px 0;
+}
+
+/* 表格 */
+.message.assistant .message-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+}
+
+.message.assistant .message-content th,
+.message.assistant .message-content td {
+  border: 1px solid #ddd;
+  padding: 0.6rem 0.8rem;
+  text-align: left;
+}
+
+.message.assistant .message-content th {
+  background: #667eea;
+  color: white;
+  font-weight: 600;
+}
+
+.message.assistant .message-content tr:nth-child(even) {
+  background: #f9f9f9;
+}
+
+/* 链接 */
+.message.assistant .message-content a {
+  color: #667eea;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.message.assistant .message-content a:hover {
+  border-bottom-color: #667eea;
+}
+
+/* 分隔线 */
+.message.assistant .message-content hr {
+  border: none;
+  border-top: 2px solid #e0e0e0;
+  margin: 1.5rem 0;
+}
+
+/* 强调 */
+.message.assistant .message-content strong {
+  font-weight: 600;
+  color: #222;
+}
+
+.message.assistant .message-content em {
+  font-style: italic;
+  color: #555;
+}
+
+/* 消息操作栏 */
+.message-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid #f0f0f0;
+}
+
+.action-btn {
+  background: transparent;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  opacity: 0.6;
+}
+
+.action-btn:hover {
+  opacity: 1;
+  background: #f5f5f5;
+  border-color: #667eea;
+}
+
+.model-name {
   font-size: 0.7rem;
   color: #999;
-  margin-top: 0.25rem;
-  text-align: right;
 }
 
 .message.user .message-content {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-}
-
-.message.assistant .message-content {
-  background: #f0f0f0;
-  color: #333;
+  white-space: pre-wrap;
 }
 
 .message.error .message-content {
@@ -1053,21 +1548,29 @@ const callOpenAI = async (context, question, model) => {
 }
 
 .quick-categories-compact {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.5rem;
 }
 
 .quick-btn-small {
-  padding: 0.4rem 0.75rem;
+  padding: 0.6rem 0.8rem;
   background: white;
   border: 1px solid #e0e0e0;
-  border-radius: 16px;
+  border-radius: 8px;
   font-size: 0.75rem;
   cursor: pointer;
   transition: all 0.2s;
   color: #333;
+  text-align: center;
+  line-height: 1.4;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .quick-btn-small:hover {
