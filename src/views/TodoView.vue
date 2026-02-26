@@ -133,6 +133,9 @@
                 <button class="btn-ai-desc" @click="generateDescription" :title="t('aiGenerateDesc')" :disabled="aiGenerating">
                   {{ aiGenerating ? '⏳' : '🤖' }}
                 </button>
+                <button class="btn-fullscreen-desc" @click="openFullscreenDesc" title="全屏编辑">
+                  ⛶
+                </button>
               </div>
             </div>
 
@@ -2061,6 +2064,28 @@
       :sub-text="aiLoadingSubText"
     />
 
+    <!-- 全屏任务描述编辑 -->
+    <div v-if="showFullscreenDesc" class="fullscreen-desc-overlay" @click.self="closeFullscreenDesc">
+      <div class="fullscreen-desc-container">
+        <div class="fullscreen-desc-header">
+          <h3>📝 任务描述</h3>
+          <button class="close-btn" @click="closeFullscreenDesc">✕</button>
+        </div>
+        <div class="fullscreen-desc-body">
+          <textarea
+            v-model="newTaskDescription"
+            class="fullscreen-desc-textarea"
+            placeholder="详细描述任务内容、目标、注意事项等..."
+            autofocus
+          ></textarea>
+          <div class="char-count">{{ newTaskDescription.length }} 字符</div>
+        </div>
+        <div class="fullscreen-desc-footer">
+          <button class="btn btn-secondary" @click="closeFullscreenDesc">完成</button>
+        </div>
+      </div>
+    </div>
+
     <!-- AI结果弹窗 -->
     <div v-if="showAIResult" class="modal-overlay" @click.self="showAIResult = false">
       <div class="modal-content glass-card" style="max-width: 600px; width: 96%;">
@@ -3624,6 +3649,15 @@ initVersionHistory()
 const aiLoading = ref(false)
 const aiLoadingText = ref('AI 思考中...')
 const aiLoadingSubText = ref('')
+
+// 全屏任务描述编辑
+const showFullscreenDesc = ref(false)
+const openFullscreenDesc = () => {
+  showFullscreenDesc.value = true
+}
+const closeFullscreenDesc = () => {
+  showFullscreenDesc.value = false
+}
 
 // AI 周报生成
 const generateWeeklyReport = async () => {
@@ -13808,9 +13842,9 @@ watch(() => reportData.value, (newData) => {
   flex: 1;
 }
 
-.btn-ai-desc {
+.btn-ai-desc,
+.btn-fullscreen-desc {
   position: absolute;
-  right: 0.5rem;
   bottom: 0.5rem;
   width: 32px;
   height: 32px;
@@ -13827,14 +13861,128 @@ watch(() => reportData.value, (newData) => {
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 
+.btn-ai-desc {
+  right: 3rem;
+}
+
+.btn-fullscreen-desc {
+  right: 0.5rem;
+  font-size: 1.2rem;
+}
+
 .btn-ai-desc:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-.btn-ai-desc:hover:not(:disabled) {
+.btn-ai-desc:hover:not(:disabled),
+.btn-fullscreen-desc:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* 全屏描述编辑 */
+.fullscreen-desc-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10002;
+  backdrop-filter: blur(4px);
+}
+
+.fullscreen-desc-container {
+  background: white;
+  border-radius: 16px;
+  width: 96%;
+  max-width: 800px;
+  height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.fullscreen-desc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e0e0e0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 16px 16px 0 0;
+}
+
+.fullscreen-desc-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.fullscreen-desc-header .close-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.fullscreen-desc-header .close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.fullscreen-desc-body {
+  flex: 1;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.fullscreen-desc-textarea {
+  flex: 1;
+  width: 100%;
+  padding: 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-family: inherit;
+  resize: none;
+  line-height: 1.6;
+  transition: border-color 0.2s;
+}
+
+.fullscreen-desc-textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.fullscreen-desc-body .char-count {
+  margin-top: 0.5rem;
+  text-align: right;
+  font-size: 0.85rem;
+  color: #999;
+}
+
+.fullscreen-desc-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.fullscreen-desc-footer .btn {
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
 }
 
 .task-input-main {
