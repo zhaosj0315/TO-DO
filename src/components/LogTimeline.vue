@@ -22,25 +22,19 @@
         <!-- 日志内容 -->
         <div class="timeline-content">
           <div class="log-header">
-            <span :class="['log-type', getLogTypeClass(log.type)]">
-              {{ getLogTypeLabel(log.type) }}
-            </span>
+            <div class="log-header-left">
+              <span :class="['log-type', getLogTypeClass(log.type)]">
+                {{ getLogTypeLabel(log.type) }}
+              </span>
+              <span v-if="log.progress !== undefined" class="log-progress">
+                📊 {{ log.progress }}%
+              </span>
+            </div>
             <span class="log-time">{{ formatTime(log.timestamp) }}</span>
           </div>
           
           <div class="log-body">
             <p class="log-text">{{ log.content }}</p>
-            
-            <!-- 进度条 -->
-            <div v-if="log.progress !== undefined" class="progress-bar">
-              <div class="progress-label">进度: {{ log.progress }}%</div>
-              <div class="progress-track">
-                <div 
-                  class="progress-fill" 
-                  :style="{ width: log.progress + '%' }"
-                ></div>
-              </div>
-            </div>
             
             <!-- 耗时 -->
             <div v-if="log.duration" class="log-meta">
@@ -271,6 +265,22 @@ const getMoodText = (mood) => {
   margin-bottom: 0.75rem;
 }
 
+.log-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.log-progress {
+  padding: 0.25rem 0.75rem;
+  background: linear-gradient(135deg, #0984e3 0%, #00b894 100%);
+  color: white;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
 .log-type {
   padding: 0.25rem 0.75rem;
   border-radius: 12px;
@@ -323,30 +333,6 @@ const getMoodText = (mood) => {
   min-height: 60px;
   max-height: none;
   overflow: visible;
-}
-
-.progress-bar {
-  margin: 0.75rem 0;
-}
-
-.progress-label {
-  font-size: 0.8rem;
-  color: #666;
-  margin-bottom: 0.5rem;
-}
-
-.progress-track {
-  height: 8px;
-  background: #e0e0e0;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-  border-radius: 4px;
-  transition: width 0.3s ease;
 }
 
 .log-meta {
