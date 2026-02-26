@@ -2567,7 +2567,7 @@
       </div>
     </div>
 
-    <!-- AI 周报弹窗 (参考数据报告布局) -->
+    <!-- AI 周报弹窗 (优化格式) -->
     <div v-if="showWeeklyReportModal" class="modal-overlay" @click.self="showWeeklyReportModal = false">
       <div class="report-bottom-sheet">
         <div class="modal-header">
@@ -2581,7 +2581,49 @@
         <div class="modal-body">
           <!-- 周报内容 -->
           <div class="weekly-report-content">
-            <pre class="report-text">{{ weeklyReportContent }}</pre>
+            <!-- AI 总结 -->
+            <div v-if="weeklyReportContent.summary" class="report-section">
+              <div class="section-title">📊 本周总结</div>
+              <div class="summary-card">{{ weeklyReportContent.summary }}</div>
+            </div>
+
+            <!-- 工作亮点 -->
+            <div v-if="weeklyReportContent.highlights && weeklyReportContent.highlights.length > 0" class="report-section">
+              <div class="section-title">✨ 工作亮点</div>
+              <div class="highlights-list">
+                <div v-for="(highlight, index) in weeklyReportContent.highlights" :key="index" class="highlight-item">
+                  <span class="highlight-number">{{ index + 1 }}</span>
+                  <span class="highlight-text">{{ highlight }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 改进建议 -->
+            <div v-if="weeklyReportContent.suggestions" class="report-section">
+              <div class="section-title">💡 改进建议</div>
+              <div class="suggestions-card">{{ weeklyReportContent.suggestions }}</div>
+            </div>
+
+            <!-- 任务列表 -->
+            <div v-if="weeklyReportContent.tasks && weeklyReportContent.tasks.length > 0" class="report-section">
+              <div class="section-title">
+                📋 完成任务
+                <span class="task-count">{{ weeklyReportContent.tasks.length }} 个</span>
+              </div>
+              <div class="task-chips">
+                <div v-for="(task, index) in weeklyReportContent.tasks.slice(0, 10)" :key="index" class="task-chip">
+                  {{ task.text }}
+                </div>
+                <div v-if="weeklyReportContent.tasks.length > 10" class="task-chip more">
+                  +{{ weeklyReportContent.tasks.length - 10 }} 个任务
+                </div>
+              </div>
+            </div>
+
+            <!-- 降级显示：纯文本 -->
+            <div v-if="typeof weeklyReportContent === 'string'" class="report-section">
+              <pre class="report-text">{{ weeklyReportContent }}</pre>
+            </div>
           </div>
         </div>
         
@@ -6145,7 +6187,39 @@ const copyReportText = async () => {
 // 方法：复制周报
 const copyWeeklyReport = async () => {
   try {
-    await navigator.clipboard.writeText(weeklyReportContent.value)
+    let textToCopy = ''
+    
+    // 如果是结构化数据，格式化为文本
+    if (typeof weeklyReportContent.value === 'object') {
+      textToCopy = `${weeklyReportTitle.value}\n\n`
+      
+      if (weeklyReportContent.value.summary) {
+        textToCopy += `📊 本周总结\n${weeklyReportContent.value.summary}\n\n`
+      }
+      
+      if (weeklyReportContent.value.highlights && weeklyReportContent.value.highlights.length > 0) {
+        textToCopy += `✨ 工作亮点\n`
+        weeklyReportContent.value.highlights.forEach((h, i) => {
+          textToCopy += `${i + 1}. ${h}\n`
+        })
+        textToCopy += '\n'
+      }
+      
+      if (weeklyReportContent.value.suggestions) {
+        textToCopy += `💡 改进建议\n${weeklyReportContent.value.suggestions}\n\n`
+      }
+      
+      if (weeklyReportContent.value.tasks && weeklyReportContent.value.tasks.length > 0) {
+        textToCopy += `📋 完成任务 (${weeklyReportContent.value.tasks.length}个)\n`
+        weeklyReportContent.value.tasks.forEach((t, i) => {
+          textToCopy += `${i + 1}. ${t.text}\n`
+        })
+      }
+    } else {
+      textToCopy = weeklyReportContent.value
+    }
+    
+    await navigator.clipboard.writeText(textToCopy)
     showNotification('周报已复制到剪贴板', 'success')
   } catch (err) {
     showNotification('复制失败，请手动复制', 'error')
@@ -15927,11 +16001,104 @@ watch(() => reportData.value, (newData) => {
 
 /* 周报弹窗样式 */
 .weekly-report-content {
-  padding: 1rem;
-  background: #f8f9fa;
-  border-radius: 12px;
+  padding: 0;
   max-height: 60vh;
   overflow-y: auto;
+}
+
+.report-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+}
+
+.report-section .section-title {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 1rem;
+}
+
+.task-count {
+  font-size: 0.85rem;
+  color: #667eea;
+  font-weight: 500;
+}
+
+.summary-card,
+.suggestions-card {
+  background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+  border-left: 3px solid #667eea;
+  padding: 1rem;
+  border-radius: 8px;
+  color: #333;
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+.highlights-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.highlight-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.highlight-number {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.highlight-text {
+  flex: 1;
+  color: #333;
+  line-height: 1.5;
+}
+
+.task-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.task-chip {
+  background: white;
+  border: 1px solid #667eea;
+  color: #667eea;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.task-chip.more {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
 }
 
 .report-text {

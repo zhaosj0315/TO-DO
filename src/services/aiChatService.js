@@ -70,18 +70,22 @@ export class AIChatService {
 请按照以下格式输出JSON数组：
 [
   {
-    "text": "任务标题",
-    "description": "任务描述（可选）",
+    "text": "任务标题（简短，5-15字）",
+    "description": "任务详细描述（可选）",
     "category": "work/study/life",
-    "priority": "high/medium/low"
+    "priority": "high/medium/low",
+    "needReminder": true/false,
+    "reminderTime": "2026-02-26 14:00"（如果需要提醒）
   }
 ]
 
 要求：
-1. 提取所有明确的待办事项
-2. 自动判断分类和优先级
-3. 如果没有任务，返回空数组 []
-4. 任务标题要简洁明确`
+1. text 必须是简短的标题，不超过15字
+2. description 包含详细信息和上下文
+3. 如果用户提到具体时间，设置 needReminder=true 并提取时间
+4. 提取所有明确的待办事项
+5. 自动判断分类和优先级
+6. 如果没有任务，返回空数组 []`
   }
 
   static parseResponse(text) {
@@ -89,28 +93,48 @@ export class AIChatService {
       const jsonMatch = text.match(/\[[\s\S]*\]/)
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0])
-        return parsed.map(task => ({
-          text: task.text || '未命名任务',
-          description: task.description || '',
-          category: ['work', 'study', 'life'].includes(task.category) ? task.category : 'work',
-          priority: ['high', 'medium', 'low'].includes(task.priority) ? task.priority : 'medium',
-          type: 'today',
-          status: 'pending'
-        }))
+        return parsed.map(task => {
+          const result = {
+            text: (task.text || '未命名任务').substring(0, 50),
+            description: task.description || '',
+            category: ['work', 'study', 'life'].includes(task.category) ? task.category : 'work',
+            priority: ['high', 'medium', 'low'].includes(task.priority) ? task.priority : 'medium',
+            type: 'today',
+            status: 'pending'
+          }
+          
+          // 如果有提醒时间，设置为自定义日期类型
+          if (task.needReminder && task.reminderTime) {
+            result.type = 'custom_date'
+            const reminderDate = new Date(task.reminderTime)
+            if (!isNaN(reminderDate.getTime())) {
+              result.customDate = reminderDate.toISOString().split('T')[0]
+              result.customTime = reminderDate.toTimeString().substring(0, 5)
+            }
+          }
+          
+          return result
+        })
       }
     } catch (e) {
       console.error('解析AI响应失败:', e)
     }
 
-    // 降级方案：简单分句
+    // 降级方案：提取前10个字作为标题，剩余作为描述
     const sentences = text.split(/[。！？\n]/).filter(s => s.trim().length > 0)
-    return sentences.slice(0, 3).map(sentence => ({
-      text: sentence.trim().substring(0, 50),
-      description: '',
-      category: 'work',
-      priority: 'medium',
-      type: 'today',
-      status: 'pending'
-    }))
+    return sentences.slice(0, 3).map(sentence => {
+      const trimmed = sentence.trim()
+      const title = trimmed.substring(0, 15)
+      const desc = trimmed.length > 15 ? trimmed.substring(15) : ''
+      
+      return {
+        text: title,
+        description: desc,
+        category: 'work',
+        priority: 'medium',
+        type: 'today',
+        status: 'pending'
+      }
+    })
   }
 }
