@@ -1755,7 +1755,7 @@
     </div>
 
     <!-- 星期选择模态框 - 每周重复 -->
-    <div v-if="showWeeklyModal" class="modal-overlay" @click.self="showWeeklyModal = false" style="z-index: 1100;">
+    <div v-if="showWeeklyModal" class="modal-overlay" @click.self="showWeeklyModal = false" style="z-index: 10001;">
       <div class="modal-content glass-card" style="background: white; max-width: 450px; width: 96%; padding: 1rem;">
         <div class="modal-header">
           <h3>{{ t('selectRepeatDays') }}</h3>
@@ -1776,7 +1776,7 @@
     </div>
 
     <!-- 自定义日期时间模态框 -->
-    <div v-if="showCustomDateModal" class="modal-overlay" @click.self="confirmCustomDate" style="z-index: 1100;">
+    <div v-if="showCustomDateModal" class="modal-overlay" @click.self="confirmCustomDate" style="z-index: 10001;">
       <div class="modal-content glass-card" style="background: white; max-width: 450px; width: 96%; padding: 1rem;" @click.stop>
         <div class="modal-header">
           <h3>选择日期时间</h3>

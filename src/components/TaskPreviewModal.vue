@@ -121,7 +121,7 @@ const handleCreateAll = () => {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  z-index: 10000;
+  z-index: 10002;
   animation: fadeIn 0.2s ease-out;
 }
 

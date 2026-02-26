@@ -221,7 +221,7 @@ const save = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10000;
+  z-index: 10002;
 }
 
 .modal-content {

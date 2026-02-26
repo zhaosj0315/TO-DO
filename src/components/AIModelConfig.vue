@@ -469,7 +469,7 @@ const addQuickConfig = (type) => {
   display: flex;
   align-items: flex-end;
   justify-content: stretch;
-  z-index: 10000;
+  z-index: 10002;
   backdrop-filter: blur(8px);
   animation: fadeIn 0.2s ease;
 }
