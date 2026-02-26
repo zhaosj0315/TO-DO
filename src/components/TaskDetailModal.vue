@@ -1648,8 +1648,12 @@ section h3 {
 
 .log-content {
   color: #333;
-  line-height: 1.6;
-  margin-bottom: 0.5rem;
+  line-height: 1.8;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding: 0.5rem 0;
 }
 
 .log-content-edit {
@@ -1662,17 +1666,17 @@ section h3 {
 
 .log-content-textarea {
   width: 100%;
-  padding: 0.4rem;
+  padding: 0.75rem;
   border: 1px solid #ddd;
   border-radius: 6px;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-family: inherit;
   resize: none;
-  min-height: 32px;
-  max-height: 150px;
+  min-height: 80px;
+  max-height: 300px;
   overflow-y: auto;
   transition: border-color 0.2s;
-  line-height: 1.4;
+  line-height: 1.6;
 }
 
 .log-content-textarea:focus {
