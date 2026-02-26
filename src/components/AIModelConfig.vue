@@ -90,7 +90,7 @@
               💡 没有 API Key？我用的是 <a href="https://cn.gptapi.asia/register?aff=Okck" target="_blank" class="api-link">这个服务</a>，你也可以试试
             </div>
             
-            <!-- 4. 选择模型（自动获取） -->
+            <!-- 4. 选择模型（自动获取后直接填充） -->
             <select 
               v-if="availableModels.length > 0"
               v-model="newModel.modelName"
@@ -110,18 +110,41 @@
               ⚠️ {{ fetchError }}
             </div>
             
-            <!-- 5. 模型名称（自动填充或手动输入） -->
-            <input 
-              v-model="newModel.name" 
-              :placeholder="availableModels.length > 0 ? '从上方选择模型' : '模型名称（如：gpt-4o-mini）'"
-              class="form-input"
-            />
-            
-            <div class="hint-text">
-              💡 {{ newModel.type === 'local' ? '本地Ollama: 在终端运行 ollama list 查看模型' : 'OpenAI: 点击🔄获取可用模型列表' }}
+            <!-- 5. 显示名称（自动生成，可编辑） -->
+            <div v-if="newModel.modelName" class="model-name-preview">
+              <label>模型显示名称</label>
+              <input 
+                v-model="newModel.name" 
+                placeholder="自动生成的名称"
+                class="form-input"
+              />
+              <div class="hint-text">
+                💡 默认格式：厂商 - 模型名，可自定义
+              </div>
             </div>
             
-            <button @click="addModel" class="btn-add">添加模型</button>
+            <!-- 测试连接 -->
+            <div v-if="newModel.modelName" class="test-section">
+              <button 
+                @click="testConnection" 
+                :disabled="testing"
+                class="btn-test"
+              >
+                {{ testing ? '测试中...' : '🔍 测试连接' }}
+              </button>
+              <span v-if="testResult" :class="['test-result', testResult.success ? 'success' : 'error']">
+                {{ testResult.message }}
+              </span>
+            </div>
+            
+            <button 
+              v-if="newModel.modelName"
+              @click="addModel" 
+              class="btn-add"
+              :disabled="testing"
+            >
+              ➕ 添加模型
+            </button>
           </div>
         </div>
 
@@ -172,10 +195,17 @@ const availableModels = ref([])
 const fetchingModels = ref(false)
 const fetchError = ref('')
 
-// 监听模型选择，自动填充名称
+// 监听模型选择，自动填充名称（格式：厂商 - 模型名）
 watch(() => newModel.value.modelName, (modelName) => {
-  if (modelName && !newModel.value.name) {
-    newModel.value.name = modelName
+  if (modelName) {
+    // 自动生成显示名称：厂商 + 模型名
+    const typeLabel = {
+      'local': 'Ollama',
+      'openai': 'OpenAI',
+      'custom': '自定义'
+    }[newModel.value.type] || '未知'
+    
+    newModel.value.name = `${typeLabel} - ${modelName}`
   }
 })
 
@@ -284,6 +314,84 @@ const fetchAvailableModels = async () => {
     fetchError.value = `${error.message}。请检查地址和API Key是否正确`
   } finally {
     fetchingModels.value = false
+  }
+}
+
+// 测试连接
+const testing = ref(false)
+const testResult = ref(null)
+
+const testConnection = async () => {
+  if (!newModel.value.url || !newModel.value.modelName) {
+    alert('请先填写地址并选择模型')
+    return
+  }
+  
+  testing.value = true
+  testResult.value = null
+  
+  try {
+    let apiUrl = newModel.value.url
+    const modelName = newModel.value.modelName
+    
+    if (newModel.value.type === 'local') {
+      // Ollama 测试
+      if (!apiUrl.includes('/api/generate')) {
+        apiUrl = apiUrl.replace(/\/$/, '') + '/api/generate'
+      }
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: modelName,
+          prompt: 'Hello',
+          stream: false
+        })
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        testResult.value = { success: true, message: '✅ 连接成功！模型响应正常' }
+      } else {
+        throw new Error(`HTTP ${response.status}`)
+      }
+    } else {
+      // OpenAI 兼容 API 测试
+      if (!apiUrl.includes('/chat/completions')) {
+        apiUrl = apiUrl.replace(/\/$/, '') + '/v1/chat/completions'
+      }
+      
+      const headers = {
+        'Content-Type': 'application/json'
+      }
+      if (newModel.value.apiKey) {
+        headers['Authorization'] = `Bearer ${newModel.value.apiKey}`
+      }
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          model: modelName,
+          messages: [{ role: 'user', content: 'Hello' }],
+          max_tokens: 10
+        })
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        testResult.value = { success: true, message: '✅ 连接成功！模型响应正常' }
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error?.message || `HTTP ${response.status}`)
+      }
+    }
+  } catch (error) {
+    console.error('测试连接失败:', error)
+    testResult.value = { success: false, message: `❌ 连接失败: ${error.message}` }
+  } finally {
+    testing.value = false
   }
 }
 
@@ -714,5 +822,71 @@ const addQuickConfig = (type) => {
 .api-link:hover {
   color: #764ba2;
   text-decoration: underline;
+}
+
+.model-name-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.model-name-preview label {
+  font-size: 0.9rem;
+  color: #666;
+  font-weight: 600;
+}
+
+.test-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.btn-test {
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-test:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-test:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.test-result {
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  animation: fadeIn 0.3s;
+}
+
+.test-result.success {
+  color: #10b981;
+  background: #d1fae5;
+}
+
+.test-result.error {
+  color: #ef4444;
+  background: #fee2e2;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>

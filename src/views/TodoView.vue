@@ -2567,6 +2567,31 @@
       </div>
     </div>
 
+    <!-- AI 周报弹窗 (参考数据报告布局) -->
+    <div v-if="showWeeklyReportModal" class="modal-overlay" @click.self="showWeeklyReportModal = false">
+      <div class="report-bottom-sheet">
+        <div class="modal-header">
+          <button class="back-btn" @click="showWeeklyReportModal = false">
+            <span>← 返回</span>
+          </button>
+          <h3>📝 {{ weeklyReportTitle }}</h3>
+          <div style="width: 80px;"></div>
+        </div>
+        
+        <div class="modal-body">
+          <!-- 周报内容 -->
+          <div class="weekly-report-content">
+            <pre class="report-text">{{ weeklyReportContent }}</pre>
+          </div>
+        </div>
+        
+        <div class="modal-footer" style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem;">
+          <button class="btn btn-secondary" @click="copyWeeklyReport">📋 复制文本</button>
+          <button class="btn btn-primary" @click="showWeeklyReportModal = false">关闭</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 撤销Toast -->
     <transition name="toast-slide">
       <div v-if="showUndoToast" class="undo-toast">
@@ -2615,6 +2640,7 @@ import { AITaskSplitter } from '../services/aiTaskSplitter'
 import { AIDailyPlanner } from '../services/aiDailyPlanner'
 import { AIReportGenerator } from '../services/aiReportGenerator'
 import { AIChatService } from '../services/aiChatService'
+import { AITextEnhancer } from '../services/aiTextEnhancer'
 import AIConfigModal from '../components/AIConfigModal.vue'
 import TaskPreviewModal from '../components/TaskPreviewModal.vue'
 import SubtaskPreviewModal from '../components/SubtaskPreviewModal.vue'
@@ -3175,9 +3201,24 @@ const handleCreateTasks = (tasks) => {
 const handleSplitTask = async (task) => {
   currentSplittingTask.value = task
   
+  // 询问用户想拆分成几个子任务
+  const countInput = prompt('请输入要拆分的子任务数量（2-10个）：', '5')
+  
+  if (countInput === null) {
+    // 用户取消
+    return
+  }
+  
+  const subtaskCount = parseInt(countInput)
+  
+  if (isNaN(subtaskCount) || subtaskCount < 2 || subtaskCount > 10) {
+    showNotification('请输入2-10之间的数字', 'error')
+    return
+  }
+  
   try {
-    showNotification('AI 正在拆解任务...', 'info')
-    const splitResult = await AITaskSplitter.splitTask(task.text, task.description)
+    showNotification(`AI 正在拆解为 ${subtaskCount} 个子任务...`, 'info')
+    const splitResult = await AITaskSplitter.splitTask(task.text, task.description, subtaskCount)
     
     if (splitResult.length > 0) {
       subtasks.value = splitResult
@@ -3257,23 +3298,10 @@ const generateWeeklyReport = async () => {
     
     const report = await AIReportGenerator.generateWeeklyReport(completedTasks, startDate, endDate)
     
-    // 显示周报（使用 alert 或创建专门的弹窗）
-    const reportWindow = window.open('', '_blank')
-    reportWindow.document.write(`
-      <html>
-        <head>
-          <title>工作周报</title>
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 2rem; max-width: 800px; margin: 0 auto; line-height: 1.6; }
-            h1, h2, h3 { color: #333; }
-            pre { background: #f5f5f5; padding: 1rem; border-radius: 8px; overflow-x: auto; }
-          </style>
-        </head>
-        <body>
-          <pre>${report}</pre>
-        </body>
-      </html>
-    `)
+    // 使用弹窗显示周报（参考数据报告布局）
+    weeklyReportContent.value = report
+    weeklyReportTitle.value = `工作周报 (${startDate} ~ ${endDate})`
+    showWeeklyReportModal.value = true
     
     showNotification('✨ 周报已生成', 'success')
   } catch (error) {
@@ -3527,6 +3555,9 @@ const customStartDate = ref('') // 自定义开始日期
 const customEndDate = ref('') // 自定义结束日期
 const reportContent = ref('') // 报告内容（文本格式）
 const reportData = ref({}) // 报告数据（结构化）
+const showWeeklyReportModal = ref(false) // 周报弹窗显示状态
+const weeklyReportContent = ref('') // 周报内容
+const weeklyReportTitle = ref('') // 周报标题
 const editingTask = ref(null)
 const editDescription = ref('')
 const editText = ref('')
@@ -4343,7 +4374,7 @@ const addTaskAndClose = async () => {
   }
 }
 
-// 方法：拍照识别文字
+// 方法：拍照或选择照片识别文字
 const scanTextFromCamera = async () => {
   try {
     const platform = Capacitor.getPlatform()
@@ -4390,12 +4421,17 @@ const scanTextFromCamera = async () => {
       return
     }
     
-    // Android 端：使用相机拍照
+    // Android 端：询问用户选择拍照还是相册
+    const choice = confirm('选择图片来源：\n\n确定 = 📷 拍照\n取消 = 🖼️ 从相册选择')
+    
+    const source = choice ? CameraSource.Camera : CameraSource.Photos
+    
+    // 使用相机拍照或从相册选择
     const photo = await Camera.getPhoto({
       quality: 90,
       allowEditing: false,
       resultType: CameraResultType.Uri,
-      source: CameraSource.Camera
+      source: source  // Camera 或 Photos
     })
     
     console.log('照片路径:', photo.path)
@@ -4410,7 +4446,7 @@ const scanTextFromCamera = async () => {
     
     console.log('OCR结果:', JSON.stringify(result))
     
-    // 3. 提取文字并智能分配
+    // 3. 提取文字并使用AI增强
     if (result && result.textDetections && result.textDetections.length > 0) {
       const lines = result.textDetections.map(d => d.text.trim()).filter(t => t)
       
@@ -4422,27 +4458,20 @@ const scanTextFromCamera = async () => {
       // 合并所有识别的文字
       const fullText = lines.join('\n')
       
-      // 使用 AI 提取任务
+      // 使用 AI 增强文本
       try {
-        showNotification('AI 正在分析识别的文字...', 'info')
-        const tasks = await AITaskExtractor.extractTasks(fullText)
+        showNotification('AI 正在优化文本...', 'info')
+        const enhanced = await AITextEnhancer.enhanceText(fullText)
         
-        if (tasks.length > 0) {
-          // 显示任务预览弹窗
-          extractedTasks.value = tasks
-          showTaskPreview.value = true
-          showNotification(`✨ AI 识别到 ${tasks.length} 个任务`, 'success')
-        } else {
-          // 如果没有识别到任务，使用传统方式
-          newTaskText.value = lines[0]
-          newTaskDescription.value = lines.join('\n')
-          showNotification(`识别成功！标题+${lines.length}行完整内容`, 'success')
-        }
+        // 填充到输入框
+        newTaskText.value = enhanced.title
+        newTaskDescription.value = enhanced.description
+        showNotification(`✨ AI 增强完成！`, 'success')
       } catch (aiError) {
-        console.error('AI 提取失败，使用传统方式:', aiError)
-        // AI 失败时使用传统方式
+        console.error('AI 增强失败，使用原始文本:', aiError)
+        // AI 失败时使用原始文本
         newTaskText.value = lines[0]
-        newTaskDescription.value = lines.join('\n')
+        newTaskDescription.value = fullText
         showNotification(`识别成功！标题+${lines.length}行完整内容`, 'success')
       }
     } else {
@@ -6110,6 +6139,16 @@ const copyReportText = async () => {
     alert(currentLanguage.value === 'zh' ? '报告已复制到剪贴板' : 'Report copied to clipboard')
   } catch (err) {
     alert(currentLanguage.value === 'zh' ? '复制失败，请手动复制' : 'Copy failed, please copy manually')
+  }
+}
+
+// 方法：复制周报
+const copyWeeklyReport = async () => {
+  try {
+    await navigator.clipboard.writeText(weeklyReportContent.value)
+    showNotification('周报已复制到剪贴板', 'success')
+  } catch (err) {
+    showNotification('复制失败，请手动复制', 'error')
   }
 }
 
@@ -15885,4 +15924,28 @@ watch(() => reportData.value, (newData) => {
   opacity: 0.7;
   margin-right: 8px;
 }
+
+/* 周报弹窗样式 */
+.weekly-report-content {
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 12px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.report-text {
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #333;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin: 0;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
 </style>
