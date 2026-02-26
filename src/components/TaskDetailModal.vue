@@ -183,6 +183,13 @@
         <section class="logs-section">
           <div class="logs-header">
             <h3>💬 执行日志 ({{ task.logs?.length || 0 }}条)</h3>
+            <button 
+              v-if="task.logs && task.logs.length > 0"
+              @click="toggleTimelineView" 
+              class="view-toggle-btn"
+            >
+              {{ showTimeline ? '📋 列表视图' : '📈 时间轴视图' }}
+            </button>
           </div>
 
           <div v-if="!task.logs || task.logs.length === 0" class="empty-logs">
@@ -190,7 +197,15 @@
             <p class="hint">点击下方"添加日志"开始记录任务执行过程</p>
           </div>
 
-          <div v-else class="logs-list">
+          <div v-else>
+            <!-- 日志统计 -->
+            <LogStats :logs="task.logs" />
+
+            <!-- 时间轴视图 -->
+            <LogTimeline v-if="showTimeline" :logs="task.logs" />
+
+            <!-- 列表视图 -->
+            <div v-else class="logs-list">
             <div
               v-for="log in sortedLogs"
               :key="log.id"
@@ -246,6 +261,7 @@
               </div>
             </div>
           </div>
+          </div>
         </section>
       </div>
 
@@ -296,6 +312,8 @@
 <script setup>
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useOfflineTaskStore } from '../stores/offlineTaskStore'
+import LogTimeline from './LogTimeline.vue'
+import LogStats from './LogStats.vue'
 import AddLogModal from './AddLogModal.vue'
 import AITextMenu from './AITextMenu.vue'
 import { useTextSelection } from '../composables/useTextSelection'
@@ -315,6 +333,7 @@ const emit = defineEmits(['close', 'edit', 'refresh', 'split'])
 
 const taskStore = useOfflineTaskStore()
 const showAddLogModal = ref(false)
+const showTimeline = ref(false)
 
 // 本地任务副本（用于编辑）
 const localTask = ref({ ...props.task })
@@ -583,6 +602,11 @@ const saveField = (field) => {
   }
   taskStore.updateTask(props.task.id, updates)
   emit('refresh')
+}
+
+// 切换时间轴视图
+const toggleTimelineView = () => {
+  showTimeline.value = !showTimeline.value
 }
 
 // 删除日志
@@ -1696,5 +1720,22 @@ section h3 {
 
 .detail-footer button:active {
   transform: translateY(0);
+}
+
+.view-toggle-btn {
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.view-toggle-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 </style>
