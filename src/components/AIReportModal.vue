@@ -121,7 +121,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { AIReportGenerator } from '@/services/AIReportGenerator'
+import { AIReportGenerator } from '@/services/aiReportGenerator'
 
 const props = defineProps({
   visible: Boolean,
