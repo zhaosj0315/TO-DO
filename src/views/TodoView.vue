@@ -3389,6 +3389,13 @@ const handleChatCreateTasks = (tasks) => {
       newTask.customTime = task.customTime
     }
     
+    // 如果AI识别到需要提醒，启用提醒功能
+    if (task.needReminder && task.reminderTime) {
+      newTask.enableReminder = true
+      newTask.reminderTime = task.reminderTime
+      console.log('启用提醒:', task.reminderTime)
+    }
+    
     taskStore.addTask(newTask)
   })
   

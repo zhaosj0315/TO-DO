@@ -103,13 +103,15 @@ export class AIChatService {
             status: 'pending'
           }
           
-          // 如果有提醒时间，设置为自定义日期类型
+          // 如果有提醒时间，设置为自定义日期类型并启用提醒
           if (task.needReminder && task.reminderTime) {
-            result.type = 'custom_date'
+            result.needReminder = true
             const reminderDate = new Date(task.reminderTime)
             if (!isNaN(reminderDate.getTime())) {
+              result.type = 'custom_date'
               result.customDate = reminderDate.toISOString().split('T')[0]
               result.customTime = reminderDate.toTimeString().substring(0, 5)
+              result.reminderTime = reminderDate.toISOString()
             }
           }
           
