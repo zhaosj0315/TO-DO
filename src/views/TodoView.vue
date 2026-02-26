@@ -12,6 +12,10 @@
           <button class="btn-icon-circle btn-ai" @click="showAIChat = true" :title="t('aiChat')">
             🤖
           </button>
+          <!-- 每日总结按钮 -->
+          <button class="btn-icon-circle btn-summary" @click="showDailySummary = true" title="今日总结">
+            📊
+          </button>
           <!-- AI 对话创建按钮 -->
           <button class="btn-icon-circle btn-ai-chat" @click="showAIChatCreate = true" title="AI 对话创建">
             💬
@@ -2051,6 +2055,13 @@
       @finish="handleTutorialFinish"
     />
 
+    <!-- 每日总结 -->
+    <DailySummaryModal
+      :visible="showDailySummary"
+      @close="showDailySummary = false"
+      @generate-report="handleGenerateWeeklyReport"
+    />
+
     <!-- AI问答 -->
     <AIChat
       :visible="showAIChat"
@@ -2933,6 +2944,7 @@ import SubtaskPreviewModal from '../components/SubtaskPreviewModal.vue'
 import DailyPlanModal from '../components/DailyPlanModal.vue'
 import AIChatCreate from '../components/AIChatCreate.vue'
 import AISuggestionCard from '../components/AISuggestionCard.vue'
+import DailySummaryModal from '../components/DailySummaryModal.vue'
 import { Filesystem, Directory } from '@capacitor/filesystem'
 import { LocalNotifications } from '@capacitor/local-notifications'
 import { Capacitor } from '@capacitor/core'
@@ -3385,6 +3397,7 @@ const showAIResult = ref(false)
 const aiResultText = ref('')
 const aiResultAction = ref('')
 const showAISuggestion = ref(false)
+const showDailySummary = ref(false)
 
 // 文本选择菜单（使用新的 composable）
 const todoLayoutRef = ref(null)
@@ -3429,6 +3442,12 @@ const handleViewSuggestion = (suggestion) => {
   } else if (suggestion.type === 'pending') {
     setFilter('pending')
   }
+}
+
+// 处理生成周报
+const handleGenerateWeeklyReport = () => {
+  // 这里将在 Phase 3 实现
+  alert('周报生成功能即将推出！')
 }
 
 // 每日规划
