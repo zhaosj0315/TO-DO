@@ -1,143 +1,267 @@
 # 文档索引 | Documentation Index
 
-**版本**: v1.7.5.1  
+**版本**: v1.7.5.2  
 **更新日期**: 2026-02-26  
-**维护**: 开发团队
+**文档总数**: 15 份核心文档
 
 ---
 
-## 📚 核心文档（必读）
+## 📚 文档分类
 
-### 项目概览
-- **[README.md](README.md)** - 项目完整说明（功能、安装、使用）
-- **[CHANGELOG.md](CHANGELOG.md)** - 版本变更记录
-- **[LICENSE](LICENSE)** - MIT 开源协议
+### 🌟 核心文档（必读）
 
-### 用户文档
-- **[USER_MANUAL.md](USER_MANUAL.md)** - 用户使用手册
-- **[QUICK_START.md](QUICK_START.md)** - 快速开始指南
-- **[FEATURES.md](FEATURES.md)** - 功能详细说明
+#### README.md
+- **状态**: ✅ 最新
+- **版本**: v1.7.5.2
+- **描述**: 项目概览、功能列表、安装指南、版本历史
+- **适用人群**: 所有用户
 
-### 开发文档
-- **[DEVELOPER.md](DEVELOPER.md)** - 开发者指南
-- **[TESTING_GUIDE.md](TESTING_GUIDE.md)** - 测试指南
-- **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** - 实现总结
+#### CHANGELOG.md
+- **状态**: ✅ 最新
+- **版本**: v1.7.5.2
+- **描述**: 完整的版本变更记录
+- **适用人群**: 所有用户
 
----
-
-## 🔧 构建文档
-
-### Android
-- **[APK_BUILD_GUIDE.md](APK_BUILD_GUIDE.md)** - APK 完整构建指南
-- **[APK_BUILD_QUICK.md](APK_BUILD_QUICK.md)** - APK 快速构建指南
-- **[build-apk.sh](build-apk.sh)** - 一键打包脚本
-
-### Windows
-- **[WINDOWS_BUILD_GUIDE.md](WINDOWS_BUILD_GUIDE.md)** - Windows 构建指南
-- **[build-windows.sh](build-windows.sh)** - Windows 打包脚本（macOS/Linux）
-- **[build-windows.bat](build-windows.bat)** - Windows 打包脚本（Windows）
-
-### 多平台
-- **[BUILD_SCRIPTS_GUIDE.md](BUILD_SCRIPTS_GUIDE.md)** - 构建脚本使用指南
-- **[build-all.sh](build-all.sh)** - 全平台一键打包
+#### LICENSE
+- **状态**: ✅ 最新
+- **版本**: MIT License
+- **描述**: 开源协议
+- **适用人群**: 开发者、贡献者
 
 ---
 
-## ✨ 功能文档
+### 📖 用户文档
 
-### 核心功能
-- **[TASK_LOG_PHASE1.md](TASK_LOG_PHASE1.md)** - 任务执行日志系统（v1.7.0）
-- **[TUTORIAL_MODE_FEATURE.md](TUTORIAL_MODE_FEATURE.md)** - 演示模式系统（v1.7.1）
+#### QUICK_START.md
+- **状态**: ✅ 最新
+- **版本**: v1.7.0+
+- **描述**: 快速开始指南
+- **适用人群**: 新用户
 
-### AI 功能
-- **[AI_CHAT_GUIDE.md](AI_CHAT_GUIDE.md)** - AI 智能问答使用指南
-- **[OLLAMA_PROXY_GUIDE.md](OLLAMA_PROXY_GUIDE.md)** - Ollama 代理配置指南
-- **[OLLAMA_PROXY_QUICKREF.md](OLLAMA_PROXY_QUICKREF.md)** - Ollama 快速参考
-- **[start-ngrok.sh](start-ngrok.sh)** - Ngrok 启动脚本
-- **[start-ollama-lan.sh](start-ollama-lan.sh)** - Ollama 局域网启动
-- **[start-ollama-optimized.sh](start-ollama-optimized.sh)** - Ollama 优化启动
-- **[ollama-proxy.py](ollama-proxy.py)** - Ollama 代理服务器
+#### USER_MANUAL.md
+- **状态**: ✅ 最新
+- **版本**: v1.7.0+
+- **描述**: 完整的用户手册
+- **适用人群**: 所有用户
 
----
-
-## 📋 规范文档
-
-### 开发规范
-- **[DOC_MANAGEMENT_POLICY.md](DOC_MANAGEMENT_POLICY.md)** - 文档开发管理规范
-- **[GIT_PUSH_POLICY.md](GIT_PUSH_POLICY.md)** - Git 推送规范
-- **[DOC_STANDARDS.md](DOC_STANDARDS.md)** - 文档标准
-
-### 发布文档
-- **[RELEASE_NOTES_v1.7.5.md](RELEASE_NOTES_v1.7.5.md)** - v1.7.5 发布说明
+#### AI_CHAT_GUIDE.md
+- **状态**: ✅ 最新
+- **版本**: v1.7.5.2
+- **描述**: AI 问答功能使用指南
+- **适用人群**: 使用 AI 功能的用户
 
 ---
 
-## 📦 归档文档
+### 👨‍💻 开发文档
 
-历史版本文档已归档至 `docs/archive/` 目录：
+#### DEVELOPER.md
+- **状态**: ✅ 最新
+- **版本**: v1.7.0+
+- **描述**: 开发者指南、技术架构、API 参考
+- **适用人群**: 开发者、贡献者
 
-### 版本归档
-- **[docs/archive/v1.7.5/](docs/archive/v1.7.5/)** - v1.7.5 审计和推送记录
-- **[docs/archive/v1.7.0/](docs/archive/v1.7.0/)** - v1.7.0-v1.7.2 文档
-- **[docs/archive/v1.6.x/](docs/archive/v1.6.x/)** - v1.6.x 发布说明
-- **[docs/archive/v1.5.x/](docs/archive/v1.5.x/)** - v1.5.x 文档
+#### IMPLEMENTATION_SUMMARY.md
+- **状态**: ✅ 最新
+- **版本**: v1.7.0
+- **描述**: 任务执行日志系统实现总结
+- **适用人群**: 开发者
 
-### 功能归档
-- **[docs/archive/ai-features/](docs/archive/ai-features/)** - AI 功能开发文档
-- **[docs/archive/reminders/](docs/archive/reminders/)** - 提醒功能文档
-- **[docs/archive/platform-builds/](docs/archive/platform-builds/)** - 平台构建文档
-- **[docs/archive/import-feature/](docs/archive/import-feature/)** - 导入功能文档
-- **[docs/archive/misc/](docs/archive/misc/)** - 杂项文档
-
-### 草稿文档
-- **[docs/drafts/](docs/drafts/)** - 未完成功能文档（v1.8.0-alpha）
+#### TESTING_GUIDE.md
+- **状态**: ✅ 最新
+- **版本**: v1.7.0
+- **描述**: 测试指南、测试用例
+- **适用人群**: 测试人员、开发者
 
 ---
 
-## 🔍 文档查找指南
+### 🔨 构建文档
 
-### 我想了解...
+#### APK_BUILD_GUIDE.md
+- **状态**: ✅ 最新
+- **版本**: v1.6.0+
+- **描述**: Android APK 完整构建指南
+- **适用人群**: Android 开发者
 
-**如何使用应用？**
-→ [USER_MANUAL.md](USER_MANUAL.md) 或 [QUICK_START.md](QUICK_START.md)
+#### APK_BUILD_QUICK.md
+- **状态**: ✅ 最新
+- **版本**: v1.6.0+
+- **描述**: Android APK 快速构建指南
+- **适用人群**: Android 开发者
 
-**如何打包 APK？**
-→ [APK_BUILD_QUICK.md](APK_BUILD_QUICK.md)
+#### WINDOWS_BUILD_GUIDE.md
+- **状态**: ✅ 最新
+- **版本**: v1.6.11+
+- **描述**: Windows 安装包构建指南
+- **适用人群**: Windows 开发者
 
-**如何配置 AI 功能？**
-→ [AI_CHAT_GUIDE.md](AI_CHAT_GUIDE.md)
+#### BUILD_SCRIPTS_GUIDE.md
+- **状态**: ✅ 最新
+- **版本**: v1.7.5+
+- **描述**: 构建脚本使用指南
+- **适用人群**: 开发者
 
-**如何参与开发？**
-→ [DEVELOPER.md](DEVELOPER.md)
+---
 
-**版本更新了什么？**
-→ [CHANGELOG.md](CHANGELOG.md)
+### 📋 管理文档
 
-**如何编写文档？**
-→ [DOC_MANAGEMENT_POLICY.md](DOC_MANAGEMENT_POLICY.md)
+#### DOC_MANAGEMENT_POLICY.md
+- **状态**: ✅ 最新
+- **版本**: v1.0
+- **描述**: 文档开发管理规范
+- **适用人群**: 文档编写人员、开发者
+
+#### GIT_PUSH_POLICY.md
+- **状态**: ✅ 最新
+- **版本**: v1.0
+- **描述**: Git 推送规范（非必要不推送原则）
+- **适用人群**: 开发者、贡献者
+
+---
+
+### 📦 发布文档
+
+#### RELEASE_NOTES_v1.7.5.2.md
+- **状态**: ✅ 最新
+- **版本**: v1.7.5.2
+- **描述**: v1.7.5.2 版本发布说明
+- **适用人群**: 所有用户
+
+---
+
+## 📂 归档文档
+
+### docs/archive/audits/
+- **内容**: 历史审计报告（v1.6.x 及更早）
+- **数量**: 50+ 份
+- **状态**: 📦 已归档
+
+### docs/archive/releases/
+- **内容**: 历史发布记录（v1.6.x 及更早）
+- **数量**: 15+ 份
+- **状态**: 📦 已归档
+
+### docs/archive/v1.7.5/
+- **内容**: v1.7.5 相关文档
+- **数量**: 10+ 份
+- **状态**: 📦 已归档
+
+### docs/archive/v1.7.0/
+- **内容**: v1.7.0 相关文档
+- **数量**: 8+ 份
+- **状态**: 📦 已归档
+
+### docs/archive/v1.6.x/
+- **内容**: v1.6 系列文档
+- **数量**: 20+ 份
+- **状态**: 📦 已归档
+
+### docs/archive/v1.5.x/
+- **内容**: v1.5 系列文档
+- **数量**: 5+ 份
+- **状态**: 📦 已归档
+
+---
+
+## 🔍 快速导航
+
+### 我想...
+
+#### 快速开始使用
+1. 阅读 [README.md](README.md) 了解项目概况
+2. 阅读 [QUICK_START.md](QUICK_START.md) 快速上手
+3. 查看 [RELEASE_NOTES_v1.7.5.2.md](RELEASE_NOTES_v1.7.5.2.md) 了解最新功能
+
+#### 学习所有功能
+1. 阅读 [USER_MANUAL.md](USER_MANUAL.md) 完整用户手册
+2. 阅读 [AI_CHAT_GUIDE.md](AI_CHAT_GUIDE.md) 学习 AI 功能
+
+#### 参与开发
+1. 阅读 [DEVELOPER.md](DEVELOPER.md) 开发者指南
+2. 阅读 [DOC_MANAGEMENT_POLICY.md](DOC_MANAGEMENT_POLICY.md) 文档规范
+3. 阅读 [GIT_PUSH_POLICY.md](GIT_PUSH_POLICY.md) 推送规范
+
+#### 构建应用
+1. Android: [APK_BUILD_GUIDE.md](APK_BUILD_GUIDE.md) 或 [APK_BUILD_QUICK.md](APK_BUILD_QUICK.md)
+2. Windows: [WINDOWS_BUILD_GUIDE.md](WINDOWS_BUILD_GUIDE.md)
+3. 脚本: [BUILD_SCRIPTS_GUIDE.md](BUILD_SCRIPTS_GUIDE.md)
+
+#### 查看历史版本
+1. 阅读 [CHANGELOG.md](CHANGELOG.md) 查看所有版本变更
+2. 访问 `docs/archive/` 查看历史文档
+
+---
+
+## 📊 文档统计
+
+### 根目录文档
+- **核心文档**: 3 份
+- **用户文档**: 3 份
+- **开发文档**: 3 份
+- **构建文档**: 4 份
+- **管理文档**: 2 份
+- **发布文档**: 1 份
+- **总计**: 16 份
+
+### 归档文档
+- **审计报告**: 50+ 份
+- **发布记录**: 15+ 份
+- **版本文档**: 40+ 份
+- **总计**: 100+ 份
+
+---
+
+## 🔄 文档更新频率
+
+### 每次代码变更
+- README.md（如有新功能）
+- CHANGELOG.md（必须）
+
+### 每次版本发布
+- README.md（版本历史）
+- CHANGELOG.md（版本记录）
+- RELEASE_NOTES_v*.md（新建）
+
+### 定期更新
+- USER_MANUAL.md（功能变更时）
+- DEVELOPER.md（架构变更时）
+- DOCS_INDEX.md（文档结构变更时）
 
 ---
 
 ## 📝 文档维护
 
-### 更新原则
+### 维护原则
 1. **代码为准**: 文档必须无条件适配代码
 2. **及时同步**: 代码变更后立即更新文档
-3. **版本一致**: 文档版本号与 package.json 保持一致
+3. **准确完整**: 文档内容准确反映实际功能
+4. **易于维护**: 文档结构清晰，便于查找
 
-### 归档规则
-- 每个主版本发布后，将旧版本文档移至 `docs/archive/`
-- 保留最新版本的核心文档在根目录
-- 草稿文档放在 `docs/drafts/`
+### 维护流程
+1. 代码变更 → 更新相关文档
+2. 自我审查 → 提交 PR
+3. 代码审查 → 合并
+4. 版本发布 → 全面文档审查 → 归档旧文档
 
-### 文档分类
-- **核心文档**: 项目必备文档，永久保留在根目录
-- **功能文档**: 特定功能说明，可归档
-- **版本文档**: 发布说明和审计报告，必须归档
-- **草稿文档**: 未完成功能，放在 drafts 目录
+### 审查周期
+- **日常审查**: 每次代码变更后
+- **版本审查**: 每次版本发布前
+- **定期审查**: 每月一次
 
 ---
 
+## 📞 反馈与贡献
+
+### 文档问题反馈
+- **GitHub Issues**: 创建 Issue 并标记 `documentation` 标签
+- **Pull Request**: 直接提交文档修改 PR
+
+### 文档贡献指南
+1. 遵循 [DOC_MANAGEMENT_POLICY.md](DOC_MANAGEMENT_POLICY.md)
+2. 使用标准文档模板
+3. 提交 PR 并等待审查
+
+---
+
+**文档维护**: 开发团队  
 **最后更新**: 2026-02-26  
-**维护团队**: 开发团队  
-**反馈渠道**: GitHub Issues
+**下次审查**: 2026-03-26
