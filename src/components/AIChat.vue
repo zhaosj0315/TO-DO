@@ -247,8 +247,6 @@ const loadChatHistory = () => {
 const saveChatHistory = () => {
   saveCurrentChat()
 }
-  }
-}
 
 // 清空聊天记录
 const clearChatHistory = () => {
