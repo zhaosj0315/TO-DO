@@ -146,7 +146,23 @@ const generateReport = () => {
   const generator = new AIReportGenerator(props.tasks)
   
   if (reportType.value === 'weekly') {
-    report.value = generator.generateWeeklyReport()
+    // 计算本周时间范围
+    const now = new Date()
+    const weekStart = new Date(now)
+    weekStart.setDate(now.getDate() - now.getDay())
+    weekStart.setHours(0, 0, 0, 0)
+    const weekEnd = new Date(weekStart)
+    weekEnd.setDate(weekStart.getDate() + 6)
+    weekEnd.setHours(23, 59, 59, 999)
+    
+    // 过滤本周完成的任务
+    const weekCompletedTasks = props.tasks.filter(t => {
+      if (t.status !== 'completed' || !t.completed_at) return false
+      const completedDate = new Date(t.completed_at)
+      return completedDate >= weekStart && completedDate <= weekEnd
+    })
+    
+    report.value = generator.generateWeeklyReport(weekStart, weekEnd, weekCompletedTasks)
   } else {
     report.value = generator.generateMonthlyReport()
   }

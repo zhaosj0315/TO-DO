@@ -168,6 +168,16 @@ export class AIReportGenerator {
     }
     
     return {
+      period: {
+        start: startDate.toLocaleDateString('zh-CN'),
+        end: endDate.toLocaleDateString('zh-CN')
+      },
+      completionStats: {
+        total: this.tasks.length,
+        completed: weekCompletedTasks.length,
+        pending: this.tasks.filter(t => t.status === 'pending').length,
+        overdue: this.tasks.filter(t => t.status === 'overdue').length
+      },
       overview: {
         totalTasks: weekCompletedTasks.length,
         completionRate: '100%',
@@ -183,7 +193,16 @@ export class AIReportGenerator {
       monthlyProgress,
       weeklyProgress,
       nextWeekPlan,
+      nextPlan: {
+        total: this.tasks.filter(t => t.status === 'pending').length,
+        highPriority: this.tasks.filter(t => t.status === 'pending' && t.priority === 'high').length,
+        recommendations: nextWeekPlan
+      },
       risks,
+      issues: {
+        overdue: this.tasks.filter(t => t.status === 'overdue'),
+        suggestions: risks
+      },
       summary
     }
   }

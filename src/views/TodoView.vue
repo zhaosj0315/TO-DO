@@ -1047,13 +1047,43 @@
           </div>
 
           <!-- AI 周报生成入口 -->
-          <div class="pomodoro-entry" @click="generateWeeklyReport">
-            <div class="entry-icon">📝</div>
-            <div class="entry-content">
-              <div class="entry-title">AI 周报生成</div>
-              <div class="entry-summary">
-                自动生成本周工作总结
+          <div class="pomodoro-entry-group">
+            <div class="entry-group-title">📊 智能报告生成</div>
+            
+            <!-- 快速生成 -->
+            <div class="pomodoro-entry" @click="generateWeeklyReport">
+              <div class="entry-icon">⚡</div>
+              <div class="entry-content">
+                <div class="entry-title">快速生成周报</div>
+                <div class="entry-summary">
+                  一键生成本周工作总结
+                </div>
               </div>
+              <div class="entry-arrow">›</div>
+            </div>
+
+            <!-- 自定义报告 -->
+            <div class="pomodoro-entry" @click="showCustomReportModal = true">
+              <div class="entry-icon">🎯</div>
+              <div class="entry-content">
+                <div class="entry-title">自定义报告</div>
+                <div class="entry-summary">
+                  选择时间范围和报告类型
+                </div>
+              </div>
+              <div class="entry-arrow">›</div>
+            </div>
+
+            <!-- 模板管理 -->
+            <div class="pomodoro-entry" @click="showReportTemplates = true">
+              <div class="entry-icon">📋</div>
+              <div class="entry-content">
+                <div class="entry-title">报告模板</div>
+                <div class="entry-summary">
+                  管理和自定义报告模板
+                </div>
+              </div>
+              <div class="entry-arrow">›</div>
             </div>
           </div>
 
@@ -2115,18 +2145,22 @@
     <!-- 全屏任务描述编辑 (Apple Notes 风格) -->
     <div v-if="showFullscreenDesc" class="fullscreen-desc-overlay">
       <div class="fullscreen-desc-header">
-        <div class="header-left">
-          <span v-if="newTaskDescription.length > 0" class="meta-text">{{ newTaskDescription.length }} 字</span>
-          <span v-if="descEditDuration > 0" class="meta-text">{{ descEditTime }}</span>
-        </div>
-        <div class="header-info">
+        <!-- 第一行：任务名称 -->
+        <div class="header-row-1">
           <div class="task-name">{{ newTaskText || '新任务' }}</div>
         </div>
-        <div class="header-right">
-          <button class="nav-btn-icon" @click="continueDescription" :disabled="aiGenerating" title="AI 续写">
-            {{ aiGenerating ? '⏳' : '🤖' }}
-          </button>
-          <button class="nav-btn nav-btn-primary" @click="closeFullscreenDesc">完成</button>
+        <!-- 第二行：元数据和按钮 -->
+        <div class="header-row-2">
+          <div class="header-left">
+            <span v-if="newTaskDescription.length > 0" class="meta-text">{{ newTaskDescription.length }} 字</span>
+            <span v-if="descEditDuration > 0" class="meta-text">{{ descEditTime }}</span>
+          </div>
+          <div class="header-right">
+            <button class="nav-btn-icon" @click="continueDescription" :disabled="aiGenerating" title="AI 续写">
+              {{ aiGenerating ? '⏳' : '🤖' }}
+            </button>
+            <button class="nav-btn nav-btn-primary" @click="closeFullscreenDesc">完成</button>
+          </div>
         </div>
       </div>
       <textarea
@@ -2838,20 +2872,271 @@
             <p style="font-size: 0.9rem; color: #999;">生成周报后会自动保存</p>
           </div>
 
-          <div v-else class="report-history-list">
-            <div 
-              v-for="report in reportHistoryList" 
-              :key="report.id"
-              class="history-item"
-              @click="viewHistoryReport(report)"
-            >
-              <div class="history-header">
-                <div class="history-title">{{ report.title }}</div>
-                <button @click.stop="deleteHistoryReport(report.id)" class="btn-delete-small">🗑️</button>
+          <div v-else>
+            <!-- 搜索和操作栏 -->
+            <div class="report-toolbar">
+              <input 
+                v-model="reportSearchKeyword" 
+                type="text" 
+                placeholder="🔍 搜索周报..." 
+                class="report-search-input"
+              />
+              <button @click="batchDeleteReports" class="btn-batch-delete" title="清空所有">
+                🗑️ 清空
+              </button>
+            </div>
+
+            <!-- 分组显示 -->
+            <div class="report-history-list">
+              <!-- 今天 -->
+              <div v-if="filteredGroupedReports.today.length > 0" class="report-group">
+                <div class="group-title">📅 今天</div>
+                <div 
+                  v-for="report in filteredGroupedReports.today" 
+                  :key="report.id"
+                  class="history-item"
+                  @click="viewHistoryReport(report)"
+                >
+                  <div class="history-main">
+                    <div class="history-icon">📊</div>
+                    <div class="history-info">
+                      <div class="history-title-row">
+                        <span class="history-type">{{ report.reportType === 'weekly' ? '周报' : report.reportType === 'monthly' ? '月报' : '报告' }}</span>
+                        <span class="history-period">{{ report.period }}</span>
+                      </div>
+                      <div class="history-meta">
+                        <span class="meta-item">🕐 {{ formatDate(report.createdAt) }}</span>
+                        <span class="meta-item">📋 {{ report.taskCount }} 个任务</span>
+                        <span class="meta-item">✅ {{ report.completedCount || 0 }} 已完成</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button @click.stop="deleteHistoryReport(report.id)" class="btn-delete-small" title="删除">🗑️</button>
+                </div>
               </div>
-              <div class="history-meta">
-                <span>📅 {{ formatDate(report.createdAt) }}</span>
-                <span>📋 {{ report.taskCount }} 个任务</span>
+
+              <!-- 本周 -->
+              <div v-if="filteredGroupedReports.thisWeek.length > 0" class="report-group">
+                <div class="group-title">📆 本周</div>
+                <div 
+                  v-for="report in filteredGroupedReports.thisWeek" 
+                  :key="report.id"
+                  class="history-item"
+                  @click="viewHistoryReport(report)"
+                >
+                  <div class="history-main">
+                    <div class="history-icon">📊</div>
+                    <div class="history-info">
+                      <div class="history-title-row">
+                        <span class="history-type">{{ report.reportType === 'weekly' ? '周报' : report.reportType === 'monthly' ? '月报' : '报告' }}</span>
+                        <span class="history-period">{{ report.period }}</span>
+                      </div>
+                      <div class="history-meta">
+                        <span class="meta-item">🕐 {{ formatDate(report.createdAt) }}</span>
+                        <span class="meta-item">📋 {{ report.taskCount }} 个任务</span>
+                        <span class="meta-item">✅ {{ report.completedCount || 0 }} 已完成</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button @click.stop="deleteHistoryReport(report.id)" class="btn-delete-small" title="删除">🗑️</button>
+                </div>
+              </div>
+
+              <!-- 本月 -->
+              <div v-if="filteredGroupedReports.thisMonth.length > 0" class="report-group">
+                <div class="group-title">📊 本月</div>
+                <div 
+                  v-for="report in filteredGroupedReports.thisMonth" 
+                  :key="report.id"
+                  class="history-item"
+                  @click="viewHistoryReport(report)"
+                >
+                  <div class="history-main">
+                    <div class="history-icon">📊</div>
+                    <div class="history-info">
+                      <div class="history-title-row">
+                        <span class="history-type">{{ report.reportType === 'weekly' ? '周报' : report.reportType === 'monthly' ? '月报' : '报告' }}</span>
+                        <span class="history-period">{{ report.period }}</span>
+                      </div>
+                      <div class="history-meta">
+                        <span class="meta-item">🕐 {{ formatDate(report.createdAt) }}</span>
+                        <span class="meta-item">📋 {{ report.taskCount }} 个任务</span>
+                        <span class="meta-item">✅ {{ report.completedCount || 0 }} 已完成</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button @click.stop="deleteHistoryReport(report.id)" class="btn-delete-small" title="删除">🗑️</button>
+                </div>
+              </div>
+
+              <!-- 更早 -->
+              <div v-if="filteredGroupedReports.earlier.length > 0" class="report-group">
+                <div class="group-title">📂 更早</div>
+                <div 
+                  v-for="report in filteredGroupedReports.earlier" 
+                  :key="report.id"
+                  class="history-item"
+                  @click="viewHistoryReport(report)"
+                >
+                  <div class="history-main">
+                    <div class="history-icon">📊</div>
+                    <div class="history-info">
+                      <div class="history-title-row">
+                        <span class="history-type">{{ report.reportType === 'weekly' ? '周报' : report.reportType === 'monthly' ? '月报' : '报告' }}</span>
+                        <span class="history-period">{{ report.period }}</span>
+                      </div>
+                      <div class="history-meta">
+                        <span class="meta-item">🕐 {{ formatDate(report.createdAt) }}</span>
+                        <span class="meta-item">📋 {{ report.taskCount }} 个任务</span>
+                        <span class="meta-item">✅ {{ report.completedCount || 0 }} 已完成</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button @click.stop="deleteHistoryReport(report.id)" class="btn-delete-small" title="删除">🗑️</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 自定义报告弹窗 -->
+    <div v-if="showCustomReportModal" class="modal-overlay" @click.self="showCustomReportModal = false">
+      <div class="report-bottom-sheet">
+        <div class="modal-header">
+          <button class="back-btn" @click="showCustomReportModal = false">
+            <span>← 返回</span>
+          </button>
+          <h3>🎯 自定义报告</h3>
+          <div style="width: 80px;"></div>
+        </div>
+        
+        <div class="modal-body" style="padding: 1.5rem;">
+          <!-- 报告类型 -->
+          <div class="form-group">
+            <label class="form-label">📊 报告类型</label>
+            <div class="report-type-grid">
+              <div 
+                v-for="type in reportTypes" 
+                :key="type.value"
+                class="type-card"
+                :class="{ active: customReportConfig.type === type.value }"
+                @click="customReportConfig.type = type.value"
+              >
+                <div class="type-icon">{{ type.icon }}</div>
+                <div class="type-name">{{ type.label }}</div>
+                <div class="type-desc">{{ type.desc }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 时间范围（仅自定义类型显示） -->
+          <div v-if="customReportConfig.type === 'custom'" class="form-group">
+            <label class="form-label">📅 时间范围</label>
+            <div class="date-range-inputs">
+              <input 
+                v-model="customReportConfig.startDate" 
+                type="date" 
+                class="date-input"
+                placeholder="开始日期"
+              />
+              <span style="color: #999;">至</span>
+              <input 
+                v-model="customReportConfig.endDate" 
+                type="date" 
+                class="date-input"
+                placeholder="结束日期"
+              />
+            </div>
+          </div>
+
+          <!-- 报告模板 -->
+          <div class="form-group">
+            <label class="form-label">📋 报告模板</label>
+            <div class="template-options">
+              <label 
+                v-for="template in reportTemplates" 
+                :key="template.value"
+                class="template-option"
+                :class="{ active: customReportConfig.template === template.value }"
+              >
+                <input 
+                  type="radio" 
+                  v-model="customReportConfig.template" 
+                  :value="template.value"
+                  style="display: none;"
+                />
+                <div class="template-icon">{{ template.icon }}</div>
+                <div class="template-info">
+                  <div class="template-name">{{ template.label }}</div>
+                  <div class="template-desc">{{ template.desc }}</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- 包含内容 -->
+          <div class="form-group">
+            <label class="form-label">✨ 包含内容</label>
+            <div class="checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" v-model="customReportConfig.includeStats" />
+                <span>📊 统计数据</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" v-model="customReportConfig.includeCharts" />
+                <span>📈 图表分析</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" v-model="customReportConfig.includeAISummary" />
+                <span>🤖 AI智能总结</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="showCustomReportModal = false">取消</button>
+          <button class="btn btn-primary" @click="generateCustomReport">生成报告</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 报告模板管理弹窗 -->
+    <div v-if="showReportTemplates" class="modal-overlay" @click.self="showReportTemplates = false">
+      <div class="report-bottom-sheet">
+        <div class="modal-header">
+          <button class="back-btn" @click="showReportTemplates = false">
+            <span>← 返回</span>
+          </button>
+          <h3>📋 报告模板</h3>
+          <div style="width: 80px;"></div>
+        </div>
+        
+        <div class="modal-body" style="padding: 1.5rem;">
+          <div class="template-list">
+            <div 
+              v-for="template in reportTemplates" 
+              :key="template.value"
+              class="template-card"
+            >
+              <div class="template-header">
+                <div class="template-icon-large">{{ template.icon }}</div>
+                <div class="template-details">
+                  <div class="template-name-large">{{ template.label }}</div>
+                  <div class="template-desc">{{ template.desc }}</div>
+                </div>
+              </div>
+              <div class="template-features">
+                <div class="feature-tag" v-for="feature in template.features" :key="feature">
+                  {{ feature }}
+                </div>
+              </div>
+              <div class="template-actions">
+                <button class="btn-template-use" @click="useTemplate(template.value)">
+                  使用模板
+                </button>
               </div>
             </div>
           </div>
@@ -3708,6 +3993,39 @@ const showReportHistory = () => {
   showReportHistoryModal.value = true
 }
 
+// 分组周报历史
+const groupedReportHistory = computed(() => {
+  const groups = {
+    today: [],
+    thisWeek: [],
+    thisMonth: [],
+    earlier: []
+  }
+  
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const weekStart = new Date(today)
+  weekStart.setDate(today.getDate() - today.getDay())
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  
+  reportHistoryList.value.forEach(report => {
+    const reportDate = new Date(report.createdAt)
+    const reportDay = new Date(reportDate.getFullYear(), reportDate.getMonth(), reportDate.getDate())
+    
+    if (reportDay.getTime() === today.getTime()) {
+      groups.today.push(report)
+    } else if (reportDay >= weekStart) {
+      groups.thisWeek.push(report)
+    } else if (reportDay >= monthStart) {
+      groups.thisMonth.push(report)
+    } else {
+      groups.earlier.push(report)
+    }
+  })
+  
+  return groups
+})
+
 // 查看历史周报
 const viewHistoryReport = (report) => {
   weeklyReportContent.value = report.content
@@ -3728,6 +4046,15 @@ const deleteHistoryReport = (reportId) => {
   showNotification('周报已删除', 'success')
 }
 
+// 批量删除周报
+const batchDeleteReports = () => {
+  if (!confirm('确定要删除所有周报吗？此操作不可恢复！')) return
+  
+  localStorage.setItem('weekly_reports', '[]')
+  reportHistoryList.value = []
+  showNotification('已清空所有周报', 'success')
+}
+
 // 版本历史相关变量（必须在 initVersionHistory 之前声明）
 const showVersionModal = ref(false) // 版本历史弹窗
 const versionHistory = ref([]) // 版本历史列表
@@ -3737,38 +4064,33 @@ const hasUnreadVersions = ref(false) // 是否有未读版本
 const initVersionHistory = () => {
   versionHistory.value = [
     {
-      version: '1.7.5',
+      version: '1.7.6',
       date: '2026-02-26',
       features: [
+        '完整备份系统（100%数据覆盖）',
+        'AI对话历史记录（多对话管理）',
+        'AI主动式助手（智能提醒+每日总结+周报生成+任务分解）',
         'AI对话创建任务（支持自动提醒）',
         'AI周报生成（8模块增强版）',
-        '周报历史记录功能',
-        'AI模型配置优化（测试连接）',
-        '日志输入优化（2000字+自适应高度）'
-      ],
-      improvements: [
-        '周报模板符合标准格式',
-        '测试连接按钮文字化',
-        '拍照OCR + AI文本增强'
-      ],
-      fixes: [
-        '修复AI对话创建任务标题为空',
-        '修复提醒功能未启用'
-      ]
-    },
-    {
-      version: '1.7.0',
-      date: '2026-02-25',
-      features: [
+        '拍照OCR + AI文本增强',
         '任务执行日志系统（6种日志类型）',
-        '任务详情页面重构',
         '番茄钟计时器（25分钟专注）'
       ],
       improvements: [
+        'Excel导入支持中英文字段（大小写不敏感）',
+        'AI问答markdown渲染优化（列表、表格、emoji）',
+        '数据管理界面完善（详细说明备份内容）',
+        'Web端备份自动保存到localStorage（最近10个）',
+        '全屏描述编辑器头部布局优化',
         '任务卡片增强（日志徽章+进度显示）',
         'Bottom Sheet统一设计'
       ],
-      fixes: []
+      fixes: [
+        '修复任务详情白屏崩溃问题',
+        '修复AI对话创建任务标题为空',
+        '修复提醒功能未启用',
+        '修复表格markdown渲染问题'
+      ]
     }
   ]
   
@@ -4172,6 +4494,86 @@ const showWeeklyModal = ref(false)
 const showCustomDateModal = ref(false)
 const showReportModal = ref(false) // 数据报告弹窗
 const showBackupList = ref(false) // 备份列表弹窗
+const showCustomReportModal = ref(false) // 自定义报告弹窗
+const showReportTemplates = ref(false) // 报告模板弹窗
+
+// 自定义报告配置
+const customReportConfig = ref({
+  type: 'weekly', // weekly, monthly, quarterly, yearly, custom
+  startDate: '',
+  endDate: '',
+  includeStats: true,
+  includeCharts: true,
+  includeAISummary: true,
+  template: 'standard' // standard, detailed, simple
+})
+
+// 报告类型选项
+const reportTypes = [
+  { value: 'weekly', label: '周报', icon: '📅', desc: '本周工作总结' },
+  { value: 'monthly', label: '月报', icon: '📊', desc: '本月工作总结' },
+  { value: 'quarterly', label: '季报', icon: '📈', desc: '本季度工作总结' },
+  { value: 'yearly', label: '年报', icon: '🎯', desc: '全年工作总结' },
+  { value: 'custom', label: '自定义', icon: '⚙️', desc: '自选时间范围' }
+]
+
+// 报告模板选项
+const reportTemplates = [
+  { 
+    value: 'standard', 
+    label: '标准模板', 
+    icon: '📝', 
+    desc: '适合日常周报',
+    features: ['统计数据', 'AI总结', '任务列表']
+  },
+  { 
+    value: 'detailed', 
+    label: '详细模板', 
+    icon: '📊', 
+    desc: '包含所有统计和图表',
+    features: ['完整统计', '图表分析', 'AI建议', '趋势对比']
+  },
+  { 
+    value: 'simple', 
+    label: '简洁模板', 
+    icon: '⚡', 
+    desc: '只包含核心数据',
+    features: ['核心数据', '完成任务']
+  }
+]
+
+// 生成自定义报告
+const generateCustomReport = () => {
+  const config = customReportConfig.value
+  
+  // 验证自定义日期
+  if (config.type === 'custom') {
+    if (!config.startDate || !config.endDate) {
+      showNotification('请选择开始和结束日期', 'error')
+      return
+    }
+    if (new Date(config.startDate) > new Date(config.endDate)) {
+      showNotification('开始日期不能晚于结束日期', 'error')
+      return
+    }
+  }
+  
+  showCustomReportModal.value = false
+  showNotification('正在生成报告...', 'info')
+  
+  // 调用AIReportModal生成报告
+  setTimeout(() => {
+    showAIReport.value = true
+  }, 300)
+}
+
+// 使用模板
+const useTemplate = (templateValue) => {
+  customReportConfig.value.template = templateValue
+  showReportTemplates.value = false
+  showCustomReportModal.value = true
+  showNotification(`已选择${reportTemplates.find(t => t.value === templateValue)?.label}`, 'success')
+}
 
 // 任务描述展开状态
 const expandedDescriptions = ref(new Set())
@@ -4199,6 +4601,32 @@ const weeklyReportContent = ref('') // 周报内容
 const weeklyReportTitle = ref('') // 周报标题
 const showReportHistoryModal = ref(false) // 周报历史弹窗
 const reportHistoryList = ref([]) // 周报历史列表
+const reportSearchKeyword = ref('') // 周报搜索关键词
+
+// 过滤后的分组周报
+const filteredGroupedReports = computed(() => {
+  const keyword = reportSearchKeyword.value.toLowerCase().trim()
+  
+  if (!keyword) {
+    return groupedReportHistory.value
+  }
+  
+  const filterReports = (reports) => {
+    return reports.filter(report => 
+      report.title?.toLowerCase().includes(keyword) ||
+      report.period?.toLowerCase().includes(keyword) ||
+      report.content?.toLowerCase().includes(keyword)
+    )
+  }
+  
+  return {
+    today: filterReports(groupedReportHistory.value.today),
+    thisWeek: filterReports(groupedReportHistory.value.thisWeek),
+    thisMonth: filterReports(groupedReportHistory.value.thisMonth),
+    earlier: filterReports(groupedReportHistory.value.earlier)
+  }
+})
+
 // showVersionModal, versionHistory, hasUnreadVersions 已在上方声明
 const editingTask = ref(null)
 const editDescription = ref('')
@@ -10995,6 +11423,22 @@ watch(() => reportData.value, (newData) => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
+/* 入口分组 */
+.pomodoro-entry-group {
+  margin-bottom: 1.5rem;
+}
+
+.entry-group-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #667eea;
+  padding: 0.5rem 0.75rem;
+  background: rgba(102, 126, 234, 0.1);
+  border-radius: 8px;
+  margin-bottom: 0.8rem;
+  display: inline-block;
+}
+
 .entry-icon {
   font-size: 2rem;
   flex-shrink: 0;
@@ -14128,44 +14572,46 @@ watch(() => reportData.value, (newData) => {
   z-index: 10002;
   display: flex;
   flex-direction: column;
+  padding-top: env(safe-area-inset-top, 0px); /* iOS刘海屏适配 */
 }
 
 .fullscreen-desc-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem 1rem;
+  flex-direction: column;
+  padding: 1rem 1rem 0.75rem;
   background: #f9f9f9;
   border-bottom: 0.5px solid #c6c6c8;
   flex-shrink: 0;
-  min-height: 44px;
+  gap: 0.5rem;
+  margin-top: 20px;
+}
+
+/* 第一行：任务名称 */
+.fullscreen-desc-header .header-row-1 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 第二行：元数据和按钮 */
+.fullscreen-desc-header .header-row-2 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   gap: 1rem;
 }
 
 .fullscreen-desc-header .header-left {
-  flex: 1;
   display: flex;
   align-items: center;
   gap: 0.75rem;
   justify-content: flex-start;
 }
 
-.fullscreen-desc-header .header-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 0;
-}
-
 .fullscreen-desc-header .task-name {
-  font-size: 0.95rem;
-  color: #000;
+  font-size: 1.1rem;
   font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
+  color: #333;
   text-align: center;
 }
 
@@ -16975,11 +17421,68 @@ watch(() => reportData.value, (newData) => {
 }
 
 /* 周报历史样式 */
+.report-toolbar {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem 1rem 0.5rem;
+  align-items: center;
+}
+
+.report-search-input {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.report-search-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.btn-batch-delete {
+  padding: 0.6rem 1rem;
+  background: transparent;
+  border: 1px solid #ff4444;
+  color: #ff4444;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-batch-delete:hover {
+  background: #ff4444;
+  color: white;
+}
+
 .report-history-list {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
   padding: 1rem;
+}
+
+.report-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.group-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #667eea;
+  padding: 0.5rem 0.75rem;
+  background: rgba(102, 126, 234, 0.1);
+  border-radius: 8px;
+  display: inline-block;
+  align-self: flex-start;
 }
 
 .history-item {
@@ -16989,6 +17492,10 @@ watch(() => reportData.value, (newData) => {
   padding: 1rem;
   cursor: pointer;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
 .history-item:hover {
@@ -16997,41 +17504,81 @@ watch(() => reportData.value, (newData) => {
   transform: translateY(-2px);
 }
 
-.history-header {
+.history-main {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.5rem;
+  gap: 1rem;
+  flex: 1;
+  min-width: 0;
 }
 
-.history-title {
-  font-weight: 600;
-  color: #333;
+.history-icon {
+  font-size: 2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.history-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.history-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.history-type {
+  font-weight: 700;
+  color: #667eea;
   font-size: 1rem;
+  white-space: nowrap;
+}
+
+.history-period {
+  font-weight: 500;
+  color: #333;
+  font-size: 0.9rem;
 }
 
 .btn-delete-small {
-  background: #ff4444;
-  border: none;
-  color: white;
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
+  background: transparent;
+  border: 1px solid #ff4444;
+  color: #ff4444;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 1.1rem;
   transition: all 0.2s;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-delete-small:hover {
-  background: #cc0000;
+  background: #ff4444;
+  color: white;
   transform: scale(1.1);
 }
 
 .history-meta {
   display: flex;
   gap: 1rem;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: #666;
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  white-space: nowrap;
 }
 
 .empty-state {
@@ -17043,6 +17590,217 @@ watch(() => reportData.value, (newData) => {
 .empty-icon {
   font-size: 4rem;
   margin-bottom: 1rem;
+}
+
+/* 自定义报告弹窗样式 */
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.75rem;
+}
+
+.report-type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.type-card {
+  padding: 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.type-card:hover {
+  border-color: #667eea;
+  transform: translateY(-2px);
+}
+
+.type-card.active {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.type-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.type-name {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.type-desc {
+  font-size: 0.75rem;
+  color: #999;
+}
+
+.date-range-inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.date-input {
+  flex: 1;
+  padding: 0.6rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.date-input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.template-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.template-option {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.template-option:hover {
+  border-color: #667eea;
+}
+
+.template-option.active {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.template-icon {
+  font-size: 2rem;
+}
+
+.template-info {
+  flex: 1;
+}
+
+.template-name {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.template-desc {
+  font-size: 0.8rem;
+  color: #999;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+/* 模板管理样式 */
+.template-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.template-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 1.25rem;
+  background: white;
+}
+
+.template-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.template-icon-large {
+  font-size: 3rem;
+}
+
+.template-details {
+  flex: 1;
+}
+
+.template-name-large {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.template-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.feature-tag {
+  padding: 0.25rem 0.75rem;
+  background: rgba(102, 126, 234, 0.1);
+  color: #667eea;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.template-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-template-use {
+  padding: 0.5rem 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-template-use:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 /* 版本历史样式 */
