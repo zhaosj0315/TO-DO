@@ -1568,9 +1568,9 @@ const callOpenAI = async (context, question, model) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  word-break: break-word;
   white-space: normal;
-  overflow-wrap: break-word;
+  word-wrap: break-word;
+  hyphens: auto;
 }
 
 .quick-btn-small:hover {
