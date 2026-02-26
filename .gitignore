@@ -60,3 +60,9 @@ WORK_SUMMARY_*.md
 
 # 临时脚本
 ios-build-guide.sh
+
+# 大文件（超过100MB）
+*.dmg
+TODO-App-1.6.*.zip
+TODO-App-1.6.*.apk
+nohup.out
