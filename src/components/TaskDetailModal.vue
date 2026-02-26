@@ -198,16 +198,36 @@
           </div>
 
           <div v-else>
+            <!-- 搜索过滤栏 -->
+            <div class="log-filters">
+              <input 
+                v-model="searchKeyword" 
+                type="text" 
+                placeholder="🔍 搜索日志内容..."
+                class="search-input"
+              >
+              <div class="filter-buttons">
+                <button 
+                  v-for="type in logTypes" 
+                  :key="type.value"
+                  :class="['filter-btn', { active: filterType === type.value }]"
+                  @click="filterType = filterType === type.value ? '' : type.value"
+                >
+                  {{ type.icon }}
+                </button>
+              </div>
+            </div>
+
             <!-- 日志统计 -->
-            <LogStats :logs="task.logs" />
+            <LogStats :logs="filteredLogs" :task-title="task.text" />
 
             <!-- 时间轴视图 -->
-            <LogTimeline v-if="showTimeline" :logs="task.logs" />
+            <LogTimeline v-if="showTimeline" :logs="filteredLogs" />
 
             <!-- 列表视图 -->
             <div v-else class="logs-list">
             <div
-              v-for="log in sortedLogs"
+              v-for="log in filteredSortedLogs"
               :key="log.id"
               :class="['log-item', `log-${log.type}`]"
             >
@@ -334,6 +354,47 @@ const emit = defineEmits(['close', 'edit', 'refresh', 'split'])
 const taskStore = useOfflineTaskStore()
 const showAddLogModal = ref(false)
 const showTimeline = ref(false)
+
+// 搜索过滤
+const searchKeyword = ref('')
+const filterType = ref('')
+
+const logTypes = [
+  { value: 'start', icon: '🚀', label: '开始' },
+  { value: 'progress', icon: '📝', label: '进展' },
+  { value: 'block', icon: '🚧', label: '阻碍' },
+  { value: 'solution', icon: '💡', label: '方案' },
+  { value: 'milestone', icon: '🎯', label: '里程碑' },
+  { value: 'complete', icon: '✅', label: '完成' }
+]
+
+// 过滤后的日志
+const filteredLogs = computed(() => {
+  if (!task.value?.logs) return []
+  
+  let logs = task.value.logs
+  
+  // 按类型过滤
+  if (filterType.value) {
+    logs = logs.filter(log => log.type === filterType.value)
+  }
+  
+  // 按关键词搜索
+  if (searchKeyword.value.trim()) {
+    const keyword = searchKeyword.value.toLowerCase()
+    logs = logs.filter(log => 
+      log.content.toLowerCase().includes(keyword) ||
+      log.tags?.some(tag => tag.toLowerCase().includes(keyword))
+    )
+  }
+  
+  return logs
+})
+
+// 过滤后的排序日志
+const filteredSortedLogs = computed(() => {
+  return [...filteredLogs.value].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+})
 
 // 本地任务副本（用于编辑）
 const localTask = ref({ ...props.task })
@@ -951,6 +1012,56 @@ ${logsText || '暂无日志'}
   flex: 1;
   overflow-y: auto;
   padding: 1rem;
+}
+
+.log-filters {
+  background: white;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  margin-bottom: 0.75rem;
+  transition: border-color 0.2s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 0.5rem 1rem;
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-btn:hover {
+  background: #e9ecef;
+  transform: translateY(-2px);
+}
+
+.filter-btn.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 section {

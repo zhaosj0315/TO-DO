@@ -1,6 +1,18 @@
 <template>
   <div class="log-stats">
-    <h4>📊 日志统计</h4>
+    <div class="stats-header">
+      <h4>📊 日志统计</h4>
+      <button class="export-btn" @click="showExportMenu = !showExportMenu">
+        📤 导出
+      </button>
+      
+      <!-- 导出菜单 -->
+      <div v-if="showExportMenu" class="export-menu">
+        <button @click="exportAsText">📋 纯文本</button>
+        <button @click="exportAsMarkdown">📄 Markdown</button>
+        <button @click="exportAsJson">📊 JSON</button>
+      </div>
+    </div>
     
     <!-- 核心指标 -->
     <div class="stats-grid">
@@ -89,14 +101,20 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 const props = defineProps({
   logs: {
     type: Array,
     default: () => []
+  },
+  taskTitle: {
+    type: String,
+    default: '任务'
   }
 })
+
+const showExportMenu = ref(false)
 
 // 计算统计数据
 const stats = computed(() => {
@@ -216,6 +234,166 @@ const getTagSize = (count) => {
   const ratio = count / max
   return `${0.85 + ratio * 0.4}rem`
 }
+
+// 导出功能
+const logTypeLabels = {
+  start: '🚀 开始',
+  progress: '📝 进展',
+  block: '🚧 阻碍',
+  solution: '💡 方案',
+  milestone: '🎯 里程碑',
+  complete: '✅ 完成'
+}
+
+const formatTime = (timestamp) => {
+  const date = new Date(timestamp)
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const exportAsText = () => {
+  const logs = props.logs || []
+  let text = `# ${props.taskTitle} - 执行日志\n\n`
+  text += `导出时间: ${new Date().toLocaleString('zh-CN')}\n\n`
+  text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`
+  
+  // 统计摘要
+  text += `## 📊 统计摘要\n\n`
+  text += `- 总日志数: ${stats.value.total}条\n`
+  text += `- 平均耗时: ${stats.value.avgDuration}\n`
+  text += `- 阻碍解决率: ${stats.value.blockResolveRate}%\n`
+  text += `- 平均进度: ${stats.value.avgProgress}%\n\n`
+  
+  // 类型分布
+  if (typeStats.value.length > 0) {
+    text += `## 📋 类型分布\n\n`
+    typeStats.value.forEach(type => {
+      text += `- ${type.icon} ${type.label}: ${type.count}条 (${type.percentage}%)\n`
+    })
+    text += `\n`
+  }
+  
+  // 详细日志
+  text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`
+  text += `## 📝 详细记录\n\n`
+  
+  logs.forEach((log, index) => {
+    text += `### ${index + 1}. ${logTypeLabels[log.type] || log.type}\n`
+    text += `时间: ${formatTime(log.timestamp)}\n`
+    text += `内容: ${log.content}\n`
+    
+    if (log.duration) {
+      text += `耗时: ${log.duration}分钟\n`
+    }
+    if (log.progress !== null && log.progress !== undefined) {
+      text += `进度: ${log.progress}%\n`
+    }
+    if (log.tags && log.tags.length > 0) {
+      text += `标签: ${log.tags.map(t => '#' + t).join(' ')}\n`
+    }
+    if (log.mood) {
+      const moodMap = { good: '😊 顺利', neutral: '😐 一般', bad: '😔 困难' }
+      text += `心情: ${moodMap[log.mood]}\n`
+    }
+    text += `\n`
+  })
+  
+  // 复制到剪贴板
+  navigator.clipboard.writeText(text).then(() => {
+    alert('✅ 已复制到剪贴板！')
+    showExportMenu.value = false
+  }).catch(() => {
+    alert('❌ 复制失败，请手动复制')
+  })
+}
+
+const exportAsMarkdown = () => {
+  const logs = props.logs || []
+  let md = `# ${props.taskTitle} - 执行日志\n\n`
+  md += `> 导出时间: ${new Date().toLocaleString('zh-CN')}\n\n`
+  
+  // 统计摘要
+  md += `## 📊 统计摘要\n\n`
+  md += `| 指标 | 数值 |\n`
+  md += `|------|------|\n`
+  md += `| 总日志数 | ${stats.value.total}条 |\n`
+  md += `| 平均耗时 | ${stats.value.avgDuration} |\n`
+  md += `| 阻碍解决率 | ${stats.value.blockResolveRate}% |\n`
+  md += `| 平均进度 | ${stats.value.avgProgress}% |\n\n`
+  
+  // 类型分布
+  if (typeStats.value.length > 0) {
+    md += `## 📋 类型分布\n\n`
+    typeStats.value.forEach(type => {
+      const bar = '█'.repeat(Math.round(type.percentage / 5))
+      md += `- ${type.icon} **${type.label}**: ${type.count}条 (${type.percentage}%) ${bar}\n`
+    })
+    md += `\n`
+  }
+  
+  // 详细日志
+  md += `## 📝 详细记录\n\n`
+  
+  logs.forEach((log, index) => {
+    md += `### ${index + 1}. ${logTypeLabels[log.type] || log.type}\n\n`
+    md += `**时间**: ${formatTime(log.timestamp)}\n\n`
+    md += `**内容**: ${log.content}\n\n`
+    
+    if (log.duration || log.progress !== null || log.tags?.length || log.mood) {
+      md += `**详情**:\n`
+      if (log.duration) md += `- 耗时: ${log.duration}分钟\n`
+      if (log.progress !== null && log.progress !== undefined) md += `- 进度: ${log.progress}%\n`
+      if (log.tags && log.tags.length > 0) md += `- 标签: ${log.tags.map(t => '`#' + t + '`').join(' ')}\n`
+      if (log.mood) {
+        const moodMap = { good: '😊 顺利', neutral: '😐 一般', bad: '😔 困难' }
+        md += `- 心情: ${moodMap[log.mood]}\n`
+      }
+      md += `\n`
+    }
+    
+    md += `---\n\n`
+  })
+  
+  // 复制到剪贴板
+  navigator.clipboard.writeText(md).then(() => {
+    alert('✅ Markdown已复制到剪贴板！')
+    showExportMenu.value = false
+  }).catch(() => {
+    alert('❌ 复制失败，请手动复制')
+  })
+}
+
+const exportAsJson = () => {
+  const exportData = {
+    taskTitle: props.taskTitle,
+    exportTime: new Date().toISOString(),
+    statistics: {
+      total: stats.value.total,
+      avgDuration: stats.value.avgDuration,
+      blockResolveRate: stats.value.blockResolveRate,
+      avgProgress: stats.value.avgProgress
+    },
+    typeDistribution: typeStats.value,
+    topTags: topTags.value,
+    moodStats: moodStats.value,
+    logs: props.logs
+  }
+  
+  const json = JSON.stringify(exportData, null, 2)
+  
+  navigator.clipboard.writeText(json).then(() => {
+    alert('✅ JSON已复制到剪贴板！')
+    showExportMenu.value = false
+  }).catch(() => {
+    alert('❌ 复制失败，请手动复制')
+  })
+}
+
 </script>
 
 <style scoped>
@@ -226,10 +404,67 @@ const getTagSize = (count) => {
   margin-top: 1rem;
 }
 
+.stats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  position: relative;
+}
+
 .log-stats h4 {
-  margin: 0 0 1rem 0;
+  margin: 0;
   font-size: 1rem;
   color: #333;
+}
+
+.export-btn {
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.export-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.export-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  z-index: 100;
+  min-width: 120px;
+}
+
+.export-menu button {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: white;
+  border: none;
+  text-align: left;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.export-menu button:hover {
+  background: #f8f9fa;
+}
+
+.export-menu button:not(:last-child) {
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .log-stats h5 {
