@@ -16,22 +16,6 @@
           <button class="btn-icon-circle btn-stats" @click="showDataStats = true" title="数据统计">
             📊
           </button>
-          <!-- 每日总结按钮 -->
-          <button class="btn-icon-circle btn-summary" @click="showDailySummary = true" title="今日总结">
-            📝
-          </button>
-          <!-- 任务分解按钮 -->
-          <button class="btn-icon-circle btn-split" @click="openTaskSplitterForNew" title="任务分解">
-            🧩
-          </button>
-          <!-- AI 对话创建按钮 -->
-          <button class="btn-icon-circle btn-ai-chat" @click="showAIChatCreate = true" title="AI 对话创建">
-            💬
-          </button>
-          <!-- AI 今日规划按钮 -->
-          <button class="btn-icon-circle btn-daily-plan" @click="generateDailyPlan" title="AI 今日规划">
-            🌅
-          </button>
           <!-- 演示模式按钮 -->
           <button class="btn-icon-circle btn-tutorial" @click="startTutorial" :title="t('tutorial')">
             💡
@@ -2049,13 +2033,6 @@
       @close="showDailyPlan = false"
     />
 
-    <!-- AI 对话创建弹窗 -->
-    <AIChatCreate
-      :visible="showAIChatCreate"
-      @close="showAIChatCreate = false"
-      @create="handleChatCreateTasks"
-    />
-
     <!-- 演示模式 -->
     <TutorialMode
       :active="showTutorial"
@@ -2099,6 +2076,7 @@
       :tasks-data="{ tasks: taskStore.tasks, deletedTasks: taskStore.deletedTasks }"
       @close="showAIChat = false"
       @openConfig="showAIConfig = true"
+      @createTasks="handleChatCreateTasks"
     />
 
     <!-- AI模型配置 -->
@@ -2973,7 +2951,6 @@ import AIConfigModal from '../components/AIConfigModal.vue'
 import TaskPreviewModal from '../components/TaskPreviewModal.vue'
 import SubtaskPreviewModal from '../components/SubtaskPreviewModal.vue'
 import DailyPlanModal from '../components/DailyPlanModal.vue'
-import AIChatCreate from '../components/AIChatCreate.vue'
 import AISuggestionCard from '../components/AISuggestionCard.vue'
 import DailySummaryModal from '../components/DailySummaryModal.vue'
 import AIReportModal from '../components/AIReportModal.vue'
@@ -3549,9 +3526,6 @@ const createSubtasks = (subtasks) => {
 const showDailyPlan = ref(false)
 const dailyPlan = ref({})
 const dailyPlanTasks = ref([])
-
-// AI 对话创建
-const showAIChatCreate = ref(false)
 
 // 处理 AI 文本操作
 const handleTextAction = async ({ action, text, tone }) => {

@@ -114,6 +114,7 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { marked } from 'marked'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/github.css'
+import { AIChatService } from '../services/aiChatService'
 
 // 简化配置：使用 marked 默认渲染 + highlight.js
 marked.setOptions({
@@ -136,7 +137,11 @@ const props = defineProps({
   tasksData: Object
 })
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'createTasks'])
+
+// 创建任务相关状态
+const extractedTasks = ref([])
+const isExtracting = ref(false)
 
 // 从localStorage加载模型配置和历史记录
 const models = ref(JSON.parse(localStorage.getItem('ai_models') || '[{"id":"default","name":"本地Ollama","url":"http://192.168.31.159:11434/api/generate","type":"local"}]'))
@@ -428,7 +433,7 @@ const showWelcomeMessage = () => {
   const modelName = currentModel.value?.name || '默认模型'
   messages.value = [{
     role: 'assistant',
-    content: `你好！我是你的AI任务助手 🤖\n\n当前使用模型：${modelName}\n\n我已经读取了你的所有任务数据，包括：\n• 任务详情（标题、描述、状态）\n• 执行日志和进度\n• 番茄钟记录\n• 时间统计\n\n你可以问我任何关于任务的问题，比如：\n"今天完成了什么？"\n"本周效率如何？"\n"有哪些逾期任务？"\n\n💡 点击右上角⚙️可以更换模型`
+    content: `你好！我是你的AI任务助手 🤖\n\n当前使用模型：${modelName}\n\n**我可以帮你：**\n\n📊 **查询任务** - "今天完成了什么？"\n✨ **创建任务** - "明天上午开会，下午写报告"\n🧩 **分解任务** - "分解任务：开发用户管理模块"\n🌅 **今日规划** - "生成今日规划"\n📝 **今日总结** - "今日总结"\n\n💡 点击右上角⚙️可以更换模型`
   }]
   saveChatHistory()
 }
@@ -742,6 +747,374 @@ const sendMessage = async () => {
   // 保存用户消息
   saveChatHistory()
 
+  try {
+    // 智能意图识别
+    const intent = detectIntent(question)
+    
+    if (intent === 'create_task') {
+      // 创建任务意图
+      await handleTaskCreation(question)
+    } else if (intent === 'daily_plan') {
+      // 今日规划意图
+      await handleDailyPlan()
+    } else if (intent === 'split_task') {
+      // 任务分解意图
+      await handleTaskSplit(question)
+    } else if (intent === 'daily_summary') {
+      // 每日总结意图
+      await handleDailySummary()
+    } else {
+      // 普通问答意图
+      await handleNormalChat(question)
+    }
+    
+    // 保存 AI 回复
+    saveChatHistory()
+  } catch (error) {
+    messages.value.push({ 
+      role: 'error', 
+      content: error.message 
+    })
+    saveChatHistory()
+  } finally {
+    loading.value = false
+    nextTick(() => {
+      messagesContainer.value?.scrollTo(0, messagesContainer.value.scrollHeight)
+    })
+  }
+}
+
+// 意图识别
+const detectIntent = (text) => {
+  const createKeywords = [
+    '创建任务', '添加任务', '新建任务', '帮我创建', '帮我添加',
+    '明天要', '今天要', '本周要', '需要完成', '要做',
+    '开会', '写报告', '复习', '学习', '工作'
+  ]
+  
+  const planKeywords = [
+    '今日规划', '今天规划', '每日规划', '生成规划',
+    '安排今天', '今天怎么安排', '今日计划', '今天计划'
+  ]
+  
+  const splitKeywords = [
+    '分解任务', '拆解任务', '任务分解', '任务拆解',
+    '帮我分解', '帮我拆解', '细化任务', '拆分任务'
+  ]
+  
+  const summaryKeywords = [
+    '今日总结', '今天总结', '每日总结', '工作总结',
+    '今日汇报', '今天汇报', '总结今天', '今日复盘'
+  ]
+  
+  const lowerText = text.toLowerCase()
+  
+  // 检测每日总结意图
+  const hasSummaryKeyword = summaryKeywords.some(keyword => 
+    lowerText.includes(keyword)
+  )
+  
+  if (hasSummaryKeyword) {
+    return 'daily_summary'
+  }
+  
+  // 检测任务分解意图
+  const hasSplitKeyword = splitKeywords.some(keyword => 
+    lowerText.includes(keyword)
+  )
+  
+  if (hasSplitKeyword) {
+    return 'split_task'
+  }
+  
+  // 检测规划意图
+  const hasPlanKeyword = planKeywords.some(keyword => 
+    lowerText.includes(keyword)
+  )
+  
+  if (hasPlanKeyword) {
+    return 'daily_plan'
+  }
+  
+  // 检测是否包含多个任务描述（逗号、顿号、分号分隔）
+  const hasMultipleTasks = /[，,、；;]/.test(text) && text.length > 20
+  
+  // 检测是否包含创建任务关键词
+  const hasCreateKeyword = createKeywords.some(keyword => 
+    lowerText.includes(keyword)
+  )
+  
+  if (hasCreateKeyword || hasMultipleTasks) {
+    return 'create_task'
+  }
+  
+  return 'chat'
+}
+
+// 处理任务创建
+const handleTaskCreation = async (text) => {
+  isExtracting.value = true
+  
+  // 添加提示消息
+  const assistantMsgIndex = messages.value.length
+  messages.value.push({ 
+    role: 'assistant', 
+    content: '🤖 正在分析并提取任务...',
+    modelName: currentModel.value?.name
+  })
+  
+  try {
+    const tasks = await AIChatService.extractTasksFromChat(text)
+    
+    if (tasks.length === 0) {
+      messages.value[assistantMsgIndex].content = '❌ 未识别到任务，请尝试更明确的描述。\n\n例如："明天上午开会，下午写报告"'
+    } else {
+      extractedTasks.value = tasks
+      
+      // 显示提取结果
+      let resultText = `✨ 已提取 ${tasks.length} 个任务：\n\n`
+      tasks.forEach((task, index) => {
+        resultText += `${index + 1}. **${task.text}**\n`
+        resultText += `   - 分类：${getCategoryLabel(task.category)}\n`
+        resultText += `   - 优先级：${getPriorityLabel(task.priority)}\n\n`
+      })
+      resultText += '💡 回复 "确认创建" 或 "创建" 来添加这些任务'
+      
+      messages.value[assistantMsgIndex].content = resultText
+    }
+  } catch (error) {
+    messages.value[assistantMsgIndex].content = `❌ 提取失败：${error.message}`
+  } finally {
+    isExtracting.value = false
+  }
+}
+
+// 处理每日总结
+const handleDailySummary = async () => {
+  const assistantMsgIndex = messages.value.length
+  messages.value.push({ 
+    role: 'assistant', 
+    content: '📊 正在生成今日总结...',
+    modelName: currentModel.value?.name
+  })
+  
+  try {
+    const { tasks = [] } = props.tasksData
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
+    // 今日完成的任务
+    const completedToday = tasks.filter(task => {
+      if (task.status !== 'completed' || !task.completed_at) return false
+      const completedDate = new Date(task.completed_at)
+      completedDate.setHours(0, 0, 0, 0)
+      return completedDate.getTime() === today.getTime()
+    })
+    
+    // 今日逾期的任务
+    const overdueToday = tasks.filter(task => task.status === 'overdue')
+    
+    // 今日专注时长（番茄钟）
+    const todayPomodoros = completedToday.reduce((sum, task) => 
+      sum + (task.completedPomodoros || 0), 0
+    )
+    
+    // 完成率
+    const totalToday = tasks.filter(task => {
+      const created = new Date(task.created_at)
+      created.setHours(0, 0, 0, 0)
+      return created.getTime() === today.getTime()
+    }).length
+    
+    const completionRate = totalToday > 0 
+      ? Math.round((completedToday.length / totalToday) * 100) 
+      : 0
+    
+    // 格式化总结
+    let resultText = `📊 **今日工作总结**\n\n`
+    resultText += `📈 **核心数据**\n`
+    resultText += `• 完成任务：${completedToday.length} 个\n`
+    resultText += `• 逾期任务：${overdueToday.length} 个\n`
+    resultText += `• 专注时长：${todayPomodoros * 25} 分钟 (${todayPomodoros}🍅)\n`
+    resultText += `• 完成率：${completionRate}%\n\n`
+    
+    if (completedToday.length > 0) {
+      resultText += `✅ **今日完成**\n`
+      completedToday.forEach((task, i) => {
+        resultText += `${i + 1}. ${task.text} (${task.priority === 'high' ? '⚡高' : task.priority === 'medium' ? '📌中' : '📋低'})\n`
+      })
+      resultText += `\n`
+    }
+    
+    // AI 建议
+    resultText += `💡 **AI 建议**\n`
+    if (completedToday.length === 0) {
+      resultText += `今天还没有完成任何任务，建议从高优先级任务开始！`
+    } else if (completionRate >= 80) {
+      resultText += `完成率很高！保持这个节奏，继续加油！`
+    } else if (overdueToday.length > 0) {
+      resultText += `有 ${overdueToday.length} 个任务逾期，建议优先处理逾期任务。`
+    } else {
+      resultText += `今天表现不错，明天继续努力！`
+    }
+    
+    messages.value[assistantMsgIndex].content = resultText
+  } catch (error) {
+    messages.value[assistantMsgIndex].content = `❌ 生成总结失败：${error.message}`
+  }
+}
+
+// 处理任务分解
+const handleTaskSplit = async (text) => {
+  const assistantMsgIndex = messages.value.length
+  messages.value.push({ 
+    role: 'assistant', 
+    content: '🧩 正在分解任务...',
+    modelName: currentModel.value?.name
+  })
+  
+  try {
+    // 提取任务标题（去掉"分解任务"等关键词）
+    let taskTitle = text
+      .replace(/分解任务|拆解任务|任务分解|任务拆解|帮我分解|帮我拆解|细化任务|拆分任务/g, '')
+      .replace(/[:：]/g, '')
+      .trim()
+    
+    if (!taskTitle) {
+      messages.value[assistantMsgIndex].content = '❌ 请提供要分解的任务标题\n\n例如："分解任务：开发用户管理模块"'
+      return
+    }
+    
+    // 动态导入 AITaskSplitter
+    const { AITaskSplitter } = await import('../services/aiTaskSplitter')
+    
+    // 调用 AI 分解任务
+    const subtasks = await AITaskSplitter.splitTask({
+      text: taskTitle,
+      description: '',
+      category: 'work',
+      priority: 'medium'
+    }, 5) // 默认分解为 5 个子任务
+    
+    if (!subtasks || subtasks.length === 0) {
+      messages.value[assistantMsgIndex].content = '❌ 任务分解失败，请重试'
+      return
+    }
+    
+    // 格式化分解结果
+    let resultText = `🧩 **任务分解结果**\n\n`
+    resultText += `📋 **主任务**: ${taskTitle}\n\n`
+    resultText += `✨ **已分解为 ${subtasks.length} 个子任务**：\n\n`
+    
+    subtasks.forEach((subtask, index) => {
+      resultText += `**${index + 1}. ${subtask.title}**\n`
+      if (subtask.description) {
+        resultText += `   ${subtask.description}\n`
+      }
+      resultText += `   ⏱️ 预计 ${subtask.estimatedTime || '1'}小时 | `
+      resultText += `${subtask.priority === 'high' ? '⚡高' : subtask.priority === 'medium' ? '📌中' : '📋低'}优先级\n\n`
+    })
+    
+    resultText += `💡 回复 "创建这些子任务" 来添加到任务列表`
+    
+    messages.value[assistantMsgIndex].content = resultText
+    
+    // 保存分解结果供后续创建
+    extractedTasks.value = subtasks.map(subtask => ({
+      text: subtask.title,
+      description: subtask.description || '',
+      category: 'work',
+      priority: subtask.priority || 'medium'
+    }))
+  } catch (error) {
+    messages.value[assistantMsgIndex].content = `❌ 分解失败：${error.message}`
+  }
+}
+
+// 处理今日规划
+const handleDailyPlan = async () => {
+  const assistantMsgIndex = messages.value.length
+  messages.value.push({ 
+    role: 'assistant', 
+    content: '🌅 正在生成今日规划...',
+    modelName: currentModel.value?.name
+  })
+  
+  try {
+    const { tasks = [] } = props.tasksData
+    const pendingTasks = tasks.filter(task => task.status === 'pending')
+    
+    if (pendingTasks.length === 0) {
+      messages.value[assistantMsgIndex].content = '❌ 没有待办任务，无法生成规划'
+      return
+    }
+    
+    // 为任务添加截止时间信息
+    const tasksWithDeadline = pendingTasks.map(task => ({
+      ...task,
+      deadline: task.customDate && task.customTime 
+        ? `${task.customDate} ${task.customTime}` 
+        : null
+    }))
+    
+    // 动态导入 AIDailyPlanner
+    const { AIDailyPlanner } = await import('../services/aiDailyPlanner')
+    const plan = await AIDailyPlanner.generateDailyPlan(tasksWithDeadline)
+    
+    // 格式化规划结果
+    let resultText = `🌅 **今日规划**\n\n`
+    resultText += `📊 **任务概览**\n`
+    resultText += `- 待办任务：${pendingTasks.length} 个\n`
+    resultText += `- 高优先级：${pendingTasks.filter(t => t.priority === 'high').length} 个\n\n`
+    
+    if (plan.morning && plan.morning.length > 0) {
+      resultText += `🌄 **上午安排**\n`
+      plan.morning.forEach((task, i) => {
+        resultText += `${i + 1}. ${task.text} (${task.priority === 'high' ? '⚡高' : task.priority === 'medium' ? '📌中' : '📋低'})\n`
+      })
+      resultText += `\n`
+    }
+    
+    if (plan.afternoon && plan.afternoon.length > 0) {
+      resultText += `☀️ **下午安排**\n`
+      plan.afternoon.forEach((task, i) => {
+        resultText += `${i + 1}. ${task.text} (${task.priority === 'high' ? '⚡高' : task.priority === 'medium' ? '📌中' : '📋低'})\n`
+      })
+      resultText += `\n`
+    }
+    
+    if (plan.evening && plan.evening.length > 0) {
+      resultText += `🌙 **晚上安排**\n`
+      plan.evening.forEach((task, i) => {
+        resultText += `${i + 1}. ${task.text} (${task.priority === 'high' ? '⚡高' : task.priority === 'medium' ? '📌中' : '📋低'})\n`
+      })
+      resultText += `\n`
+    }
+    
+    if (plan.suggestions) {
+      resultText += `💡 **AI 建议**\n${plan.suggestions}`
+    }
+    
+    messages.value[assistantMsgIndex].content = resultText
+  } catch (error) {
+    messages.value[assistantMsgIndex].content = `❌ 生成规划失败：${error.message}`
+  }
+}
+
+// 处理普通对话
+const handleNormalChat = async (question) => {
+  // 检查是否是确认创建任务或子任务
+  if (extractedTasks.value.length > 0 && /^(确认|创建|好的|是的|yes|ok|创建这些子任务)$/i.test(question)) {
+    emit('createTasks', extractedTasks.value)
+    messages.value.push({ 
+      role: 'assistant', 
+      content: `✅ 已成功创建 ${extractedTasks.value.length} 个任务！`,
+      modelName: currentModel.value?.name
+    })
+    extractedTasks.value = []
+    return
+  }
+  
   // 创建一个空的助手消息用于流式更新
   const assistantMsgIndex = messages.value.length
   messages.value.push({ 
@@ -764,20 +1137,11 @@ const sendMessage = async () => {
     } else {
       await callOllamaStream(context, question, model, assistantMsgIndex)
     }
-    
-    // 保存 AI 回复
-    saveChatHistory()
   } catch (error) {
     messages.value[assistantMsgIndex] = { 
       role: 'error', 
       content: error.message 
     }
-    saveChatHistory()
-  } finally {
-    loading.value = false
-    nextTick(() => {
-      messagesContainer.value?.scrollTo(0, messagesContainer.value.scrollHeight)
-    })
   }
 }
 
@@ -968,6 +1332,17 @@ const callOpenAI = async (context, question, model) => {
     }
     throw error
   }
+}
+
+// 创建任务相关方法
+const getCategoryLabel = (category) => {
+  const labels = { work: '💼 工作', study: '📚 学习', life: '🏠 生活' }
+  return labels[category] || '其他'
+}
+
+const getPriorityLabel = (priority) => {
+  const labels = { high: '⚡ 高', medium: '📌 中', low: '📋 低' }
+  return labels[priority] || '中'
 }
 </script>
 
