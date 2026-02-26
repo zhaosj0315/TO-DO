@@ -12,6 +12,14 @@
           <button class="btn-icon-circle btn-ai" @click="showAIChat = true" :title="t('aiChat')">
             🤖
           </button>
+          <!-- AI 对话创建按钮 -->
+          <button class="btn-icon-circle btn-ai-chat" @click="showAIChatCreate = true" title="AI 对话创建">
+            💬
+          </button>
+          <!-- AI 今日规划按钮 -->
+          <button class="btn-icon-circle btn-daily-plan" @click="generateDailyPlan" title="AI 今日规划">
+            🌅
+          </button>
           <!-- 演示模式按钮 -->
           <button class="btn-icon-circle btn-tutorial" @click="startTutorial" :title="t('tutorial')">
             💡
@@ -288,7 +296,7 @@
                 </span>
                 
                 <!-- 执行进度（如果有日志记录） -->
-                <span v-if="task.stats && task.stats.progressHistory.length > 0 && task.status !== 'completed'" class="badge badge-progress" title="当前进度">
+                <span v-if="task.stats && task.stats.progressHistory && task.stats.progressHistory.length > 0 && task.status !== 'completed'" class="badge badge-progress" title="当前进度">
                   📊 {{ task.stats.progressHistory[task.stats.progressHistory.length - 1] }}%
                 </span>
                 
@@ -1011,6 +1019,18 @@
               <div class="entry-title">{{ t('dataReport') }}</div>
               <div class="entry-summary">
                 {{ t('dataReportDesc') }}
+              </div>
+            </div>
+            <div class="entry-arrow">›</div>
+          </div>
+
+          <!-- AI 周报生成入口 -->
+          <div class="pomodoro-entry" @click="generateWeeklyReport">
+            <div class="entry-icon">📝</div>
+            <div class="entry-content">
+              <div class="entry-title">AI 周报生成</div>
+              <div class="entry-summary">
+                自动生成本周工作总结
               </div>
             </div>
             <div class="entry-arrow">›</div>
@@ -1960,6 +1980,31 @@
       :task="selectedTask"
       @close="showTaskDetail = false; selectedTask = null"
       @refresh="handleTaskDetailRefresh"
+      @split="handleSplitTask"
+    />
+
+    <!-- 子任务预览弹窗 -->
+    <SubtaskPreviewModal
+      :visible="showSubtaskPreview"
+      :original-task="currentSplittingTask"
+      :subtasks="subtasks"
+      @close="showSubtaskPreview = false"
+      @create="handleCreateSubtasks"
+    />
+
+    <!-- 每日规划弹窗 -->
+    <DailyPlanModal
+      :visible="showDailyPlan"
+      :plan="dailyPlan"
+      :tasks="dailyPlanTasks"
+      @close="showDailyPlan = false"
+    />
+
+    <!-- AI 对话创建弹窗 -->
+    <AIChatCreate
+      :visible="showAIChatCreate"
+      @close="showAIChatCreate = false"
+      @create="handleChatCreateTasks"
     />
 
     <!-- 演示模式 -->
@@ -2566,8 +2611,15 @@ import { AITextService } from '../services/aiTextService'
 import { AITaskExtractor } from '../services/aiTaskExtractor'
 import { AITaskGenerator } from '../services/aiTaskGenerator'
 import { AIClassifier } from '../services/aiClassifier'
+import { AITaskSplitter } from '../services/aiTaskSplitter'
+import { AIDailyPlanner } from '../services/aiDailyPlanner'
+import { AIReportGenerator } from '../services/aiReportGenerator'
+import { AIChatService } from '../services/aiChatService'
 import AIConfigModal from '../components/AIConfigModal.vue'
 import TaskPreviewModal from '../components/TaskPreviewModal.vue'
+import SubtaskPreviewModal from '../components/SubtaskPreviewModal.vue'
+import DailyPlanModal from '../components/DailyPlanModal.vue'
+import AIChatCreate from '../components/AIChatCreate.vue'
 import { Filesystem, Directory } from '@capacitor/filesystem'
 import { LocalNotifications } from '@capacitor/local-notifications'
 import { Capacitor } from '@capacitor/core'
@@ -3028,6 +3080,19 @@ const { showMenu: showTextMenu, menuPosition, selectedText: selectedTextNew, clo
 const showTaskPreview = ref(false)
 const extractedTasks = ref([])
 
+// 子任务拆解
+const showSubtaskPreview = ref(false)
+const subtasks = ref([])
+const currentSplittingTask = ref(null)
+
+// 每日规划
+const showDailyPlan = ref(false)
+const dailyPlan = ref({})
+const dailyPlanTasks = ref([])
+
+// AI 对话创建
+const showAIChatCreate = ref(false)
+
 // 处理 AI 文本操作
 const handleTextAction = async ({ action, text, tone }) => {
   console.log('TodoView handleTextAction called:', { action, text, tone })
@@ -3104,6 +3169,186 @@ const handleCreateTasks = (tasks) => {
   })
   
   showNotification(`✅ 已创建 ${tasks.length} 个任务`, 'success')
+}
+
+// AI 拆解任务
+const handleSplitTask = async (task) => {
+  currentSplittingTask.value = task
+  
+  try {
+    showNotification('AI 正在拆解任务...', 'info')
+    const splitResult = await AITaskSplitter.splitTask(task.text, task.description)
+    
+    if (splitResult.length > 0) {
+      subtasks.value = splitResult
+      showSubtaskPreview.value = true
+      showNotification(`✨ AI 已拆解为 ${splitResult.length} 个子任务`, 'success')
+    } else {
+      showNotification('未能拆解任务，请重试', 'warning')
+    }
+  } catch (error) {
+    console.error('AI拆解失败:', error)
+    alert(`AI拆解失败：${error.message}`)
+  }
+}
+
+// 创建子任务
+const handleCreateSubtasks = (subtaskList) => {
+  console.log('Creating subtasks:', subtaskList)
+  
+  subtaskList.forEach((subtask, index) => {
+    const newTask = {
+      id: Date.now() + Math.random(),
+      text: subtask.title,
+      description: subtask.description || '',
+      type: 'today',
+      category: currentSplittingTask.value?.category || 'work',
+      priority: subtask.priority || 'medium',
+      status: 'pending',
+      created_at: new Date().toISOString(),
+      completed_at: null,
+      completedPomodoros: 0,
+      estimatedPomodoros: Math.ceil((subtask.estimatedHours || 1) / 0.5), // 每0.5小时1个番茄钟
+      pomodoroHistory: [],
+      logs: [],
+      stats: {
+        sessionCount: 0,
+        totalDuration: 0,
+        avgDuration: 0,
+        blockCount: 0,
+        resolvedBlockCount: 0,
+        latestProgress: 0
+      }
+    }
+    
+    taskStore.addTask(newTask)
+  })
+  
+  showNotification(`✅ 已创建 ${subtaskList.length} 个子任务`, 'success')
+  
+  // 关闭原任务详情页
+  showTaskDetail.value = false
+}
+
+// AI 周报生成
+const generateWeeklyReport = async () => {
+  // 获取本周完成的任务
+  const now = new Date()
+  const weekStart = new Date(now)
+  weekStart.setDate(now.getDate() - now.getDay()) // 本周日
+  weekStart.setHours(0, 0, 0, 0)
+  
+  const completedTasks = taskStore.tasks.filter(task => {
+    if (task.status !== 'completed' || !task.completed_at) return false
+    const completedDate = new Date(task.completed_at)
+    return completedDate >= weekStart
+  })
+  
+  if (completedTasks.length === 0) {
+    alert('本周还没有完成的任务')
+    return
+  }
+  
+  try {
+    showNotification('AI 正在生成周报...', 'info')
+    
+    const startDate = weekStart.toISOString().split('T')[0]
+    const endDate = now.toISOString().split('T')[0]
+    
+    const report = await AIReportGenerator.generateWeeklyReport(completedTasks, startDate, endDate)
+    
+    // 显示周报（使用 alert 或创建专门的弹窗）
+    const reportWindow = window.open('', '_blank')
+    reportWindow.document.write(`
+      <html>
+        <head>
+          <title>工作周报</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 2rem; max-width: 800px; margin: 0 auto; line-height: 1.6; }
+            h1, h2, h3 { color: #333; }
+            pre { background: #f5f5f5; padding: 1rem; border-radius: 8px; overflow-x: auto; }
+          </style>
+        </head>
+        <body>
+          <pre>${report}</pre>
+        </body>
+      </html>
+    `)
+    
+    showNotification('✨ 周报已生成', 'success')
+  } catch (error) {
+    console.error('AI生成周报失败:', error)
+    alert(`AI生成周报失败：${error.message}`)
+  }
+}
+
+// AI 对话创建任务
+const handleChatCreateTasks = (tasks) => {
+  console.log('Creating tasks from chat:', tasks)
+  
+  tasks.forEach(task => {
+    const newTask = {
+      id: Date.now() + Math.random(),
+      text: task.title,
+      description: task.description || '',
+      type: 'today',
+      category: task.category || 'life',
+      priority: task.priority || 'medium',
+      status: 'pending',
+      created_at: new Date().toISOString(),
+      completed_at: null,
+      completedPomodoros: 0,
+      estimatedPomodoros: task.priority === 'high' ? 4 : task.priority === 'medium' ? 2 : 1,
+      pomodoroHistory: [],
+      logs: [],
+      stats: {
+        sessionCount: 0,
+        totalDuration: 0,
+        avgDuration: 0,
+        blockCount: 0,
+        resolvedBlockCount: 0,
+        latestProgress: 0
+      }
+    }
+    
+    taskStore.addTask(newTask)
+  })
+  
+  showNotification(`✅ 已创建 ${tasks.length} 个任务`, 'success')
+}
+
+// AI 每日规划
+const generateDailyPlan = async () => {
+  // 获取所有待办任务
+  const pendingTasks = taskStore.tasks.filter(task => task.status === 'pending')
+  
+  if (pendingTasks.length === 0) {
+    alert('没有待办任务，无法生成规划')
+    return
+  }
+  
+  try {
+    showNotification('AI 正在生成今日规划...', 'info')
+    
+    // 为任务添加截止时间信息
+    const tasksWithDeadline = pendingTasks.map(task => ({
+      ...task,
+      deadline: task.customDate && task.customTime 
+        ? `${task.customDate} ${task.customTime}` 
+        : null
+    }))
+    
+    const plan = await AIDailyPlanner.generateDailyPlan(tasksWithDeadline)
+    
+    dailyPlan.value = plan
+    dailyPlanTasks.value = tasksWithDeadline
+    showDailyPlan.value = true
+    
+    showNotification('✨ AI 已生成今日规划', 'success')
+  } catch (error) {
+    console.error('AI生成规划失败:', error)
+    alert(`AI生成规划失败：${error.message}`)
+  }
 }
 
 // AI 写作助手 - 智能提取任务信息
@@ -4617,6 +4862,10 @@ const openEditModal = (task) => {
 
 // 方法：打开任务详情（统一入口：复用编辑 Bottom Sheet）
 const openTaskDetail = (task) => {
+  if (!task) {
+    console.warn('openTaskDetail: task is undefined')
+    return
+  }
   selectedTask.value = task
   showTaskDetail.value = true
 }
@@ -9672,6 +9921,32 @@ watch(() => reportData.value, (newData) => {
 .btn-ai:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* AI 对话创建按钮 */
+.btn-ai-chat {
+  font-size: 1.3rem;
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+  color: white !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.btn-ai-chat:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(240, 147, 251, 0.4);
+}
+
+/* AI 今日规划按钮 */
+.btn-daily-plan {
+  font-size: 1.3rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.btn-daily-plan:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
 }
 
 /* 演示模式按钮 */

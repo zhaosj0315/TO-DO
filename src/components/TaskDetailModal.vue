@@ -140,7 +140,7 @@
               <div class="stat-label">遇到阻碍</div>
             </div>
           </div>
-          <div v-if="task.stats.tags.length > 0" class="tags-container">
+          <div v-if="task.stats && task.stats.tags && task.stats.tags.length > 0" class="tags-container">
             <span class="tag-label">🏷️ 标签:</span>
             <span v-for="tag in task.stats.tags" :key="tag" class="tag-item">
               #{{ tag }}
@@ -240,6 +240,13 @@
         </button>
         <button
           v-if="task.status !== 'completed'"
+          class="split-btn"
+          @click="handleSplitTask"
+        >
+          🔨 AI拆解任务
+        </button>
+        <button
+          v-if="task.status !== 'completed'"
           class="complete-btn"
           @click="handleComplete"
         >
@@ -288,7 +295,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['close', 'edit', 'refresh'])
+const emit = defineEmits(['close', 'edit', 'refresh', 'split'])
 
 const taskStore = useOfflineTaskStore()
 const showAddLogModal = ref(false)
@@ -299,6 +306,11 @@ const localTask = ref({ ...props.task })
 // 文本选择菜单
 const detailContentRef = ref(null)
 const { showMenu: showTextMenu, menuPosition, selectedText, closeTextMenu, replaceSelectedText } = useTextSelection(detailContentRef)
+
+// AI 拆解任务
+const handleSplitTask = () => {
+  emit('split', props.task)
+}
 
 // 处理 AI 文本操作
 const handleTextAction = async ({ action, text, tone }) => {
@@ -1583,6 +1595,11 @@ section h3 {
 }
 
 .add-log-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.split-btn {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
 }
