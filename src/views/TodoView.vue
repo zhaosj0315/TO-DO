@@ -3816,7 +3816,9 @@ const generateWeeklyReport = async () => {
     const startDate = weekStart.toISOString().split('T')[0]
     const endDate = now.toISOString().split('T')[0]
     
-    const report = await AIReportGenerator.generateWeeklyReport(completedTasks, startDate, endDate)
+    // 传入所有任务，让生成器自己筛选
+    const generator = new AIReportGenerator(taskStore.tasks)
+    const report = generator.generateWeeklyReport(startDate, endDate, completedTasks)
     
     // 保存到历史记录
     const reportHistory = JSON.parse(localStorage.getItem('weekly_reports') || '[]')
@@ -7931,7 +7933,7 @@ const validateTaskData = (row, rowIndex) => {
   // 5. 验证日期格式
   const createdAt = row['创建时间']
   if (createdAt && !isValidDate(createdAt)) {
-    errors.push(`创建时间"${createdAt}"格式无效，应为：YYYY-MM-DD 或 YYYY-MM-DD HH:mm:ss`)
+    errors.push(`创建时间"${createdAt}"格式无效`)
   }
   
   const completedAt = row['完成时间']
@@ -7954,10 +7956,7 @@ const validateTaskData = (row, rowIndex) => {
 const isValidDate = (dateStr) => {
   if (!dateStr) return true
   
-  // 支持格式：YYYY-MM-DD 或 YYYY-MM-DD HH:mm:ss
-  const datePattern = /^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?$/
-  if (!datePattern.test(dateStr)) return false
-  
+  // 尝试直接解析日期（支持多种格式）
   const date = new Date(dateStr)
   return date instanceof Date && !isNaN(date)
 }

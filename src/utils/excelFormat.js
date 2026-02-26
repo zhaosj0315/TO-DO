@@ -129,7 +129,22 @@ export function excelRowToTask(row, userId) {
     enableReminder: row['启用提醒'] === '是',
     reminderTime: row['提醒时间'] || null,
     forceReminder: row['强制提醒'] === '是',
-    user_id: userId
+    user_id: userId,
+    // 初始化新字段（Excel导入时为空）
+    logs: [],
+    stats: {
+      sessionCount: 0,
+      totalDuration: 0,
+      averageDuration: 0,
+      progressHistory: [],
+      tags: [],
+      blocksResolved: 0
+    },
+    pomodoroHistory: [],
+    completedPomodoros: 0,
+    estimatedPomodoros: row['预估番茄钟'] || (
+      row['优先级'] === '高' ? 4 : row['优先级'] === '中' ? 2 : 1
+    )
   }
   
   return task

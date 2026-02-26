@@ -168,9 +168,10 @@ export async function listBackups() {
         directory: Directory.Documents
       });
       
+      // 只过滤 .json 文件，不限制文件名前缀
       return files
-        .filter(f => f.name.startsWith('TODO-App_backup_') && f.name.endsWith('.json'))
-        .map(f => ({ name: f.name }))
+        .filter(f => f.name.endsWith('.json'))
+        .map(f => ({ name: f.name, type: f.type, size: f.size, uri: f.uri }))
         .sort((a, b) => b.name.localeCompare(a.name)); // 最新的在前
     }
   } catch (error) {
