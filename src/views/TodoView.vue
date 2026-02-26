@@ -1896,7 +1896,7 @@
                     @input="autoResizeTextarea($event)"
                     class="input textarea log-content-textarea-mini" 
                     placeholder="输入日志内容..."
-                    rows="1"
+                    rows="3"
                     maxlength="500"
                   ></textarea>
                   <div class="char-count">{{ (log.content || '').length }}/500 · {{ (log.content || '').split('\n').length }} 行</div>
@@ -3542,6 +3542,11 @@ const deleteHistoryReport = (reportId) => {
   showNotification('周报已删除', 'success')
 }
 
+// 版本历史相关变量（必须在 initVersionHistory 之前声明）
+const showVersionModal = ref(false) // 版本历史弹窗
+const versionHistory = ref([]) // 版本历史列表
+const hasUnreadVersions = ref(false) // 是否有未读版本
+
 // 版本历史数据
 const initVersionHistory = () => {
   versionHistory.value = [
@@ -3931,9 +3936,7 @@ const weeklyReportContent = ref('') // 周报内容
 const weeklyReportTitle = ref('') // 周报标题
 const showReportHistoryModal = ref(false) // 周报历史弹窗
 const reportHistoryList = ref([]) // 周报历史列表
-const showVersionModal = ref(false) // 版本历史弹窗
-const versionHistory = ref([]) // 版本历史列表
-const hasUnreadVersions = ref(false) // 是否有未读版本
+// showVersionModal, versionHistory, hasUnreadVersions 已在上方声明
 const editingTask = ref(null)
 const editDescription = ref('')
 const editText = ref('')
@@ -5260,7 +5263,8 @@ const openEditModal = (task) => {
     const textareas = document.querySelectorAll('.log-content-textarea-mini')
     textareas.forEach(textarea => {
       textarea.style.height = 'auto'
-      textarea.style.height = textarea.scrollHeight + 'px'
+      const newHeight = Math.min(Math.max(textarea.scrollHeight, 80), 300)
+      textarea.style.height = newHeight + 'px'
     })
   })
 }
@@ -6945,7 +6949,8 @@ const formatLogTimeMini = (dateStr) => {
 const autoResizeTextarea = (event) => {
   const textarea = event.target
   textarea.style.height = 'auto'
-  textarea.style.height = textarea.scrollHeight + 'px'
+  const newHeight = Math.min(Math.max(textarea.scrollHeight, 80), 300)
+  textarea.style.height = newHeight + 'px'
 }
 
 // 方法：格式化日志时间（完整版）
@@ -13335,9 +13340,9 @@ watch(() => reportData.value, (newData) => {
   border-radius: 6px;
   font-size: 0.85rem;
   font-family: inherit;
-  resize: none;
-  min-height: 36px;
-  max-height: 200px;
+  resize: vertical;
+  min-height: 80px;
+  max-height: 300px;
   overflow-y: auto;
   transition: border-color 0.2s;
   line-height: 1.5;

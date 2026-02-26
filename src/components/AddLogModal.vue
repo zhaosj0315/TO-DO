@@ -223,6 +223,7 @@ const taskStore = useOfflineTaskStore()
 
 // 文本选择菜单
 const logFormRef = ref(null)
+const contentTextarea = ref(null)
 const { showMenu: showTextMenu, menuPosition, selectedText, closeTextMenu, replaceSelectedText } = useTextSelection(logFormRef)
 
 // 处理 AI 文本操作
@@ -521,7 +522,7 @@ textarea {
   font-family: inherit;
   resize: vertical;
   transition: all 0.2s;
-  min-height: 100px;
+  min-height: 150px;
   max-height: 400px;
 }
 
