@@ -65,7 +65,7 @@
               <option value="custom">自定义</option>
             </select>
             
-            <!-- 2. 厂商地址 -->
+            <!-- 2. 厂商地址 + 测试连接 -->
             <div style="display: flex; gap: 0.5rem;">
               <input 
                 v-model="newModel.url" 
@@ -74,7 +74,16 @@
                 style="flex: 1;"
               />
               <button @click="fetchAvailableModels" class="btn-fetch" title="获取模型列表">
-                🔄
+                🔄 获取模型
+              </button>
+              <button 
+                v-if="newModel.modelName"
+                @click="testConnection" 
+                :disabled="testing"
+                class="btn-test-inline"
+                :title="testing ? '测试中...' : '测试连接'"
+              >
+                {{ testing ? '⏳' : '🔍' }}
               </button>
             </div>
             
@@ -90,7 +99,7 @@
               💡 没有 API Key？我用的是 <a href="https://cn.gptapi.asia/register?aff=Okck" target="_blank" class="api-link">这个服务</a>，你也可以试试
             </div>
             
-            <!-- 4. 选择模型（自动获取后直接填充） -->
+            <!-- 4. 选择模型 -->
             <select 
               v-if="availableModels.length > 0"
               v-model="newModel.modelName"
@@ -110,40 +119,19 @@
               ⚠️ {{ fetchError }}
             </div>
             
-            <!-- 5. 显示名称（自动生成，可编辑） -->
-            <div v-if="newModel.modelName" class="model-name-preview">
-              <label>模型显示名称</label>
-              <input 
-                v-model="newModel.name" 
-                placeholder="自动生成的名称"
-                class="form-input"
-              />
-              <div class="hint-text">
-                💡 默认格式：厂商 - 模型名，可自定义
-              </div>
+            <!-- 测试结果提示 -->
+            <div v-if="testResult" :class="['test-result-box', testResult.success ? 'success' : 'error']">
+              {{ testResult.message }}
             </div>
             
-            <!-- 测试连接 -->
-            <div v-if="newModel.modelName" class="test-section">
-              <button 
-                @click="testConnection" 
-                :disabled="testing"
-                class="btn-test"
-              >
-                {{ testing ? '测试中...' : '🔍 测试连接' }}
-              </button>
-              <span v-if="testResult" :class="['test-result', testResult.success ? 'success' : 'error']">
-                {{ testResult.message }}
-              </span>
-            </div>
-            
+            <!-- 添加按钮 -->
             <button 
               v-if="newModel.modelName"
               @click="addModel" 
               class="btn-add"
               :disabled="testing"
             >
-              ➕ 添加模型
+              ➕ 添加模型 ({{ newModel.name || '自动生成名称' }})
             </button>
           </div>
         </div>
@@ -791,8 +779,9 @@ const addQuickConfig = (type) => {
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 1.2rem;
+  font-size: 0.9rem;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .btn-fetch:hover {
@@ -801,6 +790,47 @@ const addQuickConfig = (type) => {
 
 .btn-fetch:active {
   transform: scale(0.95);
+}
+
+.btn-test-inline {
+  padding: 0.75rem 1rem;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  transition: all 0.2s;
+  min-width: 50px;
+}
+
+.btn-test-inline:hover {
+  background: #218838;
+  transform: scale(1.05);
+}
+
+.btn-test-inline:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.test-result-box {
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.test-result-box.success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.test-result-box.error {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
 }
 
 .api-hint {
