@@ -13898,13 +13898,10 @@ watch(() => reportData.value, (newData) => {
 
 .fullscreen-desc-container {
   background: white;
-  border-radius: 16px;
-  width: 96%;
-  max-width: 800px;
-  height: 80vh;
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
 .fullscreen-desc-header {
@@ -13915,7 +13912,6 @@ watch(() => reportData.value, (newData) => {
   border-bottom: 1px solid #e0e0e0;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  border-radius: 16px 16px 0 0;
 }
 
 .fullscreen-desc-header h3 {
