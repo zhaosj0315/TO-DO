@@ -222,7 +222,11 @@
             <LogStats :logs="filteredLogs" :task-title="task.text" />
 
             <!-- 时间轴视图 -->
-            <LogTimeline v-if="showTimeline" :logs="filteredLogs" />
+            <LogTimeline 
+              v-if="showTimeline" 
+              :logs="filteredLogs" 
+              @update-log="handleUpdateLog"
+            />
 
             <!-- 列表视图 -->
             <div v-else class="logs-list">
@@ -668,6 +672,15 @@ const saveField = (field) => {
 // 切换时间轴视图
 const toggleTimelineView = () => {
   showTimeline.value = !showTimeline.value
+}
+
+// 更新日志内容
+const handleUpdateLog = (updatedLog) => {
+  const logIndex = localTask.value.logs.findIndex(l => l.id === updatedLog.id)
+  if (logIndex !== -1) {
+    localTask.value.logs[logIndex] = updatedLog
+    taskStore.updateTask(localTask.value)
+  }
 }
 
 // 删除日志

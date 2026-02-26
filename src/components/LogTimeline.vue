@@ -34,23 +34,22 @@
           </div>
           
           <div class="log-body">
-            <p class="log-text">{{ log.content }}</p>
+            <textarea 
+              v-model="log.content" 
+              class="log-text-input"
+              @blur="updateLogContent(log)"
+              rows="3"
+            ></textarea>
             
-            <!-- 耗时 -->
-            <div v-if="log.duration" class="log-meta">
-              <span class="meta-item">⏱️ 耗时: {{ log.duration }}分钟</span>
-            </div>
-            
-            <!-- 标签 -->
-            <div v-if="log.tags && log.tags.length > 0" class="log-tags">
-              <span v-for="tag in log.tags" :key="tag" class="tag">
-                {{ tag }}
+            <!-- 元信息：耗时、标签、心情 -->
+            <div v-if="log.duration || (log.tags && log.tags.length > 0) || log.mood" class="log-meta-row">
+              <span v-if="log.duration" class="meta-item">⏱️ {{ log.duration }}分钟</span>
+              <span v-if="log.tags && log.tags.length > 0" class="meta-item">
+                🏷️ {{ log.tags.join(', ') }}
               </span>
-            </div>
-            
-            <!-- 心情 -->
-            <div v-if="log.mood" class="log-mood">
-              {{ getMoodIcon(log.mood) }} {{ getMoodText(log.mood) }}
+              <span v-if="log.mood" class="meta-item">
+                {{ getMoodIcon(log.mood) }} {{ getMoodText(log.mood) }}
+              </span>
             </div>
           </div>
         </div>
@@ -69,10 +68,17 @@ const props = defineProps({
   }
 })
 
-// 按时间排序（最新的在上面）
+const emit = defineEmits(['update-log'])
+
+// 更新日志内容
+const updateLogContent = (log) => {
+  emit('update-log', log)
+}
+
+// 按时间排序（正序：从早到晚）
 const sortedLogs = computed(() => {
   return [...props.logs].sort((a, b) => 
-    new Date(b.timestamp) - new Date(a.timestamp)
+    new Date(a.timestamp) - new Date(b.timestamp)
   )
 })
 
@@ -118,33 +124,13 @@ const getLogTypeLabel = (type) => {
 // 格式化时间
 const formatTime = (timestamp) => {
   const date = new Date(timestamp)
-  const now = new Date()
-  const diff = now - date
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
   
-  // 1分钟内
-  if (diff < 60000) {
-    return '刚刚'
-  }
-  
-  // 1小时内
-  if (diff < 3600000) {
-    return `${Math.floor(diff / 60000)}分钟前`
-  }
-  
-  // 今天
-  if (date.toDateString() === now.toDateString()) {
-    return `今天 ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`
-  }
-  
-  // 昨天
-  const yesterday = new Date(now)
-  yesterday.setDate(yesterday.getDate() - 1)
-  if (date.toDateString() === yesterday.toDateString()) {
-    return `昨天 ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`
-  }
-  
-  // 其他
-  return `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`
+  return `${year}/${month}/${day} ${hours}:${minutes}`
 }
 
 // 获取心情图标
@@ -335,6 +321,36 @@ const getMoodText = (mood) => {
   overflow: visible;
 }
 
+.log-text-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  line-height: 1.8;
+  color: #333;
+  resize: vertical;
+  min-height: 80px;
+  margin-bottom: 0.75rem;
+  transition: border-color 0.2s;
+}
+
+.log-text-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.log-meta-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #666;
+}
+
 .log-meta {
   display: flex;
   gap: 1rem;
@@ -349,29 +365,4 @@ const getMoodText = (mood) => {
   gap: 0.25rem;
 }
 
-.log-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-}
-
-.tag {
-  padding: 0.25rem 0.75rem;
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  color: #666;
-}
-
-.log-mood {
-  margin-top: 0.75rem;
-  padding: 0.5rem;
-  background: white;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  color: #666;
-  display: inline-block;
-}
 </style>
