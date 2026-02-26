@@ -206,19 +206,16 @@
                 placeholder="🔍 搜索日志内容..."
                 class="search-input"
               >
-              <div class="filter-section">
-                <div class="filter-label">按类型筛选：</div>
-                <div class="filter-buttons">
-                  <button 
-                    v-for="type in logTypes" 
-                    :key="type.value"
-                    :class="['filter-btn', { active: filterType === type.value }]"
-                    @click="filterType = filterType === type.value ? '' : type.value"
-                    :title="type.label"
-                  >
-                    {{ type.icon }}
-                  </button>
-                </div>
+              <div class="filter-buttons">
+                <button 
+                  v-for="type in logTypes" 
+                  :key="type.value"
+                  :class="['filter-btn', { active: filterType === type.value }]"
+                  @click="filterType = filterType === type.value ? '' : type.value"
+                  :title="type.label"
+                >
+                  {{ type.icon }}
+                </button>
               </div>
             </div>
 
@@ -1054,19 +1051,6 @@ ${logsText || '暂无日志'}
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-.filter-section {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.filter-label {
-  font-size: 0.85rem;
-  color: #666;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
 .filter-buttons {
   display: flex;
   gap: 0.5rem;
@@ -1074,17 +1058,13 @@ ${logsText || '暂无日志'}
 }
 
 .filter-btn {
-  padding: 0.6rem 1.2rem;
+  padding: 0.5rem 1rem;
   background: #f8f9fa;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   cursor: pointer;
   transition: all 0.2s;
-  min-width: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .filter-btn:hover {
