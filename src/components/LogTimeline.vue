@@ -258,9 +258,10 @@ const getMoodText = (mood) => {
   flex: 1;
   background: #f8f9fa;
   border-radius: 12px;
-  padding: 1rem;
+  padding: 1.25rem;
   margin-bottom: 1rem;
   border-left: 3px solid #667eea;
+  min-height: 120px;
 }
 
 .log-header {
@@ -314,8 +315,14 @@ const getMoodText = (mood) => {
 
 .log-text {
   margin: 0 0 0.75rem 0;
-  line-height: 1.6;
-  font-size: 0.9rem;
+  line-height: 1.8;
+  font-size: 0.95rem;
+  color: #333;
+  white-space: pre-wrap;
+  word-break: break-word;
+  min-height: 60px;
+  max-height: none;
+  overflow: visible;
 }
 
 .progress-bar {
