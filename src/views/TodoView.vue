@@ -13,9 +13,9 @@
             🤖
           </button>
           <!-- AI 对话创建按钮 -->
-          <!-- <button class="btn-icon-circle btn-ai-chat" @click="showAIChatCreate = true" title="AI 对话创建">
+          <button class="btn-icon-circle btn-ai-chat" @click="showAIChatCreate = true" title="AI 对话创建">
             💬
-          </button> -->
+          </button>
           <!-- AI 今日规划按钮 -->
           <button class="btn-icon-circle btn-daily-plan" @click="generateDailyPlan" title="AI 今日规划">
             🌅
@@ -1984,28 +1984,28 @@
     />
 
     <!-- 子任务预览弹窗 -->
-    <!-- <SubtaskPreviewModal
+    <SubtaskPreviewModal
       :visible="showSubtaskPreview"
       :original-task="currentSplittingTask"
       :subtasks="subtasks"
       @close="showSubtaskPreview = false"
       @create="handleCreateSubtasks"
-    /> -->
+    />
 
     <!-- 每日规划弹窗 -->
-    <!-- <DailyPlanModal
+    <DailyPlanModal
       :visible="showDailyPlan"
       :plan="dailyPlan"
       :tasks="dailyPlanTasks"
       @close="showDailyPlan = false"
-    /> -->
+    />
 
     <!-- AI 对话创建弹窗 -->
-    <!-- <AIChatCreate
+    <AIChatCreate
       :visible="showAIChatCreate"
       @close="showAIChatCreate = false"
       @create="handleChatCreateTasks"
-    /> -->
+    />
 
     <!-- 演示模式 -->
     <TutorialMode
@@ -2637,15 +2637,15 @@ import { AITaskExtractor } from '../services/aiTaskExtractor'
 import { AITaskGenerator } from '../services/aiTaskGenerator'
 import { AIClassifier } from '../services/aiClassifier'
 import { AITaskSplitter } from '../services/aiTaskSplitter'
-// import { AIDailyPlanner } from '../services/aiDailyPlanner' // File doesn't exist
-// import { AIReportGenerator } from '../services/aiReportGenerator' // File doesn't exist
-// import { AIChatService } from '../services/aiChatService' // File doesn't exist
+import { AIDailyPlanner } from '../services/aiDailyPlanner'
+import { AIReportGenerator } from '../services/aiReportGenerator'
+import { AIChatService } from '../services/aiChatService'
 import { AITextEnhancer } from '../services/aiTextEnhancer'
 import AIConfigModal from '../components/AIConfigModal.vue'
 import TaskPreviewModal from '../components/TaskPreviewModal.vue'
-// import SubtaskPreviewModal from '../components/SubtaskPreviewModal.vue' // File doesn't exist
-// import DailyPlanModal from '../components/DailyPlanModal.vue' // File doesn't exist
-// import AIChatCreate from '../components/AIChatCreate.vue' // File doesn't exist
+import SubtaskPreviewModal from '../components/SubtaskPreviewModal.vue'
+import DailyPlanModal from '../components/DailyPlanModal.vue'
+import AIChatCreate from '../components/AIChatCreate.vue'
 import { Filesystem, Directory } from '@capacitor/filesystem'
 import { LocalNotifications } from '@capacitor/local-notifications'
 import { Capacitor } from '@capacitor/core'
@@ -3296,8 +3296,7 @@ const generateWeeklyReport = async () => {
     const startDate = weekStart.toISOString().split('T')[0]
     const endDate = now.toISOString().split('T')[0]
     
-    // const report = await AIReportGenerator.generateWeeklyReport(completedTasks, startDate, endDate)
-    const report = { summary: '周报生成功能暂未实现', tasks: completedTasks }
+    const report = await AIReportGenerator.generateWeeklyReport(completedTasks, startDate, endDate)
     
     // 使用弹窗显示周报（参考数据报告布局）
     weeklyReportContent.value = report
@@ -3367,8 +3366,7 @@ const generateDailyPlan = async () => {
         : null
     }))
     
-    // const plan = await AIDailyPlanner.generateDailyPlan(tasksWithDeadline)
-    const plan = { summary: '日程规划功能暂未实现', tasks: [] }
+    const plan = await AIDailyPlanner.generateDailyPlan(tasksWithDeadline)
     
     dailyPlan.value = plan
     dailyPlanTasks.value = tasksWithDeadline
