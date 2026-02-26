@@ -93,7 +93,7 @@ export class AIReportGenerator {
 ${taskList}
 ${tasks.length > 20 ? `\n...还有${tasks.length - 20}个任务` : ''}
 
-请按照以下格式输出JSON（增强版周报模板）：
+请按照以下格式输出JSON（标准工作周报格式）：
 {
   "overview": {
     "totalTasks": ${tasks.length},
@@ -104,26 +104,25 @@ ${tasks.length > 20 ? `\n...还有${tasks.length - 20}个任务` : ''}
     "completionRate": "计算完成率",
     "pomodoros": ${totalPomodoros}
   },
-  "completed": ["已完成的关键任务1", "已完成的关键任务2"],
-  "highlights": ["重点突破1（高优先级任务）", "重点突破2"],
-  "progress": ["本周进展1", "本周进展2"],
-  "experience": ["经验总结1", "经验总结2"],
-  "nextWeek": ["下周计划1", "下周计划2"],
+  "previousCompleted": ["上期已完成事项1", "上期已完成事项2"],
+  "monthlyGoals": ["本月目标1", "本月目标2"],
+  "monthlyProgress": ["本月进展1", "本月进展2"],
+  "weeklyProgress": ["本周进展1", "本周进展2"],
+  "nextWeekPlan": ["下周计划1", "下周计划2"],
   "risks": ["风险或问题1（可选）"],
-  "improvements": ["持续改进措施1（可选）"],
   "summary": "整体总结（可选）"
 }
 
 要求：
-1. overview: 数据概览，用数字说话
-2. completed: 列出3-5个已完成的关键任务
-3. highlights: 提炼2-3个重点突破（优先高优先级任务）
-4. progress: 描述2-3个本周工作进展
-5. experience: 总结1-2条经验教训或有效方法
-6. nextWeek: 规划2-3个下周工作计划
-7. risks: 识别风险或问题（如无则为空数组）
-8. improvements: 持续改进措施（如无则为空数组）
-9. 内容要具体、有数据支撑、有洞察力`
+1. overview: 数据概览（任务数、分类、优先级、番茄钟）
+2. previousCompleted: 上期已完成情况（2-3项）
+3. monthlyGoals: 本月目标（2-3项）
+4. monthlyProgress: 本月进展（截止当前，2-3项）
+5. weeklyProgress: 本周进展（本周具体完成的工作，3-5项）
+6. nextWeekPlan: 下周计划（2-3项）
+7. risks: 风险与问题（1-2项，如无则为空数组）
+8. summary: 整体总结（可选）
+9. 内容要具体、有数据支撑、符合工作汇报标准`
   }
 
   static getCategoryLabel(category) {
@@ -138,13 +137,12 @@ ${tasks.length > 20 ? `\n...还有${tasks.length - 20}个任务` : ''}
         const parsed = JSON.parse(jsonMatch[0])
         return {
           overview: parsed.overview || {},
-          completed: parsed.completed || [],
-          highlights: parsed.highlights || [],
-          progress: parsed.progress || [],
-          experience: parsed.experience || [],
-          nextWeek: parsed.nextWeek || [],
+          previousCompleted: parsed.previousCompleted || [],
+          monthlyGoals: parsed.monthlyGoals || [],
+          monthlyProgress: parsed.monthlyProgress || [],
+          weeklyProgress: parsed.weeklyProgress || [],
+          nextWeekPlan: parsed.nextWeekPlan || [],
           risks: parsed.risks || [],
-          improvements: parsed.improvements || [],
           summary: parsed.summary || '',
           tasks: tasks
         }
@@ -172,19 +170,12 @@ ${tasks.length > 20 ? `\n...还有${tasks.length - 20}个任务` : ''}
         completionRate: '100%',
         pomodoros: totalPomodoros
       },
-      completed: tasks.slice(0, 5).map(t => t.text),
-      highlights: tasks.filter(t => t.priority === 'high').slice(0, 3).map(t => t.text),
-      progress: [
-        `本周完成${tasks.length}个任务`,
-        '保持良好的执行力'
-      ],
-      experience: ['时间管理有序', '优先级把握准确'],
-      nextWeek: [
-        '继续推进重点项目',
-        '优化工作流程'
-      ],
+      previousCompleted: ['上期工作已按计划完成'],
+      monthlyGoals: ['完成核心项目开发', '提升工作效率'],
+      monthlyProgress: [`本月已完成${tasks.length}个任务`, '各项工作稳步推进'],
+      weeklyProgress: tasks.slice(0, 5).map(t => t.text),
+      nextWeekPlan: ['继续推进重点项目', '优化工作流程'],
       risks: [],
-      improvements: [],
       summary: `本周完成${tasks.length}个任务，涵盖工作、学习、生活多个方面。`,
       tasks: tasks
     }

@@ -2620,22 +2620,33 @@
               </div>
             </div>
 
-            <!-- 已完成情况 -->
-            <div v-if="weeklyReportContent.completed && weeklyReportContent.completed.length > 0" class="report-section">
-              <div class="section-title">✅ 已完成情况</div>
+            <!-- 已完成情况（截止上期） -->
+            <div v-if="weeklyReportContent.previousCompleted && weeklyReportContent.previousCompleted.length > 0" class="report-section">
+              <div class="section-title">✅ 已完成情况（截止上期）</div>
               <div class="highlights-list">
-                <div v-for="(item, index) in weeklyReportContent.completed" :key="index" class="highlight-item">
+                <div v-for="(item, index) in weeklyReportContent.previousCompleted" :key="index" class="highlight-item">
                   <span class="highlight-number">{{ index + 1 }}</span>
                   <span class="highlight-text">{{ item }}</span>
                 </div>
               </div>
             </div>
 
-            <!-- 重点突破 -->
-            <div v-if="weeklyReportContent.highlights && weeklyReportContent.highlights.length > 0" class="report-section">
-              <div class="section-title">🎯 重点突破</div>
+            <!-- 本月目标 -->
+            <div v-if="weeklyReportContent.monthlyGoals && weeklyReportContent.monthlyGoals.length > 0" class="report-section">
+              <div class="section-title">🎯 本月目标</div>
               <div class="highlights-list">
-                <div v-for="(item, index) in weeklyReportContent.highlights" :key="index" class="highlight-item highlight-special">
+                <div v-for="(item, index) in weeklyReportContent.monthlyGoals" :key="index" class="highlight-item highlight-special">
+                  <span class="highlight-number">{{ index + 1 }}</span>
+                  <span class="highlight-text">{{ item }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 本月进展（截止当前） -->
+            <div v-if="weeklyReportContent.monthlyProgress && weeklyReportContent.monthlyProgress.length > 0" class="report-section">
+              <div class="section-title">📈 本月进展（截止当前）</div>
+              <div class="highlights-list">
+                <div v-for="(item, index) in weeklyReportContent.monthlyProgress" :key="index" class="highlight-item">
                   <span class="highlight-number">{{ index + 1 }}</span>
                   <span class="highlight-text">{{ item }}</span>
                 </div>
@@ -2643,21 +2654,10 @@
             </div>
 
             <!-- 本周进展 -->
-            <div v-if="weeklyReportContent.progress && weeklyReportContent.progress.length > 0" class="report-section">
-              <div class="section-title">📈 本周进展</div>
+            <div v-if="weeklyReportContent.weeklyProgress && weeklyReportContent.weeklyProgress.length > 0" class="report-section">
+              <div class="section-title">📅 本周进展</div>
               <div class="highlights-list">
-                <div v-for="(item, index) in weeklyReportContent.progress" :key="index" class="highlight-item">
-                  <span class="highlight-number">{{ index + 1 }}</span>
-                  <span class="highlight-text">{{ item }}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- 经验总结 -->
-            <div v-if="weeklyReportContent.experience && weeklyReportContent.experience.length > 0" class="report-section">
-              <div class="section-title">💡 经验总结</div>
-              <div class="highlights-list">
-                <div v-for="(item, index) in weeklyReportContent.experience" :key="index" class="highlight-item">
+                <div v-for="(item, index) in weeklyReportContent.weeklyProgress" :key="index" class="highlight-item">
                   <span class="highlight-number">{{ index + 1 }}</span>
                   <span class="highlight-text">{{ item }}</span>
                 </div>
@@ -2665,10 +2665,10 @@
             </div>
 
             <!-- 下周计划 -->
-            <div v-if="weeklyReportContent.nextWeek && weeklyReportContent.nextWeek.length > 0" class="report-section">
-              <div class="section-title">📅 下周计划</div>
+            <div v-if="weeklyReportContent.nextWeekPlan && weeklyReportContent.nextWeekPlan.length > 0" class="report-section">
+              <div class="section-title">📋 下周计划</div>
               <div class="highlights-list">
-                <div v-for="(item, index) in weeklyReportContent.nextWeek" :key="index" class="highlight-item">
+                <div v-for="(item, index) in weeklyReportContent.nextWeekPlan" :key="index" class="highlight-item">
                   <span class="highlight-number">{{ index + 1 }}</span>
                   <span class="highlight-text">{{ item }}</span>
                 </div>
@@ -2680,17 +2680,6 @@
               <div class="section-title">⚠️ 风险与问题</div>
               <div class="highlights-list">
                 <div v-for="(item, index) in weeklyReportContent.risks" :key="index" class="highlight-item risk-item">
-                  <span class="highlight-number">{{ index + 1 }}</span>
-                  <span class="highlight-text">{{ item }}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- 持续改进 -->
-            <div v-if="weeklyReportContent.improvements && weeklyReportContent.improvements.length > 0" class="report-section">
-              <div class="section-title">🔄 持续改进</div>
-              <div class="highlights-list">
-                <div v-for="(item, index) in weeklyReportContent.improvements" :key="index" class="highlight-item">
                   <span class="highlight-number">{{ index + 1 }}</span>
                   <span class="highlight-text">{{ item }}</span>
                 </div>
@@ -6404,41 +6393,41 @@ const copyWeeklyReport = async () => {
         textToCopy += `分类：💼工作${o.workTasks || 0} 📚学习${o.studyTasks || 0} 🏠生活${o.lifeTasks || 0}\n\n`
       }
       
-      if (weeklyReportContent.value.completed && weeklyReportContent.value.completed.length > 0) {
-        textToCopy += `✅ 已完成情况\n`
-        weeklyReportContent.value.completed.forEach((item, i) => {
+      if (weeklyReportContent.value.previousCompleted && weeklyReportContent.value.previousCompleted.length > 0) {
+        textToCopy += `✅ 已完成情况（截止上期）\n`
+        weeklyReportContent.value.previousCompleted.forEach((item, i) => {
           textToCopy += `${i + 1}. ${item}\n`
         })
         textToCopy += '\n'
       }
       
-      if (weeklyReportContent.value.highlights && weeklyReportContent.value.highlights.length > 0) {
-        textToCopy += `🎯 重点突破\n`
-        weeklyReportContent.value.highlights.forEach((item, i) => {
+      if (weeklyReportContent.value.monthlyGoals && weeklyReportContent.value.monthlyGoals.length > 0) {
+        textToCopy += `🎯 本月目标\n`
+        weeklyReportContent.value.monthlyGoals.forEach((item, i) => {
           textToCopy += `${i + 1}. ${item}\n`
         })
         textToCopy += '\n'
       }
       
-      if (weeklyReportContent.value.progress && weeklyReportContent.value.progress.length > 0) {
-        textToCopy += `📈 本周进展\n`
-        weeklyReportContent.value.progress.forEach((item, i) => {
+      if (weeklyReportContent.value.monthlyProgress && weeklyReportContent.value.monthlyProgress.length > 0) {
+        textToCopy += `📈 本月进展（截止当前）\n`
+        weeklyReportContent.value.monthlyProgress.forEach((item, i) => {
           textToCopy += `${i + 1}. ${item}\n`
         })
         textToCopy += '\n'
       }
       
-      if (weeklyReportContent.value.experience && weeklyReportContent.value.experience.length > 0) {
-        textToCopy += `💡 经验总结\n`
-        weeklyReportContent.value.experience.forEach((item, i) => {
+      if (weeklyReportContent.value.weeklyProgress && weeklyReportContent.value.weeklyProgress.length > 0) {
+        textToCopy += `📅 本周进展\n`
+        weeklyReportContent.value.weeklyProgress.forEach((item, i) => {
           textToCopy += `${i + 1}. ${item}\n`
         })
         textToCopy += '\n'
       }
       
-      if (weeklyReportContent.value.nextWeek && weeklyReportContent.value.nextWeek.length > 0) {
-        textToCopy += `📅 下周计划\n`
-        weeklyReportContent.value.nextWeek.forEach((item, i) => {
+      if (weeklyReportContent.value.nextWeekPlan && weeklyReportContent.value.nextWeekPlan.length > 0) {
+        textToCopy += `📋 下周计划\n`
+        weeklyReportContent.value.nextWeekPlan.forEach((item, i) => {
           textToCopy += `${i + 1}. ${item}\n`
         })
         textToCopy += '\n'
@@ -6447,14 +6436,6 @@ const copyWeeklyReport = async () => {
       if (weeklyReportContent.value.risks && weeklyReportContent.value.risks.length > 0) {
         textToCopy += `⚠️ 风险与问题\n`
         weeklyReportContent.value.risks.forEach((item, i) => {
-          textToCopy += `${i + 1}. ${item}\n`
-        })
-        textToCopy += '\n'
-      }
-      
-      if (weeklyReportContent.value.improvements && weeklyReportContent.value.improvements.length > 0) {
-        textToCopy += `🔄 持续改进\n`
-        weeklyReportContent.value.improvements.forEach((item, i) => {
           textToCopy += `${i + 1}. ${item}\n`
         })
         textToCopy += '\n'
