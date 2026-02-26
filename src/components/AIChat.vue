@@ -251,27 +251,28 @@ const sendMessage = async () => {
   userInput.value = ''
   loading.value = true
 
+  // 创建一个空的助手消息用于流式更新
+  const assistantMsgIndex = messages.value.length
+  messages.value.push({ 
+    role: 'assistant', 
+    content: '',
+    modelName: currentModel.value?.name
+  })
+
   try {
     const context = buildContext()
     const model = currentModel.value
-    let response
 
     if (model.type === 'openai') {
-      response = await callOpenAI(context, question, model)
+      await callOpenAIStream(context, question, model, assistantMsgIndex)
     } else {
-      response = await callOllama(context, question, model)
+      await callOllamaStream(context, question, model, assistantMsgIndex)
     }
-
-    messages.value.push({ 
-      role: 'assistant', 
-      content: response,
-      modelName: model.name // 添加模型名称
-    })
   } catch (error) {
-    messages.value.push({ 
+    messages.value[assistantMsgIndex] = { 
       role: 'error', 
       content: error.message 
-    })
+    }
   } finally {
     loading.value = false
     nextTick(() => {
@@ -280,6 +281,132 @@ const sendMessage = async () => {
   }
 }
 
+// Ollama 流式调用
+const callOllamaStream = async (context, question, model, msgIndex) => {
+  try {
+    const res = await fetch(model.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: model.modelName || 'gemma2:2b',
+        prompt: `${context}\n\n用户问题：${question}\n\n回答：`,
+        stream: true
+      })
+    })
+
+    if (!res.ok) {
+      if (res.status === 403 && model.url.includes('ngrok')) {
+        throw new Error(`Ngrok访问被拒绝\n\n请先在浏览器中访问：\n${model.url.split('/api')[0]}\n\n点击"Visit Site"后再试`)
+      }
+      throw new Error(`API错误 (${res.status})`)
+    }
+
+    const reader = res.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || ''
+
+      for (const line of lines) {
+        if (line.trim()) {
+          try {
+            const data = JSON.parse(line)
+            if (data.response) {
+              messages.value[msgIndex].content += data.response
+              // 自动滚动到底部
+              nextTick(() => {
+                messagesContainer.value?.scrollTo(0, messagesContainer.value.scrollHeight)
+              })
+            }
+          } catch (e) {
+            console.warn('解析流式数据失败:', line)
+          }
+        }
+      }
+    }
+  } catch (error) {
+    if (error.message.includes('Failed to fetch')) {
+      throw new Error(`无法连接到 ${model.name}\n请检查：\n1. 模型服务是否运行\n2. 地址是否正确\n3. 网络是否通畅`)
+    }
+    throw error
+  }
+}
+
+// OpenAI 流式调用
+const callOpenAIStream = async (context, question, model, msgIndex) => {
+  if (!model.apiKey) throw new Error('请在配置中填写API Key')
+  
+  try {
+    let apiUrl = model.url
+    if (!apiUrl.includes('/chat/completions')) {
+      apiUrl = apiUrl.replace(/\/$/, '') + '/chat/completions'
+    }
+    
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${model.apiKey}`
+      },
+      body: JSON.stringify({
+        model: model.modelName || 'gpt-3.5-turbo',
+        messages: [
+          { role: 'system', content: context },
+          { role: 'user', content: question }
+        ],
+        stream: true
+      })
+    })
+
+    if (!res.ok) throw new Error(`OpenAI错误 (${res.status})`)
+
+    const reader = res.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || ''
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6).trim()
+          if (data === '[DONE]') continue
+          
+          try {
+            const parsed = JSON.parse(data)
+            const content = parsed.choices[0]?.delta?.content
+            if (content) {
+              messages.value[msgIndex].content += content
+              nextTick(() => {
+                messagesContainer.value?.scrollTo(0, messagesContainer.value.scrollHeight)
+              })
+            }
+          } catch (e) {
+            console.warn('解析流式数据失败:', line)
+          }
+        }
+      }
+    }
+  } catch (error) {
+    if (error.message.includes('Failed to fetch')) {
+      throw new Error('无法连接到OpenAI，请检查网络')
+    }
+    throw error
+  }
+}
+
+// 保留非流式版本作为降级方案
 const callOllama = async (context, question, model) => {
   try {
     const res = await fetch(model.url, {
@@ -293,7 +420,6 @@ const callOllama = async (context, question, model) => {
     })
 
     if (!res.ok) {
-      // 特殊处理 ngrok 403 错误
       if (res.status === 403 && model.url.includes('ngrok')) {
         throw new Error(`Ngrok访问被拒绝\n\n请先在浏览器中访问：\n${model.url.split('/api')[0]}\n\n点击"Visit Site"后再试`)
       }
@@ -313,7 +439,6 @@ const callOpenAI = async (context, question, model) => {
   if (!model.apiKey) throw new Error('请在配置中填写API Key')
   
   try {
-    // 确保 URL 包含完整路径
     let apiUrl = model.url
     if (!apiUrl.includes('/chat/completions')) {
       apiUrl = apiUrl.replace(/\/$/, '') + '/chat/completions'
