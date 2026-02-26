@@ -30,14 +30,15 @@
         <!-- 日志内容 -->
         <div class="form-group">
           <label class="required">
-            💬 日志内容 ({{ formData.content.length }}/500 · {{ contentLines }}行)
+            💬 日志内容 ({{ formData.content.length }}/2000 · {{ contentLines }}行)
           </label>
           <textarea
             v-model="formData.content"
             placeholder="详细描述本次执行的内容..."
-            maxlength="500"
-            rows="4"
+            maxlength="2000"
+            rows="6"
             ref="contentTextarea"
+            class="auto-resize-textarea"
           ></textarea>
         </div>
 
@@ -199,7 +200,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { useOfflineTaskStore } from '../stores/offlineTaskStore'
 import AITextMenu from './AITextMenu.vue'
 import { useTextSelection } from '../composables/useTextSelection'
@@ -302,6 +303,17 @@ const unresolvedBlocks = computed(() => {
 // 是否可以提交
 const canSubmit = computed(() => {
   return formData.value.type && formData.value.content.trim().length > 0
+})
+
+// 自动调整textarea高度
+watch(() => formData.value.content, () => {
+  nextTick(() => {
+    const textarea = contentTextarea.value
+    if (textarea) {
+      textarea.style.height = 'auto'
+      textarea.style.height = Math.min(textarea.scrollHeight, 400) + 'px'
+    }
+  })
 })
 
 // 添加标签
@@ -509,6 +521,12 @@ textarea {
   font-family: inherit;
   resize: vertical;
   transition: all 0.2s;
+  min-height: 100px;
+  max-height: 400px;
+}
+
+textarea.auto-resize-textarea {
+  overflow-y: auto;
 }
 
 textarea:focus {
