@@ -3359,9 +3359,9 @@ const handleChatCreateTasks = (tasks) => {
   tasks.forEach(task => {
     const newTask = {
       id: Date.now() + Math.random(),
-      text: task.title,
+      text: task.text || task.title || '未命名任务',
       description: task.description || '',
-      type: 'today',
+      type: task.type || 'today',
       category: task.category || 'life',
       priority: task.priority || 'medium',
       status: 'pending',
@@ -3379,6 +3379,14 @@ const handleChatCreateTasks = (tasks) => {
         resolvedBlockCount: 0,
         latestProgress: 0
       }
+    }
+    
+    // 如果有自定义日期和时间，添加到任务中
+    if (task.customDate) {
+      newTask.customDate = task.customDate
+    }
+    if (task.customTime) {
+      newTask.customTime = task.customTime
     }
     
     taskStore.addTask(newTask)
