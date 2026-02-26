@@ -42,6 +42,14 @@
 
       <!-- 统计+筛选+添加 - 两行布局 v1.5.2 -->
       <section class="dashboard-area">
+        <!-- AI 智能建议卡片 -->
+        <AISuggestionCard 
+          v-if="showAISuggestion"
+          :visible="showAISuggestion"
+          @close="showAISuggestion = false"
+          @view-details="handleViewSuggestion"
+        />
+        
         <!-- 第一行：统计数据（Grid均匀分布） -->
         <div class="stats-grid">
           <!-- 全部 -->
@@ -2924,6 +2932,7 @@ import TaskPreviewModal from '../components/TaskPreviewModal.vue'
 import SubtaskPreviewModal from '../components/SubtaskPreviewModal.vue'
 import DailyPlanModal from '../components/DailyPlanModal.vue'
 import AIChatCreate from '../components/AIChatCreate.vue'
+import AISuggestionCard from '../components/AISuggestionCard.vue'
 import { Filesystem, Directory } from '@capacitor/filesystem'
 import { LocalNotifications } from '@capacitor/local-notifications'
 import { Capacitor } from '@capacitor/core'
@@ -3375,6 +3384,7 @@ const showAIChat = ref(false)
 const showAIResult = ref(false)
 const aiResultText = ref('')
 const aiResultAction = ref('')
+const showAISuggestion = ref(false)
 
 // 文本选择菜单（使用新的 composable）
 const todoLayoutRef = ref(null)
@@ -3388,6 +3398,38 @@ const extractedTasks = ref([])
 const showSubtaskPreview = ref(false)
 const subtasks = ref([])
 const currentSplittingTask = ref(null)
+
+// 检查是否显示 AI 建议
+const checkAISuggestion = () => {
+  // 检查是否在稍后提醒期间（1小时内）
+  const snoozeTime = localStorage.getItem('ai_suggestion_snooze')
+  if (snoozeTime) {
+    const elapsed = Date.now() - parseInt(snoozeTime)
+    if (elapsed < 60 * 60 * 1000) { // 1小时内
+      return
+    }
+  }
+  
+  // 检查今天是否已显示过
+  const lastShown = localStorage.getItem('ai_suggestion_last_shown')
+  const today = new Date().toDateString()
+  if (lastShown === today) {
+    return
+  }
+  
+  // 显示建议
+  showAISuggestion.value = true
+  localStorage.setItem('ai_suggestion_last_shown', today)
+}
+
+// 处理查看建议详情
+const handleViewSuggestion = (suggestion) => {
+  if (suggestion.type === 'overdue') {
+    setFilter('overdue')
+  } else if (suggestion.type === 'pending') {
+    setFilter('pending')
+  }
+}
 
 // 每日规划
 const showDailyPlan = ref(false)
@@ -8686,6 +8728,11 @@ onMounted(async () => {
   if (savedPriorityMode) {
     priorityMode.value = savedPriorityMode
   }
+  
+  // 检查并显示 AI 建议（延迟 2 秒）
+  setTimeout(() => {
+    checkAISuggestion()
+  }, 2000)
   
   // 设置任务Store的当前用户并加载该用户的任务
   await taskStore.setCurrentUser(userStore.currentUser)
