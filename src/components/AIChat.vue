@@ -6,7 +6,9 @@
           <span>← 返回</span>
         </button>
         <h3>🤖 AI 任务助手</h3>
-        <div style="width: 80px;"></div>
+        <button class="clear-btn" @click="clearChatHistory" title="清空聊天记录">
+          🗑️
+        </button>
       </div>
 
       <div class="ai-chat-messages" ref="messagesContainer">
@@ -84,13 +86,59 @@ const props = defineProps({
 
 const emit = defineEmits(['close'])
 
-// 从localStorage加载模型配置
+// 从localStorage加载模型配置和历史记录
 const models = ref(JSON.parse(localStorage.getItem('ai_models') || '[{"id":"default","name":"本地Ollama","url":"http://192.168.31.159:11434/api/generate","type":"local"}]'))
 const selectedModelId = ref(localStorage.getItem('ai_default_model') || models.value[0]?.id)
 const messages = ref([])
 const userInput = ref('')
 const loading = ref(false)
 const messagesContainer = ref(null)
+
+// 加载历史聊天记录
+const loadChatHistory = () => {
+  const history = localStorage.getItem('ai_chat_history')
+  if (history) {
+    try {
+      const parsed = JSON.parse(history)
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        messages.value = parsed
+        return true
+      }
+    } catch (e) {
+      console.error('加载聊天历史失败:', e)
+    }
+  }
+  return false
+}
+
+// 保存聊天记录
+const saveChatHistory = () => {
+  try {
+    localStorage.setItem('ai_chat_history', JSON.stringify(messages.value))
+  } catch (e) {
+    console.error('保存聊天历史失败:', e)
+  }
+}
+
+// 清空聊天记录
+const clearChatHistory = () => {
+  if (confirm('确定要清空所有聊天记录吗？')) {
+    messages.value = []
+    localStorage.removeItem('ai_chat_history')
+    // 重新显示欢迎消息
+    showWelcomeMessage()
+  }
+}
+
+// 显示欢迎消息
+const showWelcomeMessage = () => {
+  const modelName = currentModel.value?.name || '默认模型'
+  messages.value = [{
+    role: 'assistant',
+    content: `你好！我是你的AI任务助手 🤖\n\n当前使用模型：${modelName}\n\n我已经读取了你的所有任务数据，包括：\n• 任务详情（标题、描述、状态）\n• 执行日志和进度\n• 番茄钟记录\n• 时间统计\n\n你可以问我任何关于任务的问题，比如：\n"今天完成了什么？"\n"本周效率如何？"\n"有哪些逾期任务？"\n\n💡 点击右上角⚙️可以更换模型`
+  }]
+  saveChatHistory()
+}
 
 // 监听配置变化
 watch(selectedModelId, (val) => {
@@ -102,11 +150,18 @@ const currentModel = computed(() => {
 })
 
 watch(() => props.visible, (val) => {
-  if (val && messages.value.length === 0) {
-    const modelName = currentModel.value?.name || '默认模型'
-    messages.value.push({
-      role: 'assistant',
-      content: `你好！我是你的AI任务助手 🤖\n\n当前使用模型：${modelName}\n\n我已经读取了你的所有任务数据，包括：\n• 任务详情（标题、描述、状态）\n• 执行日志和进度\n• 番茄钟记录\n• 时间统计\n\n你可以问我任何关于任务的问题，比如：\n"今天完成了什么？"\n"本周效率如何？"\n"有哪些逾期任务？"\n\n💡 点击右上角⚙️可以更换模型`
+  if (val) {
+    // 尝试加载历史记录
+    const hasHistory = loadChatHistory()
+    
+    // 如果没有历史记录，显示欢迎消息
+    if (!hasHistory) {
+      showWelcomeMessage()
+    }
+    
+    // 滚动到底部
+    nextTick(() => {
+      messagesContainer.value?.scrollTo(0, messagesContainer.value.scrollHeight)
     })
   }
 })
@@ -251,6 +306,9 @@ const sendMessage = async () => {
   userInput.value = ''
   loading.value = true
 
+  // 保存用户消息
+  saveChatHistory()
+
   // 创建一个空的助手消息用于流式更新
   const assistantMsgIndex = messages.value.length
   messages.value.push({ 
@@ -268,11 +326,15 @@ const sendMessage = async () => {
     } else {
       await callOllamaStream(context, question, model, assistantMsgIndex)
     }
+    
+    // 保存 AI 回复
+    saveChatHistory()
   } catch (error) {
     messages.value[assistantMsgIndex] = { 
       role: 'error', 
       content: error.message 
     }
+    saveChatHistory()
   } finally {
     loading.value = false
     nextTick(() => {
@@ -542,7 +604,8 @@ const callOpenAI = async (context, question, model) => {
   text-align: center;
 }
 
-.back-btn {
+.back-btn,
+.clear-btn {
   height: 44px;
   background: rgba(255, 255, 255, 0.2);
   border: none;
@@ -557,7 +620,14 @@ const callOpenAI = async (context, question, model) => {
   justify-content: center;
 }
 
-.back-btn:hover {
+.clear-btn {
+  width: 44px;
+  padding: 0;
+  font-size: 1.2rem;
+}
+
+.back-btn:hover,
+.clear-btn:hover {
   background: rgba(255, 255, 255, 0.3);
   transform: translateY(-1px);
 }
