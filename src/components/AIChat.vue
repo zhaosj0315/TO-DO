@@ -9,18 +9,23 @@
           </button>
         </div>
         <div class="sidebar-list">
-          <div 
-            v-for="chat in chatHistoryList" 
-            :key="chat.id"
-            :class="['chat-item', { active: chat.id === currentChatId }]"
-            @click="switchChat(chat.id)"
-          >
-            <div class="chat-item-title">{{ chat.title }}</div>
-            <div class="chat-item-time">{{ formatChatTime(chat.updatedAt) }}</div>
-            <button class="btn-delete-chat" @click.stop="deleteChat(chat.id)" title="删除">
-              🗑️
-            </button>
-          </div>
+          <template v-for="(group, groupName) in groupedChats" :key="groupName">
+            <div class="chat-group-title">{{ groupName }}</div>
+            <div 
+              v-for="chat in group" 
+              :key="chat.id"
+              :class="['chat-item', { active: chat.id === currentChatId }]"
+              @click="switchChat(chat.id)"
+            >
+              <div class="chat-item-content">
+                <div class="chat-item-title">{{ chat.title }}</div>
+                <div class="chat-item-time">{{ formatChatTime(chat.updatedAt) }}</div>
+              </div>
+              <button class="btn-delete-chat" @click.stop="deleteChat(chat.id)" title="删除">
+                🗑️
+              </button>
+            </div>
+          </template>
         </div>
       </div>
 
@@ -220,11 +225,38 @@ const formatChatTime = (dateStr) => {
   const diff = now - date
   const days = Math.floor(diff / (1000 * 60 * 60 * 24))
   
-  if (days === 0) return '今天'
+  if (days === 0) return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
   if (days === 1) return '昨天'
   if (days < 7) return `${days}天前`
   return date.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })
 }
+
+// 分组聊天记录
+const groupedChats = computed(() => {
+  const groups = {
+    '今天': [],
+    '昨天': [],
+    '最近7天': [],
+    '更早': []
+  }
+  
+  const now = new Date()
+  chatHistoryList.value.forEach(chat => {
+    const date = new Date(chat.updatedAt)
+    const diff = now - date
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+    
+    if (days === 0) groups['今天'].push(chat)
+    else if (days === 1) groups['昨天'].push(chat)
+    else if (days < 7) groups['最近7天'].push(chat)
+    else groups['更早'].push(chat)
+  })
+  
+  // 只返回非空分组
+  return Object.fromEntries(
+    Object.entries(groups).filter(([_, chats]) => chats.length > 0)
+  )
+})
 
 // 旧的加载/保存方法（兼容）
 const loadChatHistory = () => {
@@ -747,6 +779,20 @@ const callOpenAI = async (context, question, model) => {
   padding: 0.5rem;
 }
 
+.chat-group-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0.75rem 0.5rem 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.chat-group-title:first-child {
+  margin-top: 0;
+}
+
 .chat-item {
   padding: 0.75rem;
   margin-bottom: 0.5rem;
@@ -756,15 +802,25 @@ const callOpenAI = async (context, question, model) => {
   transition: all 0.2s;
   position: relative;
   border: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .chat-item:hover {
   background: #f0f0f0;
+  transform: translateX(2px);
 }
 
 .chat-item.active {
   border-color: #667eea;
-  background: #f0f4ff;
+  background: linear-gradient(135deg, #f0f4ff 0%, #faf5ff 100%);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+}
+
+.chat-item-content {
+  flex: 1;
+  min-width: 0;
 }
 
 .chat-item-title {
@@ -775,26 +831,29 @@ const callOpenAI = async (context, question, model) => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding-right: 24px;
+}
+
+.chat-item.active .chat-item-title {
+  color: #667eea;
+  font-weight: 600;
 }
 
 .chat-item-time {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: #999;
 }
 
 .btn-delete-chat {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border: none;
-  background: transparent;
-  font-size: 0.9rem;
+  background: rgba(255, 0, 0, 0.05);
+  border-radius: 6px;
+  font-size: 0.85rem;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: all 0.2s;
+  flex-shrink: 0;
 }
 
 .chat-item:hover .btn-delete-chat {
@@ -802,6 +861,7 @@ const callOpenAI = async (context, question, model) => {
 }
 
 .btn-delete-chat:hover {
+  background: rgba(255, 0, 0, 0.1);
   transform: scale(1.1);
 }
 
