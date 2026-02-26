@@ -2054,6 +2054,13 @@
       @close="showAIConfig = false"
     />
 
+    <!-- 统一加载动画 -->
+    <LoadingSpinner
+      :visible="aiLoading"
+      :text="aiLoadingText"
+      :sub-text="aiLoadingSubText"
+    />
+
     <!-- AI结果弹窗 -->
     <div v-if="showAIResult" class="modal-overlay" @click.self="showAIResult = false">
       <div class="modal-content glass-card" style="max-width: 600px; width: 96%;">
@@ -2876,6 +2883,7 @@ import { useOfflineUserStore } from '../stores/offlineUserStore'
 import { Preferences } from '@capacitor/preferences'
 import AIAssistButton from '../components/AIAssistButton.vue'
 import AITextMenu from '../components/AITextMenu.vue'
+import LoadingSpinner from '../components/LoadingSpinner.vue'
 import { useTextSelection } from '../composables/useTextSelection'
 import { AITextService } from '../services/aiTextService'
 import { AITaskExtractor } from '../services/aiTaskExtractor'
@@ -3612,6 +3620,11 @@ const markAllVersionsRead = () => {
 // 初始化时检查未读版本
 initVersionHistory()
 
+// AI 加载状态
+const aiLoading = ref(false)
+const aiLoadingText = ref('AI 思考中...')
+const aiLoadingSubText = ref('')
+
 // AI 周报生成
 const generateWeeklyReport = async () => {
   // 获取本周完成的任务
@@ -3632,7 +3645,9 @@ const generateWeeklyReport = async () => {
   }
   
   try {
-    showNotification('AI 正在生成周报...', 'info')
+    aiLoading.value = true
+    aiLoadingText.value = 'AI 正在生成周报...'
+    aiLoadingSubText.value = `分析 ${completedTasks.length} 个任务`
     
     const startDate = weekStart.toISOString().split('T')[0]
     const endDate = now.toISOString().split('T')[0]
@@ -3668,6 +3683,8 @@ const generateWeeklyReport = async () => {
   } catch (error) {
     console.error('AI生成周报失败:', error)
     alert(`AI生成周报失败：${error.message}`)
+  } finally {
+    aiLoading.value = false
   }
 }
 

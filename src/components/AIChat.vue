@@ -17,18 +17,45 @@
           </div>
         </div>
         <div v-if="loading" class="message assistant">
-          <div class="message-content">思考中...</div>
+          <div class="message-content loading-message">
+            <div class="typing-indicator">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <span class="loading-text">AI 正在思考...</span>
+          </div>
         </div>
         
-        <!-- 快捷问题 -->
+        <!-- 快捷问题 - 智能推荐 -->
         <div v-if="messages.length === 1" class="quick-questions">
-          <div class="quick-label">💡 试试问我：</div>
-          <button @click="askQuick('今天我完成了哪些任务？')" class="quick-btn">今天完成了什么？</button>
-          <button @click="askQuick('本周我的任务完成情况如何？')" class="quick-btn">本周完成情况</button>
-          <button @click="askQuick('我有哪些高优先级的待办任务？')" class="quick-btn">高优先级待办</button>
-          <button @click="askQuick('分析一下我的任务执行效率')" class="quick-btn">效率分析</button>
-          <button @click="askQuick('我遇到了哪些阻碍？')" class="quick-btn">阻碍统计</button>
-          <button @click="askQuick('给我一些任务管理建议')" class="quick-btn">管理建议</button>
+          <div class="quick-label">💡 智能推荐问题：</div>
+          <div class="quick-categories">
+            <div class="category">
+              <div class="category-title">📊 数据统计</div>
+              <button @click="askQuick('今天我完成了哪些任务？')" class="quick-btn">今日完成</button>
+              <button @click="askQuick('本周我的任务完成情况如何？')" class="quick-btn">本周情况</button>
+              <button @click="askQuick('本月完成了多少任务？')" class="quick-btn">本月统计</button>
+            </div>
+            <div class="category">
+              <div class="category-title">⚡ 效率分析</div>
+              <button @click="askQuick('分析一下我的任务执行效率')" class="quick-btn">效率分析</button>
+              <button @click="askQuick('我的番茄钟使用情况如何？')" class="quick-btn">番茄钟统计</button>
+              <button @click="askQuick('哪些任务耗时最长？')" class="quick-btn">耗时分析</button>
+            </div>
+            <div class="category">
+              <div class="category-title">🎯 任务管理</div>
+              <button @click="askQuick('我有哪些高优先级的待办任务？')" class="quick-btn">高优先级</button>
+              <button @click="askQuick('有哪些任务即将逾期？')" class="quick-btn">即将逾期</button>
+              <button @click="askQuick('我遇到了哪些阻碍？如何解决？')" class="quick-btn">阻碍分析</button>
+            </div>
+            <div class="category">
+              <div class="category-title">💡 智能建议</div>
+              <button @click="askQuick('给我一些任务管理建议')" class="quick-btn">管理建议</button>
+              <button @click="askQuick('如何提高我的工作效率？')" class="quick-btn">效率提升</button>
+              <button @click="askQuick('帮我规划明天的任务')" class="quick-btn">明日规划</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -501,32 +528,99 @@ const callOpenAI = async (context, question, model) => {
 .quick-questions {
   margin-top: 1rem;
   padding: 1rem;
-  background: #f9f9f9;
-  border-radius: 8px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border-radius: 12px;
 }
 
 .quick-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.quick-categories {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.category {
+  background: white;
+  padding: 0.75rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.category-title {
   font-size: 0.85rem;
-  color: #666;
+  font-weight: 600;
+  color: #667eea;
   margin-bottom: 0.5rem;
 }
 
 .quick-btn {
   display: inline-block;
   margin: 0.25rem;
-  padding: 0.4rem 0.8rem;
+  padding: 0.5rem 1rem;
   background: white;
-  border: 1px solid #ddd;
-  border-radius: 16px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 20px;
   font-size: 0.8rem;
   cursor: pointer;
   transition: all 0.2s;
+  color: #333;
 }
 
 .quick-btn:hover {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border-color: transparent;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* 加载动画 */
+.loading-message {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.typing-indicator {
+  display: flex;
+  gap: 4px;
+}
+
+.typing-indicator span {
+  width: 8px;
+  height: 8px;
+  background: #667eea;
+  border-radius: 50%;
+  animation: typing 1.4s infinite;
+}
+
+.typing-indicator span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typing {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.7;
+  }
+  30% {
+    transform: translateY(-10px);
+    opacity: 1;
+  }
+}
+
+.loading-text {
+  font-size: 0.85rem;
+  color: #666;
 }
 </style>
