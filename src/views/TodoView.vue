@@ -2592,6 +2592,34 @@
         <div class="modal-body">
           <!-- 周报内容 -->
           <div class="weekly-report-content">
+            <!-- 数据概览 -->
+            <div v-if="weeklyReportContent.overview" class="report-section overview-section">
+              <div class="section-title">📊 数据概览</div>
+              <div class="overview-grid">
+                <div class="overview-item">
+                  <div class="overview-value">{{ weeklyReportContent.overview.totalTasks || 0 }}</div>
+                  <div class="overview-label">完成任务</div>
+                </div>
+                <div class="overview-item">
+                  <div class="overview-value">{{ weeklyReportContent.overview.completionRate || '100%' }}</div>
+                  <div class="overview-label">完成率</div>
+                </div>
+                <div class="overview-item">
+                  <div class="overview-value">{{ weeklyReportContent.overview.highPriority || 0 }}</div>
+                  <div class="overview-label">高优先级</div>
+                </div>
+                <div class="overview-item">
+                  <div class="overview-value">{{ weeklyReportContent.overview.pomodoros || 0 }}</div>
+                  <div class="overview-label">番茄钟</div>
+                </div>
+              </div>
+              <div class="category-stats">
+                <span>💼 工作 {{ weeklyReportContent.overview.workTasks || 0 }}</span>
+                <span>📚 学习 {{ weeklyReportContent.overview.studyTasks || 0 }}</span>
+                <span>🏠 生活 {{ weeklyReportContent.overview.lifeTasks || 0 }}</span>
+              </div>
+            </div>
+
             <!-- 已完成情况 -->
             <div v-if="weeklyReportContent.completed && weeklyReportContent.completed.length > 0" class="report-section">
               <div class="section-title">✅ 已完成情况</div>
@@ -2603,11 +2631,33 @@
               </div>
             </div>
 
+            <!-- 重点突破 -->
+            <div v-if="weeklyReportContent.highlights && weeklyReportContent.highlights.length > 0" class="report-section">
+              <div class="section-title">🎯 重点突破</div>
+              <div class="highlights-list">
+                <div v-for="(item, index) in weeklyReportContent.highlights" :key="index" class="highlight-item highlight-special">
+                  <span class="highlight-number">{{ index + 1 }}</span>
+                  <span class="highlight-text">{{ item }}</span>
+                </div>
+              </div>
+            </div>
+
             <!-- 本周进展 -->
             <div v-if="weeklyReportContent.progress && weeklyReportContent.progress.length > 0" class="report-section">
               <div class="section-title">📈 本周进展</div>
               <div class="highlights-list">
                 <div v-for="(item, index) in weeklyReportContent.progress" :key="index" class="highlight-item">
+                  <span class="highlight-number">{{ index + 1 }}</span>
+                  <span class="highlight-text">{{ item }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 经验总结 -->
+            <div v-if="weeklyReportContent.experience && weeklyReportContent.experience.length > 0" class="report-section">
+              <div class="section-title">💡 经验总结</div>
+              <div class="highlights-list">
+                <div v-for="(item, index) in weeklyReportContent.experience" :key="index" class="highlight-item">
                   <span class="highlight-number">{{ index + 1 }}</span>
                   <span class="highlight-text">{{ item }}</span>
                 </div>
@@ -2629,7 +2679,18 @@
             <div v-if="weeklyReportContent.risks && weeklyReportContent.risks.length > 0" class="report-section">
               <div class="section-title">⚠️ 风险与问题</div>
               <div class="highlights-list">
-                <div v-for="(item, index) in weeklyReportContent.risks" :key="index" class="highlight-item">
+                <div v-for="(item, index) in weeklyReportContent.risks" :key="index" class="highlight-item risk-item">
+                  <span class="highlight-number">{{ index + 1 }}</span>
+                  <span class="highlight-text">{{ item }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 持续改进 -->
+            <div v-if="weeklyReportContent.improvements && weeklyReportContent.improvements.length > 0" class="report-section">
+              <div class="section-title">🔄 持续改进</div>
+              <div class="highlights-list">
+                <div v-for="(item, index) in weeklyReportContent.improvements" :key="index" class="highlight-item">
                   <span class="highlight-number">{{ index + 1 }}</span>
                   <span class="highlight-text">{{ item }}</span>
                 </div>
@@ -6333,6 +6394,16 @@ const copyWeeklyReport = async () => {
     if (typeof weeklyReportContent.value === 'object') {
       textToCopy = `${weeklyReportTitle.value}\n\n`
       
+      if (weeklyReportContent.value.overview) {
+        const o = weeklyReportContent.value.overview
+        textToCopy += `📊 数据概览\n`
+        textToCopy += `完成任务：${o.totalTasks || 0}个\n`
+        textToCopy += `完成率：${o.completionRate || '100%'}\n`
+        textToCopy += `高优先级：${o.highPriority || 0}个\n`
+        textToCopy += `番茄钟：${o.pomodoros || 0}个\n`
+        textToCopy += `分类：💼工作${o.workTasks || 0} 📚学习${o.studyTasks || 0} 🏠生活${o.lifeTasks || 0}\n\n`
+      }
+      
       if (weeklyReportContent.value.completed && weeklyReportContent.value.completed.length > 0) {
         textToCopy += `✅ 已完成情况\n`
         weeklyReportContent.value.completed.forEach((item, i) => {
@@ -6341,9 +6412,25 @@ const copyWeeklyReport = async () => {
         textToCopy += '\n'
       }
       
+      if (weeklyReportContent.value.highlights && weeklyReportContent.value.highlights.length > 0) {
+        textToCopy += `🎯 重点突破\n`
+        weeklyReportContent.value.highlights.forEach((item, i) => {
+          textToCopy += `${i + 1}. ${item}\n`
+        })
+        textToCopy += '\n'
+      }
+      
       if (weeklyReportContent.value.progress && weeklyReportContent.value.progress.length > 0) {
         textToCopy += `📈 本周进展\n`
         weeklyReportContent.value.progress.forEach((item, i) => {
+          textToCopy += `${i + 1}. ${item}\n`
+        })
+        textToCopy += '\n'
+      }
+      
+      if (weeklyReportContent.value.experience && weeklyReportContent.value.experience.length > 0) {
+        textToCopy += `💡 经验总结\n`
+        weeklyReportContent.value.experience.forEach((item, i) => {
           textToCopy += `${i + 1}. ${item}\n`
         })
         textToCopy += '\n'
@@ -6360,6 +6447,14 @@ const copyWeeklyReport = async () => {
       if (weeklyReportContent.value.risks && weeklyReportContent.value.risks.length > 0) {
         textToCopy += `⚠️ 风险与问题\n`
         weeklyReportContent.value.risks.forEach((item, i) => {
+          textToCopy += `${i + 1}. ${item}\n`
+        })
+        textToCopy += '\n'
+      }
+      
+      if (weeklyReportContent.value.improvements && weeklyReportContent.value.improvements.length > 0) {
+        textToCopy += `🔄 持续改进\n`
+        weeklyReportContent.value.improvements.forEach((item, i) => {
           textToCopy += `${i + 1}. ${item}\n`
         })
         textToCopy += '\n'
@@ -16172,6 +16267,57 @@ watch(() => reportData.value, (newData) => {
   background: white;
   border-radius: 12px;
   border: 1px solid #e0e0e0;
+}
+
+.overview-section {
+  background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+  border: 2px solid #667eea;
+}
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.overview-item {
+  text-align: center;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 8px;
+}
+
+.overview-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #667eea;
+  margin-bottom: 0.25rem;
+}
+
+.overview-label {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.category-stats {
+  display: flex;
+  justify-content: space-around;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.highlight-special {
+  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+  border-left: 3px solid #ff9800;
+}
+
+.risk-item {
+  background: #ffebee;
+  border-left: 3px solid #f44336;
 }
 
 .report-section .section-title {

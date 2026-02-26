@@ -74,6 +74,9 @@ export class AIReportGenerator {
       life: tasks.filter(t => t.category === 'life').length
     }
 
+    const highPriorityTasks = tasks.filter(t => t.priority === 'high')
+    const totalPomodoros = tasks.reduce((sum, t) => sum + (t.completedPomodoros || 0), 0)
+
     const taskList = tasks.slice(0, 20).map((t, i) => 
       `${i + 1}. [${this.getCategoryLabel(t.category)}] ${t.text}${t.description ? ` - ${t.description}` : ''}`
     ).join('\n')
@@ -83,26 +86,44 @@ export class AIReportGenerator {
 时间范围：${startDate} 至 ${endDate}
 完成任务数：${tasks.length}
 分类统计：工作${categoryStats.work}个、学习${categoryStats.study}个、生活${categoryStats.life}个
+高优先级：${highPriorityTasks.length}个
+完成番茄钟：${totalPomodoros}个
 
 任务列表：
 ${taskList}
 ${tasks.length > 20 ? `\n...还有${tasks.length - 20}个任务` : ''}
 
-请按照以下格式输出JSON（参考标准周报模板）：
+请按照以下格式输出JSON（增强版周报模板）：
 {
-  "completed": ["已完成事项1", "已完成事项2"],
+  "overview": {
+    "totalTasks": ${tasks.length},
+    "workTasks": ${categoryStats.work},
+    "studyTasks": ${categoryStats.study},
+    "lifeTasks": ${categoryStats.life},
+    "highPriority": ${highPriorityTasks.length},
+    "completionRate": "计算完成率",
+    "pomodoros": ${totalPomodoros}
+  },
+  "completed": ["已完成的关键任务1", "已完成的关键任务2"],
+  "highlights": ["重点突破1（高优先级任务）", "重点突破2"],
   "progress": ["本周进展1", "本周进展2"],
+  "experience": ["经验总结1", "经验总结2"],
   "nextWeek": ["下周计划1", "下周计划2"],
-  "risks": ["风险或问题1", "风险或问题2"],
+  "risks": ["风险或问题1（可选）"],
+  "improvements": ["持续改进措施1（可选）"],
   "summary": "整体总结（可选）"
 }
 
 要求：
-1. completed: 列出本周完成的关键任务（3-5项）
-2. progress: 描述本周工作进展和成果（2-3项）
-3. nextWeek: 规划下周工作计划（2-3项）
-4. risks: 识别当前风险或需要关注的问题（1-2项，如无则为空数组）
-5. 内容要具体、有数据支撑`
+1. overview: 数据概览，用数字说话
+2. completed: 列出3-5个已完成的关键任务
+3. highlights: 提炼2-3个重点突破（优先高优先级任务）
+4. progress: 描述2-3个本周工作进展
+5. experience: 总结1-2条经验教训或有效方法
+6. nextWeek: 规划2-3个下周工作计划
+7. risks: 识别风险或问题（如无则为空数组）
+8. improvements: 持续改进措施（如无则为空数组）
+9. 内容要具体、有数据支撑、有洞察力`
   }
 
   static getCategoryLabel(category) {
@@ -116,10 +137,14 @@ ${tasks.length > 20 ? `\n...还有${tasks.length - 20}个任务` : ''}
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0])
         return {
+          overview: parsed.overview || {},
           completed: parsed.completed || [],
+          highlights: parsed.highlights || [],
           progress: parsed.progress || [],
+          experience: parsed.experience || [],
           nextWeek: parsed.nextWeek || [],
           risks: parsed.risks || [],
+          improvements: parsed.improvements || [],
           summary: parsed.summary || '',
           tasks: tasks
         }
@@ -128,17 +153,38 @@ ${tasks.length > 20 ? `\n...还有${tasks.length - 20}个任务` : ''}
       console.error('解析AI响应失败:', e)
     }
 
+    // 降级方案
+    const categoryStats = {
+      work: tasks.filter(t => t.category === 'work').length,
+      study: tasks.filter(t => t.category === 'study').length,
+      life: tasks.filter(t => t.category === 'life').length
+    }
+    const highPriority = tasks.filter(t => t.priority === 'high').length
+    const totalPomodoros = tasks.reduce((sum, t) => sum + (t.completedPomodoros || 0), 0)
+
     return {
+      overview: {
+        totalTasks: tasks.length,
+        workTasks: categoryStats.work,
+        studyTasks: categoryStats.study,
+        lifeTasks: categoryStats.life,
+        highPriority: highPriority,
+        completionRate: '100%',
+        pomodoros: totalPomodoros
+      },
       completed: tasks.slice(0, 5).map(t => t.text),
+      highlights: tasks.filter(t => t.priority === 'high').slice(0, 3).map(t => t.text),
       progress: [
         `本周完成${tasks.length}个任务`,
         '保持良好的执行力'
       ],
+      experience: ['时间管理有序', '优先级把握准确'],
       nextWeek: [
         '继续推进重点项目',
-        '优化时间管理'
+        '优化工作流程'
       ],
       risks: [],
+      improvements: [],
       summary: `本周完成${tasks.length}个任务，涵盖工作、学习、生活多个方面。`,
       tasks: tasks
     }
