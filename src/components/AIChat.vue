@@ -83,12 +83,12 @@
         <div class="quick-questions">
           <div class="quick-label">💡 继续提问：</div>
           <div class="quick-categories-compact">
-            <button @click="askQuick('今天完成了什么？')" class="quick-btn-small">📊 今日任务</button>
-            <button @click="askQuick('本周情况如何？')" class="quick-btn-small">📅 本周总结</button>
-            <button @click="askQuick('分析我的效率')" class="quick-btn-small">⚡ 效率分析</button>
-            <button @click="askQuick('有哪些高优先级待办？')" class="quick-btn-small">🎯 重要待办</button>
-            <button @click="askQuick('哪些任务即将逾期？')" class="quick-btn-small">⏰ 逾期预警</button>
-            <button @click="askQuick('给我一些任务管理建议')" class="quick-btn-small">💡 优化建议</button>
+            <button @click="askQuick('今天完成了什么？')" class="quick-btn-small">今日完成</button>
+            <button @click="askQuick('本周情况如何？')" class="quick-btn-small">本周情况</button>
+            <button @click="askQuick('分析我的效率')" class="quick-btn-small">效率分析</button>
+            <button @click="askQuick('有哪些高优先级待办？')" class="quick-btn-small">重要待办</button>
+            <button @click="askQuick('哪些任务即将逾期？')" class="quick-btn-small">逾期预警</button>
+            <button @click="askQuick('给我一些任务管理建议')" class="quick-btn-small">优化建议</button>
           </div>
         </div>
         </div>
