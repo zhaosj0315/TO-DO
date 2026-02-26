@@ -2581,33 +2581,60 @@
         <div class="modal-body">
           <!-- 周报内容 -->
           <div class="weekly-report-content">
-            <!-- AI 总结 -->
-            <div v-if="weeklyReportContent.summary" class="report-section">
-              <div class="section-title">📊 本周总结</div>
-              <div class="summary-card">{{ weeklyReportContent.summary }}</div>
-            </div>
-
-            <!-- 工作亮点 -->
-            <div v-if="weeklyReportContent.highlights && weeklyReportContent.highlights.length > 0" class="report-section">
-              <div class="section-title">✨ 工作亮点</div>
+            <!-- 已完成情况 -->
+            <div v-if="weeklyReportContent.completed && weeklyReportContent.completed.length > 0" class="report-section">
+              <div class="section-title">✅ 已完成情况</div>
               <div class="highlights-list">
-                <div v-for="(highlight, index) in weeklyReportContent.highlights" :key="index" class="highlight-item">
+                <div v-for="(item, index) in weeklyReportContent.completed" :key="index" class="highlight-item">
                   <span class="highlight-number">{{ index + 1 }}</span>
-                  <span class="highlight-text">{{ highlight }}</span>
+                  <span class="highlight-text">{{ item }}</span>
                 </div>
               </div>
             </div>
 
-            <!-- 改进建议 -->
-            <div v-if="weeklyReportContent.suggestions" class="report-section">
-              <div class="section-title">💡 改进建议</div>
-              <div class="suggestions-card">{{ weeklyReportContent.suggestions }}</div>
+            <!-- 本周进展 -->
+            <div v-if="weeklyReportContent.progress && weeklyReportContent.progress.length > 0" class="report-section">
+              <div class="section-title">📈 本周进展</div>
+              <div class="highlights-list">
+                <div v-for="(item, index) in weeklyReportContent.progress" :key="index" class="highlight-item">
+                  <span class="highlight-number">{{ index + 1 }}</span>
+                  <span class="highlight-text">{{ item }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 下周计划 -->
+            <div v-if="weeklyReportContent.nextWeek && weeklyReportContent.nextWeek.length > 0" class="report-section">
+              <div class="section-title">📅 下周计划</div>
+              <div class="highlights-list">
+                <div v-for="(item, index) in weeklyReportContent.nextWeek" :key="index" class="highlight-item">
+                  <span class="highlight-number">{{ index + 1 }}</span>
+                  <span class="highlight-text">{{ item }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 风险与问题 -->
+            <div v-if="weeklyReportContent.risks && weeklyReportContent.risks.length > 0" class="report-section">
+              <div class="section-title">⚠️ 风险与问题</div>
+              <div class="highlights-list">
+                <div v-for="(item, index) in weeklyReportContent.risks" :key="index" class="highlight-item">
+                  <span class="highlight-number">{{ index + 1 }}</span>
+                  <span class="highlight-text">{{ item }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 整体总结 -->
+            <div v-if="weeklyReportContent.summary" class="report-section">
+              <div class="section-title">📊 整体总结</div>
+              <div class="summary-card">{{ weeklyReportContent.summary }}</div>
             </div>
 
             <!-- 任务列表 -->
             <div v-if="weeklyReportContent.tasks && weeklyReportContent.tasks.length > 0" class="report-section">
               <div class="section-title">
-                📋 完成任务
+                📋 完成任务明细
                 <span class="task-count">{{ weeklyReportContent.tasks.length }} 个</span>
               </div>
               <div class="task-chips">
@@ -6208,24 +6235,44 @@ const copyWeeklyReport = async () => {
     if (typeof weeklyReportContent.value === 'object') {
       textToCopy = `${weeklyReportTitle.value}\n\n`
       
-      if (weeklyReportContent.value.summary) {
-        textToCopy += `📊 本周总结\n${weeklyReportContent.value.summary}\n\n`
-      }
-      
-      if (weeklyReportContent.value.highlights && weeklyReportContent.value.highlights.length > 0) {
-        textToCopy += `✨ 工作亮点\n`
-        weeklyReportContent.value.highlights.forEach((h, i) => {
-          textToCopy += `${i + 1}. ${h}\n`
+      if (weeklyReportContent.value.completed && weeklyReportContent.value.completed.length > 0) {
+        textToCopy += `✅ 已完成情况\n`
+        weeklyReportContent.value.completed.forEach((item, i) => {
+          textToCopy += `${i + 1}. ${item}\n`
         })
         textToCopy += '\n'
       }
       
-      if (weeklyReportContent.value.suggestions) {
-        textToCopy += `💡 改进建议\n${weeklyReportContent.value.suggestions}\n\n`
+      if (weeklyReportContent.value.progress && weeklyReportContent.value.progress.length > 0) {
+        textToCopy += `📈 本周进展\n`
+        weeklyReportContent.value.progress.forEach((item, i) => {
+          textToCopy += `${i + 1}. ${item}\n`
+        })
+        textToCopy += '\n'
+      }
+      
+      if (weeklyReportContent.value.nextWeek && weeklyReportContent.value.nextWeek.length > 0) {
+        textToCopy += `📅 下周计划\n`
+        weeklyReportContent.value.nextWeek.forEach((item, i) => {
+          textToCopy += `${i + 1}. ${item}\n`
+        })
+        textToCopy += '\n'
+      }
+      
+      if (weeklyReportContent.value.risks && weeklyReportContent.value.risks.length > 0) {
+        textToCopy += `⚠️ 风险与问题\n`
+        weeklyReportContent.value.risks.forEach((item, i) => {
+          textToCopy += `${i + 1}. ${item}\n`
+        })
+        textToCopy += '\n'
+      }
+      
+      if (weeklyReportContent.value.summary) {
+        textToCopy += `📊 整体总结\n${weeklyReportContent.value.summary}\n\n`
       }
       
       if (weeklyReportContent.value.tasks && weeklyReportContent.value.tasks.length > 0) {
-        textToCopy += `📋 完成任务 (${weeklyReportContent.value.tasks.length}个)\n`
+        textToCopy += `📋 完成任务明细 (${weeklyReportContent.value.tasks.length}个)\n`
         weeklyReportContent.value.tasks.forEach((t, i) => {
           textToCopy += `${i + 1}. ${t.text}\n`
         })

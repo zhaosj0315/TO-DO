@@ -88,17 +88,21 @@ export class AIReportGenerator {
 ${taskList}
 ${tasks.length > 20 ? `\n...还有${tasks.length - 20}个任务` : ''}
 
-请按照以下格式输出JSON：
+请按照以下格式输出JSON（参考标准周报模板）：
 {
-  "summary": "本周工作总结（2-3句话，突出成果和亮点）",
-  "highlights": ["亮点1", "亮点2", "亮点3"],
-  "suggestions": "下周建议（1-2句话）"
+  "completed": ["已完成事项1", "已完成事项2"],
+  "progress": ["本周进展1", "本周进展2"],
+  "nextWeek": ["下周计划1", "下周计划2"],
+  "risks": ["风险或问题1", "风险或问题2"],
+  "summary": "整体总结（可选）"
 }
 
 要求：
-1. 总结要具体、有数据支撑
-2. 亮点要提炼关键成果
-3. 建议要有针对性`
+1. completed: 列出本周完成的关键任务（3-5项）
+2. progress: 描述本周工作进展和成果（2-3项）
+3. nextWeek: 规划下周工作计划（2-3项）
+4. risks: 识别当前风险或需要关注的问题（1-2项，如无则为空数组）
+5. 内容要具体、有数据支撑`
   }
 
   static getCategoryLabel(category) {
@@ -112,9 +116,11 @@ ${tasks.length > 20 ? `\n...还有${tasks.length - 20}个任务` : ''}
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0])
         return {
-          summary: parsed.summary || '本周完成多项任务',
-          highlights: parsed.highlights || [],
-          suggestions: parsed.suggestions || '',
+          completed: parsed.completed || [],
+          progress: parsed.progress || [],
+          nextWeek: parsed.nextWeek || [],
+          risks: parsed.risks || [],
+          summary: parsed.summary || '',
           tasks: tasks
         }
       }
@@ -123,13 +129,17 @@ ${tasks.length > 20 ? `\n...还有${tasks.length - 20}个任务` : ''}
     }
 
     return {
-      summary: `本周完成${tasks.length}个任务，涵盖工作、学习、生活多个方面。`,
-      highlights: [
-        `完成${tasks.length}个任务`,
-        '保持良好的执行力',
-        '时间管理有序'
+      completed: tasks.slice(0, 5).map(t => t.text),
+      progress: [
+        `本周完成${tasks.length}个任务`,
+        '保持良好的执行力'
       ],
-      suggestions: '继续保持，注意劳逸结合',
+      nextWeek: [
+        '继续推进重点项目',
+        '优化时间管理'
+      ],
+      risks: [],
+      summary: `本周完成${tasks.length}个任务，涵盖工作、学习、生活多个方面。`,
       tasks: tasks
     }
   }
