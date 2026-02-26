@@ -1,23 +1,51 @@
 <template>
   <div v-if="visible" class="ai-chat-overlay" @click.self="$emit('close')">
     <div class="ai-chat-container">
-      <div class="ai-chat-header">
-        <button class="back-btn" @click="$emit('close')">
-          <span>← 返回</span>
-        </button>
-        <h3>🤖 AI 任务助手</h3>
-        <button class="clear-btn" @click="clearChatHistory" title="清空聊天记录">
-          🗑️
-        </button>
-      </div>
-
-      <div class="ai-chat-messages" ref="messagesContainer">
-        <div v-for="(msg, idx) in messages" :key="idx" :class="['message', msg.role]">
-          <div class="message-content">{{ msg.content }}</div>
-          <div v-if="msg.role === 'assistant' && msg.modelName" class="message-meta">
-            🤖 {{ msg.modelName }}
+      <!-- 左侧历史记录 -->
+      <div class="chat-sidebar" :class="{ 'sidebar-collapsed': !showSidebar }">
+        <div class="sidebar-header">
+          <button class="btn-new-chat" @click="createNewChat">
+            ➕ 新对话
+          </button>
+        </div>
+        <div class="sidebar-list">
+          <div 
+            v-for="chat in chatHistoryList" 
+            :key="chat.id"
+            :class="['chat-item', { active: chat.id === currentChatId }]"
+            @click="switchChat(chat.id)"
+          >
+            <div class="chat-item-title">{{ chat.title }}</div>
+            <div class="chat-item-time">{{ formatChatTime(chat.updatedAt) }}</div>
+            <button class="btn-delete-chat" @click.stop="deleteChat(chat.id)" title="删除">
+              🗑️
+            </button>
           </div>
         </div>
+      </div>
+
+      <!-- 右侧对话区域 -->
+      <div class="chat-main">
+        <div class="ai-chat-header">
+          <button class="toggle-sidebar-btn" @click="showSidebar = !showSidebar">
+            {{ showSidebar ? '◀' : '▶' }}
+          </button>
+          <button class="back-btn" @click="$emit('close')">
+            <span>← 返回</span>
+          </button>
+          <h3>🤖 AI 任务助手</h3>
+          <button class="clear-btn" @click="clearCurrentChat" title="清空当前对话">
+            🗑️
+          </button>
+        </div>
+
+        <div class="ai-chat-messages" ref="messagesContainer">
+          <div v-for="(msg, idx) in messages" :key="idx" :class="['message', msg.role]">
+            <div class="message-content">{{ msg.content }}</div>
+            <div v-if="msg.role === 'assistant' && msg.modelName" class="message-meta">
+              🤖 {{ msg.modelName }}
+            </div>
+          </div>
         <div v-if="loading" class="message assistant">
           <div class="message-content loading-message">
             <div class="typing-indicator">
@@ -41,18 +69,19 @@
             <button @click="askQuick('管理建议')" class="quick-btn-small">💡 管理建议</button>
           </div>
         </div>
-      </div>
+        </div>
 
-      <div class="ai-chat-input">
-        <textarea 
-          v-model="userInput" 
-          @keydown.enter.prevent="sendMessage"
-          placeholder="问我关于你的任务..."
-          rows="2"
-        ></textarea>
-        <button @click="sendMessage" :disabled="loading || !userInput.trim()" class="btn-send">
-          发送
-        </button>
+        <div class="ai-chat-input">
+          <textarea 
+            v-model="userInput" 
+            @keydown.enter.prevent="sendMessage"
+            placeholder="问我关于你的任务..."
+            rows="2"
+          ></textarea>
+          <button @click="sendMessage" :disabled="loading || !userInput.trim()" class="btn-send">
+            发送
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -76,7 +105,128 @@ const userInput = ref('')
 const loading = ref(false)
 const messagesContainer = ref(null)
 
-// 加载历史聊天记录
+// 侧边栏状态
+const showSidebar = ref(true)
+const chatHistoryList = ref([])
+const currentChatId = ref(null)
+
+// 加载所有对话历史
+const loadAllChats = () => {
+  const chats = localStorage.getItem('ai_chat_list')
+  if (chats) {
+    try {
+      chatHistoryList.value = JSON.parse(chats)
+    } catch (e) {
+      console.error('加载对话列表失败:', e)
+      chatHistoryList.value = []
+    }
+  }
+}
+
+// 保存所有对话历史
+const saveAllChats = () => {
+  try {
+    localStorage.setItem('ai_chat_list', JSON.stringify(chatHistoryList.value))
+  } catch (e) {
+    console.error('保存对话列表失败:', e)
+  }
+}
+
+// 加载指定对话
+const loadChat = (chatId) => {
+  const chat = chatHistoryList.value.find(c => c.id === chatId)
+  if (chat) {
+    messages.value = chat.messages || []
+    currentChatId.value = chatId
+    nextTick(() => {
+      messagesContainer.value?.scrollTo(0, messagesContainer.value.scrollHeight)
+    })
+  }
+}
+
+// 保存当前对话
+const saveCurrentChat = () => {
+  if (!currentChatId.value) return
+  
+  const chatIndex = chatHistoryList.value.findIndex(c => c.id === currentChatId.value)
+  if (chatIndex !== -1) {
+    chatHistoryList.value[chatIndex].messages = messages.value
+    chatHistoryList.value[chatIndex].updatedAt = new Date().toISOString()
+    
+    // 更新标题（使用第一条用户消息）
+    const firstUserMsg = messages.value.find(m => m.role === 'user')
+    if (firstUserMsg) {
+      chatHistoryList.value[chatIndex].title = firstUserMsg.content.slice(0, 30) + (firstUserMsg.content.length > 30 ? '...' : '')
+    }
+    
+    saveAllChats()
+  }
+}
+
+// 创建新对话
+const createNewChat = () => {
+  const newChat = {
+    id: Date.now(),
+    title: '新对话',
+    messages: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
+  
+  chatHistoryList.value.unshift(newChat)
+  currentChatId.value = newChat.id
+  messages.value = []
+  showWelcomeMessage()
+  saveAllChats()
+}
+
+// 切换对话
+const switchChat = (chatId) => {
+  if (currentChatId.value) {
+    saveCurrentChat()
+  }
+  loadChat(chatId)
+}
+
+// 删除对话
+const deleteChat = (chatId) => {
+  if (confirm('确定要删除这个对话吗？')) {
+    chatHistoryList.value = chatHistoryList.value.filter(c => c.id !== chatId)
+    saveAllChats()
+    
+    if (currentChatId.value === chatId) {
+      if (chatHistoryList.value.length > 0) {
+        loadChat(chatHistoryList.value[0].id)
+      } else {
+        createNewChat()
+      }
+    }
+  }
+}
+
+// 清空当前对话
+const clearCurrentChat = () => {
+  if (confirm('确定要清空当前对话吗？')) {
+    messages.value = []
+    showWelcomeMessage()
+    saveCurrentChat()
+  }
+}
+
+// 格式化时间
+const formatChatTime = (dateStr) => {
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diff = now - date
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  
+  if (days === 0) return '今天'
+  if (days === 1) return '昨天'
+  if (days < 7) return `${days}天前`
+  return date.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })
+}
+
+// 旧的加载/保存方法（兼容）
 const loadChatHistory = () => {
   const history = localStorage.getItem('ai_chat_history')
   if (history) {
@@ -93,12 +243,10 @@ const loadChatHistory = () => {
   return false
 }
 
-// 保存聊天记录
+// 保存聊天记录（更新为保存当前对话）
 const saveChatHistory = () => {
-  try {
-    localStorage.setItem('ai_chat_history', JSON.stringify(messages.value))
-  } catch (e) {
-    console.error('保存聊天历史失败:', e)
+  saveCurrentChat()
+}
   }
 }
 
@@ -133,12 +281,15 @@ const currentModel = computed(() => {
 
 watch(() => props.visible, (val) => {
   if (val) {
-    // 尝试加载历史记录
-    const hasHistory = loadChatHistory()
+    // 加载所有对话列表
+    loadAllChats()
     
-    // 如果没有历史记录，显示欢迎消息
-    if (!hasHistory) {
-      showWelcomeMessage()
+    // 如果有对话列表，加载最近的对话
+    if (chatHistoryList.value.length > 0) {
+      loadChat(chatHistoryList.value[0].id)
+    } else {
+      // 没有对话，创建新对话
+      createNewChat()
     }
     
     // 滚动到底部
@@ -548,10 +699,136 @@ const callOpenAI = async (context, question, model) => {
   margin: 0;
   max-height: 92vh;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
   animation: slideUp 0.3s ease;
   overflow: hidden;
+}
+
+/* 左侧历史记录 */
+.chat-sidebar {
+  width: 260px;
+  background: #f8f9fa;
+  border-right: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s;
+}
+
+.chat-sidebar.sidebar-collapsed {
+  width: 0;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  padding: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.btn-new-chat {
+  width: 100%;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-new-chat:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.sidebar-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.chat-item {
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  border: 2px solid transparent;
+}
+
+.chat-item:hover {
+  background: #f0f0f0;
+}
+
+.chat-item.active {
+  border-color: #667eea;
+  background: #f0f4ff;
+}
+
+.chat-item-title {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 0.25rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-right: 24px;
+}
+
+.chat-item-time {
+  font-size: 0.75rem;
+  color: #999;
+}
+
+.btn-delete-chat {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  font-size: 0.9rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.chat-item:hover .btn-delete-chat {
+  opacity: 1;
+}
+
+.btn-delete-chat:hover {
+  transform: scale(1.1);
+}
+
+/* 右侧对话区域 */
+.chat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.toggle-sidebar-btn {
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toggle-sidebar-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .ai-chat-header {
