@@ -1024,6 +1024,21 @@
             <div class="entry-arrow">›</div>
           </div>
 
+          <!-- 版本更新入口 -->
+          <div class="pomodoro-entry" @click="showVersionHistory">
+            <div class="entry-icon">🎉</div>
+            <div class="entry-content">
+              <div class="entry-title">
+                版本更新
+                <span v-if="hasUnreadVersions" class="badge-new">NEW</span>
+              </div>
+              <div class="entry-summary">
+                查看版本更新日志
+              </div>
+            </div>
+            <div class="entry-arrow">›</div>
+          </div>
+
           <!-- AI 周报生成入口 -->
           <div class="pomodoro-entry" @click="generateWeeklyReport">
             <div class="entry-icon">📝</div>
@@ -2761,6 +2776,67 @@
       </div>
     </div>
 
+    <!-- 版本历史弹窗 -->
+    <div v-if="showVersionModal" class="modal-overlay" @click.self="showVersionModal = false">
+      <div class="report-bottom-sheet">
+        <div class="modal-header">
+          <button class="back-btn" @click="showVersionModal = false">
+            <span>← 返回</span>
+          </button>
+          <h3>🎉 版本更新</h3>
+          <div style="width: 80px;"></div>
+        </div>
+        
+        <div class="modal-body">
+          <div class="version-list">
+            <div 
+              v-for="version in versionHistory" 
+              :key="version.version"
+              class="version-item"
+              :class="{ 'version-new': !version.read }"
+            >
+              <div class="version-header">
+                <div class="version-title">
+                  <span class="version-number">v{{ version.version }}</span>
+                  <span v-if="!version.read" class="badge-new">NEW</span>
+                </div>
+                <div class="version-date">{{ version.date }}</div>
+              </div>
+              
+              <div class="version-content">
+                <div v-if="version.features && version.features.length > 0" class="version-section">
+                  <div class="version-section-title">✨ 新增功能</div>
+                  <ul>
+                    <li v-for="(feature, index) in version.features" :key="index">{{ feature }}</li>
+                  </ul>
+                </div>
+                
+                <div v-if="version.improvements && version.improvements.length > 0" class="version-section">
+                  <div class="version-section-title">🎨 优化改进</div>
+                  <ul>
+                    <li v-for="(item, index) in version.improvements" :key="index">{{ item }}</li>
+                  </ul>
+                </div>
+                
+                <div v-if="version.fixes && version.fixes.length > 0" class="version-section">
+                  <div class="version-section-title">🐛 Bug修复</div>
+                  <ul>
+                    <li v-for="(fix, index) in version.fixes" :key="index">{{ fix }}</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button class="btn btn-primary" @click="markAllVersionsRead">
+            全部标记为已读
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- 撤销Toast -->
     <transition name="toast-slide">
       <div v-if="showUndoToast" class="undo-toast">
@@ -3466,6 +3542,71 @@ const deleteHistoryReport = (reportId) => {
   showNotification('周报已删除', 'success')
 }
 
+// 版本历史数据
+const initVersionHistory = () => {
+  versionHistory.value = [
+    {
+      version: '1.7.5',
+      date: '2026-02-26',
+      features: [
+        'AI对话创建任务（支持自动提醒）',
+        'AI周报生成（8模块增强版）',
+        '周报历史记录功能',
+        'AI模型配置优化（测试连接）',
+        '日志输入优化（2000字+自适应高度）'
+      ],
+      improvements: [
+        '周报模板符合标准格式',
+        '测试连接按钮文字化',
+        '拍照OCR + AI文本增强'
+      ],
+      fixes: [
+        '修复AI对话创建任务标题为空',
+        '修复提醒功能未启用'
+      ]
+    },
+    {
+      version: '1.7.0',
+      date: '2026-02-25',
+      features: [
+        '任务执行日志系统（6种日志类型）',
+        '任务详情页面重构',
+        '番茄钟计时器（25分钟专注）'
+      ],
+      improvements: [
+        '任务卡片增强（日志徽章+进度显示）',
+        'Bottom Sheet统一设计'
+      ],
+      fixes: []
+    }
+  ]
+  
+  // 检查是否有未读版本
+  const readVersions = JSON.parse(localStorage.getItem('read_versions') || '[]')
+  versionHistory.value.forEach(v => {
+    v.read = readVersions.includes(v.version)
+  })
+  hasUnreadVersions.value = versionHistory.value.some(v => !v.read)
+}
+
+// 显示版本历史
+const showVersionHistory = () => {
+  initVersionHistory()
+  showVersionModal.value = true
+}
+
+// 标记所有版本为已读
+const markAllVersionsRead = () => {
+  const allVersions = versionHistory.value.map(v => v.version)
+  localStorage.setItem('read_versions', JSON.stringify(allVersions))
+  versionHistory.value.forEach(v => v.read = true)
+  hasUnreadVersions.value = false
+  showNotification('已标记为已读', 'success')
+}
+
+// 初始化时检查未读版本
+initVersionHistory()
+
 // AI 周报生成
 const generateWeeklyReport = async () => {
   // 获取本周完成的任务
@@ -3790,6 +3931,9 @@ const weeklyReportContent = ref('') // 周报内容
 const weeklyReportTitle = ref('') // 周报标题
 const showReportHistoryModal = ref(false) // 周报历史弹窗
 const reportHistoryList = ref([]) // 周报历史列表
+const showVersionModal = ref(false) // 版本历史弹窗
+const versionHistory = ref([]) // 版本历史列表
+const hasUnreadVersions = ref(false) // 是否有未读版本
 const editingTask = ref(null)
 const editDescription = ref('')
 const editText = ref('')
@@ -16471,6 +16615,90 @@ watch(() => reportData.value, (newData) => {
 .empty-icon {
   font-size: 4rem;
   margin-bottom: 1rem;
+}
+
+/* 版本历史样式 */
+.version-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1rem;
+}
+
+.version-item {
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 1rem;
+  transition: all 0.2s;
+}
+
+.version-item.version-new {
+  border-color: #667eea;
+  background: linear-gradient(135deg, #667eea05 0%, #764ba205 100%);
+}
+
+.version-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.version-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.version-number {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #667eea;
+}
+
+.badge-new {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+  color: white;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.version-date {
+  color: #999;
+  font-size: 0.9rem;
+}
+
+.version-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.version-section {
+  margin: 0;
+}
+
+.version-section-title {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.version-section ul {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.version-section li {
+  color: #666;
+  line-height: 1.8;
+  font-size: 0.9rem;
 }
 
 </style>
