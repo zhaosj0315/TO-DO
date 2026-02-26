@@ -12,9 +12,13 @@
           <button class="btn-icon-circle btn-ai" @click="showAIChat = true" :title="t('aiChat')">
             🤖
           </button>
+          <!-- 数据统计按钮 -->
+          <button class="btn-icon-circle btn-stats" @click="showDataStats = true" title="数据统计">
+            📊
+          </button>
           <!-- 每日总结按钮 -->
           <button class="btn-icon-circle btn-summary" @click="showDailySummary = true" title="今日总结">
-            📊
+            📝
           </button>
           <!-- 任务分解按钮 -->
           <button class="btn-icon-circle btn-split" @click="openTaskSplitterForNew" title="任务分解">
@@ -2083,6 +2087,12 @@
       @create="createSubtasks"
     />
 
+    <!-- 数据统计 -->
+    <DataStatsModal
+      :visible="showDataStats"
+      @close="showDataStats = false"
+    />
+
     <!-- AI问答 -->
     <AIChat
       :visible="showAIChat"
@@ -2968,6 +2978,7 @@ import AISuggestionCard from '../components/AISuggestionCard.vue'
 import DailySummaryModal from '../components/DailySummaryModal.vue'
 import AIReportModal from '../components/AIReportModal.vue'
 import SmartTaskSplitter from '../components/SmartTaskSplitter.vue'
+import DataStatsModal from '../components/DataStatsModal.vue'
 import { Filesystem, Directory } from '@capacitor/filesystem'
 import { LocalNotifications } from '@capacitor/local-notifications'
 import { Capacitor } from '@capacitor/core'
@@ -3424,6 +3435,7 @@ const showDailySummary = ref(false)
 const showAIReport = ref(false)
 const showTaskSplitter = ref(false)
 const taskToSplit = ref(null)
+const showDataStats = ref(false)
 
 // 文本选择菜单（使用新的 composable）
 const todoLayoutRef = ref(null)
