@@ -436,6 +436,14 @@
       @close="showTextResult = false"
     />
 
+    <!-- AI总结结果展示 -->
+    <AITextResultSheet
+      :visible="showAISummaryResult"
+      :result="aiSummaryContent"
+      action="summary"
+      @close="showAISummaryResult = false"
+    />
+
     <!-- 加载动画 -->
     <div v-if="isProcessing" class="loading-overlay">
       <div class="loading-spinner">
@@ -945,6 +953,9 @@ const handleDelete = async () => {
 }
 
 // AI总结功能
+const showAISummaryResult = ref(false)
+const aiSummaryContent = ref('')
+
 const handleAISummary = async () => {
   try {
     // 准备总结文本
@@ -975,10 +986,7 @@ ${logsText || '暂无日志'}
     }
     
     // 显示loading
-    emit('show-loading', {
-      text: 'AI 正在分析任务执行情况...',
-      subText: `使用模型：${model.name}`
-    })
+    isProcessing.value = true
     
     console.log('使用模型:', model.name, model.url)
     
@@ -1042,15 +1050,16 @@ ${logsText || '暂无日志'}
     // 刷新页面
     emit('refresh')
     
+    isProcessing.value = false
+    
     // 显示总结结果弹窗
-    alert(`✨ AI总结完成！\n\n${summary}`)
+    aiSummaryContent.value = summary
+    showAISummaryResult.value = true
     
   } catch (error) {
+    isProcessing.value = false
     console.error('AI总结失败:', error)
     alert(`AI总结失败：${error.message}\n\n请确保：\n1. Mac上运行了 ollama serve\n2. 手机和Mac在同一WiFi\n3. 输入了正确的Mac IP地址\n4. 查看控制台日志了解详情`)
-  } finally {
-    // 隐藏loading
-    emit('hide-loading')
   }
 }
 
