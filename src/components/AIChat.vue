@@ -751,6 +751,7 @@ const sendMessage = async () => {
     // 保存 AI 回复
     saveChatHistory()
   } catch (error) {
+    console.error('❌ AI问答错误:', error)
     messages.value.push({ 
       role: 'error', 
       content: error.message 
@@ -1111,6 +1112,7 @@ const handleNormalChat = async (question) => {
     console.log(`📊 上下文大小: ${(context.length / 1024).toFixed(2)} KB (${analysis.isSimple ? '智能' : '完整'})`)
     
     const model = currentModel.value
+    console.log('🤖 使用模型:', model.name, model.type, model.modelName)
 
     if (model.type === 'openai') {
       await callOpenAIStream(context, question, model, assistantMsgIndex)
@@ -1118,6 +1120,7 @@ const handleNormalChat = async (question) => {
       await callOllamaStream(context, question, model, assistantMsgIndex)
     }
   } catch (error) {
+    console.error('❌ handleNormalChat错误:', error)
     messages.value[assistantMsgIndex] = { 
       role: 'error', 
       content: error.message 
@@ -1184,15 +1187,20 @@ const callOllamaStream = async (context, question, model, msgIndex) => {
 
 // OpenAI 流式调用
 const callOpenAIStream = async (context, question, model, msgIndex) => {
+  console.log('🚀 callOpenAIStream 开始')
   if (!model.apiKey) throw new Error('请在配置中填写API Key')
   
   try {
     let apiUrl = model.url
-    if (!apiUrl.includes('/chat/completions')) {
-      apiUrl = apiUrl.replace(/\/$/, '') + '/chat/completions'
+    if (!apiUrl.includes('/v1/chat/completions')) {
+      apiUrl = apiUrl.replace(/\/v1.*$/, '').replace(/\/$/, '') + '/v1/chat/completions'
     }
     
-    const res = await fetch(apiUrl, {
+    console.log('📡 API URL:', apiUrl)
+    console.log('🔑 Model Name:', model.modelName)
+    
+    // 先尝试流式响应
+    let res = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1208,41 +1216,93 @@ const callOpenAIStream = async (context, question, model, msgIndex) => {
       })
     })
 
+    console.log('📊 流式响应状态:', res.status)
+
+    // 如果流式失败（400错误），尝试非流式
+    if (!res.ok && res.status === 400) {
+      console.log('🔄 流式响应失败，尝试非流式模式...')
+      res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${model.apiKey}`
+        },
+        body: JSON.stringify({
+          model: model.modelName || 'gpt-3.5-turbo',
+          messages: [
+            { role: 'system', content: context },
+            { role: 'user', content: question }
+          ],
+          stream: false
+        })
+      })
+      
+      console.log('📡 非流式响应状态:', res.status)
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        console.error('❌ 非流式响应失败:', errorData)
+        throw new Error(`OpenAI错误 (${res.status}): ${errorData.error?.message || ''}`)
+      }
+      
+      // 非流式响应：一次性返回
+      const data = await res.json()
+      console.log('✅ 非流式响应数据:', data)
+      const content = data.choices[0]?.message?.content || ''
+      console.log('📝 提取的内容:', content)
+      messages.value[msgIndex].content = content
+      nextTick(() => {
+        messagesContainer.value?.scrollTo(0, messagesContainer.value.scrollHeight)
+      })
+      return
+    }
+
     if (!res.ok) throw new Error(`OpenAI错误 (${res.status})`)
 
+    // 流式响应处理
+    console.log('📖 开始读取流式数据...')
     const reader = res.body.getReader()
     const decoder = new TextDecoder()
     let buffer = ''
+    let chunkCount = 0
 
     while (true) {
       const { done, value } = await reader.read()
-      if (done) break
+      if (done) {
+        console.log('✅ 流式数据读取完成，共', chunkCount, '个chunk')
+        break
+      }
 
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split('\n')
-      buffer = lines.pop() || ''
+      chunkCount++
+      const chunk = decoder.decode(value, { stream: true })
+      buffer += chunk
 
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const data = line.slice(6).trim()
-          if (data === '[DONE]') continue
-          
-          try {
-            const parsed = JSON.parse(data)
-            const content = parsed.choices[0]?.delta?.content
-            if (content) {
-              messages.value[msgIndex].content += content
-              nextTick(() => {
-                messagesContainer.value?.scrollTo(0, messagesContainer.value.scrollHeight)
-              })
-            }
-          } catch (e) {
-            console.warn('解析流式数据失败:', line)
+      // 按 "data:" 分割，处理完整的数据块
+      const parts = buffer.split(/\n\ndata:/)
+      buffer = parts.pop() || '' // 保留最后一个不完整的部分
+
+      for (let part of parts) {
+        // 清理前缀
+        part = part.replace(/^data:/, '').trim()
+        
+        if (!part || part === '[DONE]') continue
+        
+        try {
+          const parsed = JSON.parse(part)
+          const content = parsed.choices[0]?.delta?.content
+          if (content) {
+            messages.value[msgIndex].content += content
+            nextTick(() => {
+              messagesContainer.value?.scrollTo(0, messagesContainer.value.scrollHeight)
+            })
           }
+        } catch (e) {
+          // 忽略解析错误，可能是不完整的数据
         }
       }
     }
   } catch (error) {
+    console.error('❌ callOpenAIStream错误:', error)
     if (error.message.includes('Failed to fetch')) {
       throw new Error('无法连接到OpenAI，请检查网络')
     }
@@ -1284,8 +1344,8 @@ const callOpenAI = async (context, question, model) => {
   
   try {
     let apiUrl = model.url
-    if (!apiUrl.includes('/chat/completions')) {
-      apiUrl = apiUrl.replace(/\/$/, '') + '/chat/completions'
+    if (!apiUrl.includes('/v1/chat/completions')) {
+      apiUrl = apiUrl.replace(/\/v1.*$/, '').replace(/\/$/, '') + '/v1/chat/completions'
     }
     
     const res = await fetch(apiUrl, {

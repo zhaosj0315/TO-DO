@@ -19,8 +19,8 @@ export class AITextService {
     console.log('Generated prompt:', prompt)
     
     let apiUrl = model.url
-    if (model.type === 'openai' && !apiUrl.includes('/chat/completions')) {
-      apiUrl = apiUrl.replace(/\/$/, '') + '/chat/completions'
+    if (model.type === 'openai' && !apiUrl.includes('/v1/chat/completions')) {
+      apiUrl = apiUrl.replace(/\/v1.*$/, '').replace(/\/$/, '') + '/v1/chat/completions'
     }
 
     const response = await fetch(apiUrl, {

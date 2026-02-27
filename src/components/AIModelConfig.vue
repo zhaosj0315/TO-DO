@@ -10,40 +10,122 @@
       </div>
 
       <div class="modal-body">
-        <!-- 默认模型选择 -->
-        <div class="section default-section">
-          <h4>⭐ 默认使用模型</h4>
-          <div v-if="models.length === 0" class="empty-hint">
-            请先添加模型配置
+        <!-- 1. 添加模型（最重要，放最上面） -->
+        <div class="section add-section">
+          <h4>➕ 添加新模型</h4>
+          
+          <!-- 已保存的厂商配置 -->
+          <div v-if="providerConfigs.length > 0" class="provider-configs-compact">
+            <select v-model="selectedProviderId" @change="loadProviderConfig" class="form-select">
+              <option value="">📦 快速选择已保存的配置...</option>
+              <option v-for="config in providerConfigs" :key="config.id" :value="config.id">
+                {{ getProviderLabel(config) }}
+              </option>
+            </select>
+            <button @click="showProviderManager = true" class="btn-manage-inline">
+              ⚙️
+            </button>
           </div>
-          <select v-else v-model="defaultModelId" class="form-select-large">
-            <option v-for="model in models" :key="model.id" :value="model.id">
-              {{ model.name }} ({{ model.type === 'local' ? '本地' : model.type === 'openai' ? 'OpenAI' : '自定义' }})
-            </option>
-          </select>
-          <div class="hint-text">
-            💡 问答和总结功能将使用此模型
+          
+          <div class="add-model-form">
+            <!-- 模型类型 -->
+            <select v-model="newModel.type" class="form-select">
+              <option value="local">🏠 本地Ollama</option>
+              <option value="openai">🌐 OpenAI</option>
+              <option value="custom">🔧 自定义</option>
+            </select>
+            
+            <!-- 厂商地址 + 获取模型 -->
+            <div class="input-group">
+              <input 
+                v-model="newModel.url" 
+                :placeholder="getUrlPlaceholder()"
+                class="form-input"
+              />
+              <button @click="fetchAvailableModels" class="btn-action" :disabled="fetchingModels">
+                {{ fetchingModels ? '⏳' : '🔄' }}
+              </button>
+            </div>
+            
+            <!-- API Key -->
+            <input 
+              v-if="newModel.type === 'openai' || newModel.type === 'custom'"
+              v-model="newModel.apiKey" 
+              type="password"
+              placeholder="API Key"
+              class="form-input"
+            />
+            
+            <!-- 选择模型 -->
+            <select 
+              v-if="availableModels.length > 0"
+              v-model="newModel.modelName"
+              class="form-select"
+            >
+              <option value="">选择模型...</option>
+              <option v-for="model in availableModels" :key="model" :value="model">
+                {{ model }}
+              </option>
+            </select>
+            
+            <!-- 手动输入模型名称（当获取失败时） -->
+            <input
+              v-if="availableModels.length === 0 && fetchError"
+              v-model="newModel.modelName"
+              placeholder="手动输入模型名称（如：gpt-4o-mini）"
+              class="form-input"
+            />
+            
+            <!-- 加载/错误/测试结果 -->
+            <div v-if="fetchingModels" class="status-hint loading">🔄 正在获取可用模型...</div>
+            <div v-if="fetchError" class="status-hint error">⚠️ {{ fetchError }}</div>
+            <div v-if="testResult" :class="['status-hint', testResult.success ? 'success' : 'error']">
+              {{ testResult.message }}
+            </div>
+            
+            <!-- 操作按钮 -->
+            <div v-if="newModel.modelName" class="action-buttons">
+              <button @click="testConnection" :disabled="testing" class="btn-secondary">
+                {{ testing ? '⏳ 测试中...' : '🔍 测试连接' }}
+              </button>
+              <button @click="addModel" class="btn-primary">
+                ➕ 添加模型
+              </button>
+              <button @click="clearForm" class="btn-clear-inline">
+                🔄
+              </button>
+            </div>
           </div>
         </div>
 
-        <!-- 模型列表 -->
+        <!-- 2. 默认模型选择 -->
+        <div v-if="models.length > 0" class="section default-section">
+          <h4>⭐ 默认使用模型</h4>
+          <select v-model="defaultModelId" class="form-select-large">
+            <option v-for="model in models" :key="model.id" :value="model.id">
+              {{ model.name }}
+            </option>
+          </select>
+        </div>
+
+        <!-- 3. 已配置模型列表 -->
         <div class="section">
           <div class="section-header">
             <h4>📋 已配置模型 ({{ models.length }})</h4>
             <div class="section-actions">
-              <button @click="testAllModels" class="btn-test-all" :disabled="testingAll">
-                {{ testingAll ? '⏳ 测试中...' : '🔍 测试全部' }}
+              <button @click="testAllModels" class="btn-icon" :disabled="testingAll" title="测试全部">
+                {{ testingAll ? '⏳ 测试中' : '🔍 测试全部' }}
               </button>
-              <button @click="exportConfig" class="btn-export">
-                📤 导出配置
+              <button @click="exportConfig" class="btn-icon" title="导出配置">
+                📤 导出
               </button>
-              <button @click="importConfig" class="btn-import">
-                📥 导入配置
+              <button @click="importConfig" class="btn-icon" title="导入配置">
+                📥 导入
               </button>
             </div>
           </div>
           <div v-if="models.length === 0" class="empty-hint">
-            暂无模型配置，请添加
+            暂无模型配置，请先添加
           </div>
           <div v-else class="models-list">
             <div 
@@ -82,172 +164,7 @@
           </div>
         </div>
 
-        <!-- 添加模型 -->
-        <div class="section">
-          <h4>➕ 添加新模型</h4>
-          
-          <!-- 已保存的厂商配置 -->
-          <div v-if="providerConfigs.length > 0" class="provider-configs">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-              <label class="form-label">📦 使用已保存的厂商配置</label>
-              <button @click="showProviderManager = true" class="btn-manage">
-                ⚙️ 管理
-              </button>
-            </div>
-            <select v-model="selectedProviderId" @change="loadProviderConfig" class="form-select">
-              <option value="">选择已保存的配置...</option>
-              <option v-for="config in providerConfigs" :key="config.id" :value="config.id">
-                {{ getProviderLabel(config) }}
-              </option>
-            </select>
-            <div class="hint-text" style="margin-bottom: 1rem;">
-              💡 选择已保存的配置可快速添加新模型，无需重新输入地址和API Key
-            </div>
-          </div>
-          
-          <div class="add-model-form">
-            <!-- 1. 模型类型 -->
-            <select v-model="newModel.type" class="form-select">
-              <option value="local">本地Ollama</option>
-              <option value="openai">OpenAI</option>
-              <option value="custom">自定义</option>
-            </select>
-            
-            <!-- 2. 厂商地址 + 测试连接 -->
-            <div style="display: flex; gap: 0.5rem;">
-              <input 
-                v-model="newModel.url" 
-                :placeholder="getUrlPlaceholder()"
-                class="form-input"
-                style="flex: 1;"
-              />
-              <button @click="fetchAvailableModels" class="btn-fetch" title="获取模型列表">
-                🔄 获取模型
-              </button>
-              <button 
-                v-if="newModel.modelName"
-                @click="testConnection" 
-                :disabled="testing"
-                class="btn-test-inline"
-              >
-                {{ testing ? '测试中...' : '🔍 测试连接' }}
-              </button>
-            </div>
-            
-            <!-- 3. API Key（如果需要） -->
-            <input 
-              v-if="newModel.type === 'openai' || newModel.type === 'custom'"
-              v-model="newModel.apiKey" 
-              type="password"
-              placeholder="API Key"
-              class="form-input"
-            />
-            <div v-if="newModel.type === 'openai' || newModel.type === 'custom'" class="api-hint">
-              💡 没有 API Key？我用的是 <a href="https://cn.gptapi.asia/register?aff=Okck" target="_blank" class="api-link">这个服务</a>，你也可以试试
-            </div>
-            
-            <!-- 4. 选择模型 -->
-            <select 
-              v-if="availableModels.length > 0"
-              v-model="newModel.modelName"
-              class="form-select"
-            >
-              <option value="">选择模型...</option>
-              <option v-for="model in availableModels" :key="model" :value="model">
-                {{ model }}
-              </option>
-            </select>
-            
-            <!-- 加载和错误提示 -->
-            <div v-if="fetchingModels" class="loading-hint">
-              🔄 正在获取可用模型...
-            </div>
-            <div v-if="fetchError" class="error-hint">
-              ⚠️ {{ fetchError }}
-            </div>
-            
-            <!-- 测试结果提示 -->
-            <div v-if="testResult" :class="['test-result-box', testResult.success ? 'success' : 'error']">
-              {{ testResult.message }}
-            </div>
-            
-            <!-- 添加按钮 -->
-            <div v-if="newModel.modelName" style="display: flex; gap: 0.5rem;">
-              <button 
-                @click="addModel" 
-                class="btn-add"
-                :disabled="testing"
-                style="flex: 1;"
-              >
-                ➕ 添加模型 ({{ newModel.name || '自动生成名称' }})
-              </button>
-              <button 
-                @click="clearForm" 
-                class="btn-clear"
-                title="清空表单，重新配置"
-              >
-                🔄 清空
-              </button>
-            </div>
-          </div>
-        </div>
 
-        <!-- 快速配置 -->
-        <div class="section">
-          <h4>⚡ 快速配置</h4>
-          <div class="quick-configs">
-            <button @click="addQuickConfig('local')" class="btn-quick">
-              🏠 本地Ollama
-            </button>
-            <button @click="addQuickConfig('openai')" class="btn-quick">
-              🌐 OpenAI
-            </button>
-            <button @click="addQuickConfig('ngrok')" class="btn-quick">
-              🔗 Ngrok隧道
-            </button>
-          </div>
-          
-          <!-- 智能推荐 -->
-          <div class="recommendation-box">
-            <div class="recommendation-title">💡 智能推荐</div>
-            <div class="recommendation-list">
-              <div class="recommendation-item">
-                <div class="rec-icon">🏠</div>
-                <div class="rec-content">
-                  <div class="rec-name">本地Ollama</div>
-                  <div class="rec-desc">隐私安全，完全离线，适合敏感数据处理</div>
-                  <div class="rec-tags">
-                    <span class="tag-free">免费</span>
-                    <span class="tag-fast">快速</span>
-                    <span class="tag-privacy">隐私</span>
-                  </div>
-                </div>
-              </div>
-              <div class="recommendation-item">
-                <div class="rec-icon">🌐</div>
-                <div class="rec-content">
-                  <div class="rec-name">OpenAI API</div>
-                  <div class="rec-desc">效果最佳，响应快速，适合高质量内容生成</div>
-                  <div class="rec-tags">
-                    <span class="tag-quality">高质量</span>
-                    <span class="tag-stable">稳定</span>
-                  </div>
-                </div>
-              </div>
-              <div class="recommendation-item">
-                <div class="rec-icon">🔗</div>
-                <div class="rec-content">
-                  <div class="rec-name">Ngrok隧道</div>
-                  <div class="rec-desc">远程访问本地模型，兼顾隐私和便利</div>
-                  <div class="rec-tags">
-                    <span class="tag-flexible">灵活</span>
-                    <span class="tag-remote">远程</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
     
@@ -817,21 +734,42 @@ const addModel = () => {
     return
   }
 
-  // 获取厂商配置
-  const providerConfig = providerConfigs.value.find(p => p.id === newModel.value.providerId)
+  // 获取或创建厂商配置
+  let providerConfig = providerConfigs.value.find(p => p.id === newModel.value.providerId)
+  
+  // 如果没有厂商配置（手动输入模型时），创建一个
   if (!providerConfig) {
-    alert('厂商配置丢失，请重新获取模型列表')
-    return
+    const providerId = Date.now().toString()
+    let baseUrl = newModel.value.url
+    
+    // 规范化URL
+    if (newModel.value.type === 'local') {
+      baseUrl = baseUrl.replace(/\/api\/.*$/, '')
+    } else {
+      baseUrl = baseUrl.replace(/\/v1.*$/, '')
+    }
+    baseUrl = baseUrl.replace(/\/$/, '')
+    
+    providerConfig = {
+      id: providerId,
+      type: newModel.value.type,
+      url: baseUrl,
+      apiKey: newModel.value.apiKey || '',
+      createdAt: new Date().toISOString()
+    }
+    
+    providerConfigs.value.push(providerConfig)
+    newModel.value.providerId = providerId
   }
 
   const model = {
     id: Date.now().toString(),
     type: newModel.value.type,
     name: newModel.value.name,
-    url: providerConfig.url, // 从厂商配置读取
-    apiKey: providerConfig.apiKey || '', // 从厂商配置读取
+    url: providerConfig.url,
+    apiKey: providerConfig.apiKey || '',
     modelName: newModel.value.modelName,
-    providerId: newModel.value.providerId // 关联厂商配置
+    providerId: newModel.value.providerId
   }
 
   models.value.push(model)
@@ -901,31 +839,6 @@ const deleteModel = (index) => {
     // 如果删除的是默认模型，重新设置默认
     if (model.id === defaultModelId.value && models.value.length > 0) {
       defaultModelId.value = models.value[0].id
-    }
-  }
-}
-
-const addQuickConfig = (type) => {
-  if (type === 'local') {
-    newModel.value = {
-      type: 'local',
-      name: '本地Ollama',
-      url: 'http://192.168.31.159:11434/api/generate',
-      apiKey: ''
-    }
-  } else if (type === 'openai') {
-    newModel.value = {
-      type: 'openai',
-      name: 'OpenAI GPT-3.5',
-      url: 'https://api.openai.com/v1/chat/completions',
-      apiKey: ''
-    }
-  } else if (type === 'ngrok') {
-    newModel.value = {
-      type: 'custom',
-      name: 'Ngrok隧道',
-      url: 'https://xxx.ngrok-free.dev/ollama/api/generate',
-      apiKey: ''
     }
   }
 }
@@ -1334,196 +1247,6 @@ const addQuickConfig = (type) => {
   text-align: center;
 }
 
-.quick-configs {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.btn-quick {
-  padding: 0.75rem 1.5rem;
-  background: white;
-  border: 2px solid #667eea;
-  color: #667eea;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.2s;
-}
-
-.btn-quick:hover {
-  background: #667eea;
-  color: white;
-}
-
-/* 智能推荐样式 */
-.recommendation-box {
-  margin-top: 1.5rem;
-  padding: 1rem;
-  background: linear-gradient(135deg, #f8f9ff 0%, #fff8f0 100%);
-  border-radius: 12px;
-  border: 2px solid #e8e8ff;
-}
-
-.recommendation-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 1rem;
-}
-
-.recommendation-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.recommendation-item {
-  display: flex;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  background: white;
-  border-radius: 8px;
-  border: 1.5px solid #e8e8ff;
-  transition: all 0.2s;
-}
-
-.recommendation-item:hover {
-  border-color: #667eea;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
-}
-
-.rec-icon {
-  font-size: 2rem;
-  line-height: 1;
-}
-
-.rec-content {
-  flex: 1;
-}
-
-.rec-name {
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 0.25rem;
-}
-
-.rec-desc {
-  font-size: 0.85rem;
-  color: #666;
-  margin-bottom: 0.5rem;
-  line-height: 1.4;
-}
-
-.rec-tags {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.rec-tags span {
-  padding: 0.2rem 0.6rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-.tag-free {
-  background: #e8f5e9;
-  color: #2e7d32;
-}
-
-.tag-fast {
-  background: #e3f2fd;
-  color: #1976d2;
-}
-
-.tag-privacy {
-  background: #f3e5f5;
-  color: #7b1fa2;
-}
-
-.tag-quality {
-  background: #fff3e0;
-  color: #e65100;
-}
-
-.tag-stable {
-  background: #e0f2f1;
-  color: #00695c;
-}
-
-.tag-flexible {
-  background: #fce4ec;
-  color: #c2185b;
-}
-
-.tag-remote {
-  background: #e8eaf6;
-  color: #3f51b5;
-}
-
-.btn-fetch {
-  padding: 0.75rem 1rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-
-.btn-fetch:hover {
-  transform: scale(1.05);
-}
-
-.btn-fetch:active {
-  transform: scale(0.95);
-}
-
-.btn-test-inline {
-  padding: 0.75rem 1rem;
-  background: #28a745;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-
-.btn-test-inline:hover {
-  background: #218838;
-  transform: scale(1.05);
-}
-
-.btn-test-inline:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.test-result-box {
-  padding: 0.75rem;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  margin-top: 0.5rem;
-}
-
-.test-result-box.success {
-  background: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
-}
-
-.test-result-box.error {
-  background: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
-}
-
 .api-hint {
   font-size: 0.85rem;
   color: #666;
@@ -1625,6 +1348,169 @@ const addQuickConfig = (type) => {
   font-weight: 600;
   color: #333;
   margin-bottom: 0.5rem;
+}
+
+.add-section {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%);
+  border: 2px solid rgba(102, 126, 234, 0.3);
+}
+
+.provider-configs-compact {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.provider-configs-compact .form-select {
+  flex: 1;
+}
+
+.btn-manage-inline {
+  padding: 0.75rem 1rem;
+  background: white;
+  border: 1.5px solid #667eea;
+  color: #667eea;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.btn-manage-inline:hover {
+  background: #667eea;
+  color: white;
+}
+
+.input-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.input-group .form-input {
+  flex: 1;
+}
+
+.btn-action {
+  padding: 0.75rem 1.2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-action:hover:not(:disabled) {
+  transform: scale(1.05);
+}
+
+.btn-action:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.status-hint {
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.status-hint.loading {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.status-hint.error {
+  background: #ffebee;
+  color: #d32f2f;
+}
+
+.status-hint.success {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-primary {
+  flex: 1;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+  padding: 0.75rem 1.5rem;
+  background: white;
+  border: 1.5px solid #667eea;
+  color: #667eea;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #667eea;
+  color: white;
+}
+
+.btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-clear-inline {
+  padding: 0.75rem 1rem;
+  background: #f0f0f0;
+  border: 1.5px solid #ddd;
+  color: #666;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.btn-clear-inline:hover {
+  background: #e0e0e0;
+}
+
+.btn-icon {
+  padding: 0.4rem 0.8rem;
+  background: white;
+  border: 1.5px solid #667eea;
+  color: #667eea;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.btn-icon:hover:not(:disabled) {
+  background: #667eea;
+  color: white;
+}
+
+.btn-icon:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .btn-manage {

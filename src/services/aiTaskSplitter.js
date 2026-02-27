@@ -22,8 +22,10 @@ export class AITaskSplitter {
     console.log('Generated prompt:', prompt)
     
     let apiUrl = model.url
-    if (model.type === 'openai' && !apiUrl.includes('/chat/completions')) {
-      apiUrl = apiUrl.replace(/\/$/, '') + '/chat/completions'
+    if (model.type === 'openai' && !apiUrl.includes('/v1/chat/completions')) {
+      // 规范化URL：移除末尾斜杠和已有路径
+      apiUrl = apiUrl.replace(/\/v1.*$/, '').replace(/\/$/, '')
+      apiUrl = apiUrl + '/v1/chat/completions'
     }
 
     const response = await fetch(apiUrl, {
