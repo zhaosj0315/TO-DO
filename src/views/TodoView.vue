@@ -311,8 +311,10 @@
                 </span>
                 
                 <!-- 依赖关系状态 -->
-                <!-- 等待的任务 -->
-                <span v-if="task.waitFor && task.waitFor.length > 0 && !taskStore.canStart(task.id)" class="badge badge-waiting" :title="`等待 ${task.waitFor.length} 个任务完成`">
+                <!-- 等待的任务（始终显示，如果有依赖） -->
+                <span v-if="task.waitFor && task.waitFor.length > 0" 
+                      :class="['badge', taskStore.canStart(task.id) ? 'badge-waiting-done' : 'badge-waiting']" 
+                      :title="taskStore.canStart(task.id) ? `依赖已完成，可以开始` : `等待 ${task.waitFor.length} 个任务完成`">
                   🔒 {{ getWaitForTaskNames(task.id) }}
                 </span>
                 <!-- 被依赖 -->
@@ -11277,6 +11279,24 @@ watch(() => reportData.value, (newData) => {
   border-radius: 8px;
   background: rgba(251, 191, 36, 0.15);
   color: #d97706;
+  transition: all 0.3s;
+  line-height: 1;
+  height: auto;
+  box-sizing: border-box;
+}
+
+/* 依赖已完成徽章（绿色） */
+.badge-waiting-done {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 0.2rem 0.35rem;
+  border-radius: 8px;
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
   transition: all 0.3s;
   line-height: 1;
   height: auto;
