@@ -300,6 +300,11 @@
                 </span>
               </div>
               <div class="task-meta">
+                <!-- 父任务标识 -->
+                <span v-if="task.parentTaskId" class="badge badge-subtask" :title="`来自父任务：${getParentTaskName(task.parentTaskId)}`">
+                  📂 {{ getParentTaskName(task.parentTaskId) }}
+                </span>
+                
                 <!-- 依赖关系状态 -->
                 <!-- 等待的任务 -->
                 <span v-if="task.waitFor && task.waitFor.length > 0 && !taskStore.canStart(task.id)" class="badge badge-waiting" :title="`等待 ${task.waitFor.length} 个任务完成`">
@@ -8533,6 +8538,12 @@ const getPomodoroCount = (task) => {
   return Math.round(basePomodoros * multiplier)
 }
 
+// 获取父任务名称
+const getParentTaskName = (parentTaskId) => {
+  const parentTask = taskStore.tasks.find(t => t.id === parentTaskId)
+  return parentTask ? parentTask.text : '已删除的任务'
+}
+
 // 获取等待的任务名称（多个）
 const getWaitForTaskNames = (taskId) => {
   const waitForTasks = taskStore.getWaitForTasks(taskId)
@@ -11273,6 +11284,24 @@ watch(() => reportData.value, (newData) => {
   border-radius: 8px;
   background: rgba(59, 130, 246, 0.15);
   color: #2563eb;
+  transition: all 0.3s;
+  line-height: 1;
+  height: auto;
+  box-sizing: border-box;
+}
+
+/* 子任务徽章 */
+.badge-subtask {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 0.2rem 0.35rem;
+  border-radius: 8px;
+  background: rgba(139, 92, 246, 0.15);
+  color: #8b5cf6;
   transition: all 0.3s;
   line-height: 1;
   height: auto;
