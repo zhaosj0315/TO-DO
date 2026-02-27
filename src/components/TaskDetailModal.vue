@@ -253,7 +253,7 @@
         </section>
 
         <!-- AI总结 -->
-        <section v-if="task.aiSummary" class="ai-summary-section">
+        <section v-if="task.aiSummary && localTask.aiSummary" class="ai-summary-section">
           <div class="summary-header">
             <h3>✨ AI智能总结</h3>
             <span class="summary-time">{{ formatDateTime(task.aiSummary.createdAt) }}</span>
@@ -514,7 +514,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useOfflineTaskStore } from '../stores/offlineTaskStore'
 import LogTimeline from './LogTimeline.vue'
 import LogStats from './LogStats.vue'
@@ -625,7 +625,18 @@ const filteredSortedLogs = computed(() => {
 })
 
 // 本地任务副本（用于编辑）
-const localTask = ref({ ...props.task })
+const localTask = ref({ 
+  ...props.task,
+  aiSummary: props.task.aiSummary ? { ...props.task.aiSummary } : null
+})
+
+// 监听props.task变化，同步更新localTask
+watch(() => props.task, (newTask) => {
+  localTask.value = { 
+    ...newTask,
+    aiSummary: newTask.aiSummary ? { ...newTask.aiSummary } : null
+  }
+}, { deep: true })
 
 // 自定义日期时间
 const customDateTime = ref('')
