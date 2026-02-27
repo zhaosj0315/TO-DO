@@ -300,7 +300,7 @@
               <div class="task-meta">
                 <!-- 依赖关系状态 -->
                 <span v-if="task.waitFor && !taskStore.canStart(task.id)" class="badge badge-waiting" :title="`等待「${getWaitForTaskName(task.id)}」完成`">
-                  🔒 等待中
+                  🔒 {{ getWaitForTaskName(task.id) }}
                 </span>
                 <span v-else-if="getWaitingTasksCount(task.id) > 0" class="badge badge-blocking" :title="`${getWaitingTasksCount(task.id)}个任务等待此任务完成`">
                   🔓 被依赖×{{ getWaitingTasksCount(task.id) }}
