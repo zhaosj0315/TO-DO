@@ -10052,10 +10052,24 @@ onMounted(async () => {
   // Android 返回手势监听
   if (Capacitor.getPlatform() === 'android') {
     App.addListener('backButton', ({ canGoBack }) => {
+      console.log('🔙 返回手势触发')
+      console.log('📝 表单状态:', {
+        标题: newTaskText.value,
+        描述: newTaskDescription.value,
+        类型: newTaskType.value,
+        分类: newTaskCategory.value,
+        优先级: newTaskPriority.value
+      })
+      
+      // 临时调试：显示表单状态
+      const debugInfo = `标题: ${newTaskText.value}\n描述: ${newTaskDescription.value.substring(0, 20)}...\n类型: ${newTaskType.value}`
+      
       // 检查是否有打开的弹窗（按层级优先级关闭）
       
       // 特殊状态：AI 加载中（强制中断）
       if (aiLoading.value) {
+        console.log('✅ 中断 AI 加载')
+        showNotification('中断 AI 加载', 'info')
         aiLoading.value = false
         aiLoadingText.value = ''
         aiLoadingSubText.value = ''
@@ -10064,76 +10078,100 @@ onMounted(async () => {
       
       // 第三层弹窗（最上层，优先关闭）
       if (showPasswordModal.value) {
+        console.log('✅ 关闭密码弹窗')
         showPasswordModal.value = false
         return
       } else if (showPhoneModal.value) {
+        console.log('✅ 关闭手机号弹窗')
         showPhoneModal.value = false
         return
       } else if (showWeeklyModal.value) {
+        console.log('✅ 关闭周期选择弹窗')
         showWeeklyModal.value = false
         return
       } else if (showCustomDateModal.value) {
+        console.log('✅ 关闭自定义日期弹窗')
         showCustomDateModal.value = false
         return
       } else if (showPomodoroStats.value) {
+        console.log('✅ 关闭番茄钟统计')
         showPomodoroStats.value = false
         return
       } else if (showSupport.value) {
+        console.log('✅ 关闭联系与支持')
         showSupport.value = false
         return
       } else if (showAIConfig.value) {
+        console.log('✅ 关闭AI配置')
         showAIConfig.value = false
         return
       } else if (showVersionModal.value) {
+        console.log('✅ 关闭版本更新')
         showVersionModal.value = false
         return
       } else if (showPrivacyPolicy.value) {
+        console.log('✅ 关闭隐私政策')
         showPrivacyPolicy.value = false
         return
       } else if (showDataInfo.value) {
+        console.log('✅ 关闭数据说明')
         showDataInfo.value = false
         return
       } else if (showUserGuide.value) {
+        console.log('✅ 关闭使用指南')
         showUserGuide.value = false
         return
       } else if (showPomodoroRules.value) {
+        console.log('✅ 关闭番茄钟规则')
         showPomodoroRules.value = false
         return
       } else if (showWelcome.value) {
+        console.log('✅ 关闭欢迎弹窗')
         showWelcome.value = false
         return
       } else if (showBackupReminder.value) {
+        console.log('✅ 关闭备份提醒')
         showBackupReminder.value = false
         return
       } else if (showNotificationGuide.value) {
+        console.log('✅ 关闭通知引导')
         showNotificationGuide.value = false
         return
       } else if (showReportTemplates.value) {
+        console.log('✅ 关闭报告模板')
         showReportTemplates.value = false
         return
       } else if (showReportHistoryModal.value) {
+        console.log('✅ 关闭报告历史')
         showReportHistoryModal.value = false
         return
       } else if (showAddLogModal.value) {
+        console.log('✅ 关闭添加日志')
         showAddLogModal.value = false
         currentLogTask.value = null
         return
       } else if (showTaskPreview.value) {
+        console.log('✅ 关闭任务预览')
         showTaskPreview.value = false
         return
       } else if (showSubtaskPreview.value) {
+        console.log('✅ 关闭子任务预览')
         showSubtaskPreview.value = false
         return
       } else if (showFullscreenDesc.value) {
+        console.log('✅ 关闭全屏描述编辑')
         showFullscreenDesc.value = false
         return
       } 
       // 第二层弹窗（中层）
       else if (showTutorial.value) {
+        console.log('✅ 关闭教程模式')
         showTutorial.value = false
       } else if (showPomodoroTimer.value) {
+        console.log('✅ 关闭番茄钟计时器')
         showPomodoroTimer.value = false
       } else if (showTaskDetail.value) {
+        console.log('✅ 关闭任务详情')
         // 检查 TaskDetailModal 内部是否有打开的子弹窗
         if (taskDetailModalRef.value) {
           if (taskDetailModalRef.value.showAddLogModal) {
@@ -10148,41 +10186,77 @@ onMounted(async () => {
         showTaskDetail.value = false
         selectedTask.value = null
       } else if (showAIChat.value) {
+        console.log('✅ 关闭AI问答')
         showAIChat.value = false
       } else if (showProfile.value) {
+        console.log('✅ 关闭个人主页')
         showProfile.value = false
       } else if (showFilterModal.value) {
+        console.log('✅ 关闭高级筛选')
         showFilterModal.value = false
       } else if (showTrash.value) {
+        console.log('✅ 关闭回收站')
         showTrash.value = false
       } else if (showDataStats.value) {
+        console.log('✅ 关闭数据统计')
         showDataStats.value = false
       } else if (showDailyPlan.value) {
+        console.log('✅ 关闭今日规划')
         showDailyPlan.value = false
       } else if (showDailySummary.value) {
+        console.log('✅ 关闭今日总结')
         showDailySummary.value = false
       } else if (showReportModal.value) {
+        console.log('✅ 关闭数据报告')
         showReportModal.value = false
-      } else if (showSmartSplitter.value) {
-        showSmartSplitter.value = false
       } else if (showAIResult.value) {
+        console.log('✅ 关闭AI结果')
         showAIResult.value = false
       } else if (showAISuggestion.value) {
+        console.log('✅ 关闭AI建议')
         showAISuggestion.value = false
       } else if (showAIReport.value) {
+        console.log('✅ 关闭AI报告')
         showAIReport.value = false
       } else if (showTaskSplitter.value) {
+        console.log('✅ 关闭任务拆分')
         showTaskSplitter.value = false
       } 
-      // 第一层：筛选状态恢复
-      else if (currentFilter.value !== 'all') {
+      // 第一层：表单状态清空（逐步恢复到初始状态）
+      else if (newTaskDescription.value.trim() !== '') {
+        // 如果有任务描述，先清空描述
+        console.log('✅ 清空任务描述')
+        newTaskDescription.value = ''
+      } else if (newTaskText.value.trim() !== '') {
+        // 如果有任务标题，清空标题
+        console.log('✅ 清空任务标题')
+        newTaskText.value = ''
+      } else if (newTaskType.value !== 'today' || 
+                 newTaskCategory.value !== 'work' || 
+                 newTaskPriority.value !== 'medium' ||
+                 customDateTime.value !== '' ||
+                 selectedWeekdays.value.length > 0 ||
+                 enableReminder.value !== false) {
+        // 如果有其他表单状态被修改，恢复默认值
+        console.log('✅ 恢复表单默认值')
+        newTaskType.value = 'today'
+        newTaskCategory.value = 'work'
+        newTaskPriority.value = 'medium'
+        customDateTime.value = ''
+        selectedWeekdays.value = []
+        enableReminder.value = false
+        reminderDateTime.value = ''
+      } else if (currentFilter.value !== 'all') {
         // 如果当前不是"全部"，恢复到"全部"
+        console.log('✅ 恢复筛选状态')
         setFilter('all')
       } 
       // 第一层：路由返回或退出
       else if (canGoBack) {
+        console.log('✅ 路由返回')
         window.history.back()
       } else {
+        console.log('✅ 退出应用')
         App.exitApp() // 退出应用
       }
     })
