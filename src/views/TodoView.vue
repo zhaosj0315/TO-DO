@@ -10004,6 +10004,14 @@ onMounted(async () => {
   // 首次立即检查
   taskStore.checkTaskReminders()
   checkAndNotifyDeadline()
+  
+  // 监听打开任务详情事件（从子任务跳转）
+  window.addEventListener('open-task-detail', (event) => {
+    const { task } = event.detail
+    if (task) {
+      openTaskDetail(task)
+    }
+  })
 })
 
 // 生命周期钩子：组件卸载时

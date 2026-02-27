@@ -184,10 +184,10 @@
             </div>
           </div>
 
-          <!-- 等待此任务的任务列表 -->
+          <!-- 子任务列表 -->
           <div v-if="waitingTasks.length > 0" class="waiting-tasks-card">
             <div class="card-header">
-              <span class="card-title">⬇️ 等待此任务的任务 ({{ waitingTasks.length }})</span>
+              <span class="card-title">📋 子任务 ({{ waitingTasks.length }})</span>
             </div>
             <div class="waiting-tasks-list">
               <div 
