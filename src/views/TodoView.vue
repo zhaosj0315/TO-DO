@@ -3136,12 +3136,133 @@
                 </div>
               </div>
               <div class="template-actions">
+                <button class="btn-template-action" @click="viewTemplateDetail(template)">
+                  👁️ 查看详情
+                </button>
+                <button class="btn-template-action" @click="editTemplate(template)">
+                  ✏️ 编辑
+                </button>
                 <button class="btn-template-use" @click="useTemplate(template.value)">
                   使用模板
                 </button>
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 模板详情弹窗 -->
+    <div v-if="showTemplateDetail && currentTemplate" class="modal-overlay" @click.self="showTemplateDetail = false">
+      <div class="report-bottom-sheet">
+        <div class="modal-header">
+          <button class="back-btn" @click="showTemplateDetail = false">
+            <span>← 返回</span>
+          </button>
+          <h3>{{ currentTemplate.icon }} {{ currentTemplate.label }}</h3>
+          <div style="width: 80px;"></div>
+        </div>
+        
+        <div class="modal-body" style="padding: 1.5rem;">
+          <!-- 模板描述 -->
+          <div class="template-detail-section">
+            <div class="detail-label">📝 模板说明</div>
+            <div class="detail-value">{{ currentTemplate.desc }}</div>
+          </div>
+
+          <!-- 包含模块 -->
+          <div class="template-detail-section">
+            <div class="detail-label">✨ 包含模块</div>
+            <div class="section-list">
+              <div 
+                v-for="section in currentTemplate.sections" 
+                :key="section.key"
+                class="section-item"
+                :class="{ disabled: !section.enabled }"
+              >
+                <span class="section-icon">{{ section.enabled ? '✅' : '⬜' }}</span>
+                <span class="section-label">{{ section.label }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 适用场景 -->
+          <div class="template-detail-section">
+            <div class="detail-label">🎯 适用场景</div>
+            <div class="detail-value">
+              <div v-if="currentTemplate.value === 'standard'">
+                适合日常周报、月报等常规汇报场景，包含核心统计数据和AI智能总结。
+              </div>
+              <div v-else-if="currentTemplate.value === 'detailed'">
+                适合季度总结、年度汇报等重要场景，包含完整的数据分析、图表和趋势对比。
+              </div>
+              <div v-else-if="currentTemplate.value === 'simple'">
+                适合快速查看和简要汇报，只展示最核心的完成情况和任务列表。
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="editTemplate(currentTemplate)">✏️ 编辑模板</button>
+          <button class="btn btn-primary" @click="useTemplate(currentTemplate.value)">使用模板</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 模板编辑弹窗 -->
+    <div v-if="showTemplateEditor && currentTemplate" class="modal-overlay" @click.self="showTemplateEditor = false">
+      <div class="report-bottom-sheet">
+        <div class="modal-header">
+          <button class="back-btn" @click="showTemplateEditor = false">
+            <span>← 返回</span>
+          </button>
+          <h3>✏️ 编辑模板</h3>
+          <div style="width: 80px;"></div>
+        </div>
+        
+        <div class="modal-body" style="padding: 1.5rem;">
+          <!-- 模板名称 -->
+          <div class="form-group">
+            <label class="form-label">📝 模板名称</label>
+            <input 
+              v-model="currentTemplate.label" 
+              type="text" 
+              class="form-input"
+              placeholder="输入模板名称"
+            />
+          </div>
+
+          <!-- 模板描述 -->
+          <div class="form-group">
+            <label class="form-label">📄 模板描述</label>
+            <input 
+              v-model="currentTemplate.desc" 
+              type="text" 
+              class="form-input"
+              placeholder="输入模板描述"
+            />
+          </div>
+
+          <!-- 包含模块 -->
+          <div class="form-group">
+            <label class="form-label">✨ 包含模块</label>
+            <div class="checkbox-group-vertical">
+              <label 
+                v-for="section in currentTemplate.sections" 
+                :key="section.key"
+                class="checkbox-label-large"
+              >
+                <input type="checkbox" v-model="section.enabled" />
+                <span>{{ section.label }}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="showTemplateEditor = false">取消</button>
+          <button class="btn btn-primary" @click="saveTemplateEdit">💾 保存</button>
         </div>
       </div>
     </div>
@@ -4506,6 +4627,9 @@ const showReportModal = ref(false) // 数据报告弹窗
 const showBackupList = ref(false) // 备份列表弹窗
 const showCustomReportModal = ref(false) // 自定义报告弹窗
 const showReportTemplates = ref(false) // 报告模板弹窗
+const showTemplateDetail = ref(false) // 模板详情弹窗
+const showTemplateEditor = ref(false) // 模板编辑弹窗
+const currentTemplate = ref(null) // 当前查看/编辑的模板
 
 // 自定义报告配置
 const customReportConfig = ref({
@@ -4528,29 +4652,72 @@ const reportTypes = [
 ]
 
 // 报告模板选项
-const reportTemplates = [
+const reportTemplates = ref([
   { 
     value: 'standard', 
     label: '标准模板', 
     icon: '📝', 
     desc: '适合日常周报',
-    features: ['统计数据', 'AI总结', '任务列表']
+    features: ['统计数据', 'AI总结', '任务列表'],
+    sections: [
+      { key: 'stats', label: '📊 统计数据', enabled: true },
+      { key: 'aiSummary', label: '🤖 AI总结', enabled: true },
+      { key: 'taskList', label: '📋 任务列表', enabled: true },
+      { key: 'charts', label: '📈 图表分析', enabled: false },
+      { key: 'trends', label: '📉 趋势对比', enabled: false }
+    ]
   },
   { 
     value: 'detailed', 
     label: '详细模板', 
     icon: '📊', 
     desc: '包含所有统计和图表',
-    features: ['完整统计', '图表分析', 'AI建议', '趋势对比']
+    features: ['完整统计', '图表分析', 'AI建议', '趋势对比'],
+    sections: [
+      { key: 'stats', label: '📊 统计数据', enabled: true },
+      { key: 'aiSummary', label: '🤖 AI总结', enabled: true },
+      { key: 'taskList', label: '📋 任务列表', enabled: true },
+      { key: 'charts', label: '📈 图表分析', enabled: true },
+      { key: 'trends', label: '📉 趋势对比', enabled: true },
+      { key: 'heatmap', label: '🔥 热力图', enabled: true }
+    ]
   },
   { 
     value: 'simple', 
     label: '简洁模板', 
     icon: '⚡', 
     desc: '只包含核心数据',
-    features: ['核心数据', '完成任务']
+    features: ['核心数据', '完成任务'],
+    sections: [
+      { key: 'stats', label: '📊 统计数据', enabled: true },
+      { key: 'taskList', label: '📋 任务列表', enabled: true },
+      { key: 'aiSummary', label: '🤖 AI总结', enabled: false },
+      { key: 'charts', label: '📈 图表分析', enabled: false }
+    ]
   }
-]
+])
+
+// 查看模板详情
+const viewTemplateDetail = (template) => {
+  currentTemplate.value = JSON.parse(JSON.stringify(template))
+  showTemplateDetail.value = true
+}
+
+// 编辑模板
+const editTemplate = (template) => {
+  currentTemplate.value = JSON.parse(JSON.stringify(template))
+  showTemplateEditor.value = true
+}
+
+// 保存模板编辑
+const saveTemplateEdit = () => {
+  const index = reportTemplates.value.findIndex(t => t.value === currentTemplate.value.value)
+  if (index !== -1) {
+    reportTemplates.value[index] = currentTemplate.value
+    showNotification('模板已保存', 'success')
+    showTemplateEditor.value = false
+  }
+}
 
 // 生成自定义报告
 const generateCustomReport = () => {
@@ -4581,8 +4748,9 @@ const generateCustomReport = () => {
 const useTemplate = (templateValue) => {
   customReportConfig.value.template = templateValue
   showReportTemplates.value = false
+  showTemplateDetail.value = false
   showCustomReportModal.value = true
-  showNotification(`已选择${reportTemplates.find(t => t.value === templateValue)?.label}`, 'success')
+  showNotification(`已选择${reportTemplates.value.find(t => t.value === templateValue)?.label}`, 'success')
 }
 
 // 任务描述展开状态
@@ -6277,10 +6445,12 @@ const generateReportContent = () => {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // 轨道1：高频习惯聚合 (用于文本报告)
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  const completedTasksList = periodTasks.filter(t => t.status === TaskStatus.COMPLETED)
+  const completedTasksList = periodTasks.filter(t => t.status === TaskStatus.COMPLETED && t.text)
   const textTaskFrequency = {}
   completedTasksList.forEach(task => {
-    const key = task.text.trim().toLowerCase()
+    const key = (task.text || '').trim().toLowerCase()
+    if (!key) return // 跳过空任务名
+    
     if (!textTaskFrequency[key]) {
       textTaskFrequency[key] = {
         text: task.text,
@@ -6315,11 +6485,13 @@ const generateReportContent = () => {
     if (isLowValueTask) return false
     
     let score = 0
-    const hasRichDescription = task.description.trim().length > 10
+    const hasRichDescription = (task.description || '').trim().length > 10
     if (hasRichDescription) score++
     const isHighValueTask = (task.priority === 'high' || task.priority === 'urgent') && getPomodoroCount(task) >= 4
     if (isHighValueTask) score++
-    const taskKey = task.text.trim().toLowerCase()
+    const taskKey = (task.text || '').trim().toLowerCase()
+    if (!taskKey) return false // 跳过空任务名
+    
     const isRareEvent = textTaskFrequency[taskKey] && textTaskFrequency[taskKey].count < 3
     if (isRareEvent) score++
     return score >= 2
@@ -6328,7 +6500,9 @@ const generateReportContent = () => {
   // 去重：按任务名称去重，只保留最新的一条
   const textMilestonesMap = {}
   textMilestonesRaw.forEach(task => {
-    const key = task.text.trim().toLowerCase()
+    const key = (task.text || '').trim().toLowerCase()
+    if (!key) return // 跳过空任务名
+    
     if (!textMilestonesMap[key]) {
       textMilestonesMap[key] = task
     }
@@ -6571,14 +6745,16 @@ const generateReportContent = () => {
   // Bug3修复：待办预警去重 + 新增【待办预警】模块
   // 日报：查询所有未完成任务（不限时间范围），其他报告：查询周期内未完成任务
   const incompleteTasks = reportType.value === 'daily' 
-    ? taskStore.tasks.filter(t => t.status !== TaskStatus.COMPLETED)
-    : periodTasks.filter(t => t.status !== TaskStatus.COMPLETED)
+    ? taskStore.tasks.filter(t => t.status !== TaskStatus.COMPLETED && t.text)
+    : periodTasks.filter(t => t.status !== TaskStatus.COMPLETED && t.text)
     
   if (incompleteTasks.length > 0) {
     // 按任务名称去重，保留优先级最高的
     const incompleteTasksMap = {}
     incompleteTasks.forEach(task => {
-      const key = task.text.trim().toLowerCase()
+      const key = (task.text || '').trim().toLowerCase()
+      if (!key) return // 跳过空任务名
+      
       if (!incompleteTasksMap[key]) {
         incompleteTasksMap[key] = task
       } else {
@@ -6766,7 +6942,9 @@ const generateReportContent = () => {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   const taskFrequency = {}
   completedTasksList.forEach(task => {
-    const key = task.text.trim().toLowerCase()
+    const key = (task.text || '').trim().toLowerCase()
+    if (!key) return // 跳过空任务名
+    
     if (!taskFrequency[key]) {
       taskFrequency[key] = {
         text: task.text,
@@ -6809,7 +6987,7 @@ const generateReportContent = () => {
     let score = 0
     
     // 条件1：强备注特征（有详细描述）
-    const hasRichDescription = task.description.trim().length > 10
+    const hasRichDescription = (task.description || '').trim().length > 10
     if (hasRichDescription) score++
     
     // 条件2：高优且耗时（优先级=高 且 番茄钟≥4）
@@ -6817,7 +6995,9 @@ const generateReportContent = () => {
     if (isHighValueTask) score++
     
     // 条件3：低频独立特征（该任务名称在周期内出现次数<3）
-    const taskKey = task.text.trim().toLowerCase()
+    const taskKey = (task.text || '').trim().toLowerCase()
+    if (!taskKey) return false // 跳过空任务名
+    
     const isRareEvent = taskFrequency[taskKey] && taskFrequency[taskKey].count < 3
     if (isRareEvent) score++
     
@@ -11065,26 +11245,28 @@ watch(() => reportData.value, (newData) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.2rem 0.1rem;
+  padding: 1rem 0.1rem;
   margin-bottom: 0.5rem;
   border-bottom: 1px solid var(--glass-border);
   width: 100%;
 }
 
 .user-info h1 {
-  font-size: 24px;
+  font-size: 1.5rem;
+  font-weight: 700;
   margin: 0;
+  line-height: 1.2;
 }
 
 /* 统一的圆形图标按钮 */
 .btn-icon-circle {
-  width: 20px;
-  height: 20px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   border: none;
   background: rgba(255, 255, 255, 0.25);
   color: white;
-  font-size: 0.8rem;
+  font-size: 1.2rem;
   cursor: pointer;
   transition: all 0.3s;
   display: flex;
@@ -11117,7 +11299,6 @@ watch(() => reportData.value, (newData) => {
 
 /* 刷新按钮特殊尺寸和样式 */
 .btn-refresh-icon {
-  font-size: 1.3rem;
   background: rgba(102, 126, 234, 0.25) !important;
   color: white !important;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
@@ -11130,7 +11311,6 @@ watch(() => reportData.value, (newData) => {
 
 /* AI问答按钮 */
 .btn-ai {
-  font-size: 1.3rem;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
   color: white !important;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
@@ -11143,7 +11323,6 @@ watch(() => reportData.value, (newData) => {
 
 /* AI 对话创建按钮 */
 .btn-ai-chat {
-  font-size: 1.3rem;
   background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
   color: white !important;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
@@ -11156,7 +11335,6 @@ watch(() => reportData.value, (newData) => {
 
 /* AI 今日规划按钮 */
 .btn-daily-plan {
-  font-size: 1.3rem;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
   color: white !important;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
@@ -11169,7 +11347,6 @@ watch(() => reportData.value, (newData) => {
 
 /* 演示模式按钮 */
 .btn-tutorial {
-  font-size: 1.3rem;
   background: rgba(255, 193, 7, 0.25) !important;
   color: white !important;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
@@ -11193,7 +11370,12 @@ watch(() => reportData.value, (newData) => {
 
 /* 回收站按钮 */
 .btn-trash {
-  font-size: 1.3rem;
+  /* 使用默认样式 */
+}
+
+/* 数据统计按钮 */
+.btn-stats {
+  /* 使用默认样式 */
 }
 
 /* 数字气泡 */
@@ -11217,17 +11399,17 @@ watch(() => reportData.value, (newData) => {
 }
 
 .btn-avatar {
-  width: 20px;
-  height: 20px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  border: 2px solid rgba(255, 255, 255, 0.9);
   background: white;
   cursor: pointer;
   transition: all 0.3s;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1px;
+  padding: 0;
   box-shadow: 0 0 0 rgba(0, 0, 0, 0);
   overflow: hidden;
 }
@@ -11246,7 +11428,7 @@ watch(() => reportData.value, (newData) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.9rem;
+  font-size: 1.1rem;
   font-weight: 800;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
@@ -17794,7 +17976,27 @@ watch(() => reportData.value, (newData) => {
 
 .template-actions {
   display: flex;
+  gap: 0.5rem;
   justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.btn-template-action {
+  padding: 0.4rem 1rem;
+  background: white;
+  color: #667eea;
+  border: 1.5px solid #667eea;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-template-action:hover {
+  background: #667eea;
+  color: white;
+  transform: translateY(-1px);
 }
 
 .btn-template-use {
@@ -17811,6 +18013,110 @@ watch(() => reportData.value, (newData) => {
 .btn-template-use:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* 模板详情样式 */
+.template-detail-section {
+  margin-bottom: 1.5rem;
+}
+
+.detail-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.75rem;
+}
+
+.detail-value {
+  font-size: 0.9rem;
+  color: #666;
+  line-height: 1.6;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.section-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.section-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  background: white;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.section-item.disabled {
+  opacity: 0.5;
+  background: #f5f5f5;
+}
+
+.section-icon {
+  font-size: 1rem;
+}
+
+.section-label {
+  font-size: 0.9rem;
+  color: #333;
+  font-weight: 500;
+}
+
+/* 模板编辑样式 */
+.form-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.checkbox-group-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.checkbox-label-large {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: white;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.checkbox-label-large:hover {
+  border-color: #667eea;
+  background: #f8f9ff;
+}
+
+.checkbox-label-large input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.checkbox-label-large span {
+  font-size: 0.9rem;
+  color: #333;
+  font-weight: 500;
 }
 
 /* 版本历史样式 */

@@ -28,7 +28,20 @@
 
         <!-- 模型列表 -->
         <div class="section">
-          <h4>📋 已配置模型 ({{ models.length }})</h4>
+          <div class="section-header">
+            <h4>📋 已配置模型 ({{ models.length }})</h4>
+            <div class="section-actions">
+              <button @click="testAllModels" class="btn-test-all" :disabled="testingAll">
+                {{ testingAll ? '⏳ 测试中...' : '🔍 测试全部' }}
+              </button>
+              <button @click="exportConfig" class="btn-export">
+                📤 导出配置
+              </button>
+              <button @click="importConfig" class="btn-import">
+                📥 导入配置
+              </button>
+            </div>
+          </div>
           <div v-if="models.length === 0" class="empty-hint">
             暂无模型配置，请添加
           </div>
@@ -37,16 +50,31 @@
               v-for="(model, index) in models" 
               :key="index"
               class="model-item"
-              :class="{ active: model.id === defaultModelId }"
+              :class="{ 
+                active: model.id === defaultModelId,
+                online: model.status === 'online',
+                offline: model.status === 'offline',
+                testing: model.status === 'testing'
+              }"
             >
+              <div class="model-status-indicator" :title="getStatusText(model.status)">
+                {{ getStatusIcon(model.status) }}
+              </div>
               <div class="model-info">
                 <div class="model-name">
                   {{ model.name }}
                   <span v-if="model.id === defaultModelId" class="badge-default">默认</span>
+                  <span v-if="model.recommended" class="badge-recommended">推荐</span>
                 </div>
                 <div class="model-url">{{ model.url }}</div>
+                <div v-if="model.stats" class="model-stats">
+                  📊 调用 {{ model.stats.calls || 0 }} 次 | 成功率 {{ model.stats.successRate || 0 }}%
+                </div>
               </div>
               <div class="model-actions">
+                <button @click="testSingleModel(index)" class="btn-small btn-test" :disabled="model.status === 'testing'">
+                  {{ model.status === 'testing' ? '⏳' : '🔍' }}
+                </button>
                 <button @click="editModel(index)" class="btn-small btn-edit">编辑</button>
                 <button @click="deleteModel(index)" class="btn-small btn-delete">删除</button>
               </div>
@@ -140,14 +168,55 @@
           <h4>⚡ 快速配置</h4>
           <div class="quick-configs">
             <button @click="addQuickConfig('local')" class="btn-quick">
-              本地Ollama
+              🏠 本地Ollama
             </button>
             <button @click="addQuickConfig('openai')" class="btn-quick">
-              OpenAI
+              🌐 OpenAI
             </button>
             <button @click="addQuickConfig('ngrok')" class="btn-quick">
-              Ngrok隧道
+              🔗 Ngrok隧道
             </button>
+          </div>
+          
+          <!-- 智能推荐 -->
+          <div class="recommendation-box">
+            <div class="recommendation-title">💡 智能推荐</div>
+            <div class="recommendation-list">
+              <div class="recommendation-item">
+                <div class="rec-icon">🏠</div>
+                <div class="rec-content">
+                  <div class="rec-name">本地Ollama</div>
+                  <div class="rec-desc">隐私安全，完全离线，适合敏感数据处理</div>
+                  <div class="rec-tags">
+                    <span class="tag-free">免费</span>
+                    <span class="tag-fast">快速</span>
+                    <span class="tag-privacy">隐私</span>
+                  </div>
+                </div>
+              </div>
+              <div class="recommendation-item">
+                <div class="rec-icon">🌐</div>
+                <div class="rec-content">
+                  <div class="rec-name">OpenAI API</div>
+                  <div class="rec-desc">效果最佳，响应快速，适合高质量内容生成</div>
+                  <div class="rec-tags">
+                    <span class="tag-quality">高质量</span>
+                    <span class="tag-stable">稳定</span>
+                  </div>
+                </div>
+              </div>
+              <div class="recommendation-item">
+                <div class="rec-icon">🔗</div>
+                <div class="rec-content">
+                  <div class="rec-name">Ngrok隧道</div>
+                  <div class="rec-desc">远程访问本地模型，兼顾隐私和便利</div>
+                  <div class="rec-tags">
+                    <span class="tag-flexible">灵活</span>
+                    <span class="tag-remote">远程</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -307,6 +376,160 @@ const fetchAvailableModels = async () => {
 // 测试连接
 const testing = ref(false)
 const testResult = ref(null)
+const testingAll = ref(false)
+
+// 获取状态图标
+const getStatusIcon = (status) => {
+  const icons = {
+    online: '🟢',
+    offline: '🔴',
+    testing: '🟡',
+    unknown: '⚪'
+  }
+  return icons[status] || icons.unknown
+}
+
+// 获取状态文本
+const getStatusText = (status) => {
+  const texts = {
+    online: '在线',
+    offline: '离线',
+    testing: '测试中',
+    unknown: '未知'
+  }
+  return texts[status] || texts.unknown
+}
+
+// 测试单个模型
+const testSingleModel = async (index) => {
+  const model = models.value[index]
+  model.status = 'testing'
+  
+  try {
+    const result = await testModelConnection(model)
+    model.status = result.success ? 'online' : 'offline'
+    
+    // 更新统计
+    if (!model.stats) {
+      model.stats = { calls: 0, successRate: 0, successes: 0 }
+    }
+    model.stats.calls++
+    if (result.success) {
+      model.stats.successes++
+    }
+    model.stats.successRate = Math.round((model.stats.successes / model.stats.calls) * 100)
+    
+  } catch (error) {
+    model.status = 'offline'
+  }
+}
+
+// 测试所有模型
+const testAllModels = async () => {
+  testingAll.value = true
+  
+  for (let i = 0; i < models.value.length; i++) {
+    await testSingleModel(i)
+  }
+  
+  testingAll.value = false
+  alert('✅ 所有模型测试完成')
+}
+
+// 测试模型连接（通用方法）
+const testModelConnection = async (model) => {
+  try {
+    let apiUrl = model.url
+    const modelName = model.modelName || model.name
+    
+    if (model.type === 'local') {
+      if (!apiUrl.includes('/api/generate')) {
+        apiUrl = apiUrl.replace(/\/$/, '') + '/api/generate'
+      }
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: modelName,
+          prompt: 'test',
+          stream: false
+        })
+      })
+      
+      return { success: response.ok }
+    } else {
+      if (!apiUrl.includes('/chat/completions')) {
+        apiUrl = apiUrl.replace(/\/$/, '') + '/v1/chat/completions'
+      }
+      
+      const headers = { 'Content-Type': 'application/json' }
+      if (model.apiKey) {
+        headers['Authorization'] = `Bearer ${model.apiKey}`
+      }
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          model: modelName,
+          messages: [{ role: 'user', content: 'test' }],
+          max_tokens: 5
+        })
+      })
+      
+      return { success: response.ok }
+    }
+  } catch (error) {
+    return { success: false, error: error.message }
+  }
+}
+
+// 导出配置
+const exportConfig = () => {
+  const config = {
+    models: models.value,
+    defaultModelId: defaultModelId.value,
+    exportTime: new Date().toISOString()
+  }
+  
+  const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `ai-models-config-${Date.now()}.json`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+// 导入配置
+const importConfig = () => {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = '.json'
+  input.onchange = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    
+    try {
+      const text = await file.text()
+      const config = JSON.parse(text)
+      
+      if (config.models && Array.isArray(config.models)) {
+        models.value = config.models
+        if (config.defaultModelId) {
+          defaultModelId.value = config.defaultModelId
+        }
+        alert('✅ 配置导入成功')
+      } else {
+        alert('❌ 配置文件格式错误')
+      }
+    } catch (error) {
+      alert('❌ 导入失败: ' + error.message)
+    }
+  }
+  input.click()
+}
 
 const testConnection = async () => {
   if (!newModel.value.url || !newModel.value.modelName) {
@@ -643,11 +866,30 @@ const addQuickConfig = (type) => {
   border: 2px solid #eee;
   border-radius: 8px;
   transition: all 0.2s;
+  position: relative;
 }
 
 .model-item.active {
   border-color: #667eea;
   background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+}
+
+.model-item.online {
+  border-left: 4px solid #4caf50;
+}
+
+.model-item.offline {
+  border-left: 4px solid #f44336;
+}
+
+.model-item.testing {
+  border-left: 4px solid #ff9800;
+}
+
+.model-status-indicator {
+  font-size: 1.2rem;
+  margin-right: 0.5rem;
+  cursor: help;
 }
 
 .model-info {
@@ -661,18 +903,27 @@ const addQuickConfig = (type) => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .model-url {
   font-size: 0.85rem;
   color: #666;
   word-break: break-all;
+  margin-bottom: 0.25rem;
+}
+
+.model-stats {
+  font-size: 0.8rem;
+  color: #999;
+  margin-top: 0.25rem;
 }
 
 .model-actions {
   display: flex;
   gap: 0.5rem;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .btn-small {
@@ -682,6 +933,16 @@ const addQuickConfig = (type) => {
   cursor: pointer;
   font-size: 0.85rem;
   transition: all 0.2s;
+}
+
+.btn-test {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.btn-test:hover {
+  background: #1976d2;
+  color: white;
 }
 
 .btn-default {
@@ -694,9 +955,17 @@ const addQuickConfig = (type) => {
   color: #333;
 }
 
+.btn-edit:hover {
+  background: #e0e0e0;
+}
+
 .btn-delete {
   background: #fee;
   color: #c33;
+}
+
+.btn-delete:hover {
+  background: #fdd;
 }
 
 .badge-default {
@@ -706,6 +975,55 @@ const addQuickConfig = (type) => {
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 600;
+}
+
+.badge-recommended {
+  padding: 0.2rem 0.6rem;
+  background: linear-gradient(135deg, #ffd700 0%, #ffb700 100%);
+  color: #333;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.section-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-test-all,
+.btn-export,
+.btn-import {
+  padding: 0.4rem 0.8rem;
+  border: 1.5px solid #667eea;
+  background: white;
+  color: #667eea;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.btn-test-all:hover,
+.btn-export:hover,
+.btn-import:hover {
+  background: #667eea;
+  color: white;
+}
+
+.btn-test-all:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .add-model-form {
@@ -769,6 +1087,113 @@ const addQuickConfig = (type) => {
 .btn-quick:hover {
   background: #667eea;
   color: white;
+}
+
+/* 智能推荐样式 */
+.recommendation-box {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #f8f9ff 0%, #fff8f0 100%);
+  border-radius: 12px;
+  border: 2px solid #e8e8ff;
+}
+
+.recommendation-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.recommendation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.recommendation-item {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 8px;
+  border: 1.5px solid #e8e8ff;
+  transition: all 0.2s;
+}
+
+.recommendation-item:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+}
+
+.rec-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.rec-content {
+  flex: 1;
+}
+
+.rec-name {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.rec-desc {
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.rec-tags {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.rec-tags span {
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.tag-free {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.tag-fast {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.tag-privacy {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.tag-quality {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.tag-stable {
+  background: #e0f2f1;
+  color: #00695c;
+}
+
+.tag-flexible {
+  background: #fce4ec;
+  color: #c2185b;
+}
+
+.tag-remote {
+  background: #e8eaf6;
+  color: #3f51b5;
 }
 
 .btn-fetch {

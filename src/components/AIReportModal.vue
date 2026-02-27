@@ -31,35 +31,35 @@
           </div>
 
           <!-- 完成情况统计 -->
-          <div class="report-section">
+          <div v-if="report.completionStats" class="report-section">
             <div class="section-title">📊 完成情况</div>
             <div class="stats-grid">
               <div class="stat-card">
-                <div class="stat-value">{{ report.completionStats.total }}</div>
+                <div class="stat-value">{{ report.completionStats.total || 0 }}</div>
                 <div class="stat-label">总任务数</div>
               </div>
               <div class="stat-card completed">
-                <div class="stat-value">{{ report.completionStats.completed }}</div>
+                <div class="stat-value">{{ report.completionStats.completed || 0 }}</div>
                 <div class="stat-label">已完成</div>
               </div>
               <div class="stat-card pending">
-                <div class="stat-value">{{ report.completionStats.pending }}</div>
+                <div class="stat-value">{{ report.completionStats.pending || 0 }}</div>
                 <div class="stat-label">进行中</div>
               </div>
               <div class="stat-card overdue">
-                <div class="stat-value">{{ report.completionStats.overdue }}</div>
+                <div class="stat-value">{{ report.completionStats.overdue || 0 }}</div>
                 <div class="stat-label">已逾期</div>
               </div>
             </div>
             <div class="completion-rate">
-              完成率：<strong>{{ report.completionStats.completionRate }}%</strong>
+              完成率：<strong>{{ report.completionStats.completionRate || 0 }}%</strong>
               &nbsp;|&nbsp;
-              专注时长：<strong>{{ report.completionStats.focusHours }}h</strong>
+              专注时长：<strong>{{ report.completionStats.focusHours || 0 }}h</strong>
             </div>
           </div>
 
           <!-- 关键工作 -->
-          <div v-if="report.keyWorks.length > 0" class="report-section">
+          <div v-if="report.keyWorks && report.keyWorks.length > 0" class="report-section">
             <div class="section-title">⭐ 关键工作</div>
             <ul class="work-list">
               <li v-for="work in report.keyWorks" :key="work.id">
@@ -72,12 +72,12 @@
           </div>
 
           <!-- 问题分析 -->
-          <div v-if="report.issues.total > 0" class="report-section">
+          <div v-if="report.issues && report.issues.total > 0" class="report-section">
             <div class="section-title">⚠️ 问题分析</div>
             <div class="issue-summary">
               共有 <strong>{{ report.issues.total }}</strong> 个任务逾期
             </div>
-            <ul v-if="report.issues.suggestions.length > 0" class="suggestion-list">
+            <ul v-if="report.issues.suggestions && report.issues.suggestions.length > 0" class="suggestion-list">
               <li v-for="(suggestion, index) in report.issues.suggestions" :key="index">
                 💡 {{ suggestion }}
               </li>
