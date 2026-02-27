@@ -21,6 +21,10 @@
           <button class="btn-icon-circle btn-stats" @click="showDataStats = true" title="数据统计">
             📊
           </button>
+          <!-- 今日规划按钮 - AI规划 -->
+          <button class="btn-icon-circle btn-daily-plan" @click="generateDailyPlan" title="今日规划">
+            🌅
+          </button>
           <!-- AI问答按钮 - AI功能 -->
           <button class="btn-icon-circle btn-ai" @click="showAIChat = true" :title="t('aiChat')">
             🤖
@@ -101,8 +105,8 @@
               @keyup.enter="addTask"
               @blur="handleTaskInputBlur"
             >
-            <button class="btn-ai-assist" @click="triggerAIAssist" :title="t('aiAssist')" :disabled="aiGenerating">
-              {{ aiGenerating ? '⏳' : '🤖' }}
+            <button class="btn-ai-assist" @click="triggerAIAssist" :title="t('aiAssist')" :disabled="aiLoading">
+              {{ aiLoading ? '⏳' : '🤖' }}
             </button>
             <button class="btn-camera" @click="scanTextFromCamera" :title="t('scanText')">
               📷
@@ -134,8 +138,8 @@
                   placeholder="📝 任务描述（可选）..."
                   rows="2"
                 ></textarea>
-                <button class="btn-ai-desc" @click="generateDescription" :title="t('aiGenerateDesc')" :disabled="aiGenerating">
-                  {{ aiGenerating ? '⏳' : '🤖' }}
+                <button class="btn-ai-desc" @click="generateDescription" :title="t('aiGenerateDesc')" :disabled="aiLoading">
+                  {{ aiLoading ? '⏳' : '🤖' }}
                 </button>
                 <button class="btn-fullscreen-desc" @click="openFullscreenDesc" title="全屏编辑">
                   ⛶
@@ -2158,8 +2162,8 @@
             <span v-if="newTaskDescription.length > 0" class="meta-text">{{ newTaskDescription.length }} 字</span>
           </div>
           <div class="header-right">
-            <button class="nav-btn-icon" @click="continueDescription" :disabled="aiGenerating" title="AI 续写">
-              {{ aiGenerating ? '⏳' : '🤖' }}
+            <button class="nav-btn-icon" @click="continueDescription" :disabled="aiLoading" title="AI 续写">
+              {{ aiLoading ? '⏳' : '🤖' }}
             </button>
             <button class="nav-btn nav-btn-primary" @click="closeFullscreenDesc">完成</button>
           </div>
@@ -3821,7 +3825,9 @@ const currentCategoryFilter = ref('all')
 const currentPriorityFilter = ref('all')
 
 // AI 相关状态
-const aiGenerating = ref(false)
+const aiLoading = ref(false)
+const aiLoadingText = ref('AI 思考中...')
+const aiLoadingSubText = ref('')
 const aiSuggestion = ref(null)
 let suggestionTimeout = null
 const searchKeyword = ref('')
@@ -4254,11 +4260,6 @@ const markAllVersionsRead = () => {
 // 初始化时检查未读版本
 initVersionHistory()
 
-// AI 加载状态
-const aiLoading = ref(false)
-const aiLoadingText = ref('AI 思考中...')
-const aiLoadingSubText = ref('')
-
 // 全屏任务描述编辑
 const showFullscreenDesc = ref(false)
 const descEditStartTime = ref(null)
@@ -4309,7 +4310,10 @@ const continueDescription = async () => {
   }
   
   try {
-    aiGenerating.value = true
+    aiLoading.value = true
+    aiLoadingText.value = 'AI 正在续写...'
+    aiLoadingSubText.value = '智能补充任务描述'
+    
     const result = await AITaskGenerator.continueText(newTaskDescription.value)
     if (result.success) {
       newTaskDescription.value += result.text
@@ -4321,7 +4325,7 @@ const continueDescription = async () => {
     console.error('AI 续写失败:', error)
     showNotification('AI 续写失败', 'error')
   } finally {
-    aiGenerating.value = false
+    aiLoading.value = false
   }
 }
 
@@ -4457,7 +4461,9 @@ const generateDailyPlan = async () => {
   }
   
   try {
-    showNotification('AI 正在生成今日规划...', 'info')
+    aiLoading.value = true
+    aiLoadingText.value = 'AI 正在生成今日规划...'
+    aiLoadingSubText.value = `分析 ${pendingTasks.length} 个待办任务`
     
     // 为任务添加截止时间信息
     const tasksWithDeadline = pendingTasks.map(task => ({
@@ -4477,6 +4483,8 @@ const generateDailyPlan = async () => {
   } catch (error) {
     console.error('AI生成规划失败:', error)
     alert(`AI生成规划失败：${error.message}`)
+  } finally {
+    aiLoading.value = false
   }
 }
 
@@ -4489,12 +4497,13 @@ const triggerAIAssist = async () => {
     return
   }
   
-  aiGenerating.value = true
+  aiLoading.value = true
+  aiLoadingText.value = 'AI 正在分析文本...'
+  aiLoadingSubText.value = '智能提取任务信息'
+  
   try {
     // 如果输入文本较长（超过20字），使用提取模式
     if (inputText.length > 20) {
-      showNotification('AI 正在分析文本...', 'info')
-      
       // 调用 AI 提取任务
       const tasks = await AITaskExtractor.extractTasks(inputText)
       
@@ -4529,7 +4538,7 @@ const triggerAIAssist = async () => {
     console.error('AI处理失败:', error)
     alert(`AI处理失败：${error.message}`)
   } finally {
-    aiGenerating.value = false
+    aiLoading.value = false
   }
 }
 
@@ -4542,7 +4551,10 @@ const generateDescription = async () => {
     return
   }
   
-  aiGenerating.value = true
+  aiLoading.value = true
+  aiLoadingText.value = 'AI 正在生成任务描述...'
+  aiLoadingSubText.value = '基于任务标题智能生成'
+  
   try {
     const generatedDesc = await AITaskGenerator.generateDescription(title)
     newTaskDescription.value = generatedDesc
@@ -4551,7 +4563,7 @@ const generateDescription = async () => {
     console.error('AI生成失败:', error)
     alert(`AI生成失败：${error.message}`)
   } finally {
-    aiGenerating.value = false
+    aiLoading.value = false
   }
 }
 
@@ -5647,7 +5659,9 @@ const scanTextFromCamera = async () => {
         if (!file) return
         
         try {
-          showNotification('正在识别文字...', 'info')
+          aiLoading.value = true
+          aiLoadingText.value = '正在识别文字...'
+          aiLoadingSubText.value = 'OCR 文字识别中'
           
           // 使用 Tesseract.js 进行 OCR（需要先安装）
           // 或者调用在线 OCR API
@@ -5671,6 +5685,8 @@ const scanTextFromCamera = async () => {
           
         } catch (error) {
           showNotification(`识别失败: ${error.message}`, 'error')
+        } finally {
+          aiLoading.value = false
         }
       }
       
@@ -5694,7 +5710,9 @@ const scanTextFromCamera = async () => {
     console.log('照片路径:', photo.path)
     
     // 显示识别中提示
-    showNotification('正在识别文字...', 'info')
+    aiLoading.value = true
+    aiLoadingText.value = '正在识别文字...'
+    aiLoadingSubText.value = 'OCR 文字识别中'
     
     // 2. 中文OCR识别
     const result = await ChineseOcr.detectText({ 
@@ -5709,6 +5727,7 @@ const scanTextFromCamera = async () => {
       
       if (lines.length === 0) {
         showNotification('未识别到文字', 'error')
+        aiLoading.value = false
         return
       }
       
@@ -5717,7 +5736,9 @@ const scanTextFromCamera = async () => {
       
       // 使用 AI 增强文本
       try {
-        showNotification('AI 正在优化文本...', 'info')
+        aiLoadingText.value = 'AI 正在优化文本...'
+        aiLoadingSubText.value = '智能提取任务信息'
+        
         const enhanced = await AITextEnhancer.enhanceText(fullText)
         
         // 填充到输入框
@@ -5742,6 +5763,8 @@ const scanTextFromCamera = async () => {
     } else {
       showNotification(`识别失败: ${error.message || '未知错误'}`, 'error')
     }
+  } finally {
+    aiLoading.value = false
   }
 }
 
