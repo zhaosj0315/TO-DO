@@ -427,6 +427,22 @@
       @close="closeTextMenu"
       @action="handleTextAction"
     />
+
+    <!-- AI文本处理结果展示 -->
+    <AITextResultSheet
+      :visible="showTextResult"
+      :result="textResult"
+      :action="currentTextAction"
+      @close="showTextResult = false"
+    />
+
+    <!-- 加载动画 -->
+    <div v-if="isProcessing" class="loading-overlay">
+      <div class="loading-spinner">
+        <div class="spinner-ring"></div>
+        <div class="spinner-text">🤖 AI 处理中...</div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -437,6 +453,7 @@ import LogTimeline from './LogTimeline.vue'
 import LogStats from './LogStats.vue'
 import AddLogModal from './AddLogModal.vue'
 import AITextMenu from './AITextMenu.vue'
+import AITextResultSheet from './AITextResultSheet.vue'
 import WaitForSelector from './WaitForSelector.vue'
 import { useTextSelection } from '../composables/useTextSelection'
 import { AITextService } from '../services/aiTextService'
@@ -587,6 +604,12 @@ const handleDateTimeChange = () => {
 const detailContentRef = ref(null)
 const { showMenu: showTextMenu, menuPosition, selectedText, closeTextMenu, replaceSelectedText } = useTextSelection(detailContentRef)
 
+// AI文本处理结果
+const showTextResult = ref(false)
+const textResult = ref('')
+const currentTextAction = ref('')
+const isProcessing = ref(false)
+
 // AI 拆解任务
 const handleSplitTask = () => {
   emit('split', props.task)
@@ -602,15 +625,20 @@ const handleTextAction = async ({ action, text, tone }) => {
   }
   
   try {
+    closeTextMenu()
+    isProcessing.value = true
+    
     const result = await AITextService.processText(action, text, { tone })
     console.log('AI result:', result)
     
-    // 替换选中的文本
-    replaceSelectedText(result)
+    isProcessing.value = false
     
-    // 触发保存（如果是在可编辑字段中）
-    emit('refresh')
+    // 显示结果
+    currentTextAction.value = action
+    textResult.value = result
+    showTextResult.value = true
   } catch (error) {
+    isProcessing.value = false
     console.error('AI处理失败:', error)
     alert(`AI处理失败：${error.message}`)
   }
@@ -2207,5 +2235,44 @@ section h3 {
 .view-toggle-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* 加载动画 */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10010;
+  backdrop-filter: blur(8px);
+}
+
+.loading-spinner {
+  text-align: center;
+}
+
+.spinner-ring {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner-text {
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
 }
 </style>

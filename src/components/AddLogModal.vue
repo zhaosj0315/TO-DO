@@ -196,6 +196,22 @@
       @close="closeTextMenu"
       @action="handleTextAction"
     />
+
+    <!-- AI文本处理结果展示 -->
+    <AITextResultSheet
+      :visible="showTextResult"
+      :result="textResult"
+      :action="currentTextAction"
+      @close="showTextResult = false"
+    />
+
+    <!-- 加载动画 -->
+    <div v-if="isProcessing" class="loading-overlay">
+      <div class="loading-spinner">
+        <div class="spinner-ring"></div>
+        <div class="spinner-text">🤖 AI 处理中...</div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -203,6 +219,7 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import { useOfflineTaskStore } from '../stores/offlineTaskStore'
 import AITextMenu from './AITextMenu.vue'
+import AITextResultSheet from './AITextResultSheet.vue'
 import { useTextSelection } from '../composables/useTextSelection'
 import { AITextService } from '../services/aiTextService'
 
@@ -226,6 +243,12 @@ const logFormRef = ref(null)
 const contentTextarea = ref(null)
 const { showMenu: showTextMenu, menuPosition, selectedText, closeTextMenu, replaceSelectedText } = useTextSelection(logFormRef)
 
+// AI文本处理结果
+const showTextResult = ref(false)
+const textResult = ref('')
+const currentTextAction = ref('')
+const isProcessing = ref(false)
+
 // 处理 AI 文本操作
 const handleTextAction = async ({ action, text, tone }) => {
   console.log('AddLogModal handleTextAction:', { action, text, tone })
@@ -236,9 +259,19 @@ const handleTextAction = async ({ action, text, tone }) => {
   }
   
   try {
+    closeTextMenu()
+    isProcessing.value = true
+    
     const result = await AITextService.processText(action, text, { tone })
-    replaceSelectedText(result)
+    
+    isProcessing.value = false
+    
+    // 显示结果
+    currentTextAction.value = action
+    textResult.value = result
+    showTextResult.value = true
   } catch (error) {
+    isProcessing.value = false
     console.error('AI处理失败:', error)
     alert(`AI处理失败：${error.message}`)
   }
@@ -807,5 +840,44 @@ select:focus {
 
 .log-footer button:active:not(:disabled) {
   transform: translateY(0);
+}
+
+/* 加载动画 */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10010;
+  backdrop-filter: blur(8px);
+}
+
+.loading-spinner {
+  text-align: center;
+}
+
+.spinner-ring {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner-text {
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
 }
 </style>

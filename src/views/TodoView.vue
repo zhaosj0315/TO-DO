@@ -3390,6 +3390,14 @@
       @action="handleTextAction"
     />
 
+    <!-- AI文本处理结果展示 -->
+    <AITextResultSheet
+      :visible="showTextResult"
+      :result="textResult"
+      :action="currentTextAction"
+      @close="showTextResult = false"
+    />
+
     <!-- 任务预览弹窗 -->
     <TaskPreviewModal
       :visible="showTaskPreview"
@@ -3408,6 +3416,7 @@ import { useOfflineUserStore } from '../stores/offlineUserStore'
 import { Preferences } from '@capacitor/preferences'
 import AIAssistButton from '../components/AIAssistButton.vue'
 import AITextMenu from '../components/AITextMenu.vue'
+import AITextResultSheet from '../components/AITextResultSheet.vue'
 import LoadingSpinner from '../components/LoadingSpinner.vue'
 import { useTextSelection } from '../composables/useTextSelection'
 import { AITextService } from '../services/aiTextService'
@@ -3894,6 +3903,11 @@ const showDataStats = ref(false)
 const todoLayoutRef = ref(null)
 const { showMenu: showTextMenu, menuPosition, selectedText: selectedTextNew, closeTextMenu, replaceSelectedText } = useTextSelection(todoLayoutRef)
 
+// AI文本处理结果
+const showTextResult = ref(false)
+const textResult = ref('')
+const currentTextAction = ref('')
+
 // 任务预览弹窗
 const showTaskPreview = ref(false)
 const extractedTasks = ref([])
@@ -4055,9 +4069,15 @@ const handleTextAction = async ({ action, text, tone }) => {
   // 特殊处理：提取任务
   if (action === 'extract_tasks') {
     try {
-      showNotification('AI 正在分析文本...', 'info')
+      closeTextMenu()
+      aiLoading.value = true
+      aiLoadingText.value = 'AI 正在分析文本...'
+      aiLoadingSubText.value = '识别任务中'
+      
       const tasks = await AITaskExtractor.extractTasks(text)
       console.log('Extracted tasks:', tasks)
+      
+      aiLoading.value = false
       
       if (tasks.length === 0) {
         showNotification('未识别到任务', 'warning')
@@ -4066,19 +4086,31 @@ const handleTextAction = async ({ action, text, tone }) => {
       
       extractedTasks.value = tasks
       showTaskPreview.value = true
-      closeTextMenu()
     } catch (error) {
+      aiLoading.value = false
       console.error('AI提取任务失败:', error)
       alert(`AI提取任务失败：${error.message}`)
     }
     return
   }
   
-  // 其他文本处理操作
+  // 其他文本处理操作（前9个功能）
   try {
+    closeTextMenu()
+    aiLoading.value = true
+    aiLoadingText.value = 'AI 处理中...'
+    aiLoadingSubText.value = '请稍候'
+    
     const result = await AITextService.processText(action, text, { tone })
-    replaceSelectedText(result)
+    
+    aiLoading.value = false
+    
+    // 显示结果
+    currentTextAction.value = action
+    textResult.value = result
+    showTextResult.value = true
   } catch (error) {
+    aiLoading.value = false
     console.error('AI处理失败:', error)
     alert(`AI处理失败：${error.message}`)
   }
