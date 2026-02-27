@@ -125,6 +125,32 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       const task = this.tasks.find(t => t.id === taskId)
       if (task) {
         const wasCompleted = task.status === 'completed'
+        
+        // 如果要标记为完成，检查是否可以开始
+        if (!wasCompleted && !this.canStart(taskId)) {
+          // 获取未完成的依赖任务
+          const waitForTasks = this.getWaitForTasks(taskId)
+          const unfinishedTasks = waitForTasks.filter(t => t.status !== 'completed')
+          const taskNames = unfinishedTasks.map(t => t.text).join('、')
+          
+          // 提示用户
+          if (Capacitor.isNativePlatform()) {
+            try {
+              await LocalNotifications.schedule({
+                notifications: [{
+                  id: Math.floor(Math.random() * 1000000),
+                  title: '⚠️ 无法完成任务',
+                  body: `请先完成依赖任务：${taskNames}`,
+                  schedule: { at: new Date(Date.now() + 100) }
+                }]
+              })
+            } catch (error) {
+              console.error('发送提醒失败:', error)
+            }
+          }
+          return // 阻止完成
+        }
+        
         task.status = wasCompleted ? 'pending' : 'completed'
         
         // 记录完成时间戳
