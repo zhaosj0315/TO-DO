@@ -2092,6 +2092,8 @@
       @close="showTaskDetail = false; selectedTask = null"
       @refresh="handleTaskDetailRefresh"
       @split="handleSplitTask"
+      @show-loading="handleShowLoading"
+      @hide-loading="handleHideLoading"
     />
 
     <!-- 子任务预览弹窗 -->
@@ -6332,6 +6334,18 @@ const handleTaskDetailRefresh = () => {
       selectedTask.value = null
     }
   }
+}
+
+// 处理显示loading
+const handleShowLoading = ({ text, subText }) => {
+  aiLoading.value = true
+  aiLoadingText.value = text
+  aiLoadingSubText.value = subText || ''
+}
+
+// 处理隐藏loading
+const handleHideLoading = () => {
+  aiLoading.value = false
 }
 
 // 方法：处理编辑类型变化

@@ -459,7 +459,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['close', 'edit', 'refresh', 'split'])
+const emit = defineEmits(['close', 'edit', 'refresh', 'split', 'show-loading', 'hide-loading'])
 
 const taskStore = useOfflineTaskStore()
 const showAddLogModal = ref(false)
@@ -946,10 +946,11 @@ ${logsText || '暂无日志'}
       return
     }
     
-    // 显示加载提示
-    if (!confirm(`AI正在分析任务执行情况...\n\n使用模型：${model.name}\n需要10-30秒。\n\n点击确定开始分析。`)) {
-      return
-    }
+    // 显示loading
+    emit('show-loading', {
+      text: 'AI 正在分析任务执行情况...',
+      subText: `使用模型：${model.name}`
+    })
     
     console.log('使用模型:', model.name, model.url)
     
@@ -1013,11 +1014,15 @@ ${logsText || '暂无日志'}
     // 刷新页面
     emit('refresh')
     
+    // 显示总结结果弹窗
     alert(`✨ AI总结完成！\n\n${summary}`)
     
   } catch (error) {
     console.error('AI总结失败:', error)
     alert(`AI总结失败：${error.message}\n\n请确保：\n1. Mac上运行了 ollama serve\n2. 手机和Mac在同一WiFi\n3. 输入了正确的Mac IP地址\n4. 查看控制台日志了解详情`)
+  } finally {
+    // 隐藏loading
+    emit('hide-loading')
   }
 }
 
