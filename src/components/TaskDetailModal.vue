@@ -128,9 +128,8 @@
 
         <!-- 依赖关系 -->
         <section class="dependency-section">
-          <h3>🔗 依赖关系</h3>
           
-          <!-- 当前状态 -->
+          <!-- 当前状态：仅在等待父任务时显示 -->
           <div v-if="waitForTasks.length > 0" class="dependency-status blocked">
             <div class="status-icon">🔒</div>
             <div class="status-text">
@@ -138,14 +137,7 @@
               <div class="status-desc">此任务正在等待 {{ waitForTasks.length }} 个任务完成</div>
             </div>
           </div>
-          <div v-else-if="waitingTasks.length > 0" class="dependency-status blocking">
-            <div class="status-icon">🔓</div>
-            <div class="status-text">
-              <div class="status-title">被依赖</div>
-              <div class="status-desc">{{ waitingTasks.length }} 个任务正在等待此任务完成</div>
-            </div>
-          </div>
-          <div v-else class="dependency-status free">
+          <div v-else-if="waitingTasks.length === 0" class="dependency-status free">
             <div class="status-icon">✅</div>
             <div class="status-text">
               <div class="status-title">无依赖</div>
@@ -156,7 +148,7 @@
           <!-- 等待的任务列表 -->
           <div v-if="waitForTasks.length > 0" class="wait-for-card">
             <div class="card-header">
-              <span class="card-title">⬆️ 等待任务 ({{ waitForTasks.length }})</span>
+              <span class="card-title">⬆️ 父任务 ({{ waitForTasks.length }})</span>
             </div>
             <div class="waiting-tasks-list">
               <div 
@@ -187,7 +179,7 @@
           <!-- 子任务列表 -->
           <div v-if="waitingTasks.length > 0" class="waiting-tasks-card">
             <div class="card-header">
-              <span class="card-title">📋 子任务 ({{ waitingTasks.length }})</span>
+              <span class="card-title">🔗 依赖关系 · 📋 子任务 ({{ waitingTasks.length }})</span>
             </div>
             <div class="waiting-tasks-list">
               <div 
