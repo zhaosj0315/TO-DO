@@ -3960,7 +3960,8 @@ const createSubtasks = (subtasks) => {
       created_at: now.toISOString(),
       user_id: taskStore.currentUser,
       parentTaskId: parentTask.id,
-      estimatedHours: subtask.estimatedHours || 1
+      estimatedHours: subtask.estimatedHours || 1,
+      waitFor: [parentTask.id] // 自动设置依赖关系：等待父任务完成
     }
     
     taskStore.addTask(newTask)
