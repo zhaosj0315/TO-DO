@@ -116,20 +116,15 @@ import hljs from 'highlight.js'
 import 'highlight.js/styles/github.css'
 import { AIChatService } from '../services/aiChatService'
 
-// 简化配置：使用 marked 默认渲染 + highlight.js
+// 配置 marked 支持 GFM 表格
 marked.setOptions({
-  highlight: function(code, lang) {
-    if (lang && hljs.getLanguage(lang)) {
-      try {
-        return hljs.highlight(code, { language: lang }).value
-      } catch (e) {
-        return code
-      }
-    }
-    return code
-  },
+  gfm: true,
   breaks: true,
-  gfm: true
+  tables: true,
+  pedantic: false,
+  sanitize: false,
+  smartLists: true,
+  smartypants: false
 })
 
 const props = defineProps({
@@ -176,23 +171,8 @@ const highlightText = (text) => {
 // Markdown 渲染函数
 const renderMarkdown = (content) => {
   try {
-    const html = marked(content)
-    
-    // 手动高亮代码块
-    return html.replace(/<pre><code class="language-(\w+)">([\s\S]*?)<\/code><\/pre>/g, (match, lang, code) => {
-      const decodedCode = code.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"')
-      
-      let highlighted = decodedCode
-      if (hljs.getLanguage(lang)) {
-        try {
-          highlighted = hljs.highlight(decodedCode, { language: lang }).value
-        } catch (e) {
-          console.error('高亮失败:', e)
-        }
-      }
-      
-      return `<pre><code class="hljs language-${lang}">${highlighted}</code></pre>`
-    })
+    // 直接使用 marked 渲染，不做额外处理
+    return marked.parse(content)
   } catch (e) {
     console.error('Markdown 渲染失败:', e)
     return escapeHtml(content)
