@@ -146,26 +146,23 @@ const handleCreate = () => {
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
   z-index: 1000;
   animation: fadeIn 0.2s ease;
 }
 
 .modal-content {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: white;
   width: 100%;
-  max-width: 100%;
   max-height: 90vh;
   border-radius: 20px 20px 0 0;
   display: flex;
   flex-direction: column;
   animation: slideUp 0.3s ease;
   overflow: hidden;
-  margin-bottom: 0;
-  position: relative;
-  bottom: 0;
 }
 
 @keyframes fadeIn {
@@ -356,6 +353,7 @@ const handleCreate = () => {
 
 .modal-footer {
   padding: 1rem;
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid #e0e0e0;
   display: flex;
   gap: 0.75rem;
