@@ -299,8 +299,8 @@
               </div>
               <div class="task-meta">
                 <!-- 依赖关系状态 -->
-                <span v-if="task.waitFor && !taskStore.canStart(task.id)" class="badge badge-waiting" :title="`等待「${getWaitForTaskName(task.id)}」完成`">
-                  🔒 {{ getWaitForTaskName(task.id) }}
+                <span v-if="task.waitFor && task.waitFor.length > 0 && !taskStore.canStart(task.id)" class="badge badge-waiting" :title="`等待 ${task.waitFor.length} 个任务完成`">
+                  🔒 {{ getWaitForTaskNames(task.id) }}
                 </span>
                 <span v-else-if="getWaitingTasksCount(task.id) > 0" class="badge badge-blocking" :title="`${getWaitingTasksCount(task.id)}个任务等待此任务完成`">
                   🔓 被依赖×{{ getWaitingTasksCount(task.id) }}
@@ -8518,10 +8518,12 @@ const getPomodoroCount = (task) => {
   return Math.round(basePomodoros * multiplier)
 }
 
-// 获取等待的任务名称
-const getWaitForTaskName = (taskId) => {
-  const waitForTask = taskStore.getWaitForTask(taskId)
-  return waitForTask ? waitForTask.text : '未知任务'
+// 获取等待的任务名称（多个）
+const getWaitForTaskNames = (taskId) => {
+  const waitForTasks = taskStore.getWaitForTasks(taskId)
+  if (waitForTasks.length === 0) return ''
+  if (waitForTasks.length === 1) return waitForTasks[0].text
+  return `${waitForTasks[0].text} 等${waitForTasks.length}个`
 }
 
 // 获取等待当前任务的任务数量

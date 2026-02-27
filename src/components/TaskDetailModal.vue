@@ -131,11 +131,11 @@
           <h3>🔗 依赖关系</h3>
           
           <!-- 当前状态 -->
-          <div v-if="waitForTask" class="dependency-status blocked">
+          <div v-if="waitForTasks.length > 0" class="dependency-status blocked">
             <div class="status-icon">🔒</div>
             <div class="status-text">
               <div class="status-title">等待中</div>
-              <div class="status-desc">此任务正在等待其他任务完成</div>
+              <div class="status-desc">此任务正在等待 {{ waitForTasks.length }} 个任务完成</div>
             </div>
           </div>
           <div v-else-if="waitingTasks.length > 0" class="dependency-status blocking">
@@ -153,26 +153,33 @@
             </div>
           </div>
 
-          <!-- 等待的任务 -->
-          <div v-if="waitForTask" class="wait-for-card">
+          <!-- 等待的任务列表 -->
+          <div v-if="waitForTasks.length > 0" class="wait-for-card">
             <div class="card-header">
-              <span class="card-title">⬆️ 等待任务</span>
+              <span class="card-title">⬆️ 等待任务 ({{ waitForTasks.length }})</span>
             </div>
-            <div class="task-card" @click="openTaskDetail(waitForTask.id)">
-              <div class="task-card-header">
-                <span :class="['status-icon', waitForTask.status]">
-                  {{ waitForTask.status === 'completed' ? '✅' : '⬜' }}
-                </span>
-                <span class="task-name">{{ waitForTask.text }}</span>
-              </div>
-              <div class="task-card-meta">
-                <span class="task-category">{{ getCategoryIcon(waitForTask.category) }} {{ getCategoryText(waitForTask.category) }}</span>
-                <span v-if="waitForTask.completed_at" class="task-time">
-                  完成于 {{ formatDateTime(waitForTask.completed_at) }}
-                </span>
-                <span v-else class="task-time">
-                  {{ formatDeadline(waitForTask) }}
-                </span>
+            <div class="waiting-tasks-list">
+              <div 
+                v-for="waitForTask in waitForTasks" 
+                :key="waitForTask.id"
+                class="task-card"
+                @click="openTaskDetail(waitForTask.id)"
+              >
+                <div class="task-card-header">
+                  <span :class="['status-icon', waitForTask.status]">
+                    {{ waitForTask.status === 'completed' ? '✅' : '⬜' }}
+                  </span>
+                  <span class="task-name">{{ waitForTask.text }}</span>
+                </div>
+                <div class="task-card-meta">
+                  <span class="task-category">{{ getCategoryIcon(waitForTask.category) }} {{ getCategoryText(waitForTask.category) }}</span>
+                  <span v-if="waitForTask.completed_at" class="task-time">
+                    完成于 {{ formatDateTime(waitForTask.completed_at) }}
+                  </span>
+                  <span v-else class="task-time">
+                    {{ formatDeadline(waitForTask) }}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -200,14 +207,13 @@
           <!-- 操作按钮 -->
           <div class="dependency-actions">
             <button 
-              v-if="!waitForTask"
               @click="showWaitForSelector = true" 
               class="btn-set-wait"
             >
-              🔗 设置等待任务
+              {{ waitForTasks.length > 0 ? '✏️ 编辑等待任务' : '🔗 设置等待任务' }}
             </button>
             <button 
-              v-else
+              v-if="waitForTasks.length > 0"
               @click="handleClearWaitFor" 
               class="btn-clear-wait"
             >
@@ -461,8 +467,8 @@ const showTimeline = ref(false)
 const showWaitForSelector = ref(false)
 
 // 依赖关系相关
-const waitForTask = computed(() => {
-  return taskStore.getWaitForTask(props.task.id)
+const waitForTasks = computed(() => {
+  return taskStore.getWaitForTasks(props.task.id)
 })
 
 const waitingTasks = computed(() => {
@@ -474,8 +480,8 @@ const handleClearWaitFor = async () => {
   emit('refresh')
 }
 
-const handleSetWaitFor = async (waitForTaskId) => {
-  await taskStore.setWaitFor(props.task.id, waitForTaskId)
+const handleSetWaitFor = async (waitForTaskIds) => {
+  await taskStore.setWaitFor(props.task.id, waitForTaskIds)
   showWaitForSelector.value = false
   emit('refresh')
 }
@@ -492,7 +498,6 @@ const openTaskDetail = (taskId) => {
     }
   }, 300)
 }
-
 
 // 搜索过滤
 const searchKeyword = ref('')

@@ -13,7 +13,7 @@
         </div>
 
         <div class="hint">
-          💡 选择一个必须先完成的任务
+          💡 选择必须先完成的任务（可多选）
         </div>
 
         <div class="search-box">
@@ -30,11 +30,11 @@
             v-for="task in filteredTasks" 
             :key="task.id"
             class="task-item"
-            :class="{ selected: selectedTaskId === task.id }"
-            @click="selectedTaskId = task.id"
+            :class="{ selected: selectedTaskIds.includes(task.id) }"
+            @click="toggleTask(task.id)"
           >
             <div class="task-checkbox">
-              <span v-if="selectedTaskId === task.id">✓</span>
+              <span v-if="selectedTaskIds.includes(task.id)">✓</span>
             </div>
             <div class="task-info">
               <div class="task-title">{{ task.text }}</div>
@@ -53,14 +53,14 @@
 
       <div class="modal-footer">
         <button class="btn-cancel" @click="$emit('close')">取消</button>
-        <button class="btn-confirm" @click="handleConfirm" :disabled="!selectedTaskId">确定</button>
+        <button class="btn-confirm" @click="handleConfirm">确定 ({{ selectedTaskIds.length }})</button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useOfflineTaskStore } from '../stores/offlineTaskStore'
 
 const props = defineProps({
@@ -72,10 +72,17 @@ const emit = defineEmits(['close', 'confirm'])
 
 const taskStore = useOfflineTaskStore()
 const searchKeyword = ref('')
-const selectedTaskId = ref(null)
+const selectedTaskIds = ref([])
 
 const currentTask = computed(() => {
   return taskStore.tasks.find(t => t.id === props.taskId)
+})
+
+// 初始化已选中的任务
+watch(() => props.show, (newVal) => {
+  if (newVal && currentTask.value) {
+    selectedTaskIds.value = [...(currentTask.value.waitFor || [])]
+  }
 })
 
 const filteredTasks = computed(() => {
@@ -97,6 +104,15 @@ const filteredTasks = computed(() => {
   return tasks
 })
 
+const toggleTask = (taskId) => {
+  const index = selectedTaskIds.value.indexOf(taskId)
+  if (index > -1) {
+    selectedTaskIds.value.splice(index, 1)
+  } else {
+    selectedTaskIds.value.push(taskId)
+  }
+}
+
 const priorityText = (priority) => {
   const map = { high: '高优先级', medium: '中优先级', low: '低优先级' }
   return map[priority] || priority
@@ -108,9 +124,7 @@ const statusText = (status) => {
 }
 
 const handleConfirm = () => {
-  if (selectedTaskId.value) {
-    emit('confirm', selectedTaskId.value)
-  }
+  emit('confirm', selectedTaskIds.value)
 }
 </script>
 

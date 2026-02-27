@@ -30,12 +30,22 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       if (value) {
         this.tasks = JSON.parse(value)
         // 数据迁移：为旧任务添加 logs、stats 和 waitFor 字段
-        this.tasks = this.tasks.map(task => ({
-          ...task,
-          logs: task.logs || [],
-          stats: task.stats || this.calculateTaskStats([]),
-          waitFor: task.waitFor || null
-        }))
+        this.tasks = this.tasks.map(task => {
+          let waitFor = task.waitFor
+          // 兼容旧数据：null → []，单个ID → [ID]
+          if (waitFor === null || waitFor === undefined) {
+            waitFor = []
+          } else if (typeof waitFor === 'number') {
+            waitFor = [waitFor]
+          }
+          
+          return {
+            ...task,
+            logs: task.logs || [],
+            stats: task.stats || this.calculateTaskStats([]),
+            waitFor
+          }
+        })
       } else {
         this.tasks = []
       }
@@ -44,12 +54,21 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       if (deleted) {
         this.deletedTasks = JSON.parse(deleted)
         // 数据迁移：为旧任务添加 logs、stats 和 waitFor 字段
-        this.deletedTasks = this.deletedTasks.map(task => ({
-          ...task,
-          logs: task.logs || [],
-          stats: task.stats || this.calculateTaskStats([]),
-          waitFor: task.waitFor || null
-        }))
+        this.deletedTasks = this.deletedTasks.map(task => {
+          let waitFor = task.waitFor
+          if (waitFor === null || waitFor === undefined) {
+            waitFor = []
+          } else if (typeof waitFor === 'number') {
+            waitFor = [waitFor]
+          }
+          
+          return {
+            ...task,
+            logs: task.logs || [],
+            stats: task.stats || this.calculateTaskStats([]),
+            waitFor
+          }
+        })
       } else {
         this.deletedTasks = []
       }
@@ -89,7 +108,7 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         pomodoroHistory: taskData.pomodoroHistory || [], // 番茄钟历史记录
         logs: taskData.logs || [], // 任务执行日志
         stats: taskData.stats || this.calculateTaskStats([]), // 统计数据
-        waitFor: taskData.waitFor || null // 等待的任务ID
+        waitFor: taskData.waitFor || [] // 等待的任务ID数组
       }
       this.tasks.push(task)
       await this.saveTasks()
@@ -185,8 +204,8 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         }
         // 清除其他任务对此任务的依赖
         this.tasks.forEach(t => {
-          if (t.waitFor === taskId) {
-            t.waitFor = null
+          if (Array.isArray(t.waitFor)) {
+            t.waitFor = t.waitFor.filter(id => id !== taskId)
           }
         })
         await this.saveTasks()
@@ -223,45 +242,77 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
 
     // ========== 依赖关系管理 ==========
     
-    // 设置等待任务
-    async setWaitFor(taskId, waitForTaskId) {
+    // 设置等待任务（支持多个）
+    async setWaitFor(taskId, waitForTaskIds) {
       const task = this.tasks.find(t => t.id === taskId)
       if (!task) return
       
-      task.waitFor = waitForTaskId
+      // 确保是数组
+      const idsArray = Array.isArray(waitForTaskIds) ? waitForTaskIds : [waitForTaskIds]
+      task.waitFor = idsArray
       await this.saveTasks()
     },
 
-    // 取消等待
+    // 添加单个等待任务
+    async addWaitFor(taskId, waitForTaskId) {
+      const task = this.tasks.find(t => t.id === taskId)
+      if (!task) return
+      
+      if (!Array.isArray(task.waitFor)) {
+        task.waitFor = []
+      }
+      
+      if (!task.waitFor.includes(waitForTaskId)) {
+        task.waitFor.push(waitForTaskId)
+        await this.saveTasks()
+      }
+    },
+
+    // 移除单个等待任务
+    async removeWaitFor(taskId, waitForTaskId) {
+      const task = this.tasks.find(t => t.id === taskId)
+      if (!task || !Array.isArray(task.waitFor)) return
+      
+      task.waitFor = task.waitFor.filter(id => id !== waitForTaskId)
+      await this.saveTasks()
+    },
+
+    // 取消所有等待
     async clearWaitFor(taskId) {
       const task = this.tasks.find(t => t.id === taskId)
       if (!task) return
       
-      task.waitFor = null
+      task.waitFor = []
       await this.saveTasks()
     },
 
-    // 检查任务是否可以开始
+    // 检查任务是否可以开始（所有等待的任务都已完成）
     canStart(taskId) {
       const task = this.tasks.find(t => t.id === taskId)
-      if (!task || !task.waitFor) return true
+      if (!task || !Array.isArray(task.waitFor) || task.waitFor.length === 0) return true
       
-      const waitForTask = this.tasks.find(t => t.id === task.waitFor)
-      // 如果等待的任务不存在或已完成，则可以开始
-      return !waitForTask || waitForTask.status === 'completed'
+      // 检查所有等待的任务是否都已完成
+      return task.waitFor.every(waitForId => {
+        const waitForTask = this.tasks.find(t => t.id === waitForId)
+        return !waitForTask || waitForTask.status === 'completed'
+      })
     },
 
-    // 获取等待的任务对象
-    getWaitForTask(taskId) {
+    // 获取等待的任务对象数组
+    getWaitForTasks(taskId) {
       const task = this.tasks.find(t => t.id === taskId)
-      if (!task || !task.waitFor) return null
+      if (!task || !Array.isArray(task.waitFor) || task.waitFor.length === 0) return []
       
-      return this.tasks.find(t => t.id === task.waitFor) || null
+      return task.waitFor
+        .map(id => this.tasks.find(t => t.id === id))
+        .filter(t => t !== undefined)
     },
 
     // 获取等待当前任务的所有任务
     getWaitingTasks(taskId) {
-      return this.tasks.filter(t => t.waitFor === taskId)
+      return this.tasks.filter(t => 
+        Array.isArray(t.waitFor) && t.waitFor.includes(taskId)
+      )
     },
 
 
