@@ -44,6 +44,73 @@ TO-DO/
 
 ---
 
+## 🧩 核心组件说明
+
+### LoadingSpinner 组件 (v1.7.6.1)
+**文件位置**: `src/components/LoadingSpinner.vue`
+
+**功能**: 统一的AI加载动画组件，用于所有需要等待AI响应的场景
+
+**Props**:
+```javascript
+{
+  visible: Boolean,      // 是否显示（必需）
+  text: String,          // 主提示文本（默认: "AI 思考中..."）
+  subText: String,       // 副提示文本（可选）
+  transparent: Boolean   // 是否使用透明背景（默认: false）
+}
+```
+
+**使用示例**:
+```vue
+<template>
+  <LoadingSpinner
+    :visible="aiLoading"
+    :text="aiLoadingText"
+    :sub-text="aiLoadingSubText"
+  />
+</template>
+
+<script setup>
+import LoadingSpinner from '@/components/LoadingSpinner.vue'
+import { ref } from 'vue'
+
+const aiLoading = ref(false)
+const aiLoadingText = ref('AI 思考中...')
+const aiLoadingSubText = ref('')
+
+const someAIFunction = async () => {
+  try {
+    aiLoading.value = true
+    aiLoadingText.value = 'AI 正在处理...'
+    aiLoadingSubText.value = '请稍候'
+    
+    // AI操作...
+    
+  } finally {
+    aiLoading.value = false
+  }
+}
+</script>
+```
+
+**样式特性**:
+- 全屏遮罩层（z-index: 10003）
+- 毛玻璃背景效果（backdrop-filter: blur(4px)）
+- 白色卡片容器（圆角16px）
+- 紫色旋转圆环动画（1s linear infinite）
+- 双行文本提示（主文本1rem加粗，副文本0.85rem）
+
+**应用场景**:
+- 今日规划生成
+- AI写作助手
+- 生成任务描述
+- AI续写
+- OCR拍照识别
+- 周报/月报生成
+
+---
+
 ## 🔧 开发环境配置
 
 ### 系统要求
