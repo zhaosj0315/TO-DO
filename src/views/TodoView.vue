@@ -3939,21 +3939,41 @@ const openTaskSplitterForNew = () => {
   
   const description = prompt('请输入任务描述（可选）：')
   
-  taskToSplit.value = {
+  // 先创建父任务
+  const parentTask = {
+    id: Date.now(),
     text: title.trim(),
     description: description?.trim() || '',
+    type: 'today',
     category: 'work',
-    priority: 'medium'
+    priority: 'medium',
+    status: 'pending',
+    created_at: new Date().toISOString(),
+    user_id: taskStore.currentUser
   }
+  
+  console.log('创建父任务:', parentTask.text, 'ID:', parentTask.id)
+  taskStore.addTask(parentTask)
+  
+  // 验证父任务是否创建成功
+  const savedParent = taskStore.tasks.find(t => t.id === parentTask.id)
+  console.log('从store读取的父任务:', savedParent)
+  
+  taskToSplit.value = savedParent || parentTask
   showTaskSplitter.value = true
 }
 
 // 创建子任务
 const createSubtasks = (subtasks) => {
+  console.log('=== 开始创建子任务 ===')
+  console.log('父任务:', taskToSplit.value)
+  console.log('子任务数量:', subtasks.length)
+  
   if (!taskToSplit.value || subtasks.length === 0) return
   
   const parentTask = taskToSplit.value
   const now = new Date()
+  const subtaskIds = []
   
   subtasks.forEach((subtask, index) => {
     const newTask = {
@@ -3968,24 +3988,38 @@ const createSubtasks = (subtasks) => {
       user_id: taskStore.currentUser,
       parentTaskId: parentTask.id,
       estimatedHours: subtask.estimatedHours || 1,
-      waitFor: [parentTask.id] // 自动设置依赖关系：等待父任务完成
+      waitFor: [parentTask.id]  // 子任务等待父任务完成
     }
     
+    console.log(`创建子任务 ${index + 1}:`, newTask.text, 'ID:', newTask.id, 'waitFor:', newTask.waitFor)
     taskStore.addTask(newTask)
+    subtaskIds.push(newTask.id)
   })
   
-  // 如果有父任务ID，标记为已分解
+  console.log('所有子任务ID:', subtaskIds)
+  
+  // 更新父任务：记录子任务列表
   if (parentTask.id) {
     parentTask.hasSplitted = true
     parentTask.subtaskCount = subtasks.length
+    parentTask.subtasks = subtaskIds
+    console.log('更新父任务 - subtasks:', parentTask.subtasks)
     taskStore.updateTask(parentTask)
+    
+    // 验证更新是否成功
+    const updatedParent = taskStore.tasks.find(t => t.id === parentTask.id)
+    console.log('从store读取的父任务 - subtasks:', updatedParent?.subtasks)
+    
+    // 如果详情页打开的是这个父任务，刷新它
+    if (selectedTask.value?.id === parentTask.id) {
+      console.log('刷新详情页')
+      selectedTask.value = updatedParent
+    }
   }
   
-  // 关闭弹窗
+  console.log('=== 子任务创建完成 ===')
   showTaskSplitter.value = false
   taskToSplit.value = null
-  
-  // 显示成功提示
   showNotification(`✅ 成功创建 ${subtasks.length} 个子任务！`, 'success')
 }
 
@@ -4110,7 +4144,17 @@ const handleSplitTask = async (task) => {
 
 // 创建子任务
 const handleCreateSubtasks = (subtaskList) => {
-  console.log('Creating subtasks:', subtaskList)
+  console.log('=== 开始创建子任务 ===')
+  console.log('父任务:', currentSplittingTask.value)
+  console.log('子任务数量:', subtaskList.length)
+  
+  const parentTask = currentSplittingTask.value
+  if (!parentTask) {
+    console.error('父任务不存在')
+    return
+  }
+  
+  const subtaskIds = []
   
   subtaskList.forEach((subtask, index) => {
     const newTask = {
@@ -4118,13 +4162,13 @@ const handleCreateSubtasks = (subtaskList) => {
       text: subtask.title,
       description: subtask.description || '',
       type: 'today',
-      category: currentSplittingTask.value?.category || 'work',
+      category: parentTask.category || 'work',
       priority: subtask.priority || 'medium',
       status: 'pending',
       created_at: new Date().toISOString(),
       completed_at: null,
       completedPomodoros: 0,
-      estimatedPomodoros: Math.ceil((subtask.estimatedHours || 1) / 0.5), // 每0.5小时1个番茄钟
+      estimatedPomodoros: Math.ceil((subtask.estimatedHours || 1) / 0.5),
       pomodoroHistory: [],
       logs: [],
       stats: {
@@ -4134,11 +4178,38 @@ const handleCreateSubtasks = (subtaskList) => {
         blockCount: 0,
         resolvedBlockCount: 0,
         latestProgress: 0
-      }
+      },
+      parentTaskId: parentTask.id,
+      waitFor: [parentTask.id]  // 子任务等待父任务完成
     }
     
+    console.log(`创建子任务 ${index + 1}:`, newTask.text, 'ID:', newTask.id, 'waitFor:', newTask.waitFor)
     taskStore.addTask(newTask)
+    subtaskIds.push(newTask.id)
   })
+  
+  console.log('所有子任务ID:', subtaskIds)
+  
+  // 更新父任务：记录子任务列表（不设置waitFor）
+  if (parentTask.id) {
+    parentTask.hasSplitted = true
+    parentTask.subtaskCount = subtaskList.length
+    parentTask.subtasks = subtaskIds
+    console.log('更新父任务 - subtasks:', parentTask.subtasks)
+    taskStore.updateTask(parentTask)
+    
+    // 验证更新是否成功
+    const updatedParent = taskStore.tasks.find(t => t.id === parentTask.id)
+    console.log('从store读取的父任务 - subtasks:', updatedParent?.subtasks)
+    
+    // 如果详情页打开的是这个父任务，刷新它
+    if (selectedTask.value?.id === parentTask.id) {
+      console.log('刷新详情页')
+      selectedTask.value = updatedParent
+    }
+  }
+  
+  console.log('=== 子任务创建完成 ===')
   
   // 关闭子任务预览弹窗
   showSubtaskPreview.value = false

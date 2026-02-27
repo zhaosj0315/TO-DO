@@ -34,7 +34,7 @@
             <div class="subtask-header">
               <span class="subtask-number">{{ index + 1 }}</span>
               <input 
-                v-model="subtask.text" 
+                v-model="subtask.title" 
                 class="subtask-title-input" 
                 placeholder="子任务标题"
               />
@@ -113,7 +113,10 @@ const emit = defineEmits(['close', 'create'])
 const localSubtasks = ref([])
 
 watch(() => props.subtasks, (newSubtasks) => {
-  localSubtasks.value = JSON.parse(JSON.stringify(newSubtasks))
+  localSubtasks.value = JSON.parse(JSON.stringify(newSubtasks)).map(task => ({
+    ...task,
+    estimatedMinutes: task.estimatedHours ? Math.round(task.estimatedHours * 60) : 30
+  }))
 }, { immediate: true, deep: true })
 
 const totalEstimatedTime = computed(() => {
@@ -160,6 +163,9 @@ const handleCreate = () => {
   flex-direction: column;
   animation: slideUp 0.3s ease;
   overflow: hidden;
+  margin-bottom: 0;
+  position: relative;
+  bottom: 0;
 }
 
 @keyframes fadeIn {
