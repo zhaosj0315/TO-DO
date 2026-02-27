@@ -2175,33 +2175,43 @@
       :sub-text="aiLoadingSubText"
     />
 
-    <!-- 全屏任务描述编辑 (Apple Notes 风格) -->
+    <!-- 全屏任务描述编辑 (三段式移动端布局) -->
     <div v-if="showFullscreenDesc" class="fullscreen-desc-overlay">
       <div class="fullscreen-desc-header">
-        <!-- 第一行：任务名称 -->
-        <div class="header-row-1">
-          <div class="task-name">{{ newTaskText || '新任务' }}</div>
+        <!-- 顶层：导航栏 -->
+        <div class="nav-bar">
+          <button class="nav-btn-text" @click="closeFullscreenDesc">取消</button>
+          <div class="task-name-center">{{ newTaskText || '新任务' }}</div>
+          <button class="nav-btn-primary" @click="closeFullscreenDesc">完成</button>
         </div>
-        <!-- 第二行：元数据和按钮 -->
-        <div class="header-row-2">
-          <div class="header-left">
-            <span v-if="descEditDuration > 0" class="meta-text">{{ descEditTime }}</span>
-            <span v-if="newTaskDescription.length > 0" class="meta-text">{{ newTaskDescription.length }} 字</span>
-          </div>
-          <div class="header-right">
-            <button class="nav-btn-icon" @click="continueDescription" :disabled="aiLoading" title="AI 续写">
-              {{ aiLoading ? '⏳' : '🤖' }}
-            </button>
-            <button class="nav-btn nav-btn-primary" @click="closeFullscreenDesc">完成</button>
-          </div>
+        
+        <!-- 中层：状态栏 -->
+        <div class="status-bar">
+          <span v-if="descEditDuration > 0" class="status-text">{{ descEditTime }}</span>
+          <span v-if="newTaskDescription.length > 0" class="status-text">{{ newTaskDescription.length }} 字</span>
         </div>
       </div>
-      <textarea
-        v-model="newTaskDescription"
-        class="fullscreen-desc-textarea"
-        placeholder=""
-        autofocus
-      ></textarea>
+      
+      <!-- 输入区 -->
+      <div class="input-wrapper">
+        <!-- 悬浮提示标签 -->
+        <div v-if="newTaskDescription.length < 50" class="floating-hint">
+          {{ getWordCountHint() }}
+        </div>
+        <textarea
+          v-model="newTaskDescription"
+          class="fullscreen-desc-textarea"
+          :placeholder="getPlaceholder()"
+          autofocus
+        ></textarea>
+      </div>
+      
+      <!-- 底部工具栏 -->
+      <div class="toolbar">
+        <button class="toolbar-btn" @click="continueDescription" :disabled="aiLoading">
+          {{ aiLoading ? '⏳ AI 思考中...' : '🤖 AI 续写' }}
+        </button>
+      </div>
     </div>
 
     <!-- AI结果弹窗 -->
@@ -4422,6 +4432,24 @@ const descEditTime = computed(() => {
   const minutes = Math.floor(seconds / 60)
   return `编辑 ${minutes} 分钟`
 })
+
+// 字数提示
+const getWordCountHint = () => {
+  const count = newTaskDescription.value.length
+  if (count === 0) return '建议 50-200 字'
+  if (count < 50) return `已输入 ${count} 字`
+  if (count <= 200) return '✓ 字数合适'
+  return `已输入 ${count} 字`
+}
+
+// 动态占位符
+const getPlaceholder = () => {
+  const taskName = newTaskText.value?.trim()
+  if (taskName) {
+    return `关于「${taskName}」，你想记录点什么？`
+  }
+  return '输入任务详细描述...'
+}
 
 const openFullscreenDesc = () => {
   showFullscreenDesc.value = true
@@ -15324,106 +15352,115 @@ watch(() => reportData.value, (newData) => {
 .fullscreen-desc-header {
   display: flex;
   flex-direction: column;
-  padding: 1rem 1rem 0.75rem;
-  background: #f9f9f9;
-  border-bottom: 0.5px solid #c6c6c8;
+  background: #ffffff;
+  border-bottom: 0.5px solid #e8e8e8;
   flex-shrink: 0;
-  gap: 0.5rem;
-  margin-top: 20px;
+  margin-top: env(safe-area-inset-top, 20px);
 }
 
-/* 第一行：任务名称 */
-.fullscreen-desc-header .header-row-1 {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-/* 第二行：元数据和按钮 */
-.fullscreen-desc-header .header-row-2 {
+/* 顶层：导航栏 */
+.nav-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
+  height: 44px;
+  padding: 0 1rem;
 }
 
-.fullscreen-desc-header .header-left {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  justify-content: flex-start;
-}
-
-.fullscreen-desc-header .task-name {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #333;
-  text-align: center;
-}
-
-.fullscreen-desc-header .meta-text {
-  font-size: 0.75rem;
-  color: #999;
-  font-weight: 400;
-  white-space: nowrap;
-}
-
-.fullscreen-desc-header .header-right {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  justify-content: flex-end;
-}
-
-.fullscreen-desc-header .nav-btn-icon {
-  background: transparent;
-  border: none;
-  font-size: 1.3rem;
-  padding: 0.3rem 0.5rem;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.fullscreen-desc-header .nav-btn-icon:active {
-  opacity: 0.4;
-}
-
-.fullscreen-desc-header .nav-btn-icon:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.fullscreen-desc-header .nav-btn {
+.nav-btn-text {
   background: transparent;
   border: none;
   color: #007aff;
-  font-size: 1rem;
-  padding: 0.5rem 0.8rem;
-  cursor: pointer;
+  font-size: 17px;
   font-weight: 400;
-  transition: opacity 0.2s;
+  cursor: pointer;
+  padding: 0;
+  min-width: 50px;
+  text-align: left;
 }
 
-.fullscreen-desc-header .nav-btn:active {
+.nav-btn-text:active {
   opacity: 0.4;
 }
 
-.fullscreen-desc-header .nav-btn-primary {
+.task-name-center {
+  font-size: 17px;
   font-weight: 600;
+  color: #000;
+  text-align: center;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 1rem;
+}
+
+.nav-btn-primary {
+  background: transparent;
+  border: none;
+  color: #007aff;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  min-width: 50px;
+  text-align: right;
+}
+
+.nav-btn-primary:active {
+  opacity: 0.4;
+}
+
+/* 中层：状态栏 */
+.status-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  background: transparent;
+}
+
+.status-text {
+  font-size: 12px;
+  color: #8e8e93;
+  font-weight: 400;
+}
+
+/* 输入区包装器 */
+.input-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 悬浮提示标签 */
+.floating-hint {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  font-size: 12px;
+  color: #ff9500;
+  background: rgba(255, 149, 0, 0.1);
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 500;
+  z-index: 1;
+  pointer-events: none;
 }
 
 .fullscreen-desc-textarea {
   flex: 1;
   width: 100%;
-  padding: 1rem 1.5rem;
+  padding: 1.5rem 1.5rem;
   border: none;
-  font-size: 1rem;
+  font-size: 16px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
   resize: none;
   line-height: 1.6;
   background: white;
-  color: #000;
+  color: #1a1a1a;
 }
 
 .fullscreen-desc-textarea:focus {
@@ -15432,7 +15469,39 @@ watch(() => reportData.value, (newData) => {
 
 .fullscreen-desc-textarea::placeholder {
   color: #c7c7cc;
-  white-space: pre-line;
+}
+
+/* 底部工具栏 */
+.toolbar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: #f8f8f8;
+  border-top: 0.5px solid #e8e8e8;
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+.toolbar-btn {
+  padding: 0.6rem 1.5rem;
+  background: #007aff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toolbar-btn:active {
+  opacity: 0.8;
+  transform: scale(0.98);
+}
+
+.toolbar-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .task-input-main {
