@@ -29,11 +29,12 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       const { value } = await Preferences.get({ key: `tasks_${this.currentUser}` })
       if (value) {
         this.tasks = JSON.parse(value)
-        // 数据迁移：为旧任务添加 logs 和 stats 字段
+        // 数据迁移：为旧任务添加 logs、stats 和 waitFor 字段
         this.tasks = this.tasks.map(task => ({
           ...task,
           logs: task.logs || [],
-          stats: task.stats || this.calculateTaskStats([])
+          stats: task.stats || this.calculateTaskStats([]),
+          waitFor: task.waitFor || null
         }))
       } else {
         this.tasks = []
@@ -42,11 +43,12 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       const { value: deleted } = await Preferences.get({ key: `deletedTasks_${this.currentUser}` })
       if (deleted) {
         this.deletedTasks = JSON.parse(deleted)
-        // 数据迁移：为旧任务添加 logs 和 stats 字段
+        // 数据迁移：为旧任务添加 logs、stats 和 waitFor 字段
         this.deletedTasks = this.deletedTasks.map(task => ({
           ...task,
           logs: task.logs || [],
-          stats: task.stats || this.calculateTaskStats([])
+          stats: task.stats || this.calculateTaskStats([]),
+          waitFor: task.waitFor || null
         }))
       } else {
         this.deletedTasks = []
@@ -86,7 +88,8 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         estimatedPomodoros: taskData.estimatedPomodoros || this.getEstimatedPomodoros(taskData.priority), // 预估番茄钟数
         pomodoroHistory: taskData.pomodoroHistory || [], // 番茄钟历史记录
         logs: taskData.logs || [], // 任务执行日志
-        stats: taskData.stats || this.calculateTaskStats([]) // 统计数据
+        stats: taskData.stats || this.calculateTaskStats([]), // 统计数据
+        waitFor: taskData.waitFor || null // 等待的任务ID
       }
       this.tasks.push(task)
       await this.saveTasks()
@@ -111,6 +114,26 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
           // 完成任务时取消提醒
           if (task.enableReminder) {
             await this.cancelTaskReminder(taskId)
+          }
+          
+          // 检查是否有任务在等待此任务
+          const waitingTasks = this.getWaitingTasks(taskId)
+          if (waitingTasks.length > 0) {
+            // 发送通知：任务解锁
+            if (Capacitor.isNativePlatform()) {
+              try {
+                await LocalNotifications.schedule({
+                  notifications: [{
+                    id: Math.floor(Math.random() * 1000000),
+                    title: '✅ 任务解锁',
+                    body: `"${task.text}"已完成，${waitingTasks.length}个等待任务现在可以开始了！`,
+                    schedule: { at: new Date(Date.now() + 1000) }
+                  }]
+                })
+              } catch (error) {
+                console.error('发送任务解锁通知失败:', error)
+              }
+            }
           }
         } else {
           // 取消完成时清除时间戳
@@ -160,6 +183,12 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         if (task.enableReminder) {
           await this.cancelTaskReminder(taskId)
         }
+        // 清除其他任务对此任务的依赖
+        this.tasks.forEach(t => {
+          if (t.waitFor === taskId) {
+            t.waitFor = null
+          }
+        })
         await this.saveTasks()
       }
     },
@@ -191,6 +220,50 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       this.deletedTasks = []
       await this.saveTasks()
     },
+
+    // ========== 依赖关系管理 ==========
+    
+    // 设置等待任务
+    async setWaitFor(taskId, waitForTaskId) {
+      const task = this.tasks.find(t => t.id === taskId)
+      if (!task) return
+      
+      task.waitFor = waitForTaskId
+      await this.saveTasks()
+    },
+
+    // 取消等待
+    async clearWaitFor(taskId) {
+      const task = this.tasks.find(t => t.id === taskId)
+      if (!task) return
+      
+      task.waitFor = null
+      await this.saveTasks()
+    },
+
+    // 检查任务是否可以开始
+    canStart(taskId) {
+      const task = this.tasks.find(t => t.id === taskId)
+      if (!task || !task.waitFor) return true
+      
+      const waitForTask = this.tasks.find(t => t.id === task.waitFor)
+      // 如果等待的任务不存在或已完成，则可以开始
+      return !waitForTask || waitForTask.status === 'completed'
+    },
+
+    // 获取等待的任务对象
+    getWaitForTask(taskId) {
+      const task = this.tasks.find(t => t.id === taskId)
+      if (!task || !task.waitFor) return null
+      
+      return this.tasks.find(t => t.id === task.waitFor) || null
+    },
+
+    // 获取等待当前任务的所有任务
+    getWaitingTasks(taskId) {
+      return this.tasks.filter(t => t.waitFor === taskId)
+    },
+
 
     checkOverdueTasks() {
       const now = new Date()

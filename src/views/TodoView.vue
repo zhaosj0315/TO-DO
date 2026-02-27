@@ -298,6 +298,11 @@
                 </span>
               </div>
               <div class="task-meta">
+                <!-- 等待状态 -->
+                <span v-if="task.waitFor && !taskStore.canStart(task.id)" class="badge badge-waiting" title="等待其他任务完成">
+                  🔒 等待中
+                </span>
+                
                 <!-- 时间信息（压缩格式：去掉年份） -->
                 <span class="task-time-compact" title="创建时间">📝 {{ formatCompactDateTime(task.created_at) }}</span>
                 
@@ -11190,6 +11195,24 @@ watch(() => reportData.value, (newData) => {
   border-radius: 8px;
   background: rgba(102, 126, 234, 0.1);
   color: var(--primary-color);
+  transition: all 0.3s;
+  line-height: 1;
+  height: auto;
+  box-sizing: border-box;
+}
+
+/* 等待状态徽章 */
+.badge-waiting {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 0.2rem 0.35rem;
+  border-radius: 8px;
+  background: rgba(251, 191, 36, 0.15);
+  color: #d97706;
   transition: all 0.3s;
   line-height: 1;
   height: auto;

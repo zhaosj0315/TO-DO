@@ -126,6 +126,96 @@
           ></textarea>
         </section>
 
+        <!-- 依赖关系 -->
+        <section class="dependency-section">
+          <h3>🔗 依赖关系</h3>
+          
+          <!-- 当前状态 -->
+          <div v-if="waitForTask" class="dependency-status blocked">
+            <div class="status-icon">🔒</div>
+            <div class="status-text">
+              <div class="status-title">等待中</div>
+              <div class="status-desc">此任务正在等待其他任务完成</div>
+            </div>
+          </div>
+          <div v-else-if="waitingTasks.length > 0" class="dependency-status blocking">
+            <div class="status-icon">🔓</div>
+            <div class="status-text">
+              <div class="status-title">被依赖</div>
+              <div class="status-desc">{{ waitingTasks.length }} 个任务正在等待此任务完成</div>
+            </div>
+          </div>
+          <div v-else class="dependency-status free">
+            <div class="status-icon">✅</div>
+            <div class="status-text">
+              <div class="status-title">无依赖</div>
+              <div class="status-desc">此任务可以随时开始</div>
+            </div>
+          </div>
+
+          <!-- 等待的任务 -->
+          <div v-if="waitForTask" class="wait-for-card">
+            <div class="card-header">
+              <span class="card-title">⬆️ 等待任务</span>
+            </div>
+            <div class="task-card" @click="openTaskDetail(waitForTask.id)">
+              <div class="task-card-header">
+                <span :class="['status-icon', waitForTask.status]">
+                  {{ waitForTask.status === 'completed' ? '✅' : '⬜' }}
+                </span>
+                <span class="task-name">{{ waitForTask.text }}</span>
+              </div>
+              <div class="task-card-meta">
+                <span class="task-category">{{ getCategoryIcon(waitForTask.category) }} {{ getCategoryText(waitForTask.category) }}</span>
+                <span v-if="waitForTask.completed_at" class="task-time">
+                  完成于 {{ formatDateTime(waitForTask.completed_at) }}
+                </span>
+                <span v-else class="task-time">
+                  {{ formatDeadline(waitForTask) }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 等待此任务的任务列表 -->
+          <div v-if="waitingTasks.length > 0" class="waiting-tasks-card">
+            <div class="card-header">
+              <span class="card-title">⬇️ 等待此任务的任务 ({{ waitingTasks.length }})</span>
+            </div>
+            <div class="waiting-tasks-list">
+              <div 
+                v-for="waitingTask in waitingTasks" 
+                :key="waitingTask.id"
+                class="task-card mini"
+                @click="openTaskDetail(waitingTask.id)"
+              >
+                <span class="task-name">{{ waitingTask.text }}</span>
+                <span :class="['priority-badge', waitingTask.priority]">
+                  {{ getPriorityText(waitingTask.priority) }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 操作按钮 -->
+          <div class="dependency-actions">
+            <button 
+              v-if="!waitForTask"
+              @click="showWaitForSelector = true" 
+              class="btn-set-wait"
+            >
+              🔗 设置等待任务
+            </button>
+            <button 
+              v-else
+              @click="handleClearWaitFor" 
+              class="btn-clear-wait"
+            >
+              ✕ 取消等待
+            </button>
+          </div>
+        </section>
+
         <!-- 执行统计 -->
         <section v-if="task.stats && task.stats.totalLogs > 0" class="stats-section">
           <h3>📈 执行统计</h3>
@@ -323,6 +413,14 @@
       @submit="handleAddLog"
     />
 
+    <!-- 等待任务选择器 -->
+    <WaitForSelector
+      :show="showWaitForSelector"
+      :task-id="task.id"
+      @close="showWaitForSelector = false"
+      @confirm="handleSetWaitFor"
+    />
+
     <!-- AI 文本选择菜单 -->
     <AITextMenu
       :visible="showTextMenu"
@@ -341,6 +439,7 @@ import LogTimeline from './LogTimeline.vue'
 import LogStats from './LogStats.vue'
 import AddLogModal from './AddLogModal.vue'
 import AITextMenu from './AITextMenu.vue'
+import WaitForSelector from './WaitForSelector.vue'
 import { useTextSelection } from '../composables/useTextSelection'
 import { AITextService } from '../services/aiTextService'
 import { registerPlugin } from '@capacitor/core'
@@ -359,6 +458,41 @@ const emit = defineEmits(['close', 'edit', 'refresh', 'split'])
 const taskStore = useOfflineTaskStore()
 const showAddLogModal = ref(false)
 const showTimeline = ref(false)
+const showWaitForSelector = ref(false)
+
+// 依赖关系相关
+const waitForTask = computed(() => {
+  return taskStore.getWaitForTask(props.task.id)
+})
+
+const waitingTasks = computed(() => {
+  return taskStore.getWaitingTasks(props.task.id)
+})
+
+const handleClearWaitFor = async () => {
+  await taskStore.clearWaitFor(props.task.id)
+  emit('refresh')
+}
+
+const handleSetWaitFor = async (waitForTaskId) => {
+  await taskStore.setWaitFor(props.task.id, waitForTaskId)
+  showWaitForSelector.value = false
+  emit('refresh')
+}
+
+const openTaskDetail = (taskId) => {
+  // 关闭当前详情，打开新的任务详情
+  emit('close')
+  // 需要在父组件中处理打开新任务详情
+  setTimeout(() => {
+    const task = taskStore.tasks.find(t => t.id === taskId)
+    if (task) {
+      // 触发父组件的打开详情事件
+      window.dispatchEvent(new CustomEvent('open-task-detail', { detail: { task } }))
+    }
+  }, 300)
+}
+
 
 // 搜索过滤
 const searchKeyword = ref('')
@@ -566,6 +700,7 @@ const formatDate = (dateStr) => {
   const date = new Date(dateStr)
   return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 }
+
 
 // 日期格式化（简短版，用于时间轴）
 const formatDateShort = (dateStr) => {
@@ -1378,6 +1513,192 @@ section h3 {
 
 .description-textarea::placeholder {
   color: #999;
+}
+
+/* 依赖关系 */
+.dependency-section {
+  margin-bottom: 1.5rem;
+}
+
+.dependency-status {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 1rem;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+}
+
+.dependency-status.blocked {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+}
+
+.dependency-status.blocking {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+}
+
+.dependency-status.free {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+}
+
+.dependency-status .status-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.dependency-status .status-text {
+  flex: 1;
+}
+
+.dependency-status .status-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.2rem;
+}
+
+.dependency-status .status-desc {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.wait-for-card, .waiting-tasks-card {
+  margin-bottom: 1rem;
+}
+
+.card-header {
+  margin-bottom: 0.5rem;
+}
+
+.card-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #666;
+}
+
+.task-card {
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.task-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+  transform: translateY(-1px);
+}
+
+.task-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.task-card .status-icon {
+  font-size: 1.2rem;
+}
+
+.task-card .status-icon.completed {
+  color: #10b981;
+}
+
+.task-card .task-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #333;
+  flex: 1;
+}
+
+.task-card-meta {
+  display: flex;
+  gap: 0.8rem;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.task-card .task-category {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.waiting-tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.task-card.mini {
+  padding: 0.7rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.task-card.mini .task-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.priority-badge {
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.priority-badge.high {
+  background: #fee;
+  color: #c33;
+}
+
+.priority-badge.medium {
+  background: #ffefd5;
+  color: #d97706;
+}
+
+.priority-badge.low {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.dependency-actions {
+  display: flex;
+  gap: 0.8rem;
+}
+
+.btn-set-wait, .btn-clear-wait {
+  flex: 1;
+  padding: 0.8rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-set-wait {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-set-wait:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-clear-wait {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.btn-clear-wait:hover {
+  background: #e5e5e5;
 }
 
 /* 统计网格 */
