@@ -1,4 +1,5 @@
 <template>
+  <!-- 任务拆分弹窗 -->
   <div v-if="visible" class="splitter-overlay" @click.self="$emit('close')">
     <div class="splitter-container">
       <div class="splitter-header">
@@ -106,13 +107,13 @@
         </button>
       </div>
     </div>
-    
-    <!-- 全局加载动画 -->
-    <div v-if="isGenerating" class="loading-overlay">
-      <div class="loading-spinner">
-        <div class="spinner-ring"></div>
-        <div class="spinner-text">🤖 AI 正在分解任务...</div>
-      </div>
+  </div>
+  
+  <!-- 全局加载动画（独立于弹窗外） -->
+  <div v-if="visible && isGenerating" class="loading-overlay">
+    <div class="loading-spinner">
+      <div class="spinner-ring"></div>
+      <div class="spinner-text">🤖 AI 正在分解任务...</div>
     </div>
   </div>
 </template>
@@ -456,11 +457,13 @@ watch(() => props.visible, (newVal) => {
 
 .subtask-title {
   flex: 1;
+  min-width: 0;
   padding: 0.5rem;
   border: 1px solid #e0e0e0;
   border-radius: 6px;
   font-size: 0.9rem;
   background: white;
+  width: 100%;
 }
 
 .subtask-title:focus {
