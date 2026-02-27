@@ -12,7 +12,23 @@
 This is an **offline Android To-Do management application** built with **Vue 3** and **Capacitor**. All data is stored locally on the device using Capacitor Preferences API, requiring **no internet connection or backend server**.
 
 ### 🌟 Key Features
-- **AI Proactive Assistant** 🤖 (NEW in v1.7.6):
+- **AI Task Splitter** 🤖 (NEW in v1.7.7):
+  - **Smart Task Decomposition**: Input task title and description, AI automatically splits into executable subtasks
+  - **Subtask Preview**: Bottom Sheet displays split results with edit and delete support
+  - **Auto Dependency Setup**: Subtasks automatically depend on parent task completion
+  - **Smart Time Conversion**: AI returns hours, automatically converted to minutes for display
+  - **4 Split Templates**: Quick split, detailed split, time-priority, priority-first
+  - **Estimated Duration**: AI estimates time for each subtask (0.5-8 hours)
+- **Task Dependency System** 🔗 (NEW in v1.7.7):
+  - **One-way Dependency**: A task can "wait for" another task to complete
+  - **Dependency Selector**: Search, filter, single-select mode
+  - **Status Display**: Waiting🔒 / Depended🔓 / No Dependency✅
+  - **Task Card Badge**: 🔒 Waiting (yellow badge)
+  - **Smart Notification**: Auto-notify waiting tasks when dependency completes
+  - **Auto Cleanup**: Auto-clear dependencies when task is deleted
+  - **Task Navigation**: Click waiting task card to jump to details
+  - **Data Migration**: Auto-add waitFor field to old tasks
+- **AI Proactive Assistant** 🤖 (v1.7.6):
   - **Smart Reminder Card**: Auto-detect overdue and pending tasks with proactive reminders
   - **Daily Smart Summary**: Daily work summary with AI insights and tomorrow's plan
   - **Weekly/Monthly Report Generator**: Auto-generate structured reports with export options
@@ -149,6 +165,22 @@ This is an **offline Android To-Do management application** built with **Vue 3**
 这是一个基于 **Vue 3** 和 **Capacitor** 构建的 **Android离线待办事项管理应用**。所有数据使用 Capacitor Preferences API 存储在设备本地，**无需网络连接或后端服务器**。
 
 ### 🌟 核心功能
+- **AI任务拆分** 🤖 (v1.7.7 新增):
+  - **智能任务拆解**：输入任务标题和描述，AI自动拆分为可执行子任务
+  - **子任务预览**：Bottom Sheet展示拆分结果，支持编辑和删除
+  - **依赖关系自动设置**：子任务自动依赖父任务，完成父任务后子任务才能开始
+  - **预计时长智能转换**：AI返回小时数，自动转换为分钟显示
+  - **4种拆分模板**：快速拆分、详细拆分、时间优先、优先级优先
+  - **预估时长**：AI为每个子任务估算时长（0.5-8小时）
+- **任务依赖关系** 🔗 (v1.7.7 新增):
+  - **单向依赖**：一个任务可以"等待"另一个任务完成
+  - **依赖选择器**：搜索、筛选、单选模式
+  - **状态显示**：等待中🔒/被依赖🔓/无依赖✅
+  - **任务卡片徽章**：🔒 等待中（黄色徽章）
+  - **智能通知**：完成任务时自动通知等待的任务可以开始
+  - **自动清理**：删除任务时自动清除依赖关系
+  - **任务跳转**：点击等待的任务卡片可跳转到详情
+  - **数据迁移**：自动为旧任务添加 waitFor 字段
 - **AI主动式助手** 🤖 (v1.7.6 新增):
   - **智能提醒卡片**: 自动检测逾期和待办任务，主动提醒
   - **每日智能总结**: 每日工作总结，AI 建议，明日计划
