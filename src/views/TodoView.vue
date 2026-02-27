@@ -298,9 +298,12 @@
                 </span>
               </div>
               <div class="task-meta">
-                <!-- 等待状态 -->
-                <span v-if="task.waitFor && !taskStore.canStart(task.id)" class="badge badge-waiting" title="等待其他任务完成">
+                <!-- 依赖关系状态 -->
+                <span v-if="task.waitFor && !taskStore.canStart(task.id)" class="badge badge-waiting" :title="`等待「${getWaitForTaskName(task.id)}」完成`">
                   🔒 等待中
+                </span>
+                <span v-else-if="getWaitingTasksCount(task.id) > 0" class="badge badge-blocking" :title="`${getWaitingTasksCount(task.id)}个任务等待此任务完成`">
+                  🔓 被依赖×{{ getWaitingTasksCount(task.id) }}
                 </span>
                 
                 <!-- 时间信息（压缩格式：去掉年份） -->
@@ -8515,6 +8518,17 @@ const getPomodoroCount = (task) => {
   return Math.round(basePomodoros * multiplier)
 }
 
+// 获取等待的任务名称
+const getWaitForTaskName = (taskId) => {
+  const waitForTask = taskStore.getWaitForTask(taskId)
+  return waitForTask ? waitForTask.text : '未知任务'
+}
+
+// 获取等待当前任务的任务数量
+const getWaitingTasksCount = (taskId) => {
+  return taskStore.getWaitingTasks(taskId).length
+}
+
 // 方法：获取分类文本
 const getCategoryText = (category) => {
   return t(category) // work/study/life 都在语言包中
@@ -11213,6 +11227,24 @@ watch(() => reportData.value, (newData) => {
   border-radius: 8px;
   background: rgba(251, 191, 36, 0.15);
   color: #d97706;
+  transition: all 0.3s;
+  line-height: 1;
+  height: auto;
+  box-sizing: border-box;
+}
+
+/* 被依赖状态徽章 */
+.badge-blocking {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 0.2rem 0.35rem;
+  border-radius: 8px;
+  background: rgba(59, 130, 246, 0.15);
+  color: #2563eb;
   transition: all 0.3s;
   line-height: 1;
   height: auto;
