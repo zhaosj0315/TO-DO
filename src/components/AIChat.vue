@@ -1802,6 +1802,20 @@ const getPriorityLabel = (priority) => {
   width: 100%;
   margin: 1rem 0;
   font-size: 0.85rem;
+  display: table;
+  table-layout: auto;
+}
+
+.message.assistant .message-content thead {
+  display: table-header-group;
+}
+
+.message.assistant .message-content tbody {
+  display: table-row-group;
+}
+
+.message.assistant .message-content tr {
+  display: table-row;
 }
 
 .message.assistant .message-content th,
@@ -1810,6 +1824,9 @@ const getPriorityLabel = (priority) => {
   padding: 0.5rem 0.75rem;
   text-align: left;
   vertical-align: middle;
+  display: table-cell;
+  word-wrap: break-word;
+  max-width: 200px;
 }
 
 .message.assistant .message-content th {
@@ -1817,6 +1834,7 @@ const getPriorityLabel = (priority) => {
   color: white;
   font-weight: 600;
   font-size: 0.85rem;
+  white-space: nowrap;
 }
 
 .message.assistant .message-content td {
