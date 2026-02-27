@@ -259,7 +259,13 @@
             <span class="summary-time">{{ formatDateTime(task.aiSummary.createdAt) }}</span>
           </div>
           <div class="summary-content">
-            <p>{{ task.aiSummary.content }}</p>
+            <textarea 
+              v-model="localTask.aiSummary.content"
+              @blur="saveAISummary"
+              class="summary-textarea"
+              placeholder="AI总结内容..."
+              rows="3"
+            ></textarea>
           </div>
           <div class="summary-meta">
             <span>📊 分析了 {{ task.aiSummary.logsCount }} 条日志</span>
@@ -324,16 +330,11 @@
               :key="log.id"
               :class="['log-item', `log-${log.type}`]"
             >
-              <!-- 日志头部：类型+进度+时间+字符统计+心情+评分+删除 -->
+              <!-- 日志头部：类型+时间+删除 -->
               <div class="log-header-compact">
                 <div class="log-type-line">
                   <span class="log-type">
                     {{ getLogTypeIcon(log.type) }} {{ getLogTypeText(log.type) }}
-                    <span v-if="log.progress !== null" class="progress-inline">📊 {{ log.progress }}%</span>
-                    <span v-if="log.duration" class="duration-inline">⏱️ {{ formatDuration(log.duration) }}</span>
-                    <span class="char-count-inline">{{ (log.content || '').length }}/500 · {{ (log.content || '').split('\n').length }}行</span>
-                    <span v-if="log.mood" class="mood-inline">{{ getMoodIcon(log.mood) }}</span>
-                    <span v-if="log.rating" class="rating-inline">{{ '⭐'.repeat(log.rating) }}</span>
                   </span>
                   <div class="log-actions">
                     <span class="log-time">{{ formatLogTime(log.timestamp) }}</span>
@@ -342,7 +343,65 @@
                 </div>
               </div>
               
-              <!-- 日志内容（无标签） -->
+              <!-- 可编辑属性 -->
+              <div class="log-editable-fields">
+                <!-- 进度 -->
+                <div v-if="log.progress !== null" class="edit-field-inline">
+                  <label>📊 进度:</label>
+                  <input 
+                    type="number" 
+                    v-model.number="log.progress"
+                    @blur="saveLogField(log, 'progress')"
+                    min="0" 
+                    max="100"
+                    class="input-inline"
+                  />
+                  <span>%</span>
+                </div>
+                
+                <!-- 耗时 -->
+                <div v-if="log.duration" class="edit-field-inline">
+                  <label>⏱️ 耗时:</label>
+                  <input 
+                    type="number" 
+                    v-model.number="log.duration"
+                    @blur="saveLogField(log, 'duration')"
+                    min="0"
+                    class="input-inline"
+                  />
+                  <span>分钟</span>
+                </div>
+                
+                <!-- 心情 -->
+                <div v-if="log.mood" class="edit-field-inline">
+                  <label>心情:</label>
+                  <select 
+                    v-model="log.mood"
+                    @change="saveLogField(log, 'mood')"
+                    class="select-inline"
+                  >
+                    <option value="good">😊 顺利</option>
+                    <option value="neutral">😐 一般</option>
+                    <option value="bad">😓 困难</option>
+                  </select>
+                </div>
+                
+                <!-- 评分 -->
+                <div v-if="log.rating" class="edit-field-inline">
+                  <label>⭐ 评分:</label>
+                  <input 
+                    type="number" 
+                    v-model.number="log.rating"
+                    @blur="saveLogField(log, 'rating')"
+                    min="1" 
+                    max="5"
+                    class="input-inline"
+                  />
+                  <span>/ 5</span>
+                </div>
+              </div>
+              
+              <!-- 日志内容 -->
               <div class="log-content-edit">
                 <textarea 
                   v-model="log.content"
@@ -832,6 +891,16 @@ const saveLogContent = (log) => {
   }
 }
 
+// 保存日志字段（进度、耗时、心情、评分等）
+const saveLogField = (log, field) => {
+  const logIndex = localTask.value.logs.findIndex(l => l.id === log.id)
+  if (logIndex !== -1) {
+    localTask.value.logs[logIndex][field] = log[field]
+    taskStore.updateTask(props.task.id, { logs: localTask.value.logs })
+    emit('refresh')
+  }
+}
+
 // 保存字段
 const saveField = (field) => {
   const updates = {}
@@ -844,6 +913,14 @@ const saveField = (field) => {
   }
   taskStore.updateTask(props.task.id, updates)
   emit('refresh')
+}
+
+// 保存AI总结
+const saveAISummary = () => {
+  if (localTask.value.aiSummary) {
+    taskStore.updateTask(props.task.id, { aiSummary: localTask.value.aiSummary })
+    emit('refresh')
+  }
 }
 
 // 切换时间轴视图
@@ -1313,6 +1390,26 @@ section h3 {
   border-radius: 8px;
   margin-bottom: 0.75rem;
   line-height: 1.6;
+}
+
+.summary-textarea {
+  width: 100%;
+  background: white;
+  border: 1px solid rgba(217, 119, 6, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #333;
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+}
+
+.summary-textarea:focus {
+  outline: none;
+  border-color: #d97706;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
 }
 
 .summary-content p {
@@ -2046,6 +2143,59 @@ section h3 {
   white-space: pre-wrap;
   word-break: break-word;
   padding: 0.5rem 0;
+}
+
+/* 可编辑字段（内联） */
+.log-editable-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 0.5rem 0;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 6px;
+}
+
+.edit-field-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+}
+
+.edit-field-inline label {
+  color: #666;
+  font-weight: 500;
+}
+
+.input-inline {
+  width: 60px;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.input-inline:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+.select-inline {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  background: white;
+  cursor: pointer;
+}
+
+.select-inline:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
 }
 
 .log-content-edit {
