@@ -3950,7 +3950,12 @@ const createSubtasks = (subtasks) => {
     taskStore.updateTask(parentTask)
   }
   
-  alert(`成功创建 ${subtasks.length} 个子任务！`)
+  // 关闭弹窗
+  showTaskSplitter.value = false
+  taskToSplit.value = null
+  
+  // 显示成功提示
+  showNotification(`✅ 成功创建 ${subtasks.length} 个子任务！`, 'success')
 }
 
 // 每日规划
@@ -4104,10 +4109,14 @@ const handleCreateSubtasks = (subtaskList) => {
     taskStore.addTask(newTask)
   })
   
-  showNotification(`✅ 已创建 ${subtaskList.length} 个子任务`, 'success')
+  // 关闭子任务预览弹窗
+  showSubtaskPreview.value = false
   
   // 关闭原任务详情页
   showTaskDetail.value = false
+  
+  // 显示成功提示
+  showNotification(`✅ 已创建 ${subtaskList.length} 个子任务`, 'success')
 }
 
 // 显示周报历史
@@ -9494,12 +9503,15 @@ const openNotificationSettings = () => {
   }
 }
 
-// 监听报告弹窗打开，自动生成报告（已禁用，改为手动生成）
-// watch(showReportModal, (newVal) => {
-//   if (newVal) {
-//     generateReportContent()
-//   }
-// })
+// 监听报告弹窗打开，自动生成周报
+watch(showReportModal, (newVal) => {
+  if (newVal) {
+    // 设置默认为周报
+    reportType.value = 'weekly'
+    // 自动生成报告
+    generateReportContent()
+  }
+})
 
 // 监听"启用提醒"开关，自动设置默认时间为10分钟后
 watch(enableReminder, (newVal) => {

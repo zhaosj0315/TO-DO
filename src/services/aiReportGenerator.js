@@ -196,10 +196,13 @@ export class AIReportGenerator {
       nextPlan: {
         total: this.tasks.filter(t => t.status === 'pending').length,
         highPriority: this.tasks.filter(t => t.status === 'pending' && t.priority === 'high').length,
-        recommendations: nextWeekPlan
+        recommendations: nextWeekPlan,
+        tasks: this.tasks.filter(t => t.status === 'pending' && t.priority === 'high').slice(0, 5)
       },
+      keyWorks: weekCompletedTasks.filter(t => t.priority === 'high').slice(0, 10),
       risks,
       issues: {
+        total: this.tasks.filter(t => t.status === 'overdue').length,
         overdue: this.tasks.filter(t => t.status === 'overdue'),
         suggestions: risks
       },

@@ -127,7 +127,7 @@ body {
   top: 2rem;
   right: 2rem;
   padding: 1rem 2rem;
-  z-index: 2000;
+  z-index: 10010;
   animation: slideIn 0.3s ease-out;
   font-weight: 600;
   display: flex;
