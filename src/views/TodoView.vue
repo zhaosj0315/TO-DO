@@ -2154,8 +2154,8 @@
         <!-- 第二行：元数据和按钮 -->
         <div class="header-row-2">
           <div class="header-left">
-            <span v-if="newTaskDescription.length > 0" class="meta-text">{{ newTaskDescription.length }} 字</span>
             <span v-if="descEditDuration > 0" class="meta-text">{{ descEditTime }}</span>
+            <span v-if="newTaskDescription.length > 0" class="meta-text">{{ newTaskDescription.length }} 字</span>
           </div>
           <div class="header-right">
             <button class="nav-btn-icon" @click="continueDescription" :disabled="aiGenerating" title="AI 续写">
