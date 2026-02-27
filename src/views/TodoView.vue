@@ -2088,6 +2088,7 @@
     <!-- 任务详情弹窗 -->
     <TaskDetailModal
       v-if="showTaskDetail && selectedTask"
+      ref="taskDetailModalRef"
       :task="selectedTask"
       @close="showTaskDetail = false; selectedTask = null"
       @refresh="handleTaskDetailRefresh"
@@ -3421,6 +3422,7 @@ import { Filesystem, Directory } from '@capacitor/filesystem'
 import { LocalNotifications } from '@capacitor/local-notifications'
 import { Capacitor } from '@capacitor/core'
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera'
+import { App } from '@capacitor/app'
 
 // 注册中文OCR插件
 const ChineseOcr = Capacitor.registerPlugin('ChineseOcr')
@@ -3847,6 +3849,7 @@ const enableReminder = ref(false)
 const forceReminder = ref(true) // 启用提醒默认就是强制提醒
 const reminderDateTime = ref('')
 const currentFilter = ref('all')
+const previousFilter = ref('all') // 记录上一次的筛选状态
 const currentCategoryFilter = ref('all')
 const currentPriorityFilter = ref('all')
 
@@ -5598,6 +5601,10 @@ const paginatedTasks = computed(() => {
 
 // 方法：设置筛选条件
 const setFilter = (filter) => {
+  // 记录上一次的筛选状态
+  if (currentFilter.value !== filter) {
+    previousFilter.value = currentFilter.value
+  }
   currentFilter.value = filter
   if (filter === 'all') {
     currentCategoryFilter.value = 'all'
@@ -8148,6 +8155,7 @@ const showAllLogs = ref(false)
 // 状态：添加日志弹窗
 const showAddLogModal = ref(false)
 const showTaskDetail = ref(false)
+const taskDetailModalRef = ref(null) // TaskDetailModal 组件引用
 const selectedTask = ref(null)
 const currentLogTask = ref(null)
 
@@ -10033,11 +10041,155 @@ onMounted(async () => {
       openTaskDetail(task)
     }
   })
+
+  // Android 返回手势监听
+  if (Capacitor.getPlatform() === 'android') {
+    App.addListener('backButton', ({ canGoBack }) => {
+      // 检查是否有打开的弹窗（按层级优先级关闭）
+      
+      // 特殊状态：AI 加载中（强制中断）
+      if (aiLoading.value) {
+        aiLoading.value = false
+        aiLoadingText.value = ''
+        aiLoadingSubText.value = ''
+        return
+      }
+      
+      // 第三层弹窗（最上层，优先关闭）
+      if (showPasswordModal.value) {
+        showPasswordModal.value = false
+        return
+      } else if (showPhoneModal.value) {
+        showPhoneModal.value = false
+        return
+      } else if (showWeeklyModal.value) {
+        showWeeklyModal.value = false
+        return
+      } else if (showCustomDateModal.value) {
+        showCustomDateModal.value = false
+        return
+      } else if (showPomodoroStats.value) {
+        showPomodoroStats.value = false
+        return
+      } else if (showSupport.value) {
+        showSupport.value = false
+        return
+      } else if (showAIConfig.value) {
+        showAIConfig.value = false
+        return
+      } else if (showVersionModal.value) {
+        showVersionModal.value = false
+        return
+      } else if (showPrivacyPolicy.value) {
+        showPrivacyPolicy.value = false
+        return
+      } else if (showDataInfo.value) {
+        showDataInfo.value = false
+        return
+      } else if (showUserGuide.value) {
+        showUserGuide.value = false
+        return
+      } else if (showPomodoroRules.value) {
+        showPomodoroRules.value = false
+        return
+      } else if (showWelcome.value) {
+        showWelcome.value = false
+        return
+      } else if (showBackupReminder.value) {
+        showBackupReminder.value = false
+        return
+      } else if (showNotificationGuide.value) {
+        showNotificationGuide.value = false
+        return
+      } else if (showReportTemplates.value) {
+        showReportTemplates.value = false
+        return
+      } else if (showReportHistoryModal.value) {
+        showReportHistoryModal.value = false
+        return
+      } else if (showAddLogModal.value) {
+        showAddLogModal.value = false
+        currentLogTask.value = null
+        return
+      } else if (showTaskPreview.value) {
+        showTaskPreview.value = false
+        return
+      } else if (showSubtaskPreview.value) {
+        showSubtaskPreview.value = false
+        return
+      } else if (showFullscreenDesc.value) {
+        showFullscreenDesc.value = false
+        return
+      } 
+      // 第二层弹窗（中层）
+      else if (showTutorial.value) {
+        showTutorial.value = false
+      } else if (showPomodoroTimer.value) {
+        showPomodoroTimer.value = false
+      } else if (showTaskDetail.value) {
+        // 检查 TaskDetailModal 内部是否有打开的子弹窗
+        if (taskDetailModalRef.value) {
+          if (taskDetailModalRef.value.showAddLogModal) {
+            taskDetailModalRef.value.showAddLogModal = false
+            return
+          } else if (taskDetailModalRef.value.showWaitForSelector) {
+            taskDetailModalRef.value.showWaitForSelector = false
+            return
+          }
+        }
+        // 没有子弹窗，关闭任务详情本身
+        showTaskDetail.value = false
+        selectedTask.value = null
+      } else if (showAIChat.value) {
+        showAIChat.value = false
+      } else if (showProfile.value) {
+        showProfile.value = false
+      } else if (showFilterModal.value) {
+        showFilterModal.value = false
+      } else if (showTrash.value) {
+        showTrash.value = false
+      } else if (showDataStats.value) {
+        showDataStats.value = false
+      } else if (showDailyPlan.value) {
+        showDailyPlan.value = false
+      } else if (showDailySummary.value) {
+        showDailySummary.value = false
+      } else if (showReportModal.value) {
+        showReportModal.value = false
+      } else if (showSmartSplitter.value) {
+        showSmartSplitter.value = false
+      } else if (showAIResult.value) {
+        showAIResult.value = false
+      } else if (showAISuggestion.value) {
+        showAISuggestion.value = false
+      } else if (showAIReport.value) {
+        showAIReport.value = false
+      } else if (showTaskSplitter.value) {
+        showTaskSplitter.value = false
+      } 
+      // 第一层：筛选状态恢复
+      else if (currentFilter.value !== 'all') {
+        // 如果当前不是"全部"，恢复到"全部"
+        setFilter('all')
+      } 
+      // 第一层：路由返回或退出
+      else if (canGoBack) {
+        window.history.back()
+      } else {
+        App.exitApp() // 退出应用
+      }
+    })
+  }
 })
 
 // 生命周期钩子：组件卸载时
 onUnmounted(() => {
   if (countdownInterval.value) clearInterval(countdownInterval.value)
+  
+  // 移除 Android 返回监听
+  if (Capacitor.getPlatform() === 'android') {
+    App.removeAllListeners()
+  }
 })
 
 // 监听筛选弹窗打开，自动聚焦搜索框

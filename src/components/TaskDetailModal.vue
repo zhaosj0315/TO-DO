@@ -439,7 +439,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useOfflineTaskStore } from '../stores/offlineTaskStore'
 import LogTimeline from './LogTimeline.vue'
 import LogStats from './LogStats.vue'
@@ -448,6 +448,8 @@ import AITextMenu from './AITextMenu.vue'
 import WaitForSelector from './WaitForSelector.vue'
 import { useTextSelection } from '../composables/useTextSelection'
 import { AITextService } from '../services/aiTextService'
+import { Capacitor } from '@capacitor/core'
+import { App } from '@capacitor/app'
 import { registerPlugin } from '@capacitor/core'
 
 const AIAssistant = registerPlugin('AIAssistant')
@@ -465,6 +467,12 @@ const taskStore = useOfflineTaskStore()
 const showAddLogModal = ref(false)
 const showTimeline = ref(false)
 const showWaitForSelector = ref(false)
+
+// 暴露内部状态给父组件
+defineExpose({
+  showAddLogModal,
+  showWaitForSelector
+})
 
 // 依赖关系相关
 const waitForTasks = computed(() => {
