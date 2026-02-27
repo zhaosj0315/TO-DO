@@ -79,7 +79,7 @@ This is an **offline Android To-Do management application** built with **Vue 3**
   - **Deadline Display**: Auto-calculated deadline with color-coded urgency
   - **Pomodoro System**: Visual tomato count based on priority (🍅🍅🍅🍅)
   - **Pin to Top**: Pin important tasks to stay at the top of the list (📌 button)
-- **Task Execution Logs** 💬 (NEW in v1.7.0):
+- **Task Execution Logs** 💬 (v1.7.0):
   - **6 Log Types**: Start, Progress, Block, Solution, Milestone, Complete
   - **Unlimited Logs**: Add multiple logs per task to track execution process
   - **Auto Timestamp**: Time automatically recorded when adding logs
@@ -93,6 +93,13 @@ This is an **offline Android To-Do management application** built with **Vue 3**
   - **Timeline View**: Visual timeline showing creation → deadline → completion with color-coded urgency
   - **Unified Entry**: Click task title or description to open the same Bottom Sheet
   - **Log Badges**: Task cards display log count (💬 X) and progress (📊 X%)
+  - **Editable Properties** (NEW in v1.7.7): All log fields and AI summaries are directly editable
+    - 📊 Progress: Edit percentage (0-100%)
+    - ⏱️ Duration: Edit time in minutes
+    - 😊 Mood: Change mood status (Good/Neutral/Bad)
+    - ⭐ Rating: Adjust quality rating (1-5 stars)
+    - ✨ AI Summary: Edit AI-generated task summaries
+    - Auto-save on blur for seamless editing experience
 - **Smart Sorting System**:
   - Intelligent weight-based sorting algorithm
   - Pinned tasks always on top (sorted by priority internally)
