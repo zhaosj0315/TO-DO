@@ -11295,13 +11295,13 @@ watch(() => reportData.value, (newData) => {
 
 /* 统一的圆形图标按钮 */
 .btn-icon-circle {
-  width: 40px;
-  height: 40px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   border: none;
   background: rgba(255, 255, 255, 0.25);
   color: white;
-  font-size: 1.2rem;
+  font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.3s;
   display: flex;
@@ -11434,8 +11434,8 @@ watch(() => reportData.value, (newData) => {
 }
 
 .btn-avatar {
-  width: 40px;
-  height: 40px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, 0.9);
   background: white;
@@ -11463,7 +11463,7 @@ watch(() => reportData.value, (newData) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.1rem;
+  font-size: 0.8rem;
   font-weight: 800;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
