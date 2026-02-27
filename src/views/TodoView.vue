@@ -305,6 +305,11 @@
                   📂 {{ getParentTaskName(task.parentTaskId) }}
                 </span>
                 
+                <!-- 子任务数量（父任务显示） -->
+                <span v-if="getSubtasksCount(task.id) > 0" class="badge badge-has-subtasks" :title="`已拆分为 ${getSubtasksCount(task.id)} 个子任务`">
+                  🧩 子任务×{{ getSubtasksCount(task.id) }}
+                </span>
+                
                 <!-- 依赖关系状态 -->
                 <!-- 等待的任务 -->
                 <span v-if="task.waitFor && task.waitFor.length > 0 && !taskStore.canStart(task.id)" class="badge badge-waiting" :title="`等待 ${task.waitFor.length} 个任务完成`">
@@ -8545,6 +8550,11 @@ const getParentTaskName = (parentTaskId) => {
   return parentTask ? parentTask.text : '已删除的任务'
 }
 
+// 获取子任务数量
+const getSubtasksCount = (taskId) => {
+  return taskStore.tasks.filter(t => t.parentTaskId === taskId).length
+}
+
 // 获取等待的任务名称（多个）
 const getWaitForTaskNames = (taskId) => {
   const waitForTasks = taskStore.getWaitForTasks(taskId)
@@ -11303,6 +11313,24 @@ watch(() => reportData.value, (newData) => {
   border-radius: 8px;
   background: rgba(139, 92, 246, 0.15);
   color: #8b5cf6;
+  transition: all 0.3s;
+  line-height: 1;
+  height: auto;
+  box-sizing: border-box;
+}
+
+/* 有子任务徽章（父任务显示） */
+.badge-has-subtasks {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 0.2rem 0.35rem;
+  border-radius: 8px;
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
   transition: all 0.3s;
   line-height: 1;
   height: auto;
