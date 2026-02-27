@@ -4126,7 +4126,11 @@ const handleSplitTask = async (task) => {
   }
   
   try {
-    showNotification(`AI 正在拆解为 ${subtaskCount} 个子任务...`, 'info')
+    // 显示loading
+    aiLoading.value = true
+    aiLoadingText.value = `AI 正在拆解为 ${subtaskCount} 个子任务...`
+    aiLoadingSubText.value = '请稍候，正在分析任务内容'
+    
     const splitResult = await AITaskSplitter.splitTask(task.text, task.description, subtaskCount)
     
     if (splitResult.length > 0) {
@@ -4138,7 +4142,10 @@ const handleSplitTask = async (task) => {
     }
   } catch (error) {
     console.error('AI拆解失败:', error)
-    alert(`AI拆解失败：${error.message}`)
+    showNotification(`AI拆解失败：${error.message}`, 'error')
+  } finally {
+    // 关闭loading
+    aiLoading.value = false
   }
 }
 
