@@ -139,7 +139,31 @@ const extractedTasks = ref([])
 const isExtracting = ref(false)
 
 // 从localStorage加载模型配置和历史记录
-const models = ref(JSON.parse(localStorage.getItem('ai_models') || '[{"id":"default","name":"本地Ollama","url":"http://192.168.31.159:11434/api/generate","type":"local"}]'))
+const loadModelsFromStorage = () => {
+  try {
+    const stored = localStorage.getItem('ai_models')
+    const parsed = stored ? JSON.parse(stored) : []
+    // 如果解析结果是空数组，返回默认配置
+    return parsed.length > 0 ? parsed : [{
+      id: 'default',
+      name: '本地Ollama',
+      url: 'http://localhost:11434/api/generate',
+      type: 'local',
+      modelName: 'gemma2:2b'
+    }]
+  } catch (e) {
+    console.error('加载模型配置失败:', e)
+    return [{
+      id: 'default',
+      name: '本地Ollama',
+      url: 'http://localhost:11434/api/generate',
+      type: 'local',
+      modelName: 'gemma2:2b'
+    }]
+  }
+}
+
+const models = ref(loadModelsFromStorage())
 const selectedModelId = ref(localStorage.getItem('ai_default_model') || models.value[0]?.id)
 const messages = ref([])
 const userInput = ref('')
@@ -424,7 +448,18 @@ watch(selectedModelId, (val) => {
 })
 
 const currentModel = computed(() => {
-  return models.value.find(m => m.id === selectedModelId.value) || models.value[0]
+  const model = models.value.find(m => m.id === selectedModelId.value) || models.value[0]
+  // 如果没有配置任何模型，返回默认模型
+  if (!model) {
+    return {
+      id: 'default',
+      name: '默认模型',
+      url: 'http://localhost:11434/api/generate',
+      type: 'local',
+      modelName: 'gemma2:2b'
+    }
+  }
+  return model
 })
 
 watch(() => props.visible, (val) => {
