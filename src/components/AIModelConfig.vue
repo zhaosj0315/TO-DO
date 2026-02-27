@@ -85,6 +85,26 @@
         <!-- 添加模型 -->
         <div class="section">
           <h4>➕ 添加新模型</h4>
+          
+          <!-- 已保存的厂商配置 -->
+          <div v-if="providerConfigs.length > 0" class="provider-configs">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <label class="form-label">📦 使用已保存的厂商配置</label>
+              <button @click="showProviderManager = true" class="btn-manage">
+                ⚙️ 管理
+              </button>
+            </div>
+            <select v-model="selectedProviderId" @change="loadProviderConfig" class="form-select">
+              <option value="">选择已保存的配置...</option>
+              <option v-for="config in providerConfigs" :key="config.id" :value="config.id">
+                {{ getProviderLabel(config) }}
+              </option>
+            </select>
+            <div class="hint-text" style="margin-bottom: 1rem;">
+              💡 选择已保存的配置可快速添加新模型，无需重新输入地址和API Key
+            </div>
+          </div>
+          
           <div class="add-model-form">
             <!-- 1. 模型类型 -->
             <select v-model="newModel.type" class="form-select">
@@ -152,14 +172,23 @@
             </div>
             
             <!-- 添加按钮 -->
-            <button 
-              v-if="newModel.modelName"
-              @click="addModel" 
-              class="btn-add"
-              :disabled="testing"
-            >
-              ➕ 添加模型 ({{ newModel.name || '自动生成名称' }})
-            </button>
+            <div v-if="newModel.modelName" style="display: flex; gap: 0.5rem;">
+              <button 
+                @click="addModel" 
+                class="btn-add"
+                :disabled="testing"
+                style="flex: 1;"
+              >
+                ➕ 添加模型 ({{ newModel.name || '自动生成名称' }})
+              </button>
+              <button 
+                @click="clearForm" 
+                class="btn-clear"
+                title="清空表单，重新配置"
+              >
+                🔄 清空
+              </button>
+            </div>
           </div>
         </div>
 
@@ -221,6 +250,42 @@
         </div>
       </div>
     </div>
+    
+    <!-- 厂商配置管理弹窗 -->
+    <div v-if="showProviderManager" class="modal-overlay" @click.self="showProviderManager = false">
+      <div class="provider-manager-modal">
+        <div class="modal-header">
+          <button class="back-btn" @click="showProviderManager = false">
+            <span>← 返回</span>
+          </button>
+          <h3>⚙️ 厂商配置管理</h3>
+          <div style="width: 80px;"></div>
+        </div>
+        
+        <div class="modal-body">
+          <div v-if="providerConfigs.length === 0" class="empty-hint">
+            暂无厂商配置
+          </div>
+          <div v-else class="provider-list">
+            <div v-for="(config, index) in providerConfigs" :key="config.id" class="provider-item">
+              <div class="provider-info">
+                <div class="provider-type">
+                  {{ { 'local': '🏠 本地Ollama', 'openai': '🌐 OpenAI', 'custom': '🔧 自定义' }[config.type] }}
+                </div>
+                <div class="provider-url">{{ config.url }}</div>
+                <div class="provider-meta">
+                  创建于 {{ new Date(config.createdAt).toLocaleString('zh-CN') }}
+                </div>
+              </div>
+              <div class="provider-actions">
+                <button @click="editProviderConfig(index)" class="btn-small btn-edit">编辑</button>
+                <button @click="deleteProviderConfig(index)" class="btn-small btn-delete">删除</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -237,14 +302,84 @@ const emit = defineEmits(['close', 'update'])
 const models = ref(JSON.parse(localStorage.getItem('ai_models') || '[]'))
 const defaultModelId = ref(localStorage.getItem('ai_default_model') || '')
 
+// 厂商配置（持久化）
+const providerConfigs = ref(JSON.parse(localStorage.getItem('ai_provider_configs') || '[]'))
+const selectedProviderId = ref('')
+const showProviderManager = ref(false)
+
 // 新模型表单
 const newModel = ref({
   type: 'local',
   name: '',
   url: '',
   apiKey: '',
-  modelName: ''
+  modelName: '',
+  providerId: '' // 关联的厂商配置ID
 })
+
+// 编辑厂商配置
+const editProviderConfig = (index) => {
+  const config = providerConfigs.value[index]
+  
+  // 填充到表单
+  newModel.value.type = config.type
+  newModel.value.url = config.url
+  newModel.value.apiKey = config.apiKey
+  newModel.value.providerId = config.id
+  
+  // 关闭管理弹窗
+  showProviderManager.value = false
+  
+  // 自动获取模型列表
+  fetchAvailableModels()
+}
+
+// 删除厂商配置
+const deleteProviderConfig = (index) => {
+  const config = providerConfigs.value[index]
+  
+  // 检查是否有模型在使用此配置
+  const usedByModels = models.value.filter(m => m.providerId === config.id)
+  
+  if (usedByModels.length > 0) {
+    if (!confirm(`此配置被 ${usedByModels.length} 个模型使用，删除后这些模型将无法正常工作。确定删除？`)) {
+      return
+    }
+  } else {
+    if (!confirm('确定删除此厂商配置？')) {
+      return
+    }
+  }
+  
+  providerConfigs.value.splice(index, 1)
+  alert('✅ 配置已删除')
+}
+
+// 加载厂商配置
+const loadProviderConfig = () => {
+  const config = providerConfigs.value.find(p => p.id === selectedProviderId.value)
+  if (config) {
+    newModel.value.type = config.type
+    newModel.value.url = config.url
+    newModel.value.apiKey = config.apiKey
+    newModel.value.providerId = config.id
+    
+    // 自动获取模型列表
+    fetchAvailableModels()
+  }
+}
+
+// 获取厂商配置标签
+const getProviderLabel = (config) => {
+  const typeLabel = {
+    'local': 'Ollama',
+    'openai': 'OpenAI',
+    'custom': '自定义'
+  }[config.type] || '未知'
+  
+  const urlShort = config.url.length > 40 ? config.url.substring(0, 40) + '...' : config.url
+  return `${typeLabel} - ${urlShort}`
+}
 
 // 可用模型列表
 const availableModels = ref([])
@@ -266,9 +401,10 @@ watch(() => newModel.value.modelName, (modelName) => {
 })
 
 // 保存到localStorage
-watch([models, defaultModelId], () => {
+watch([models, defaultModelId, providerConfigs], () => {
   localStorage.setItem('ai_models', JSON.stringify(models.value))
   localStorage.setItem('ai_default_model', defaultModelId.value)
+  localStorage.setItem('ai_provider_configs', JSON.stringify(providerConfigs.value))
   emit('update', { models: models.value, defaultModelId: defaultModelId.value })
 }, { deep: true })
 
@@ -305,7 +441,9 @@ const fetchAvailableModels = async () => {
   availableModels.value = []
   
   try {
-    let apiUrl = newModel.value.url
+    // 保存原始URL，不要修改 newModel.value.url
+    const originalUrl = newModel.value.url
+    let apiUrl = originalUrl
     
     // 根据类型构造正确的API端点
     if (newModel.value.type === 'local') {
@@ -363,6 +501,47 @@ const fetchAvailableModels = async () => {
       fetchError.value = '未找到可用模型'
     } else {
       console.log(`成功获取 ${availableModels.value.length} 个模型`)
+      
+      // 保存厂商配置（使用原始URL，不是修改后的apiUrl）
+      let baseUrl = originalUrl
+      
+      // 规范化URL：移除API路径，只保留基础地址
+      if (newModel.value.type === 'local') {
+        // Ollama: 移除 /api/xxx
+        baseUrl = baseUrl.replace(/\/api\/.*$/, '')
+      } else {
+        // OpenAI: 移除 /v1 及之后的所有路径
+        baseUrl = baseUrl.replace(/\/v1.*$/, '')
+      }
+      
+      // 移除末尾斜杠
+      baseUrl = baseUrl.replace(/\/$/, '')
+      
+      const providerId = Date.now().toString()
+      const providerConfig = {
+        id: providerId,
+        type: newModel.value.type,
+        url: baseUrl, // 保存基础URL
+        apiKey: newModel.value.apiKey || '',
+        createdAt: new Date().toISOString()
+      }
+      
+      console.log('保存厂商配置 - 基础URL:', baseUrl)
+      
+      // 检查是否已存在相同配置
+      const existingIndex = providerConfigs.value.findIndex(
+        p => p.type === providerConfig.type && p.url === providerConfig.url
+      )
+      
+      if (existingIndex >= 0) {
+        // 更新现有配置
+        providerConfigs.value[existingIndex] = providerConfig
+        newModel.value.providerId = providerConfigs.value[existingIndex].id
+      } else {
+        // 添加新配置
+        providerConfigs.value.push(providerConfig)
+        newModel.value.providerId = providerId
+      }
     }
     
   } catch (error) {
@@ -459,9 +638,19 @@ const testModelConnection = async (model) => {
       
       return { success: response.ok }
     } else {
-      if (!apiUrl.includes('/chat/completions')) {
-        apiUrl = apiUrl.replace(/\/$/, '') + '/v1/chat/completions'
+      // 先规范化URL：移除末尾斜杠和已有的API路径
+      let baseUrl = apiUrl
+      
+      // 如果包含 /v1/，提取基础URL
+      if (baseUrl.includes('/v1/')) {
+        baseUrl = baseUrl.split('/v1/')[0]
       }
+      
+      // 移除末尾斜杠
+      baseUrl = baseUrl.replace(/\/$/, '')
+      
+      // 构造完整URL
+      apiUrl = baseUrl + '/v1/chat/completions'
       
       const headers = { 'Content-Type': 'application/json' }
       if (model.apiKey) {
@@ -544,11 +733,16 @@ const testConnection = async () => {
     let apiUrl = newModel.value.url
     const modelName = newModel.value.modelName
     
+    console.log('原始URL:', apiUrl)
+    console.log('模型类型:', newModel.value.type)
+    
     if (newModel.value.type === 'local') {
       // Ollama 测试
       if (!apiUrl.includes('/api/generate')) {
         apiUrl = apiUrl.replace(/\/$/, '') + '/api/generate'
       }
+      
+      console.log('最终URL (Ollama):', apiUrl)
       
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -568,9 +762,21 @@ const testConnection = async () => {
       }
     } else {
       // OpenAI 兼容 API 测试
-      if (!apiUrl.includes('/chat/completions')) {
-        apiUrl = apiUrl.replace(/\/$/, '') + '/v1/chat/completions'
+      // 先规范化URL：移除末尾斜杠和已有的API路径
+      let baseUrl = apiUrl
+      
+      // 如果包含 /v1/，提取基础URL
+      if (baseUrl.includes('/v1/')) {
+        baseUrl = baseUrl.split('/v1/')[0]
       }
+      
+      // 移除末尾斜杠
+      baseUrl = baseUrl.replace(/\/$/, '')
+      
+      // 构造完整URL
+      apiUrl = baseUrl + '/v1/chat/completions'
+      
+      console.log('最终URL (OpenAI):', apiUrl)
       
       const headers = {
         'Content-Type': 'application/json'
@@ -606,8 +812,15 @@ const testConnection = async () => {
 }
 
 const addModel = () => {
-  if (!newModel.value.name || !newModel.value.url) {
-    alert('请填写模型名称和地址')
+  if (!newModel.value.name || !newModel.value.url || !newModel.value.modelName) {
+    alert('请填写完整信息并选择模型')
+    return
+  }
+
+  // 获取厂商配置
+  const providerConfig = providerConfigs.value.find(p => p.id === newModel.value.providerId)
+  if (!providerConfig) {
+    alert('厂商配置丢失，请重新获取模型列表')
     return
   }
 
@@ -615,9 +828,10 @@ const addModel = () => {
     id: Date.now().toString(),
     type: newModel.value.type,
     name: newModel.value.name,
-    url: newModel.value.url,
-    apiKey: newModel.value.apiKey || '',
-    modelName: newModel.value.modelName || newModel.value.name
+    url: providerConfig.url, // 从厂商配置读取
+    apiKey: providerConfig.apiKey || '', // 从厂商配置读取
+    modelName: newModel.value.modelName,
+    providerId: newModel.value.providerId // 关联厂商配置
   }
 
   models.value.push(model)
@@ -627,10 +841,32 @@ const addModel = () => {
     defaultModelId.value = model.id
   }
 
-  // 重置表单
-  newModel.value = { type: 'local', name: '', url: '', apiKey: '', modelName: '' }
+  // 重置表单（保留厂商配置，允许继续添加其他模型）
+  const currentProviderId = newModel.value.providerId
+  const currentType = newModel.value.type
+  const currentUrl = newModel.value.url
+  const currentApiKey = newModel.value.apiKey
+  
+  newModel.value = { 
+    type: currentType, 
+    name: '', 
+    url: currentUrl, 
+    apiKey: currentApiKey, 
+    modelName: '',
+    providerId: currentProviderId
+  }
+  // 不清空 availableModels，允许继续选择
+  
+  alert('✅ 模型添加成功！可继续选择其他模型')
+}
+
+// 清空表单
+const clearForm = () => {
+  newModel.value = { type: 'local', name: '', url: '', apiKey: '', modelName: '', providerId: '' }
   availableModels.value = []
   fetchError.value = ''
+  testResult.value = null
+  selectedProviderId.value = ''
 }
 
 const setDefault = (id) => {
@@ -639,7 +875,21 @@ const setDefault = (id) => {
 
 const editModel = (index) => {
   const model = models.value[index]
-  newModel.value = { ...model }
+  
+  // 从厂商配置恢复地址和API Key
+  const providerConfig = providerConfigs.value.find(p => p.id === model.providerId)
+  
+  newModel.value = { 
+    ...model,
+    url: providerConfig?.url || model.url,
+    apiKey: providerConfig?.apiKey || model.apiKey
+  }
+  
+  // 重新获取模型列表
+  if (providerConfig) {
+    fetchAvailableModels()
+  }
+  
   models.value.splice(index, 1)
 }
 
@@ -1049,6 +1299,23 @@ const addQuickConfig = (type) => {
   font-weight: 600;
 }
 
+.btn-clear {
+  padding: 0.75rem 1rem;
+  background: #f0f0f0;
+  color: #666;
+  border: 1.5px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-clear:hover {
+  background: #e0e0e0;
+  border-color: #ccc;
+}
+
 .loading-hint {
   padding: 0.5rem;
   background: #e3f2fd;
@@ -1342,5 +1609,98 @@ const addQuickConfig = (type) => {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+.provider-configs {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+  border-radius: 8px;
+  border: 1.5px solid rgba(102, 126, 234, 0.2);
+}
+
+.form-label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.btn-manage {
+  padding: 0.4rem 0.8rem;
+  background: white;
+  border: 1.5px solid #667eea;
+  color: #667eea;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-manage:hover {
+  background: #667eea;
+  color: white;
+}
+
+.provider-manager-modal {
+  background: white;
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.provider-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.provider-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border: 2px solid #eee;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.provider-item:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+}
+
+.provider-info {
+  flex: 1;
+}
+
+.provider-type {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.provider-url {
+  font-size: 0.85rem;
+  color: #666;
+  word-break: break-all;
+  margin-bottom: 0.25rem;
+}
+
+.provider-meta {
+  font-size: 0.75rem;
+  color: #999;
+}
+
+.provider-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
 }
 </style>
