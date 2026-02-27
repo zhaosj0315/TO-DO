@@ -235,12 +235,14 @@
             }"
           >
             <!-- v1.2: 增大点击热区 -->
-            <label class="checkbox-wrapper">
+            <label class="checkbox-wrapper" :class="{ 'checkbox-disabled': task.status !== 'completed' && !taskStore.canStart(task.id) }">
               <input 
                 type="checkbox" 
                 class="task-checkbox" 
                 :checked="task.status === TaskStatus.COMPLETED"
+                :disabled="task.status !== 'completed' && !taskStore.canStart(task.id)"
                 @change="toggleTaskCompletion(task.id)"
+                :title="task.status !== 'completed' && !taskStore.canStart(task.id) ? '⚠️ 请先完成依赖任务' : ''"
               >
             </label>
             <div class="task-content" @click="openTaskDetail(task)" style="cursor: pointer;">
@@ -5886,6 +5888,17 @@ const getTodayDate = () => {
 
 // 方法：切换任务完成状态
 const toggleTaskCompletion = async (taskId) => {
+  const task = taskStore.tasks.find(t => t.id === taskId)
+  
+  // 如果要标记为完成，检查依赖
+  if (task && task.status !== 'completed' && !taskStore.canStart(taskId)) {
+    const waitForTasks = taskStore.getWaitForTasks(taskId)
+    const unfinishedTasks = waitForTasks.filter(t => t.status !== 'completed')
+    const taskNames = unfinishedTasks.map(t => t.text).join('、')
+    alert(`⚠️ 无法完成任务\n\n请先完成依赖任务：\n${taskNames}`)
+    return
+  }
+  
   await taskStore.toggleTaskCompletion(taskId)
   // 完成任务时清除提醒记录和通知
   notifiedTasks.delete(`urgent_${taskId}`)
@@ -10872,6 +10885,11 @@ watch(() => reportData.value, (newData) => {
   cursor: pointer;
 }
 
+.checkbox-wrapper.checkbox-disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 /* v1.2: 任务卡片触摸反馈 */
 .task-item {
   display: flex;
@@ -10906,6 +10924,12 @@ watch(() => reportData.value, (newData) => {
   background: white;
   position: relative;
   transition: all 0.2s;
+}
+
+.task-checkbox:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  background: #f5f5f5;
 }
 
 .task-checkbox:checked {

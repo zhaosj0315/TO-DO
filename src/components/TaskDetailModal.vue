@@ -885,6 +885,16 @@ const handleAddLog = async (logData) => {
 // 完成任务
 const handleComplete = async () => {
   console.log('handleComplete called')
+  
+  // 检查是否可以完成
+  if (!taskStore.canStart(props.task.id)) {
+    const waitForTasks = taskStore.getWaitForTasks(props.task.id)
+    const unfinishedTasks = waitForTasks.filter(t => t.status !== 'completed')
+    const taskNames = unfinishedTasks.map(t => t.text).join('、')
+    alert(`⚠️ 无法完成任务\n\n请先完成依赖任务：\n${taskNames}`)
+    return
+  }
+  
   if (confirm('确定要标记任务为已完成吗？')) {
     await taskStore.updateTask(props.task.id, { 
       status: 'completed',
