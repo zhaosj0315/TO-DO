@@ -1,9 +1,8 @@
 <template>
-  <div v-if="visible" class="modal-overlay" @click="handleClose">
+  <div v-if="visible" class="modal-overlay" @click.self="handleClose">
     <div class="modal-content" @click.stop>
       <!-- 头部 -->
       <div class="modal-header">
-        <div class="drag-handle"></div>
         <h2>📋 AI 提取的任务</h2>
         <button class="close-btn" @click="handleClose">✕</button>
       </div>
@@ -118,11 +117,9 @@ const handleCreateAll = () => {
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
   z-index: 10002;
-  animation: fadeIn 0.2s ease-out;
+  backdrop-filter: blur(8px);
+  animation: fadeIn 0.2s ease;
 }
 
 @keyframes fadeIn {
@@ -131,14 +128,19 @@ const handleCreateAll = () => {
 }
 
 .modal-content {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: white;
   width: 100%;
-  max-width: 600px;
-  max-height: 85vh;
+  max-height: 90vh;
   border-radius: 20px 20px 0 0;
   display: flex;
   flex-direction: column;
-  animation: slideUp 0.3s ease-out;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
 }
 
 @keyframes slideUp {
@@ -147,33 +149,24 @@ const handleCreateAll = () => {
 }
 
 .modal-header {
-  padding: 1rem;
+  padding: 1.2rem 1.5rem;
   border-bottom: 1px solid #e0e0e0;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  justify-content: space-between;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border-radius: 20px 20px 0 0;
-  position: relative;
 }
 
 .drag-handle {
-  position: absolute;
-  top: 0.5rem;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 40px;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.5);
-  border-radius: 2px;
+  display: none;
 }
 
 .modal-header h2 {
-  flex: 1;
   margin: 0;
   font-size: 1.1rem;
-  margin-top: 0.5rem;
+  font-weight: 600;
 }
 
 .close-btn {

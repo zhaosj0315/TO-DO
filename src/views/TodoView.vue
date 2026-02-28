@@ -880,35 +880,15 @@
       </div>
     </div>
 
-    <!-- 回收站模态框 -->
-    <div v-if="showTrash" class="modal-overlay" @click.self="showTrash = false">
-      <div class="modal-content glass-card" style="background: white; width: 96%; padding: 1rem;">
-        <div class="modal-header">
-          <h3>{{ t('recycleBin') }}</h3>
-          <button class="close-btn" @click="showTrash = false">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div v-if="taskStore.deletedTasks.length > 0" style="margin-bottom: 1rem;">
-            <button class="btn btn-danger" @click="clearAllTrash" style="width: 100%;">
-              🗑️ {{ t('clearAllTrash') }}
-            </button>
-          </div>
-          <ul v-if="taskStore.deletedTasks.length > 0">
-            <li v-for="task in taskStore.deletedTasks" :key="task.id" class="trash-item">
-              <div class="trash-info">
-                <span class="trash-title">{{ task.text }}</span>
-                <span class="trash-meta:">{{ t('originalCategory') }}: {{ getCategoryText(task.category) }}</span>
-              </div>
-              <div class="trash-actions">
-                <button class="btn btn-success btn-sm" @click="restoreTask(task.id)">{{ t('restore') }}</button>
-                <button class="btn btn-danger btn-sm" @click="permanentDelete(task.id)">{{ t('permanentDelete') }}</button>
-              </div>
-            </li>
-          </ul>
-          <p v-else class="empty-state">{{ t('emptyTrash') }}</p>
-        </div>
-      </div>
-    </div>
+    <!-- 回收站 -->
+    <TrashModal
+      :visible="showTrash"
+      :tasks="taskStore.deletedTasks"
+      @close="showTrash = false"
+      @restore="restoreTask"
+      @permanent-delete="permanentDelete"
+      @clear-all="clearAllTrash"
+    />
 
     <!-- 首次登录欢迎弹窗 -->
     <div v-if="showWelcome" class="modal-overlay" @click.self="showWelcome = false">
@@ -3433,6 +3413,7 @@ import AIConfigModal from '../components/AIConfigModal.vue'
 import TaskPreviewModal from '../components/TaskPreviewModal.vue'
 import SubtaskPreviewModal from '../components/SubtaskPreviewModal.vue'
 import DailyPlanModal from '../components/DailyPlanModal.vue'
+import TrashModal from '../components/TrashModal.vue'
 import AISuggestionCard from '../components/AISuggestionCard.vue'
 import DailySummaryModal from '../components/DailySummaryModal.vue'
 import AIReportModal from '../components/AIReportModal.vue'

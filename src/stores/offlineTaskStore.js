@@ -289,6 +289,10 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         
         // 执行删除
         this.tasks.splice(index, 1)
+        
+        // 添加删除时间戳
+        task.deleted_at = new Date().toISOString()
+        
         this.deletedTasks.push(task)
         
         // 取消提醒
@@ -303,6 +307,10 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
             const childIndex = this.tasks.findIndex(t => t.id === child.id)
             if (childIndex !== -1) {
               const deletedChild = this.tasks.splice(childIndex, 1)[0]
+              
+              // 为子任务也添加删除时间戳
+              deletedChild.deleted_at = new Date().toISOString()
+              
               this.deletedTasks.push(deletedChild)
               if (deletedChild.enableReminder) {
                 await this.cancelTaskReminder(deletedChild.id)
