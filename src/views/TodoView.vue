@@ -1214,10 +1214,11 @@
                   <li><strong>执行日志</strong>：6种日志类型、进度、标签、心情、阻碍解决</li>
                   <li><strong>番茄钟历史</strong>：专注记录、时长统计、完成数量</li>
                   <li><strong>回收站数据</strong>：已删除任务（可恢复）</li>
-                  <li><strong>AI周报历史</strong>：所有生成的周报记录</li>
+                  <li><strong>AI报告历史</strong>：所有生成的报告记录（日/周/月/季/半年/年报）</li>
                   <li><strong>AI对话历史</strong>：所有AI问答记录</li>
                   <li><strong>AI模型配置</strong>：模型列表和默认模型</li>
                   <li><strong>用户信息</strong>：账号、密码、手机号、安全问题</li>
+                  <li><strong>任务关系</strong>：依赖关系、父子任务、AI总结</li>
                 </ul>
                 <div style="margin-top: 0.5rem; padding: 0.5rem; background: rgba(102, 126, 234, 0.1); border-radius: 6px; font-size: 0.85rem;">
                   💡 <strong>备份说明</strong>：<br>
@@ -1231,10 +1232,17 @@
                   <span class="export-icon">💾</span>
                   <span class="btn-text">完整备份 (JSON)</span>
                 </button>
-                <button class="btn btn-restore" @click="showBackupList = true">
+                <button class="btn btn-restore" @click="triggerRestoreFile">
                   <span class="export-icon">♻️</span>
                   <span class="btn-text">恢复备份</span>
                 </button>
+                <input 
+                  ref="restoreFileInput" 
+                  type="file" 
+                  accept=".json" 
+                  style="display: none" 
+                  @change="handleRestoreFile"
+                />
               </div>
             </div>
             
@@ -5365,6 +5373,7 @@ const currentLanguage = ref('zh') // 语言切换：zh 中文, en 英文
 const priorityMode = ref('traditional') // 优先级模式：traditional 传统三级, eisenhower 时间象限法
 const showChangelog = ref(false) // 更新日志弹窗
 const fileInput = ref(null)
+const restoreFileInput = ref(null)
 const mainContent = ref(null)
 const showFilterModal = ref(false)
 const isRefreshing = ref(false)
@@ -8711,6 +8720,53 @@ const handleManualBackup = async () => {
   } catch (error) {
     console.error('备份失败:', error)
     showNotification('备份失败，请重试', 'error')
+  }
+}
+
+// 触发恢复文件选择
+const triggerRestoreFile = () => {
+  restoreFileInput.value?.click()
+}
+
+// 处理恢复文件
+const handleRestoreFile = async (event) => {
+  const file = event.target.files?.[0]
+  if (!file) return
+  
+  if (!confirm('确定要恢复备份吗？\n\n⚠️ 这将覆盖当前所有数据！')) {
+    event.target.value = '' // 清空文件选择
+    return
+  }
+  
+  try {
+    showNotification('正在恢复...', 'info')
+    
+    // 读取文件内容
+    const text = await file.text()
+    const backupData = JSON.parse(text)
+    
+    // 1. 恢复 Preferences 数据
+    for (const key in backupData) {
+      if (key === '_localStorage') continue
+      await Preferences.set({ key, value: backupData[key] })
+    }
+    
+    // 2. 恢复 localStorage 数据
+    if (backupData._localStorage) {
+      for (const key in backupData._localStorage) {
+        localStorage.setItem(key, backupData._localStorage[key])
+      }
+    }
+    
+    showNotification('恢复成功！即将刷新页面...', 'success')
+    setTimeout(() => {
+      window.location.reload()
+    }, 1500)
+  } catch (error) {
+    console.error('恢复失败:', error)
+    showNotification(`恢复失败: ${error.message}`, 'error')
+  } finally {
+    event.target.value = '' // 清空文件选择
   }
 }
 

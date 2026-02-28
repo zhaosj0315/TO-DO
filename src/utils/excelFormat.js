@@ -139,7 +139,9 @@ export function taskToExcelRow(task, includeUser = false) {
     '预估番茄钟': task.estimatedPomodoros || 0,
     '执行日志数': task.logs?.length || 0,
     '最新进度': task.stats?.progressHistory?.[task.stats.progressHistory.length - 1] || 0,
-    '有AI总结': task.aiSummary ? '是' : '否'
+    '有AI总结': task.aiSummary ? '是' : '否',
+    '等待任务数': task.waitFor?.length || 0,
+    '父任务ID': task.parentTaskId || ''
   }
   
   // 多用户备份时添加用户字段
@@ -212,7 +214,9 @@ export function generateTemplateData() {
       '预估番茄钟': 4,
       '执行日志数': 0,
       '最新进度': 0,
-      '有AI总结': '否'
+      '有AI总结': '否',
+      '等待任务数': 0,
+      '父任务ID': ''
     },
     {
       '任务名称': '学习Vue3新特性',
@@ -234,7 +238,9 @@ export function generateTemplateData() {
       '预估番茄钟': 2,
       '执行日志数': 0,
       '最新进度': 0,
-      '有AI总结': '否'
+      '有AI总结': '否',
+      '等待任务数': 0,
+      '父任务ID': ''
     },
     {
       '任务名称': '周末聚餐',
@@ -256,7 +262,9 @@ export function generateTemplateData() {
       '预估番茄钟': 1,
       '执行日志数': 0,
       '最新进度': 0,
-      '有AI总结': '否'
+      '有AI总结': '否',
+      '等待任务数': 0,
+      '父任务ID': ''
     }
   ]
 }

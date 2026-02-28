@@ -109,7 +109,8 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         logs: taskData.logs || [], // 任务执行日志
         stats: taskData.stats || this.calculateTaskStats([]), // 统计数据
         waitFor: taskData.waitFor || [], // 等待的任务ID数组
-        parentTaskId: taskData.parentTaskId || null // 父任务ID（AI拆分）
+        parentTaskId: taskData.parentTaskId || null, // 父任务ID（AI拆分）
+        aiSummary: taskData.aiSummary || null // AI生成的任务总结
       }
       this.tasks.push(task)
       await this.saveTasks()

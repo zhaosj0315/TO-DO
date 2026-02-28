@@ -402,16 +402,157 @@ const steps = [
     description: `
       <strong>智能提醒</strong>：逾期提醒、1小时预警<br>
       <strong>自动备份</strong>：定期自动备份数据<br>
-      <strong>数据报告</strong>：日报、周报、月报、年报<br>
       <strong>离线运行</strong>：无需网络，数据本地存储<br>
       <strong>多用户隔离</strong>：每个用户的数据完全独立<br>
       <br>
-      💡 更多功能等你探索！
+      💡 接下来介绍更多高级功能！
     `,
     position: 'center',
     category: 'intro'
   },
-  // 22. 完成页
+  // 22. AI智能问答
+  {
+    target: '.btn-ai-chat',
+    icon: '🤖',
+    title: 'AI智能问答助手',
+    description: `
+      <strong>功能</strong>：用自然语言询问任务相关问题<br>
+      <strong>快捷问题</strong>：<br>
+      • 今天完成了哪些任务？<br>
+      • 本周工作情况如何？<br>
+      • 有哪些高优先级任务？<br>
+      <br>
+      💡 AI可以访问所有任务数据，提供智能分析和建议
+    `,
+    position: 'bottom-left',
+    category: 'advanced'
+  },
+  // 23. AI主动式助手
+  {
+    target: '.btn-avatar',
+    icon: '🌅',
+    title: 'AI主动式助手',
+    description: `
+      <strong>智能提醒卡片</strong>：自动检测逾期和待办任务<br>
+      <strong>每日智能总结</strong>：每日工作总结+AI建议<br>
+      <strong>报告生成器</strong>：周报/月报/季报/年报<br>
+      <br>
+      💡 点击个人中心 → 今日规划，查看AI助手
+    `,
+    position: 'bottom-left',
+    category: 'advanced'
+  },
+  // 24. 任务依赖关系
+  {
+    target: '.task-list',
+    icon: '🔗',
+    title: '任务依赖关系',
+    description: `
+      <strong>功能</strong>：设置任务之间的依赖关系<br>
+      <strong>操作</strong>：<br>
+      1. 打开任务详情页<br>
+      2. 点击"设置等待任务"<br>
+      3. 选择需要等待的任务<br>
+      <br>
+      💡 等待中的任务会显示 🔒 徽章
+    `,
+    position: 'bottom',
+    category: 'advanced'
+  },
+  // 25. 拍照OCR识别
+  {
+    target: '.btn-camera',
+    icon: '📷',
+    title: '拍照识别文字（OCR）',
+    description: `
+      <strong>功能</strong>：拍照识别文字，自动创建任务<br>
+      <strong>操作</strong>：<br>
+      1. 点击任务输入框旁的 📷 按钮<br>
+      2. 拍摄包含文字的照片<br>
+      3. AI自动识别并填充任务信息<br>
+      <br>
+      💡 支持中英文混合识别，离线运行
+    `,
+    position: 'bottom',
+    category: 'advanced'
+  },
+  // 26. 文本选中提取
+  {
+    target: 'body',
+    icon: '🎯',
+    title: '文本选中提取任务',
+    description: `
+      <strong>功能</strong>：从任意文本中提取任务<br>
+      <strong>操作</strong>：<br>
+      1. 选中任意文本（任务描述、邮件内容等）<br>
+      2. 点击弹出菜单中的"提取任务"<br>
+      3. AI自动分析并提取任务信息<br>
+      <br>
+      💡 支持批量提取多个任务
+    `,
+    position: 'center',
+    category: 'advanced'
+  },
+  // 27. 高级筛选优化
+  {
+    target: '.filter-card',
+    icon: '🎛️',
+    title: '高级筛选功能（全面升级）',
+    description: `
+      <strong>快捷场景</strong>（一键直达）：<br>
+      • 今日待办、本周待办、今日逾期<br>
+      • 高优先级、工作任务、学习任务<br>
+      <br>
+      <strong>快捷日期</strong>（12个选项）：<br>
+      • 今天、昨天、本周、上周、本月、上月<br>
+      • 全部逾期、最近7天、最近30天<br>
+      <br>
+      <strong>时间维度</strong>：创建时间/截止时间/完成时间<br>
+      <br>
+      💡 操作步骤减少50%，筛选效率提升60%
+    `,
+    position: 'bottom',
+    category: 'advanced'
+  },
+  // 28. 报告功能
+  {
+    target: '.btn-avatar',
+    icon: '📊',
+    title: '数据报告功能（全面整合）',
+    description: `
+      <strong>7种报告类型</strong>：<br>
+      • 日报、周报、月报、季报、半年报、年报、自定义<br>
+      <br>
+      <strong>4种报告模板</strong>：<br>
+      • 工作报告：智能总结+关键工作+风险问题<br>
+      • 标准模板：统计数据+AI总结+任务列表<br>
+      • 详细模板：完整统计+图表分析<br>
+      • 简洁模板：核心数据+完成任务<br>
+      <br>
+      💡 28种组合，灵活选择
+    `,
+    position: 'bottom-left',
+    category: 'advanced'
+  },
+  // 29. AI任务拆分
+  {
+    target: '.task-list',
+    icon: '✂️',
+    title: 'AI智能任务拆分',
+    description: `
+      <strong>功能</strong>：将大任务拆分为可执行的子任务<br>
+      <strong>操作</strong>：<br>
+      1. 打开任务详情页<br>
+      2. 点击"AI拆分任务"<br>
+      3. 选择拆分模板（快速/详细/时间优先/优先级优先）<br>
+      4. AI自动生成子任务列表<br>
+      <br>
+      💡 子任务自动设置依赖关系和预估时长
+    `,
+    position: 'bottom',
+    category: 'advanced'
+  },
+  // 30. 完成页
   {
     target: null,
     icon: '🎉',
@@ -419,10 +560,13 @@ const steps = [
     description: `
       <strong>恭喜您已经掌握了 TO-DO App 的所有核心功能！</strong><br>
       <br>
-      现在开始：<br>
-      1. 创建您的第一个任务<br>
-      2. 添加执行日志记录进度<br>
-      3. 使用番茄钟专注工作<br>
+      <strong>核心功能回顾</strong>：<br>
+      ✅ 任务管理：创建、编辑、完成、删除<br>
+      ✅ 执行日志：6种日志类型，完整记录执行过程<br>
+      ✅ 番茄钟：25分钟专注计时<br>
+      ✅ AI助手：智能问答、主动提醒、报告生成<br>
+      ✅ 高级筛选：快捷场景、快捷日期、时间维度<br>
+      ✅ 数据报告：7种类型、4种模板、28种组合<br>
       <br>
       💡 随时点击右上角 💡 按钮重新查看教程
     `,

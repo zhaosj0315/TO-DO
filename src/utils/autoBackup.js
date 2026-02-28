@@ -60,7 +60,7 @@ async function getAllData() {
   
   // 3. 获取 localStorage 数据（AI相关）
   const localStorageKeys = [
-    'weekly_reports',      // AI周报历史
+    'weekly_reports',      // AI周报历史（包含所有报告类型）
     'ai_chat_list',        // AI对话历史
     'ai_models',           // AI模型配置
     'ai_default_model',    // 默认AI模型
@@ -137,16 +137,8 @@ export async function restoreBackup(fileName) {
     let backupData;
     
     if (platform === 'web') {
-      // Web端：从localStorage读取
-      const backupsStr = localStorage.getItem('backupFiles') || '[]';
-      const backups = JSON.parse(backupsStr);
-      const backup = backups.find(b => b.name === fileName);
-      
-      if (!backup || !backup.data) {
-        throw new Error('备份文件不存在');
-      }
-      
-      backupData = backup.data;
+      // Web端：提示用户手动上传备份文件
+      throw new Error('Web端请使用"导入备份文件"功能恢复数据');
     } else {
       // 移动端：从文件系统读取
       const { data } = await Filesystem.readFile({
@@ -227,20 +219,26 @@ export async function manualBackup() {
       jsonLink.click();
       URL.revokeObjectURL(jsonUrl);
       
-      // 同时保存到localStorage（用于恢复功能）
-      const backupsStr = localStorage.getItem('backupFiles') || '[]';
-      const backups = JSON.parse(backupsStr);
-      backups.push({
-        name: jsonFileName,
-        data: data,
-        timestamp: timestamp,
-        date: today
-      });
-      // 只保留最近10个备份
-      if (backups.length > 10) {
-        backups.shift();
+      // 同时保存到localStorage（仅保存文件名，用于显示历史）
+      try {
+        const backupsStr = localStorage.getItem('backupFiles') || '[]';
+        const backups = JSON.parse(backupsStr);
+        backups.push({
+          name: jsonFileName,
+          timestamp: timestamp,
+          date: today,
+          size: new Blob([jsonContent]).size // 只保存大小，不保存数据
+        });
+        // 只保留最近3个备份记录（减少存储占用）
+        if (backups.length > 3) {
+          backups.shift();
+        }
+        localStorage.setItem('backupFiles', JSON.stringify(backups));
+      } catch (quotaError) {
+        console.warn('localStorage配额不足，跳过备份记录保存:', quotaError);
+        // 清空旧备份记录
+        localStorage.removeItem('backupFiles');
       }
-      localStorage.setItem('backupFiles', JSON.stringify(backups));
       
       // 2. 下载 Excel 格式
       const { value: usersStr } = await Preferences.get({ key: 'users' });
