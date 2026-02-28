@@ -9451,7 +9451,7 @@ const handleRefresh = async () => {
   
   isRefreshing.value = true
   
-  // 重置所有筛选条件到初始状态
+  // 1. 重置所有筛选条件
   currentFilter.value = 'all'
   currentCategoryFilter.value = 'all'
   currentPriorityFilter.value = 'all'
@@ -9460,7 +9460,53 @@ const handleRefresh = async () => {
   endDate.value = ''
   currentPage.value = 1
   
-  // 重新加载数据
+  // 2. 清空输入框
+  newTaskText.value = ''
+  newTaskDescription.value = ''
+  
+  // 3. 重置任务表单属性到默认值
+  newTaskType.value = 'today'
+  newTaskCategory.value = 'work'
+  newTaskPriority.value = 'medium'
+  customDateTime.value = ''
+  selectedWeekdays.value = []
+  
+  // 4. 关闭所有弹窗
+  showTaskDetail.value = false
+  showTrash.value = false
+  showProfile.value = false
+  showPomodoroStats.value = false
+  showSupport.value = false
+  showAIConfig.value = false
+  showAIChat.value = false
+  showAIResult.value = false
+  showAISuggestion.value = false
+  showDailySummary.value = false
+  showAIReport.value = false
+  showTaskSplitter.value = false
+  showDataStats.value = false
+  showTextResult.value = false
+  showTaskPreview.value = false
+  showSubtaskPreview.value = false
+  showDailyPlan.value = false
+  showVersionModal.value = false
+  showFullscreenDesc.value = false
+  showPrivacyPolicy.value = false
+  showDataInfo.value = false
+  showUserGuide.value = false
+  showPomodoroRules.value = false
+  showWelcome.value = false
+  showBackupReminder.value = false
+  showNotificationGuide.value = false
+  showAllLogs.value = false
+  showAddLogModal.value = false
+  
+  // 5. 清空选中的任务
+  selectedTask.value = null
+  currentLogTask.value = null
+  taskToSplit.value = null
+  
+  // 6. 重新加载数据
   await taskStore.setCurrentUser(userStore.currentUser)
   await loadUserInfo()
   taskStore.checkOverdueTasks()
