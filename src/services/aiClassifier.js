@@ -1,3 +1,5 @@
+import { buildTaskExtractionPrompt, parseAIResponse, normalizeTaskData } from './aiPromptConfig'
+
 // AI 智能分类服务
 export class AIClassifier {
   static async classifyTask(title, description = '') {
@@ -15,7 +17,8 @@ export class AIClassifier {
       throw new Error('请先在个人主页配置AI模型')
     }
 
-    const prompt = this.buildPrompt(title, description)
+    const text = `标题：${title}\n描述：${description}`
+    const prompt = buildTaskExtractionPrompt(text, { mode: 'classify', includeReason: true })
     console.log('Generated prompt:', prompt)
     
     let apiUrl = model.url
@@ -58,25 +61,16 @@ export class AIClassifier {
 
     console.log('AI response:', generatedText)
 
-    // 解析 JSON 结果（增强容错）
     try {
-      let jsonText = generatedText.trim()
-      
-      // 移除可能的 markdown 代码块标记
-      jsonText = jsonText.replace(/```json\s*/g, '').replace(/```\s*/g, '')
-      
-      // 移除开头和结尾的非 JSON 字符
-      const jsonStart = jsonText.indexOf('{')
-      const jsonEnd = jsonText.lastIndexOf('}')
-      
-      if (jsonStart !== -1 && jsonEnd !== -1) {
-        jsonText = jsonText.substring(jsonStart, jsonEnd + 1)
-      }
-      
-      const classification = JSON.parse(jsonText)
+      const classification = parseAIResponse(generatedText, 'object')
       return {
         category: classification.category || 'life',
         priority: classification.priority || 'medium',
+        type: classification.type || 'today',
+        customDate: classification.customDate,
+        customTime: classification.customTime,
+        deadline: classification.deadline,
+        startTime: classification.startTime,
         reason: classification.reason || ''
       }
     } catch (e) {
@@ -85,33 +79,9 @@ export class AIClassifier {
       return {
         category: 'life',
         priority: 'medium',
+        type: 'today',
         reason: 'AI 分析失败，使用默认分类'
       }
     }
-  }
-
-  static buildPrompt(title, description) {
-    return `请分析以下任务，判断其分类和优先级。返回 JSON 格式，不要添加任何其他文字：
-
-{
-  "category": "work/study/life",
-  "priority": "high/medium/low",
-  "reason": "判断理由（简短说明）"
-}
-
-分类规则：
-- work（工作）：与工作、项目、会议、报告相关
-- study（学习）：与学习、培训、阅读、研究相关
-- life（生活）：与日常生活、家务、娱乐、健康相关
-
-优先级规则：
-- high（高）：紧急重要、有明确截止时间、影响重大
-- medium（中）：重要但不紧急、常规任务
-- low（低）：可延后、不紧急、琐碎事务
-
-任务标题：${title}
-${description ? `任务描述：${description}` : ''}
-
-请只返回 JSON 对象，不要添加任何解释文字。`
   }
 }

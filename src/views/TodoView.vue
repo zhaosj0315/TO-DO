@@ -4821,6 +4821,12 @@ const handleTaskInputBlur = () => {
     try {
       const classification = await AIClassifier.classifyTask(title, newTaskDescription.value)
       aiSuggestion.value = classification
+      
+      // 如果AI返回了时间信息，自动填充
+      if (classification.customDate && classification.customTime) {
+        // 不自动应用，只在建议中显示
+        aiSuggestion.value.hasTimeInfo = true
+      }
     } catch (error) {
       console.error('AI分类失败:', error)
       // 静默失败，不影响用户体验
@@ -4833,6 +4839,13 @@ const applySuggestion = () => {
   if (aiSuggestion.value) {
     newTaskCategory.value = aiSuggestion.value.category
     newTaskPriority.value = aiSuggestion.value.priority
+    
+    // 如果有时间信息，也应用
+    if (aiSuggestion.value.customDate && aiSuggestion.value.customTime) {
+      newTaskType.value = aiSuggestion.value.type || 'custom_date'
+      customDateTime.value = `${aiSuggestion.value.customDate}T${aiSuggestion.value.customTime}`
+    }
+    
     showNotification('✅ 已采纳 AI 建议', 'success')
     aiSuggestion.value = null
   }
@@ -5985,10 +5998,19 @@ const scanTextFromCamera = async () => {
         
         const enhanced = await AITextEnhancer.enhanceText(fullText)
         
-        // 填充到输入框
+        // 填充到输入框（包含所有AI提取的信息）
         newTaskText.value = enhanced.title
         newTaskDescription.value = enhanced.description
-        showNotification(`✨ AI 增强完成！`, 'success')
+        newTaskCategory.value = enhanced.category || 'life'
+        newTaskPriority.value = enhanced.priority || 'medium'
+        
+        // 如果AI提取了时间信息，自动设置
+        if (enhanced.customDate && enhanced.customTime) {
+          newTaskType.value = enhanced.type || 'custom_date'
+          customDateTime.value = `${enhanced.customDate}T${enhanced.customTime}`
+        }
+        
+        showNotification(`✨ AI 增强完成！已智能填充所有信息`, 'success')
       } catch (aiError) {
         console.error('AI 增强失败，使用原始文本:', aiError)
         // AI 失败时使用原始文本

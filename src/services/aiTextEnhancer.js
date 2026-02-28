@@ -1,3 +1,5 @@
+import { buildTaskExtractionPrompt, parseAIResponse, normalizeTaskData } from './aiPromptConfig'
+
 // AI 文本增强服务
 export class AITextEnhancer {
   /**
@@ -20,7 +22,7 @@ export class AITextEnhancer {
       throw new Error('请先在个人主页配置AI模型')
     }
 
-    const prompt = this.buildPrompt(rawText)
+    const prompt = buildTaskExtractionPrompt(rawText, { mode: 'enhance' })
     console.log('Generated prompt:', prompt)
     
     let apiUrl = model.url
@@ -63,31 +65,18 @@ export class AITextEnhancer {
 
     console.log('AI response:', generatedText)
 
-    // 解析 JSON 结果
     try {
-      let jsonText = generatedText.trim()
-      
-      // 移除可能的 markdown 代码块标记
-      jsonText = jsonText.replace(/```json\s*/g, '').replace(/```\s*/g, '')
-      
-      // 移除开头和结尾的非 JSON 字符
-      const jsonStart = jsonText.indexOf('{')
-      const jsonEnd = jsonText.lastIndexOf('}')
-      
-      if (jsonStart !== -1 && jsonEnd !== -1) {
-        jsonText = jsonText.substring(jsonStart, jsonEnd + 1)
-      }
-      
-      const enhanced = JSON.parse(jsonText)
-      
-      // 验证返回格式
-      if (!enhanced.title || !enhanced.description) {
-        throw new Error('AI 返回格式不完整')
-      }
+      const enhanced = parseAIResponse(generatedText, 'object')
+      const normalized = normalizeTaskData(enhanced)
       
       return {
-        title: enhanced.title.trim(),
-        description: enhanced.description.trim()
+        title: normalized.text,
+        description: normalized.description,
+        category: normalized.category,
+        priority: normalized.priority,
+        type: normalized.type,
+        customDate: normalized.customDate,
+        customTime: normalized.customTime
       }
     } catch (e) {
       console.error('Failed to parse AI response:', e)
@@ -97,32 +86,12 @@ export class AITextEnhancer {
       const lines = rawText.split('\n').filter(l => l.trim())
       return {
         title: lines[0] || rawText.substring(0, 50),
-        description: rawText
+        description: rawText,
+        category: 'life',
+        priority: 'medium',
+        type: 'today'
       }
     }
   }
-
-  static buildPrompt(rawText) {
-    return `你是一个文本增强助手。用户通过拍照OCR识别了一段文字，可能包含错别字、格式混乱等问题。请将这段文字整理成一个清晰的任务。
-
-重要：你必须只返回一个有效的 JSON 对象，不要添加任何其他文字、解释、markdown 标记或代码块标记。
-
-JSON 格式：
-{
-  "title": "任务标题（10-30字，简洁明了）",
-  "description": "任务描述（详细说明，保留关键信息）"
 }
 
-处理规则：
-1. 纠正明显的错别字和OCR识别错误
-2. 提取核心内容作为标题
-3. 保留所有关键信息到描述中
-4. 如果文本很短，标题和描述可以相同
-5. 如果文本包含多个要点，在描述中分点列出
-
-原始OCR文本：
-${rawText}
-
-记住：只返回 JSON 对象，不要添加任何其他内容。`
-  }
-}
