@@ -15,7 +15,13 @@
       
       <div class="report-body" ref="reportContent">
         <!-- 报告类型选择（仅在未指定类型时显示） -->
-        <div v-if="!initialReportType || initialReportType === 'weekly' || initialReportType === 'monthly'" class="report-type-selector">
+        <div v-if="!initialReportType" class="report-type-selector">
+          <button 
+            :class="['type-btn', { active: reportType === 'daily' }]"
+            @click="reportType = 'daily'; generateReport()"
+          >
+            日报
+          </button>
           <button 
             :class="['type-btn', { active: reportType === 'weekly' }]"
             @click="reportType = 'weekly'; generateReport()"
@@ -27,6 +33,24 @@
             @click="reportType = 'monthly'; generateReport()"
           >
             月报
+          </button>
+          <button 
+            :class="['type-btn', { active: reportType === 'quarterly' }]"
+            @click="reportType = 'quarterly'; generateReport()"
+          >
+            季报
+          </button>
+          <button 
+            :class="['type-btn', { active: reportType === 'halfyearly' }]"
+            @click="reportType = 'halfyearly'; generateReport()"
+          >
+            半年报
+          </button>
+          <button 
+            :class="['type-btn', { active: reportType === 'yearly' }]"
+            @click="reportType = 'yearly'; generateReport()"
+          >
+            年报
           </button>
         </div>
 
@@ -156,11 +180,13 @@ const generating = ref(false)
 
 const reportTitle = computed(() => {
   const titles = {
-    weekly: '📊 周报',
+    daily: '📝 日报',
+    weekly: '📅 周报',
     monthly: '📊 月报',
-    quarterly: '📊 季报',
-    yearly: '📊 年报',
-    custom: '📊 自定义报告'
+    quarterly: '📈 季报',
+    halfyearly: '📆 半年报',
+    yearly: '🎯 年报',
+    custom: '⚙️ 自定义报告'
   }
   return titles[reportType.value] || '📊 报告'
 })
@@ -176,7 +202,22 @@ const generateReport = async () => {
     const generator = new AIReportGenerator(props.tasks)
     const now = new Date()
     
-    if (reportType.value === 'weekly') {
+    if (reportType.value === 'daily') {
+      // 日报：今天
+      const dayStart = new Date(now)
+      dayStart.setHours(0, 0, 0, 0)
+      const dayEnd = new Date(now)
+      dayEnd.setHours(23, 59, 59, 999)
+      
+      // 过滤今日完成的任务
+      const dayCompletedTasks = props.tasks.filter(t => {
+        if (t.status !== 'completed' || !t.completed_at) return false
+        const completedDate = new Date(t.completed_at)
+        return completedDate >= dayStart && completedDate <= dayEnd
+      })
+      
+      report.value = generator.generateWeeklyReport(dayStart, dayEnd, dayCompletedTasks)
+    } else if (reportType.value === 'weekly') {
       // 计算本周时间范围
       const weekStart = new Date(now)
       weekStart.setDate(now.getDate() - now.getDay())
@@ -202,6 +243,13 @@ const generateReport = async () => {
       const quarterEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
       quarterEnd.setHours(23, 59, 59, 999)
       report.value = generator.generateReport(quarterStart, quarterEnd, 'quarterly')
+    } else if (reportType.value === 'halfyearly') {
+      // 半年报：最近6个月
+      const halfYearStart = new Date(now.getFullYear(), now.getMonth() - 5, 1)
+      halfYearStart.setHours(0, 0, 0, 0)
+      const halfYearEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+      halfYearEnd.setHours(23, 59, 59, 999)
+      report.value = generator.generateReport(halfYearStart, halfYearEnd, 'halfyearly')
     } else if (reportType.value === 'yearly') {
       // 年报：今年1月1日到现在
       const yearStart = new Date(now.getFullYear(), 0, 1)

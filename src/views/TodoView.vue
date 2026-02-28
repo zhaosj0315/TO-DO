@@ -4957,26 +4957,45 @@ const currentTemplate = ref(null) // 当前查看/编辑的模板
 
 // 自定义报告配置
 const customReportConfig = ref({
-  type: 'weekly', // weekly, monthly, quarterly, yearly, custom
+  type: 'weekly', // daily, weekly, monthly, quarterly, halfyearly, yearly, custom
   startDate: '',
   endDate: '',
   includeStats: true,
   includeCharts: true,
   includeAISummary: true,
-  template: 'standard' // standard, detailed, simple
+  template: 'standard' // work, standard, detailed, simple
 })
 
 // 报告类型选项
 const reportTypes = [
+  { value: 'daily', label: '日报', icon: '📝', desc: '今日工作总结' },
   { value: 'weekly', label: '周报', icon: '📅', desc: '本周工作总结' },
   { value: 'monthly', label: '月报', icon: '📊', desc: '本月工作总结' },
   { value: 'quarterly', label: '季报', icon: '📈', desc: '本季度工作总结' },
+  { value: 'halfyearly', label: '半年报', icon: '📆', desc: '半年工作总结' },
   { value: 'yearly', label: '年报', icon: '🎯', desc: '全年工作总结' },
   { value: 'custom', label: '自定义', icon: '⚙️', desc: '自选时间范围' }
 ]
 
 // 报告模板选项
 const reportTemplates = ref([
+  { 
+    value: 'work', 
+    label: '工作报告', 
+    icon: '💼', 
+    desc: '完整工作汇报，适用于所有时间维度',
+    features: ['智能总结', '分类统计', '进度追踪', '风险预警'],
+    sections: [
+      { key: 'summary', label: '📝 智能总结', enabled: true },
+      { key: 'overview', label: '📊 数据概览', enabled: true },
+      { key: 'previousCompleted', label: '✅ 上期完成', enabled: true },
+      { key: 'currentGoals', label: '🎯 本期目标', enabled: true },
+      { key: 'currentProgress', label: '📈 本期进展', enabled: true },
+      { key: 'keyWorks', label: '⭐ 关键工作', enabled: true },
+      { key: 'nextPlan', label: '🔜 下期计划', enabled: true },
+      { key: 'risks', label: '⚠️ 风险与问题', enabled: true }
+    ]
+  },
   { 
     value: 'standard', 
     label: '标准模板', 
