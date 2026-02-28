@@ -6,6 +6,13 @@
         <button class="close-btn" @click="$emit('close')">✕</button>
       </div>
       
+      <!-- 加载动画 -->
+      <LoadingSpinner
+        :visible="generating"
+        text="正在生成报告..."
+        subText="分析任务数据中"
+      />
+      
       <div class="report-body" ref="reportContent">
         <!-- 报告类型选择（仅在未指定类型时显示） -->
         <div v-if="!initialReportType || initialReportType === 'weekly' || initialReportType === 'monthly'" class="report-type-selector">
@@ -122,6 +129,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { AIReportGenerator } from '@/services/aiReportGenerator'
+import LoadingSpinner from './LoadingSpinner.vue'
 
 const props = defineProps({
   visible: Boolean,
@@ -144,6 +152,7 @@ const emit = defineEmits(['close'])
 const reportType = ref('weekly')
 const report = ref(null)
 const reportContent = ref(null)
+const generating = ref(false)
 
 const reportTitle = computed(() => {
   const titles = {
@@ -157,50 +166,59 @@ const reportTitle = computed(() => {
 })
 
 // 生成报告
-const generateReport = () => {
-  const generator = new AIReportGenerator(props.tasks)
-  const now = new Date()
+const generateReport = async () => {
+  generating.value = true
   
-  if (reportType.value === 'weekly') {
-    // 计算本周时间范围
-    const weekStart = new Date(now)
-    weekStart.setDate(now.getDate() - now.getDay())
-    weekStart.setHours(0, 0, 0, 0)
-    const weekEnd = new Date(weekStart)
-    weekEnd.setDate(weekStart.getDate() + 6)
-    weekEnd.setHours(23, 59, 59, 999)
+  // 让UI有时间显示loading
+  await new Promise(resolve => setTimeout(resolve, 100))
+  
+  try {
+    const generator = new AIReportGenerator(props.tasks)
+    const now = new Date()
     
-    // 过滤本周完成的任务
-    const weekCompletedTasks = props.tasks.filter(t => {
-      if (t.status !== 'completed' || !t.completed_at) return false
-      const completedDate = new Date(t.completed_at)
-      return completedDate >= weekStart && completedDate <= weekEnd
-    })
-    
-    report.value = generator.generateWeeklyReport(weekStart, weekEnd, weekCompletedTasks)
-  } else if (reportType.value === 'monthly') {
-    report.value = generator.generateMonthlyReport()
-  } else if (reportType.value === 'quarterly') {
-    // 季报：最近3个月
-    const quarterStart = new Date(now.getFullYear(), now.getMonth() - 2, 1)
-    quarterStart.setHours(0, 0, 0, 0)
-    const quarterEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-    quarterEnd.setHours(23, 59, 59, 999)
-    report.value = generator.generateReport(quarterStart, quarterEnd, 'quarterly')
-  } else if (reportType.value === 'yearly') {
-    // 年报：今年1月1日到现在
-    const yearStart = new Date(now.getFullYear(), 0, 1)
-    yearStart.setHours(0, 0, 0, 0)
-    const yearEnd = new Date(now)
-    yearEnd.setHours(23, 59, 59, 999)
-    report.value = generator.generateReport(yearStart, yearEnd, 'yearly')
-  } else if (reportType.value === 'custom' && props.customDateRange) {
-    // 自定义日期范围
-    const customStart = new Date(props.customDateRange.startDate)
-    customStart.setHours(0, 0, 0, 0)
-    const customEnd = new Date(props.customDateRange.endDate)
-    customEnd.setHours(23, 59, 59, 999)
-    report.value = generator.generateReport(customStart, customEnd, 'custom')
+    if (reportType.value === 'weekly') {
+      // 计算本周时间范围
+      const weekStart = new Date(now)
+      weekStart.setDate(now.getDate() - now.getDay())
+      weekStart.setHours(0, 0, 0, 0)
+      const weekEnd = new Date(weekStart)
+      weekEnd.setDate(weekStart.getDate() + 6)
+      weekEnd.setHours(23, 59, 59, 999)
+      
+      // 过滤本周完成的任务
+      const weekCompletedTasks = props.tasks.filter(t => {
+        if (t.status !== 'completed' || !t.completed_at) return false
+        const completedDate = new Date(t.completed_at)
+        return completedDate >= weekStart && completedDate <= weekEnd
+      })
+      
+      report.value = generator.generateWeeklyReport(weekStart, weekEnd, weekCompletedTasks)
+    } else if (reportType.value === 'monthly') {
+      report.value = generator.generateMonthlyReport()
+    } else if (reportType.value === 'quarterly') {
+      // 季报：最近3个月
+      const quarterStart = new Date(now.getFullYear(), now.getMonth() - 2, 1)
+      quarterStart.setHours(0, 0, 0, 0)
+      const quarterEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+      quarterEnd.setHours(23, 59, 59, 999)
+      report.value = generator.generateReport(quarterStart, quarterEnd, 'quarterly')
+    } else if (reportType.value === 'yearly') {
+      // 年报：今年1月1日到现在
+      const yearStart = new Date(now.getFullYear(), 0, 1)
+      yearStart.setHours(0, 0, 0, 0)
+      const yearEnd = new Date(now)
+      yearEnd.setHours(23, 59, 59, 999)
+      report.value = generator.generateReport(yearStart, yearEnd, 'yearly')
+    } else if (reportType.value === 'custom' && props.customDateRange) {
+      // 自定义日期范围
+      const customStart = new Date(props.customDateRange.startDate)
+      customStart.setHours(0, 0, 0, 0)
+      const customEnd = new Date(props.customDateRange.endDate)
+      customEnd.setHours(23, 59, 59, 999)
+      report.value = generator.generateReport(customStart, customEnd, 'custom')
+    }
+  } finally {
+    generating.value = false
   }
 }
 

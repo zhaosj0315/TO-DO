@@ -6,7 +6,14 @@
         <button class="close-btn" @click="$emit('close')">✕</button>
       </div>
       
-      <div class="summary-body">
+      <!-- 加载动画 -->
+      <LoadingSpinner
+        :visible="loading"
+        text="正在生成总结..."
+        subText="统计今日数据"
+      />
+      
+      <div v-if="!loading" class="summary-body">
         <!-- 数据统计 -->
         <div class="stats-grid">
           <div class="stat-item">
@@ -75,6 +82,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useOfflineTaskStore } from '@/stores/offlineTaskStore'
+import LoadingSpinner from './LoadingSpinner.vue'
 
 const props = defineProps({
   visible: Boolean
@@ -83,6 +91,7 @@ const props = defineProps({
 const emit = defineEmits(['close', 'generate-report'])
 
 const taskStore = useOfflineTaskStore()
+const loading = ref(false)
 const summary = ref({
   completed: 0,
   overdue: 0,
@@ -94,10 +103,16 @@ const summary = ref({
 })
 
 // 生成每日总结
-const generateSummary = () => {
-  const tasks = taskStore.tasks
-  const now = new Date()
-  const today = now.toDateString()
+const generateSummary = async () => {
+  loading.value = true
+  
+  // 让UI有时间显示loading
+  await new Promise(resolve => setTimeout(resolve, 100))
+  
+  try {
+    const tasks = taskStore.tasks
+    const now = new Date()
+    const today = now.toDateString()
   
   // 今日完成的任务
   const completedToday = tasks.filter(task => {
@@ -151,6 +166,9 @@ const generateSummary = () => {
     tomorrowTasks,
     aiInsight
   }
+  } finally {
+    loading.value = false
+  }
 }
 
 // 生成 AI 建议
@@ -190,8 +208,8 @@ const generateWeeklyReport = () => {
   emit('close')
 }
 
-onMounted(() => {
-  generateSummary()
+onMounted(async () => {
+  await generateSummary()
 })
 </script>
 

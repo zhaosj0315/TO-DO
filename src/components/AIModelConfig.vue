@@ -8,6 +8,13 @@
         <h3>🤖 AI模型配置</h3>
         <div style="width: 80px;"></div>
       </div>
+    
+    <!-- 加载动画 -->
+    <LoadingSpinner
+      :visible="fetchingModels || testing || testingAll"
+      :text="loadingText"
+      :subText="loadingSubText"
+    />
 
       <div class="modal-body">
         <!-- 1. 添加模型（最重要，放最上面） -->
@@ -208,6 +215,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import LoadingSpinner from './LoadingSpinner.vue'
 
 const props = defineProps({
   visible: Boolean
@@ -302,6 +310,26 @@ const getProviderLabel = (config) => {
 const availableModels = ref([])
 const fetchingModels = ref(false)
 const fetchError = ref('')
+
+// 测试状态
+const testing = ref(false)
+const testResult = ref(null)
+const testingAll = ref(false)
+
+// 加载文本
+const loadingText = computed(() => {
+  if (fetchingModels.value) return '正在获取模型列表...'
+  if (testing.value) return '正在测试连接...'
+  if (testingAll.value) return '正在测试所有模型...'
+  return 'AI 处理中...'
+})
+
+const loadingSubText = computed(() => {
+  if (fetchingModels.value) return '请稍候'
+  if (testing.value) return '验证API可用性'
+  if (testingAll.value) return '这可能需要一些时间'
+  return ''
+})
 
 // 监听模型选择，自动填充名称（格式：厂商 - 模型名）
 watch(() => newModel.value.modelName, (modelName) => {
@@ -468,11 +496,6 @@ const fetchAvailableModels = async () => {
     fetchingModels.value = false
   }
 }
-
-// 测试连接
-const testing = ref(false)
-const testResult = ref(null)
-const testingAll = ref(false)
 
 // 获取状态图标
 const getStatusIcon = (status) => {
