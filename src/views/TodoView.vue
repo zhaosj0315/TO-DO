@@ -93,24 +93,30 @@
           </div>
         </div>
 
-        <!-- 添加任务表单 - 两行布局 -->
-        <div v-if="showAddForm" class="add-form-two-row">
-          <!-- 第一行：任务名称 + AI按钮 + 拍照按钮 -->
-          <div class="add-form-row-main">
+        <!-- 添加任务表单 - 统一输入框 -->
+        <div v-if="showAddForm" class="add-form-unified">
+          <!-- 统一输入框：单行输入 + 三个按钮 -->
+          <div class="unified-input-container">
             <input 
-              type="text" 
-              v-model="newTaskText" 
-              class="task-input-main"
-              :placeholder="t('addTaskPlaceholder')"
+              type="text"
+              :value="displayInputValue"
+              @input="handleInputChange"
+              class="quick-task-input"
+              :class="{ 'has-description': tempDescription }"
+              placeholder="输入任务标题（点击 ⛶ 可添加详细描述）"
               @keyup.enter="addTask"
-              @blur="handleTaskInputBlur"
-            >
-            <button class="btn-ai-assist" @click="triggerAIAssist" :title="t('aiAssist')" :disabled="aiLoading">
-              {{ aiLoading ? '⏳' : '🤖' }}
-            </button>
-            <button class="btn-camera" @click="scanTextFromCamera" :title="t('scanText')">
-              📷
-            </button>
+            />
+            <div class="quick-buttons">
+              <button class="btn-ai" @click="triggerAIAssist" :title="t('aiAssist')" :disabled="aiLoading">
+                {{ aiLoading ? '⏳' : '🤖' }}
+              </button>
+              <button class="btn-camera" @click="scanTextFromCamera" :title="t('scanText')">
+                📷
+              </button>
+              <button class="btn-expand" @click="openFullscreenDesc" title="展开编辑">
+                ⛶
+              </button>
+            </div>
           </div>
 
           <!-- AI 建议气泡 -->
@@ -127,27 +133,9 @@
             </div>
           </div>
 
-          <!-- 只有输入任务名称后才显示以下部分 -->
-          <template v-if="newTaskText.trim()">
-            <!-- 任务描述（可选） -->
-            <div class="add-form-row-desc">
-              <div class="textarea-with-ai">
-                <textarea 
-                  v-model="newTaskDescription" 
-                  class="task-textarea-desc"
-                  placeholder="📝 任务描述（可选）..."
-                  rows="2"
-                ></textarea>
-                <button class="btn-ai-desc" @click="generateDescription" :title="t('aiGenerateDesc')" :disabled="aiLoading">
-                  {{ aiLoading ? '⏳' : '🤖' }}
-                </button>
-                <button class="btn-fullscreen-desc" @click="openFullscreenDesc" title="全屏编辑">
-                  ⛶
-                </button>
-              </div>
-            </div>
-
-            <!-- 第二行：属性配置 -->
+          <!-- 只有输入任务名称后才显示属性配置 -->
+          <template v-if="quickTaskInput.trim()">
+            <!-- 属性配置 -->
             <div class="add-form-row-attrs">
               <!-- 日期类型 -->
               <div class="attr-group">
@@ -277,27 +265,11 @@
                 v-if="task.description" 
                 class="task-description"
                 :class="{
-                  'description-collapsed': !expandedDescriptions.has(task.id) && task.description.length > 180,
                   'description-completed': task.status === 'completed',
                   [`description-priority-${task.priority}`]: true
                 }"
-                :title="task.description.length > 180 ? '点击查看详情' : ''"
               >
                 {{ task.description }}
-                <span 
-                  v-if="!expandedDescriptions.has(task.id) && task.description.length > 180" 
-                  class="expand-btn"
-                  @click.stop="toggleDescription(task.id)"
-                >
-                  ...展开
-                </span>
-                <span 
-                  v-if="expandedDescriptions.has(task.id) && task.description.length > 180" 
-                  class="expand-btn"
-                  @click.stop="toggleDescription(task.id)"
-                >
-                  收起
-                </span>
               </div>
               <div class="task-meta">
                 <!-- 父任务（AI拆分） -->
@@ -2217,7 +2189,7 @@
         <!-- 顶层：导航栏 -->
         <div class="nav-bar">
           <button class="nav-btn-text" @click="closeFullscreenDesc">取消</button>
-          <div class="task-name-center">{{ newTaskText || '新任务' }}</div>
+          <div class="task-name-center">{{ quickTaskInput || '新任务' }}</div>
           <button class="nav-btn-primary" @click="closeFullscreenDesc">完成</button>
         </div>
         
@@ -2237,7 +2209,7 @@
         <textarea
           v-model="newTaskDescription"
           class="fullscreen-desc-textarea"
-          :placeholder="getPlaceholder()"
+          placeholder="输入任务描述（可选）..."
           autofocus
         ></textarea>
       </div>
@@ -3897,6 +3869,11 @@ const POMODORO_CONFIG = {
 // 响应式数据
 const newTaskText = ref('')
 const newTaskDescription = ref('')
+
+// 🆕 统一输入框相关
+const quickTaskInput = ref('')  // 单行输入框内容（标题）
+const tempDescription = ref('')  // 临时保存的描述
+
 const newTaskType = ref('today')
 const customDateTime = ref('')
 const newTaskCategory = ref('work')
@@ -4545,6 +4522,14 @@ const descEditStartTime = ref(null)
 const descEditDuration = ref(0)
 let descEditTimer = null
 
+// 🆕 统一输入框计算属性
+const displayInputValue = computed(() => {
+  if (tempDescription.value) {
+    return `${quickTaskInput.value}...`  // 有描述时显示 "标题..."
+  }
+  return quickTaskInput.value  // 无描述时只显示标题
+})
+
 const currentDateTime = computed(() => {
   const now = new Date()
   const year = now.getFullYear()
@@ -4561,6 +4546,15 @@ const descEditTime = computed(() => {
   const minutes = Math.floor(seconds / 60)
   return `编辑 ${minutes} 分钟`
 })
+
+// 🆕 处理输入框变化（用户直接编辑时）
+const handleInputChange = (event) => {
+  quickTaskInput.value = event.target.value.replace('...', '')  // 移除三个点
+  // 如果用户直接编辑，清空描述
+  if (tempDescription.value && !event.target.value.endsWith('...')) {
+    tempDescription.value = ''
+  }
+}
 
 // 字数提示
 const getWordCountHint = () => {
@@ -4585,6 +4579,9 @@ const openFullscreenDesc = () => {
   descEditStartTime.value = Date.now()
   descEditDuration.value = 0
   
+  // 🆕 只加载描述到编辑器（标题固定显示，不可编辑）
+  newTaskDescription.value = tempDescription.value
+  
   // 每秒更新编辑时长
   descEditTimer = setInterval(() => {
     descEditDuration.value = Math.floor((Date.now() - descEditStartTime.value) / 1000)
@@ -4592,6 +4589,9 @@ const openFullscreenDesc = () => {
 }
 
 const closeFullscreenDesc = () => {
+  // 🆕 只保存描述（标题不变）
+  tempDescription.value = newTaskDescription.value.trim()
+  
   showFullscreenDesc.value = false
   if (descEditTimer) {
     clearInterval(descEditTimer)
@@ -4787,7 +4787,8 @@ const generateDailyPlan = async () => {
 
 // AI 写作助手 - 智能提取任务信息
 const triggerAIAssist = async () => {
-  const inputText = newTaskText.value.trim()
+  // 🆕 使用统一输入框的值
+  const inputText = quickTaskInput.value.trim()
   
   if (!inputText) {
     alert('请先输入文本或关键词')
@@ -4807,8 +4808,8 @@ const triggerAIAssist = async () => {
       if (tasks.length > 0) {
         // 使用第一个提取的任务填充表单
         const task = tasks[0]
-        newTaskText.value = task.title
-        newTaskDescription.value = task.description || ''
+        quickTaskInput.value = task.title  // 🆕 更新统一输入框
+        tempDescription.value = task.description || ''  // 🆕 更新临时描述
         newTaskCategory.value = task.category || 'life'
         newTaskPriority.value = task.priority || 'medium'
         
@@ -4822,13 +4823,13 @@ const triggerAIAssist = async () => {
       } else {
         // 没有提取到任务，使用生成模式
         const generatedTitle = await AITaskGenerator.generateTask(inputText)
-        newTaskText.value = generatedTitle
+        quickTaskInput.value = generatedTitle  // 🆕 更新统一输入框
         showNotification('✨ AI 已生成任务标题', 'success')
       }
     } else {
       // 短文本使用生成模式
       const generatedTitle = await AITaskGenerator.generateTask(inputText)
-      newTaskText.value = generatedTitle
+      quickTaskInput.value = generatedTitle  // 🆕 更新统一输入框
       showNotification('✨ AI 已生成任务标题', 'success')
     }
   } catch (error) {
@@ -5103,9 +5104,6 @@ const useTemplate = (templateValue) => {
   showCustomReportModal.value = true
   showNotification(`已选择${reportTemplates.value.find(t => t.value === templateValue)?.label}`, 'success')
 }
-
-// 任务描述展开状态
-const expandedDescriptions = ref(new Set())
 
 // 番茄钟状态
 const pomodoroState = ref({
@@ -6189,9 +6187,9 @@ const scanTextFromCamera = async () => {
         
         const enhanced = await AITextEnhancer.enhanceText(fullText)
         
-        // 填充到输入框（包含所有AI提取的信息）
-        newTaskText.value = enhanced.title
-        newTaskDescription.value = enhanced.description
+        // 🆕 填充到统一输入框
+        quickTaskInput.value = enhanced.title
+        tempDescription.value = enhanced.description
         newTaskCategory.value = enhanced.category || 'life'
         newTaskPriority.value = enhanced.priority || 'medium'
         
@@ -6204,9 +6202,9 @@ const scanTextFromCamera = async () => {
         showNotification(`✨ AI 增强完成！已智能填充所有信息`, 'success')
       } catch (aiError) {
         console.error('AI 增强失败，使用原始文本:', aiError)
-        // AI 失败时使用原始文本
-        newTaskText.value = lines[0]
-        newTaskDescription.value = fullText
+        // 🆕 AI 失败时使用原始文本
+        quickTaskInput.value = lines[0]
+        tempDescription.value = fullText
         showNotification(`识别成功！标题+${lines.length}行完整内容`, 'success')
       }
     } else {
@@ -6227,7 +6225,14 @@ const scanTextFromCamera = async () => {
 
 // 方法：添加任务
 const addTask = async () => {
-  if (!newTaskText.value.trim()) return
+  // 🆕 使用统一输入框的值
+  const title = quickTaskInput.value.trim()
+  const description = tempDescription.value.trim()
+  
+  if (!title) {
+    showNotification('请输入任务标题！', 'error')
+    return
+  }
   
   // 验证指定日期
   if (newTaskType.value === 'custom_date' && !customDateTime.value) {
@@ -6251,8 +6256,8 @@ const addTask = async () => {
   }
   
   const task = {
-    text: newTaskText.value.trim(),
-    description: newTaskDescription.value.trim(),
+    text: title,  // 🆕 使用统一输入框的标题
+    description: description,  // 🆕 使用临时保存的描述
     type: newTaskType.value,
     category: newTaskCategory.value,
     priority: newTaskPriority.value,
@@ -6282,7 +6287,11 @@ const addTask = async () => {
     console.log('⚠️ 未启用提醒或未设置时间')
   }
   
-  // 清空输入
+  // 🆕 清空统一输入框
+  quickTaskInput.value = ''
+  tempDescription.value = ''
+  
+  // 清空其他输入
   newTaskText.value = ''
   newTaskDescription.value = ''
   newTaskType.value = 'today'
@@ -6602,14 +6611,6 @@ const clearAllTasks = async () => {
 
 // 方法：打开编辑模态框
 // 切换描述展开/收起
-const toggleDescription = (taskId) => {
-  if (expandedDescriptions.value.has(taskId)) {
-    expandedDescriptions.value.delete(taskId)
-  } else {
-    expandedDescriptions.value.add(taskId)
-  }
-}
-
 const openEditModal = (task) => {
   editingTask.value = { ...task }
   editText.value = task.text
@@ -11880,14 +11881,6 @@ watch(() => reportData.value, (newData) => {
   position: relative;
 }
 
-/* 折叠状态 */
-.task-description.description-collapsed {
-  max-height: 3.2em; /* 约2行 */
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 /* 已完成任务的描述 */
 .task-description.description-completed {
   opacity: 0.5;
@@ -11910,19 +11903,6 @@ watch(() => reportData.value, (newData) => {
 .task-description:hover {
   background: rgba(0, 0, 0, 0.04);
   border-left-width: 4px;
-}
-
-/* 展开/收起按钮 */
-.expand-btn {
-  color: #667eea;
-  font-weight: 600;
-  margin-left: 8px;
-  font-size: 0.7rem;
-  white-space: nowrap;
-}
-
-.expand-btn:hover {
-  text-decoration: underline;
 }
 
 .task-meta {
@@ -15758,6 +15738,88 @@ watch(() => reportData.value, (newData) => {
   border: none;
 }
 
+/* 🆕 统一输入框样式 */
+.add-form-unified {
+  margin-top: 0;
+  margin-bottom: 0.2rem !important;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  border: none;
+}
+
+.unified-input-container {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.quick-task-input {
+  flex: 1;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+/* 占位符样式 */
+.quick-task-input::placeholder {
+  color: #999;
+  font-size: 0.85rem;
+}
+
+/* 有描述时的样式（三个点提示） */
+.quick-task-input.has-description {
+  color: #667eea;
+  font-weight: 500;
+}
+
+.quick-task-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.quick-buttons {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.quick-buttons button {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quick-buttons button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.quick-buttons button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.quick-buttons button:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
 /* 第一行：主输入区 - 去掉外层卡片，让输入框直接呼吸 */
 .add-form-row-main {
   display: flex;
@@ -16001,6 +16063,17 @@ watch(() => reportData.value, (newData) => {
 
 .nav-btn-primary:active {
   opacity: 0.4;
+}
+
+/* 🆕 任务标题显示区（固定，不可编辑） */
+.task-title-display {
+  padding: 1rem 1.5rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #000;
+  text-align: center;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+  border-bottom: 1px solid #f0f0f0;
 }
 
 /* 中层：状态栏 */
