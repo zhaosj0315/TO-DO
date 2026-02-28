@@ -220,18 +220,18 @@ const getCategoryText = (category) => {
   justify-content: center;
   z-index: 2000;
   animation: fadeIn 0.2s;
+  padding: 0;
 }
 
 .bottom-sheet {
-  width: 96%;
-  max-width: 600px;
+  width: 100%;
   max-height: 85vh;
   background: white;
   border-radius: 16px 16px 0 0;
   animation: slideUp 0.3s;
   display: flex;
   flex-direction: column;
-  margin-bottom: 0;
+  margin: 0;
 }
 
 @keyframes fadeIn {

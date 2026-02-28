@@ -250,31 +250,35 @@ watch(() => props.visible, (newVal) => {
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   z-index: 10005;
-  backdrop-filter: blur(8px);
+  padding: 0;
+  animation: fadeIn 0.2s;
 }
 
 .splitter-container {
   background: white;
-  border-radius: 16px;
-  width: 96%;
-  max-width: 700px;
-  max-height: 90vh;
+  border-radius: 16px 16px 0 0;
+  width: 100%;
+  max-height: 85vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
   animation: slideUp 0.3s ease;
+  margin: 0;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes slideUp {
   from {
-    opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(100%);
   }
   to {
-    opacity: 1;
     transform: translateY(0);
   }
 }

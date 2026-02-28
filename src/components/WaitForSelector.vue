@@ -37,7 +37,7 @@
               <span v-if="selectedTaskIds.includes(task.id)">✓</span>
             </div>
             <div class="task-info">
-              <div class="task-title">{{ task.text }}</div>
+              <div class="task-title">{{ task.text || '未命名任务' }}</div>
               <div class="task-meta">
                 <span class="priority" :class="task.priority">{{ priorityText(task.priority) }}</span>
                 <span class="status" :class="task.status">{{ statusText(task.status) }}</span>
@@ -82,6 +82,7 @@ const currentTask = computed(() => {
 watch(() => props.show, (newVal) => {
   if (newVal && currentTask.value) {
     selectedTaskIds.value = [...(currentTask.value.waitFor || [])]
+    searchKeyword.value = ''
   }
 })
 
@@ -92,13 +93,19 @@ const filteredTasks = computed(() => {
     t.status !== 'completed'
   )
 
-  // 搜索过滤
+  // 搜索过滤（模糊匹配）
   if (searchKeyword.value) {
-    const keyword = searchKeyword.value.toLowerCase()
-    tasks = tasks.filter(t => 
-      t.text.toLowerCase().includes(keyword) ||
-      (t.description && t.description.toLowerCase().includes(keyword))
-    )
+    const keyword = searchKeyword.value.toLowerCase().trim()
+    tasks = tasks.filter(t => {
+      const text = (t.text || '').toLowerCase()
+      const desc = (t.description || '').toLowerCase()
+      
+      // 支持空格分隔的多关键词匹配
+      const keywords = keyword.split(/\s+/)
+      return keywords.every(kw => 
+        text.includes(kw) || desc.includes(kw)
+      )
+    })
   }
 
   return tasks
@@ -137,21 +144,33 @@ const handleConfirm = () => {
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   z-index: 9999;
-  padding: 1rem;
+  padding: 0;
+  animation: fadeIn 0.2s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }
 
 .modal-content {
   background: white;
-  border-radius: 16px;
+  border-radius: 16px 16px 0 0;
   width: 100%;
-  max-width: 500px;
-  max-height: 80vh;
+  max-height: 85vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.3s ease;
+  margin: 0;
 }
 
 .modal-header {
