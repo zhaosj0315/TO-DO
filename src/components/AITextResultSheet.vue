@@ -1,15 +1,32 @@
 <template>
   <!-- 结果展示 Bottom Sheet -->
   <div v-if="visible" class="modal-overlay" @click.self="$emit('close')">
-    <div class="modal-content bottom-sheet" @click.stop>
+    <div class="bottom-sheet" @click.stop>
       <div class="sheet-header">
         <h3>{{ getTitle() }}</h3>
         <button class="close-btn" @click="$emit('close')">✕</button>
       </div>
       
       <div class="sheet-body">
-        <div class="result-content">
-          {{ result }}
+        <!-- 原文 -->
+        <div class="section">
+          <div class="section-title">📄 原文</div>
+          <div class="original-content">
+            {{ originalText }}
+          </div>
+        </div>
+        
+        <!-- 分隔线 -->
+        <div class="divider">
+          <span class="divider-icon">↓</span>
+        </div>
+        
+        <!-- 处理结果 -->
+        <div class="section">
+          <div class="section-title">✨ 处理结果</div>
+          <div class="result-content">
+            {{ result }}
+          </div>
         </div>
       </div>
       
@@ -18,7 +35,7 @@
           关闭
         </button>
         <button @click="handleCopy" class="btn btn-primary">
-          📋 复制
+          📋 复制结果
         </button>
       </div>
     </div>
@@ -29,7 +46,8 @@
 const props = defineProps({
   visible: Boolean,
   result: String,
-  action: String
+  action: String,
+  originalText: String
 })
 
 const emit = defineEmits(['close'])
@@ -77,22 +95,30 @@ const handleCopy = async () => {
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: flex-end;
   z-index: 10006;
   backdrop-filter: blur(8px);
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .bottom-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: white;
-  border-radius: 20px 20px 0 0;
   width: 100%;
-  max-height: 80vh;
+  max-height: 90vh;
+  border-radius: 20px 20px 0 0;
   display: flex;
   flex-direction: column;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
   animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  margin: 0;
+  overflow: hidden;
 }
 
 @keyframes slideUp {
@@ -146,8 +172,55 @@ const handleCopy = async () => {
   padding: 1.5rem;
 }
 
+.section {
+  margin-bottom: 1rem;
+}
+
+.section-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.original-content {
+  background: #fff3cd;
+  border-left: 3px solid #ffc107;
+  padding: 1rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #333;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 1rem 0;
+}
+
+.divider-icon {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
 .result-content {
-  background: #f8f9fa;
+  background: #d4edda;
+  border-left: 3px solid #28a745;
   padding: 1rem;
   border-radius: 8px;
   font-size: 0.95rem;

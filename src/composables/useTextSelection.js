@@ -77,8 +77,10 @@ export function useTextSelection(containerRef) {
   }
 
   const handleClickOutside = (event) => {
-    // 点击菜单本身不关闭
-    if (event.target.closest('.ai-text-menu')) {
+    // 点击菜单本身不关闭（检查新的类名）
+    if (event.target.closest('.modal-overlay') || 
+        event.target.closest('.bottom-sheet') ||
+        event.target.closest('.ai-text-menu')) {
       return
     }
     

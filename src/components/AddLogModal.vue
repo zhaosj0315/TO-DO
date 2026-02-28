@@ -202,6 +202,7 @@
       :visible="showTextResult"
       :result="textResult"
       :action="currentTextAction"
+      :original-text="originalTextForResult"
       @close="showTextResult = false"
     />
 
@@ -247,6 +248,7 @@ const { showMenu: showTextMenu, menuPosition, selectedText, closeTextMenu, repla
 const showTextResult = ref(false)
 const textResult = ref('')
 const currentTextAction = ref('')
+const originalTextForResult = ref('') // 存储原文
 const isProcessing = ref(false)
 
 // 处理 AI 文本操作
@@ -260,6 +262,10 @@ const handleTextAction = async ({ action, text, tone }) => {
   
   try {
     closeTextMenu()
+    
+    // 保存原文
+    originalTextForResult.value = text
+    
     isProcessing.value = true
     
     const result = await AITextService.processText(action, text, { tone })

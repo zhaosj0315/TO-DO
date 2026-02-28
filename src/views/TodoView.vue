@@ -3395,6 +3395,7 @@
       :visible="showTextResult"
       :result="textResult"
       :action="currentTextAction"
+      :original-text="originalTextForResult"
       @close="showTextResult = false"
     />
 
@@ -3907,6 +3908,7 @@ const { showMenu: showTextMenu, menuPosition, selectedText: selectedTextNew, clo
 const showTextResult = ref(false)
 const textResult = ref('')
 const currentTextAction = ref('')
+const originalTextForResult = ref('') // 存储原文
 
 // 任务预览弹窗
 const showTaskPreview = ref(false)
@@ -4101,6 +4103,10 @@ const handleTextAction = async ({ action, text, tone }) => {
   // 其他文本处理操作（前9个功能）
   try {
     closeTextMenu()
+    
+    // 保存原文
+    originalTextForResult.value = text
+    
     aiLoading.value = true
     aiLoadingText.value = 'AI 处理中...'
     aiLoadingSubText.value = '请稍候'
