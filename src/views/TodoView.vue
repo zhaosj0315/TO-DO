@@ -758,7 +758,7 @@
       </div>
     </div>
 
-    <!-- 筛选弹窗 (Bottom Sheet) -->
+    <!-- 筛选弹窗 (Bottom Sheet) - 优化版 -->
     <div v-if="showFilterModal" class="modal-overlay" @click.self="showFilterModal = false">
       <div class="filter-bottom-sheet">
         <div class="modal-header">
@@ -766,10 +766,35 @@
           <button class="close-btn" @click="showFilterModal = false">&times;</button>
         </div>
         <div class="modal-body filter-body">
-          <!-- 关键字搜索 - 置顶 -->
+          <!-- 快捷场景 - 置顶 -->
           <div class="filter-section">
-            <label class="filter-label">🔍 {{ t('keywordSearch') }}</label>
-            <div class="search-input-wrapper">
+            <label class="filter-label">📌 快捷场景</label>
+            <div class="scene-buttons">
+              <button class="scene-btn" :class="{ active: activeScene === 'todayPending' }" @click="applyScene('todayPending')">
+                今日待办
+              </button>
+              <button class="scene-btn" :class="{ active: activeScene === 'weekPending' }" @click="applyScene('weekPending')">
+                本周待办
+              </button>
+              <button class="scene-btn" :class="{ active: activeScene === 'todayOverdue' }" @click="applyScene('todayOverdue')">
+                今日逾期
+              </button>
+              <button class="scene-btn" :class="{ active: activeScene === 'highPriority' }" @click="applyScene('highPriority')">
+                高优先级
+              </button>
+              <button class="scene-btn" :class="{ active: activeScene === 'workTasks' }" @click="applyScene('workTasks')">
+                工作任务
+              </button>
+              <button class="scene-btn" :class="{ active: activeScene === 'studyTasks' }" @click="applyScene('studyTasks')">
+                学习任务
+              </button>
+            </div>
+          </div>
+
+          <!-- 关键字搜索 -->
+          <div class="filter-section filter-section-compact">
+            <label class="filter-label-inline">🔍 关键字</label>
+            <div class="search-input-wrapper-inline">
               <input 
                 ref="filterSearchInput"
                 v-model="searchKeyword" 
@@ -783,9 +808,9 @@
           </div>
 
           <!-- 分类筛选 -->
-          <div class="filter-section">
-            <label class="filter-label">🏷️ {{ t('category') }}</label>
-            <div class="filter-buttons">
+          <div class="filter-section filter-section-compact">
+            <label class="filter-label-inline">🏷️ 分类</label>
+            <div class="filter-buttons-inline">
               <button 
                 v-for="cat in categories" 
                 :key="cat.value"
@@ -800,9 +825,9 @@
           </div>
 
           <!-- 优先级筛选 -->
-          <div class="filter-section">
-            <label class="filter-label">⚡ {{ t('priority') }}</label>
-            <div class="filter-buttons">
+          <div class="filter-section filter-section-compact">
+            <label class="filter-label-inline">⚡ 优先级</label>
+            <div class="filter-buttons-inline">
               <button 
                 v-for="opt in priorityOptions" 
                 :key="opt.value"
@@ -817,60 +842,83 @@
             </div>
           </div>
 
-          <!-- 日期范围 -->
+          <!-- 时间筛选 -->
           <div class="filter-section">
-            <label class="filter-label">📅 {{ t('dateRange') }}</label>
-            <!-- 时间维度选择 -->
-            <div class="time-dimension-buttons">
-              <button 
-                class="dimension-btn" 
-                :class="{ active: timeDimension === 'created' }"
-                @click="timeDimension = 'created'"
-              >
-                创建时间
-              </button>
-              <button 
-                class="dimension-btn" 
-                :class="{ active: timeDimension === 'deadline' }"
-                @click="timeDimension = 'deadline'"
-              >
-                截止时间
-              </button>
-              <button 
-                class="dimension-btn" 
-                :class="{ active: timeDimension === 'completed' }"
-                @click="timeDimension = 'completed'"
-              >
-                完成时间
-              </button>
+            <div class="time-dimension-header">
+              <label class="filter-label-inline">📅 时间</label>
+              <select v-model="timeDimension" class="dimension-select">
+                <option value="created">按创建时间</option>
+                <option value="deadline">按截止时间</option>
+                <option value="completed">按完成时间</option>
+              </select>
             </div>
-            <!-- 快捷日期按钮 -->
-            <div class="quick-date-buttons">
-              <button class="quick-date-btn" @click="setQuickDate('today')">{{ t('today') }}</button>
-              <button class="quick-date-btn" @click="setQuickDate('thisWeek')">{{ t('thisWeek') }}</button>
-              <button class="quick-date-btn" @click="setQuickDate('overdue')">{{ t('overdue') }}</button>
+            <div class="dimension-hint">
+              <span v-if="timeDimension === 'created'">💡 查看某时间段创建的任务</span>
+              <span v-else-if="timeDimension === 'deadline'">💡 查看某时间段需要完成的任务</span>
+              <span v-else>💡 查看某时间段实际完成的任务</span>
             </div>
-            <!-- 自定义日期 -->
-            <div class="date-range-picker">
-              <div 
-                class="date-input-box" 
-                :class="{ 'has-value': startDate }" 
-                @click="showDatePicker('start')"
-              >
-                {{ startDate ? formatDisplayDate(startDate) : t('startDate') }}
+            
+            <!-- 常用时间 -->
+            <div class="quick-date-section">
+              <div class="quick-date-label">常用：</div>
+              <div class="quick-date-buttons">
+                <button class="quick-date-btn" @click="setQuickDate('today')">今天</button>
+                <button class="quick-date-btn" @click="setQuickDate('yesterday')">昨天</button>
+                <button class="quick-date-btn" @click="setQuickDate('thisWeek')">本周</button>
+                <button class="quick-date-btn" @click="setQuickDate('lastWeek')">上周</button>
+                <button class="quick-date-btn" @click="setQuickDate('thisMonth')">本月</button>
+                <button class="quick-date-btn" @click="setQuickDate('lastMonth')">上月</button>
               </div>
-              <span class="date-separator">{{ t('to') }}</span>
-              <div 
-                class="date-input-box" 
-                :class="{ 'has-value': endDate }" 
-                @click="showDatePicker('end')"
-              >
-                {{ endDate ? formatDisplayDate(endDate) : t('endDate') }}
+            </div>
+
+            <!-- 特殊场景 -->
+            <div class="quick-date-section">
+              <div class="quick-date-label">特殊：</div>
+              <div class="quick-date-buttons">
+                <button class="quick-date-btn" @click="setQuickDate('overdue')">全部逾期</button>
+                <button class="quick-date-btn" @click="setQuickDate('recent7')">最近7天</button>
+                <button class="quick-date-btn" @click="setQuickDate('recent30')">最近30天</button>
               </div>
-              <button v-if="startDate || endDate" class="clear-btn-small" @click="clearDateFilter">{{ t('clear') }}</button>
+            </div>
+
+            <!-- 自定义范围 -->
+            <div class="custom-date-section">
+              <div class="quick-date-label">自定义：</div>
+              <div class="date-range-picker">
+                <div 
+                  class="date-input-box" 
+                  :class="{ 'has-value': startDate }" 
+                  @click="showDatePicker('start')"
+                >
+                  {{ startDate ? formatDisplayDate(startDate) : '开始日期' }}
+                </div>
+                <span class="date-separator">至</span>
+                <div 
+                  class="date-input-box" 
+                  :class="{ 'has-value': endDate }" 
+                  @click="showDatePicker('end')"
+                >
+                  {{ endDate ? formatDisplayDate(endDate) : '结束日期' }}
+                </div>
+                <button v-if="startDate || endDate" class="clear-btn-small" @click="clearDateFilter">清除</button>
+              </div>
             </div>
             <input ref="hiddenStartDate" type="date" style="display:none" @change="handleStartDateChange">
             <input ref="hiddenEndDate" type="date" style="display:none" @change="handleEndDateChange">
+          </div>
+
+          <!-- 筛选结果提示 -->
+          <div v-if="filterResultCount > 0" class="filter-result-hint">
+            <div class="filter-result-main">
+              🎯 当前筛选结果：<span class="filter-result-count">{{ filterResultCount }}</span> 个任务
+            </div>
+            <div class="filter-result-detail">
+              <span v-if="startDate || endDate">
+                {{ timeDimensionLabel }}：{{ startDate ? formatDisplayDate(startDate) : '不限' }} ~ {{ endDate ? formatDisplayDate(endDate) : '不限' }}
+              </span>
+              <span v-if="currentCategoryFilter !== 'all'"> · 分类：{{ getCategoryLabel(currentCategoryFilter) }}</span>
+              <span v-if="currentPriorityFilter !== 'all'"> · 优先级：{{ getPriorityLabel(currentPriorityFilter) }}</span>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
@@ -3864,6 +3912,7 @@ const searchKeyword = ref('')
 const startDate = ref('')
 const endDate = ref('')
 const timeDimension = ref('created') // 时间维度：created/deadline/completed
+const activeScene = ref('') // 当前激活的快捷场景
 const countdownInterval = ref(null)
 const showTrash = ref(false)
 const showProfile = ref(false)
@@ -4859,9 +4908,9 @@ const dismissSuggestion = () => {
 // 获取分类标签
 const getCategoryLabel = (category) => {
   const labels = {
-    work: '💼 工作',
-    study: '📚 学习',
-    life: '🏠 生活'
+    work: '工作',
+    study: '学习',
+    life: '生活'
   }
   return labels[category] || category
 }
@@ -4869,9 +4918,10 @@ const getCategoryLabel = (category) => {
 // 获取优先级标签
 const getPriorityLabel = (priority) => {
   const labels = {
-    high: '⚡ 高优先级',
-    medium: '📌 中优先级',
-    low: '📋 低优先级'
+    high: '高',
+    medium: '中',
+    low: '低',
+    urgent: '紧急'
   }
   return labels[priority] || priority
 }
@@ -5438,6 +5488,17 @@ const getCategoryCount = (category) => {
   return filtered.length
 }
 
+// 筛选结果数量
+const filterResultCount = computed(() => filteredTasks.value.length)
+
+// 时间维度标签
+const timeDimensionLabel = computed(() => {
+  if (timeDimension.value === 'created') return '创建时间'
+  if (timeDimension.value === 'deadline') return '截止时间'
+  if (timeDimension.value === 'completed') return '完成时间'
+  return '时间'
+})
+
 // 个人主页统计（基于所有任务）
 const completionRate = computed(() => {
   const total = taskStore.tasks.length
@@ -5779,7 +5840,7 @@ const clearDateFilter = () => {
   currentPage.value = 1
 }
 
-// 方法：快捷日期设置
+// 方法：快捷日期设置（扩展版）
 const setQuickDate = (type) => {
   const today = new Date()
   const year = today.getFullYear()
@@ -5787,9 +5848,17 @@ const setQuickDate = (type) => {
   const day = String(today.getDate()).padStart(2, '0')
   const todayStr = `${year}-${month}-${day}`
   
+  activeScene.value = '' // 清除场景选择
+  
   if (type === 'today') {
     startDate.value = todayStr
     endDate.value = todayStr
+  } else if (type === 'yesterday') {
+    const yesterday = new Date(today)
+    yesterday.setDate(today.getDate() - 1)
+    const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`
+    startDate.value = yesterdayStr
+    endDate.value = yesterdayStr
   } else if (type === 'thisWeek') {
     const dayOfWeek = today.getDay()
     const monday = new Date(today)
@@ -5799,12 +5868,106 @@ const setQuickDate = (type) => {
     
     startDate.value = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`
     endDate.value = `${sunday.getFullYear()}-${String(sunday.getMonth() + 1).padStart(2, '0')}-${String(sunday.getDate()).padStart(2, '0')}`
+  } else if (type === 'lastWeek') {
+    const dayOfWeek = today.getDay()
+    const lastMonday = new Date(today)
+    lastMonday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1) - 7)
+    const lastSunday = new Date(lastMonday)
+    lastSunday.setDate(lastMonday.getDate() + 6)
+    
+    startDate.value = `${lastMonday.getFullYear()}-${String(lastMonday.getMonth() + 1).padStart(2, '0')}-${String(lastMonday.getDate()).padStart(2, '0')}`
+    endDate.value = `${lastSunday.getFullYear()}-${String(lastSunday.getMonth() + 1).padStart(2, '0')}-${String(lastSunday.getDate()).padStart(2, '0')}`
+  } else if (type === 'thisMonth') {
+    const firstDay = new Date(year, today.getMonth(), 1)
+    const lastDay = new Date(year, today.getMonth() + 1, 0)
+    
+    startDate.value = `${year}-${month}-01`
+    endDate.value = `${year}-${month}-${String(lastDay.getDate()).padStart(2, '0')}`
+  } else if (type === 'lastMonth') {
+    const lastMonth = today.getMonth() === 0 ? 11 : today.getMonth() - 1
+    const lastMonthYear = today.getMonth() === 0 ? year - 1 : year
+    const firstDay = new Date(lastMonthYear, lastMonth, 1)
+    const lastDay = new Date(lastMonthYear, lastMonth + 1, 0)
+    
+    startDate.value = `${lastMonthYear}-${String(lastMonth + 1).padStart(2, '0')}-01`
+    endDate.value = `${lastMonthYear}-${String(lastMonth + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`
   } else if (type === 'overdue') {
     const yesterday = new Date(today)
     yesterday.setDate(today.getDate() - 1)
     startDate.value = '2020-01-01'
     endDate.value = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`
+    timeDimension.value = 'deadline' // 逾期按截止时间筛选
+  } else if (type === 'recent7') {
+    const sevenDaysAgo = new Date(today)
+    sevenDaysAgo.setDate(today.getDate() - 7)
+    startDate.value = `${sevenDaysAgo.getFullYear()}-${String(sevenDaysAgo.getMonth() + 1).padStart(2, '0')}-${String(sevenDaysAgo.getDate()).padStart(2, '0')}`
+    endDate.value = todayStr
+  } else if (type === 'recent30') {
+    const thirtyDaysAgo = new Date(today)
+    thirtyDaysAgo.setDate(today.getDate() - 30)
+    startDate.value = `${thirtyDaysAgo.getFullYear()}-${String(thirtyDaysAgo.getMonth() + 1).padStart(2, '0')}-${String(thirtyDaysAgo.getDate()).padStart(2, '0')}`
+    endDate.value = todayStr
   }
+  currentPage.value = 1
+}
+
+// 方法：应用快捷场景
+const applyScene = (scene) => {
+  activeScene.value = scene
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = String(today.getMonth() + 1).padStart(2, '0')
+  const day = String(today.getDate()).padStart(2, '0')
+  const todayStr = `${year}-${month}-${day}`
+  
+  // 重置所有筛选条件
+  searchKeyword.value = ''
+  startDate.value = ''
+  endDate.value = ''
+  currentCategoryFilter.value = 'all'
+  currentPriorityFilter.value = 'all'
+  currentFilter.value = 'all'
+  
+  if (scene === 'todayPending') {
+    // 今日待办：截止时间=今天 + 状态=待办
+    timeDimension.value = 'deadline'
+    startDate.value = todayStr
+    endDate.value = todayStr
+    currentFilter.value = 'pending'
+  } else if (scene === 'weekPending') {
+    // 本周待办：截止时间=本周 + 状态=待办
+    timeDimension.value = 'deadline'
+    const dayOfWeek = today.getDay()
+    const monday = new Date(today)
+    monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1))
+    const sunday = new Date(monday)
+    sunday.setDate(monday.getDate() + 6)
+    
+    startDate.value = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`
+    endDate.value = `${sunday.getFullYear()}-${String(sunday.getMonth() + 1).padStart(2, '0')}-${String(sunday.getDate()).padStart(2, '0')}`
+    currentFilter.value = 'pending'
+  } else if (scene === 'todayOverdue') {
+    // 今日逾期：截止时间<今天 + 状态=逾期
+    timeDimension.value = 'deadline'
+    const yesterday = new Date(today)
+    yesterday.setDate(today.getDate() - 1)
+    startDate.value = '2020-01-01'
+    endDate.value = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`
+    currentFilter.value = 'overdue'
+  } else if (scene === 'highPriority') {
+    // 高优先级：优先级=高 + 状态=待办
+    currentPriorityFilter.value = 'high'
+    currentFilter.value = 'pending'
+  } else if (scene === 'workTasks') {
+    // 工作任务：分类=工作 + 状态=待办
+    currentCategoryFilter.value = 'work'
+    currentFilter.value = 'pending'
+  } else if (scene === 'studyTasks') {
+    // 学习任务：分类=学习 + 状态=待办
+    currentCategoryFilter.value = 'study'
+    currentFilter.value = 'pending'
+  }
+  
   currentPage.value = 1
 }
 
@@ -14423,6 +14586,185 @@ watch(() => reportData.value, (newData) => {
 .filter-chip.priority-low.active {
   background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
   box-shadow: 0 4px 12px rgba(67, 233, 123, 0.35);
+}
+
+/* 快捷场景按钮 */
+.scene-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.scene-btn {
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  border: 1px solid #ddd;
+  background: white;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.scene-btn:hover {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-color: transparent;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.scene-btn.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* 紧凑布局 */
+.filter-section-compact {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.filter-label-inline {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+  min-width: 60px;
+}
+
+.search-input-wrapper-inline {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filter-buttons-inline {
+  flex: 1;
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+/* 时间维度选择器 */
+.time-dimension-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.dimension-select {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid #d0d0d0;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.dimension-select:hover {
+  border-color: #667eea;
+}
+
+.dimension-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.dimension-hint {
+  font-size: 0.75rem;
+  color: #666;
+  margin-bottom: 0.75rem;
+  padding: 0.4rem 0.6rem;
+  background: #f5f5f5;
+  border-radius: 6px;
+  border-left: 3px solid #667eea;
+}
+
+/* 快捷日期区域 */
+.quick-date-section {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.quick-date-label {
+  font-size: 0.8rem;
+  color: #666;
+  white-space: nowrap;
+  min-width: 50px;
+}
+
+.quick-date-buttons {
+  flex: 1;
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.quick-date-btn {
+  padding: 0.35rem 0.7rem;
+  border-radius: 16px;
+  border: 1px solid #ddd;
+  background: white;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.quick-date-btn:hover {
+  background: #667eea;
+  color: white;
+  border-color: transparent;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+/* 自定义范围 */
+.custom-date-section {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* 筛选结果提示 */
+.filter-result-hint {
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #e8f4ff 0%, #f0e8ff 100%);
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+  margin-top: 0.5rem;
+}
+
+.filter-result-main {
+  font-size: 0.9rem;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.filter-result-count {
+  font-weight: 700;
+  color: #667eea;
+  font-size: 1.1rem;
+}
+
+.filter-result-detail {
+  font-size: 0.75rem;
+  color: #666;
+  line-height: 1.4;
 }
 
 /* 新标签样式 - 水平布局 */
