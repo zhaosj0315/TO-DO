@@ -108,7 +108,8 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         pomodoroHistory: taskData.pomodoroHistory || [], // 番茄钟历史记录
         logs: taskData.logs || [], // 任务执行日志
         stats: taskData.stats || this.calculateTaskStats([]), // 统计数据
-        waitFor: taskData.waitFor || [] // 等待的任务ID数组
+        waitFor: taskData.waitFor || [], // 等待的任务ID数组
+        parentTaskId: taskData.parentTaskId || null // 父任务ID（AI拆分）
       }
       this.tasks.push(task)
       await this.saveTasks()
@@ -161,6 +162,21 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
             await this.cancelTaskReminder(taskId)
           }
           
+          // 🆕 如果是父任务，自动完成所有子任务
+          const childTasks = this.tasks.filter(t => t.parentTaskId === taskId)
+          if (childTasks.length > 0) {
+            console.log(`父任务完成，自动完成 ${childTasks.length} 个子任务`)
+            for (const child of childTasks) {
+              if (child.status !== 'completed') {
+                child.status = 'completed'
+                child.completed_at = new Date().toISOString()
+                if (child.enableReminder) {
+                  await this.cancelTaskReminder(child.id)
+                }
+              }
+            }
+          }
+          
           // 检查是否有任务在等待此任务
           const waitingTasks = this.getWaitingTasks(taskId)
           if (waitingTasks.length > 0) {
@@ -183,6 +199,22 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         } else {
           // 取消完成时清除时间戳
           delete task.completed_at
+          
+          // 🆕 如果是父任务，同时取消所有子任务的完成状态
+          const childTasks = this.tasks.filter(t => t.parentTaskId === taskId)
+          if (childTasks.length > 0) {
+            console.log(`父任务取消完成，同时取消 ${childTasks.length} 个子任务`)
+            for (const child of childTasks) {
+              if (child.status === 'completed') {
+                child.status = 'pending'
+                delete child.completed_at
+                if (child.enableReminder && child.reminderTime) {
+                  await this.scheduleTaskReminder(child)
+                }
+              }
+            }
+          }
+          
           // 重新安排提醒
           if (task.enableReminder && task.reminderTime) {
             await this.scheduleTaskReminder(task)
@@ -222,18 +254,70 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
     async deleteTask(taskId) {
       const index = this.tasks.findIndex(t => t.id === taskId)
       if (index !== -1) {
-        const task = this.tasks.splice(index, 1)[0]
+        const task = this.tasks[index]
+        
+        // 🆕 检查是否有子任务
+        const childTasks = this.tasks.filter(t => t.parentTaskId === taskId)
+        
+        // 🆕 如果是父任务，显示确认提示
+        if (childTasks.length > 0) {
+          const childNames = childTasks.map(c => `  • ${c.text}`).join('\n')
+          const confirmed = confirm(
+            `⚠️ 删除父任务确认\n\n` +
+            `父任务：${task.text}\n\n` +
+            `将同时删除以下 ${childTasks.length} 个子任务：\n${childNames}\n\n` +
+            `确定要删除吗？`
+          )
+          
+          if (!confirmed) {
+            console.log('用户取消删除父任务')
+            return // 用户取消
+          }
+        } else {
+          // 🆕 普通任务或子任务也需要确认
+          const confirmed = confirm(
+            `⚠️ 删除任务确认\n\n` +
+            `任务：${task.text}\n\n` +
+            `确定要删除吗？`
+          )
+          
+          if (!confirmed) {
+            console.log('用户取消删除任务')
+            return // 用户取消
+          }
+        }
+        
+        // 执行删除
+        this.tasks.splice(index, 1)
         this.deletedTasks.push(task)
+        
         // 取消提醒
         if (task.enableReminder) {
           await this.cancelTaskReminder(taskId)
         }
+        
+        // 如果是父任务，同时删除所有子任务
+        if (childTasks.length > 0) {
+          console.log(`删除父任务，同时删除 ${childTasks.length} 个子任务`)
+          for (const child of childTasks) {
+            const childIndex = this.tasks.findIndex(t => t.id === child.id)
+            if (childIndex !== -1) {
+              const deletedChild = this.tasks.splice(childIndex, 1)[0]
+              this.deletedTasks.push(deletedChild)
+              if (deletedChild.enableReminder) {
+                await this.cancelTaskReminder(deletedChild.id)
+              }
+            }
+          }
+        }
+        
         // 清除其他任务对此任务的依赖
         this.tasks.forEach(t => {
           if (Array.isArray(t.waitFor)) {
             t.waitFor = t.waitFor.filter(id => id !== taskId)
           }
         })
+        
         await this.saveTasks()
       }
     },
@@ -633,7 +717,13 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
     },
 
     async setCurrentUser(username) {
-      this.currentUser = username
+      // 如果传入的是对象，提取username
+      if (typeof username === 'object' && username !== null) {
+        this.currentUser = username.username || username
+      } else {
+        this.currentUser = username
+      }
+      console.log('TaskStore - setCurrentUser:', this.currentUser)
       await this.loadTasks()
     },
 

@@ -300,26 +300,26 @@
                 </span>
               </div>
               <div class="task-meta">
-                <!-- 父任务标识 -->
-                <span v-if="task.parentTaskId" class="badge badge-subtask" :title="`来自父任务：${getParentTaskName(task.parentTaskId)}`">
-                  📂 {{ getParentTaskName(task.parentTaskId) }}
+                <!-- 父任务（AI拆分） -->
+                <span v-if="task.parentTaskId" class="badge badge-parent" :title="`父任务：${getParentTaskName(task.parentTaskId)}`">
+                  👨‍👦 父任务×1
                 </span>
                 
-                <!-- 子任务数量（父任务显示） -->
-                <span v-if="getSubtasksCount(task.id) > 0" class="badge badge-has-subtasks" :title="`已拆分为 ${getSubtasksCount(task.id)} 个子任务`">
-                  🧩 子任务×{{ getSubtasksCount(task.id) }}
+                <!-- 子任务数量 -->
+                <span v-if="getSubtasksCount(task.id) > 0" class="badge badge-children" :title="`已拆分为 ${getSubtasksCount(task.id)} 个子任务`">
+                  👶 子任务×{{ getSubtasksCount(task.id) }}
                 </span>
                 
-                <!-- 依赖关系状态 -->
-                <!-- 等待的任务（始终显示，如果有依赖） -->
-                <span v-if="task.waitFor && task.waitFor.length > 0" 
-                      :class="['badge', taskStore.canStart(task.id) ? 'badge-waiting-done' : 'badge-waiting']" 
-                      :title="taskStore.canStart(task.id) ? `依赖已完成，可以开始` : `等待 ${task.waitFor.length} 个任务完成`">
-                  🔒 {{ getWaitForTaskNames(task.id) }}
+                <!-- 依赖数量（前置任务） -->
+                <span v-if="getDependencyCount(task.id) > 0" 
+                      :class="['badge', 'badge-dependency']" 
+                      :title="`依赖 ${getDependencyCount(task.id)} 个前置任务`">
+                  ⬆️ 依赖×{{ getDependencyCount(task.id) }}
                 </span>
-                <!-- 被依赖 -->
-                <span v-if="getWaitingTasksCount(task.id) > 0" class="badge badge-blocking" :title="`${getWaitingTasksCount(task.id)}个任务等待此任务完成`">
-                  🔓 被依赖×{{ getWaitingTasksCount(task.id) }}
+                
+                <!-- 被依赖数量（后置任务） -->
+                <span v-if="getWaitingTasksCount(task.id) > 0" class="badge badge-blocking" :title="`${getWaitingTasksCount(task.id)} 个任务依赖此任务`">
+                  ⬇️ 被依赖×{{ getWaitingTasksCount(task.id) }}
                 </span>
                 
                 <!-- 时间信息（压缩格式：去掉年份） -->
@@ -4006,7 +4006,7 @@ const createSubtasks = (subtasks) => {
   
   subtasks.forEach((subtask, index) => {
     const newTask = {
-      id: Date.now() + index,
+      id: Date.now() + index,  // 使用整数ID
       text: subtask.title,
       description: subtask.description || '',
       type: 'today',
@@ -4015,12 +4015,12 @@ const createSubtasks = (subtasks) => {
       status: 'pending',
       created_at: now.toISOString(),
       user_id: taskStore.currentUser,
-      parentTaskId: parentTask.id,
+      parentTaskId: Number(parentTask.id),  // 确保是数字类型
       estimatedHours: subtask.estimatedHours || 1,
-      waitFor: [parentTask.id]  // 子任务等待父任务完成
+      waitFor: []  // 明确设置为空数组
     }
     
-    console.log(`创建子任务 ${index + 1}:`, newTask.text, 'ID:', newTask.id, 'waitFor:', newTask.waitFor)
+    console.log(`创建子任务 ${index + 1}:`, newTask.text, 'ID:', newTask.id, 'parentTaskId:', newTask.parentTaskId, 'waitFor:', newTask.waitFor)
     taskStore.addTask(newTask)
     subtaskIds.push(newTask.id)
   })
@@ -4039,10 +4039,14 @@ const createSubtasks = (subtasks) => {
     const updatedParent = taskStore.tasks.find(t => t.id === parentTask.id)
     console.log('从store读取的父任务 - subtasks:', updatedParent?.subtasks)
     
-    // 如果详情页打开的是这个父任务，刷新它
+    // 如果详情页打开的是这个父任务，关闭并重新打开以刷新
     if (selectedTask.value?.id === parentTask.id) {
-      console.log('刷新详情页')
-      selectedTask.value = updatedParent
+      console.log('刷新详情页 - 关闭并重新打开')
+      showTaskDetail.value = false
+      nextTick(() => {
+        selectedTask.value = updatedParent
+        showTaskDetail.value = true
+      })
     }
   }
   
@@ -4197,7 +4201,7 @@ const handleSplitTask = async (task) => {
 }
 
 // 创建子任务
-const handleCreateSubtasks = (subtaskList) => {
+const handleCreateSubtasks = async (subtaskList) => {
   console.log('=== 开始创建子任务 ===')
   console.log('父任务:', currentSplittingTask.value)
   console.log('子任务数量:', subtaskList.length)
@@ -4210,9 +4214,11 @@ const handleCreateSubtasks = (subtaskList) => {
   
   const subtaskIds = []
   
-  subtaskList.forEach((subtask, index) => {
+  // 使用 for...of 以支持 await
+  for (let index = 0; index < subtaskList.length; index++) {
+    const subtask = subtaskList[index]
     const newTask = {
-      id: Date.now() + Math.random(),
+      id: Date.now() + index,  // 使用整数ID
       text: subtask.title,
       description: subtask.description || '',
       type: 'today',
@@ -4233,14 +4239,26 @@ const handleCreateSubtasks = (subtaskList) => {
         resolvedBlockCount: 0,
         latestProgress: 0
       },
-      parentTaskId: parentTask.id,
-      waitFor: [parentTask.id]  // 子任务等待父任务完成
+      parentTaskId: Number(parentTask.id),  // 确保是数字类型
+      waitFor: []  // 明确设置为空数组，子任务独立执行
     }
     
-    console.log(`创建子任务 ${index + 1}:`, newTask.text, 'ID:', newTask.id, 'waitFor:', newTask.waitFor)
-    taskStore.addTask(newTask)
+    console.log(`创建子任务 ${index + 1}:`, newTask.text)
+    console.log(`  子任务ID: ${newTask.id} (${typeof newTask.id})`)
+    console.log(`  父任务ID: ${parentTask.id} (${typeof parentTask.id})`)
+    console.log(`  parentTaskId: ${newTask.parentTaskId} (${typeof newTask.parentTaskId})`)
+    console.log(`  严格相等: ${newTask.parentTaskId === parentTask.id}`)
+    await taskStore.addTask(newTask)  // 等待添加完成
+    
+    // 验证是否真的添加到了store
+    const added = taskStore.tasks.find(t => t.id === newTask.id)
+    console.log(`  验证: ${added ? '✅ 已添加到store' : '❌ 未添加到store'}`)
+    if (added) {
+      console.log(`  store中的parentTaskId: ${added.parentTaskId}`)
+    }
+    
     subtaskIds.push(newTask.id)
-  })
+  }
   
   console.log('所有子任务ID:', subtaskIds)
   
@@ -4256,10 +4274,14 @@ const handleCreateSubtasks = (subtaskList) => {
     const updatedParent = taskStore.tasks.find(t => t.id === parentTask.id)
     console.log('从store读取的父任务 - subtasks:', updatedParent?.subtasks)
     
-    // 如果详情页打开的是这个父任务，刷新它
+    // 如果详情页打开的是这个父任务，关闭并重新打开以刷新
     if (selectedTask.value?.id === parentTask.id) {
-      console.log('刷新详情页')
-      selectedTask.value = updatedParent
+      console.log('刷新详情页 - 关闭并重新打开')
+      showTaskDetail.value = false
+      nextTick(() => {
+        selectedTask.value = updatedParent
+        showTaskDetail.value = true
+      })
     }
   }
   
@@ -8749,15 +8771,14 @@ const getSubtasksCount = (taskId) => {
   return taskStore.tasks.filter(t => t.parentTaskId === taskId).length
 }
 
-// 获取等待的任务名称（多个）
-const getWaitForTaskNames = (taskId) => {
-  const waitForTasks = taskStore.getWaitForTasks(taskId)
-  if (waitForTasks.length === 0) return ''
-  if (waitForTasks.length === 1) return waitForTasks[0].text
-  return `${waitForTasks[0].text} 等${waitForTasks.length}个`
+// 获取依赖数量（前置任务）
+const getDependencyCount = (taskId) => {
+  const task = taskStore.tasks.find(t => t.id === taskId)
+  if (!task || !task.waitFor || task.waitFor.length === 0) return 0
+  return task.waitFor.length
 }
 
-// 获取等待当前任务的任务数量
+// 获取被依赖数量（后置任务）
 const getWaitingTasksCount = (taskId) => {
   return taskStore.getWaitingTasks(taskId).length
 }
@@ -11739,8 +11760,8 @@ watch(() => reportData.value, (newData) => {
   box-sizing: border-box;
 }
 
-/* 子任务徽章 */
-.badge-subtask {
+/* 父任务徽章（子任务显示） */
+.badge-parent {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -11757,8 +11778,8 @@ watch(() => reportData.value, (newData) => {
   box-sizing: border-box;
 }
 
-/* 有子任务徽章（父任务显示） */
-.badge-has-subtasks {
+/* 子任务徽章（父任务显示） */
+.badge-children {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -11769,6 +11790,42 @@ watch(() => reportData.value, (newData) => {
   border-radius: 8px;
   background: rgba(16, 185, 129, 0.15);
   color: #10b981;
+  transition: all 0.3s;
+  line-height: 1;
+  height: auto;
+  box-sizing: border-box;
+}
+
+/* 依赖徽章（前置任务） */
+.badge-dependency {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 0.2rem 0.35rem;
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  transition: all 0.3s;
+  line-height: 1;
+  height: auto;
+  box-sizing: border-box;
+}
+
+/* 被依赖徽章（后置任务） */
+.badge-blocking {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 0.2rem 0.35rem;
+  border-radius: 8px;
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
   transition: all 0.3s;
   line-height: 1;
   height: auto;

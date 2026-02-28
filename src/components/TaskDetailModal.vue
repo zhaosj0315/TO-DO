@@ -129,68 +129,119 @@
         <!-- 依赖关系 -->
         <section class="dependency-section">
           
-          <!-- 当前状态：仅在等待父任务时显示 -->
-          <div v-if="waitForTasks.length > 0" class="dependency-status blocked">
+          <!-- 当前状态 -->
+          <div v-if="dependencyTasks.length > 0" class="dependency-status blocked">
             <div class="status-icon">🔒</div>
             <div class="status-text">
               <div class="status-title">等待中</div>
-              <div class="status-desc">此任务正在等待 {{ waitForTasks.length }} 个任务完成</div>
+              <div class="status-desc">等待 {{ dependencyTasks.length }} 个前置任务完成</div>
             </div>
           </div>
-          <div v-else-if="waitingTasks.length === 0" class="dependency-status free">
+          <div v-else-if="childTasks.length === 0 && blockedTasks.length === 0 && !parentTask" class="dependency-status free">
             <div class="status-icon">✅</div>
             <div class="status-text">
-              <div class="status-title">无依赖</div>
-              <div class="status-desc">此任务可以随时开始</div>
+              <div class="status-title">无关系</div>
+              <div class="status-desc">此任务独立执行</div>
             </div>
           </div>
 
-          <!-- 等待的任务列表 -->
-          <div v-if="waitForTasks.length > 0" class="wait-for-card">
+          <!-- 父任务（AI拆分来源） -->
+          <div v-if="parentTask" class="parent-task-card">
             <div class="card-header">
-              <span class="card-title">⬆️ 父任务 ({{ waitForTasks.length }})</span>
+              <span class="card-title">👨‍👦 父任务（AI拆分来源）</span>
+              <span class="relation-badge parent">父子关系</span>
+            </div>
+            <div 
+              class="task-card"
+              @click="openTaskDetail(parentTask.id)"
+            >
+              <div class="task-card-header">
+                <span :class="['status-icon', parentTask.status]">
+                  {{ parentTask.status === 'completed' ? '✅' : '⬜' }}
+                </span>
+                <span class="task-name">{{ parentTask.text }}</span>
+              </div>
+              <div class="task-card-meta">
+                <span class="task-category">{{ getCategoryIcon(parentTask.category) }} {{ getCategoryText(parentTask.category) }}</span>
+                <span v-if="parentTask.completed_at" class="task-time">
+                  完成于 {{ formatDateTime(parentTask.completed_at) }}
+                </span>
+                <span v-else class="task-time">
+                  {{ formatDeadline(parentTask) }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 前置任务（手动依赖） -->
+          <div v-if="dependencyTasks.length > 0" class="wait-for-card">
+            <div class="card-header">
+              <span class="card-title">⬆️ 前置任务（手动依赖）</span>
+              <span class="relation-badge dependency">依赖关系</span>
             </div>
             <div class="waiting-tasks-list">
               <div 
-                v-for="waitForTask in waitForTasks" 
-                :key="waitForTask.id"
+                v-for="depTask in dependencyTasks" 
+                :key="depTask.id"
                 class="task-card"
-                @click="openTaskDetail(waitForTask.id)"
+                @click="openTaskDetail(depTask.id)"
               >
                 <div class="task-card-header">
-                  <span :class="['status-icon', waitForTask.status]">
-                    {{ waitForTask.status === 'completed' ? '✅' : '⬜' }}
+                  <span :class="['status-icon', depTask.status]">
+                    {{ depTask.status === 'completed' ? '✅' : '⬜' }}
                   </span>
-                  <span class="task-name">{{ waitForTask.text }}</span>
+                  <span class="task-name">{{ depTask.text }}</span>
                 </div>
                 <div class="task-card-meta">
-                  <span class="task-category">{{ getCategoryIcon(waitForTask.category) }} {{ getCategoryText(waitForTask.category) }}</span>
-                  <span v-if="waitForTask.completed_at" class="task-time">
-                    完成于 {{ formatDateTime(waitForTask.completed_at) }}
+                  <span class="task-category">{{ getCategoryIcon(depTask.category) }} {{ getCategoryText(depTask.category) }}</span>
+                  <span v-if="depTask.completed_at" class="task-time">
+                    完成于 {{ formatDateTime(depTask.completed_at) }}
                   </span>
                   <span v-else class="task-time">
-                    {{ formatDeadline(waitForTask) }}
+                    {{ formatDeadline(depTask) }}
                   </span>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- 子任务列表 -->
-          <div v-if="waitingTasks.length > 0" class="waiting-tasks-card">
+          <!-- 子任务（AI拆分生成） -->
+          <div v-if="childTasks.length > 0" class="child-tasks-card">
             <div class="card-header">
-              <span class="card-title">🔗 依赖关系 · 📋 子任务 ({{ waitingTasks.length }})</span>
+              <span class="card-title">👶 子任务（AI拆分生成）</span>
+              <span class="relation-badge parent">父子关系</span>
             </div>
             <div class="waiting-tasks-list">
               <div 
-                v-for="waitingTask in waitingTasks" 
-                :key="waitingTask.id"
+                v-for="childTask in childTasks" 
+                :key="childTask.id"
                 class="task-card mini"
-                @click="openTaskDetail(waitingTask.id)"
+                @click="openTaskDetail(childTask.id)"
               >
-                <span class="task-name">{{ waitingTask.text }}</span>
-                <span :class="['priority-badge', waitingTask.priority]">
-                  {{ getPriorityText(waitingTask.priority) }}
+                <span class="task-name">{{ childTask.text }}</span>
+                <span :class="['priority-badge', childTask.priority]">
+                  {{ getPriorityText(childTask.priority) }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 后置任务（手动依赖） -->
+          <div v-if="blockedTasks.length > 0" class="blocked-tasks-card">
+            <div class="card-header">
+              <span class="card-title">⬇️ 后置任务（手动依赖）</span>
+              <span class="relation-badge dependency">依赖关系</span>
+            </div>
+            <div class="waiting-tasks-list">
+              <div 
+                v-for="blockedTask in blockedTasks" 
+                :key="blockedTask.id"
+                class="task-card mini"
+                @click="openTaskDetail(blockedTask.id)"
+              >
+                <span class="task-name">{{ blockedTask.text }}</span>
+                <span :class="['priority-badge', blockedTask.priority]">
+                  {{ getPriorityText(blockedTask.priority) }}
                 </span>
               </div>
             </div>
@@ -202,14 +253,14 @@
               @click="showWaitForSelector = true" 
               class="btn-set-wait"
             >
-              {{ waitForTasks.length > 0 ? '✏️ 编辑等待任务' : '🔗 设置等待任务' }}
+              {{ dependencyTasks.length > 0 ? '✏️ 编辑前置任务' : '🔗 添加前置任务' }}
             </button>
             <button 
-              v-if="waitForTasks.length > 0"
-              @click="handleClearWaitFor" 
+              v-if="dependencyTasks.length > 0"
+              @click="handleClearDependencies" 
               class="btn-clear-wait"
             >
-              ✕ 取消等待
+              ✕ 清除前置任务
             </button>
           </div>
         </section>
@@ -559,12 +610,59 @@ const waitingTasks = computed(() => {
   return taskStore.getWaitingTasks(props.task.id)
 })
 
+// 父任务（AI拆分来源）
+const parentTask = computed(() => {
+  if (!props.task.parentTaskId) {
+    console.log('TaskDetailModal - parentTask: null (无父任务)')
+    return null
+  }
+  const parent = taskStore.tasks.find(t => t.id === props.task.parentTaskId)
+  console.log('TaskDetailModal - parentTask:', {
+    taskId: props.task.id,
+    taskText: props.task.text,
+    parentTaskId: props.task.parentTaskId,
+    parentFound: !!parent,
+    parentText: parent?.text
+  })
+  return parent
+})
+
+// 子任务（AI拆分生成）
+const childTasks = computed(() => {
+  const children = taskStore.tasks.filter(t => t.parentTaskId === props.task.id)
+  console.log('TaskDetailModal - childTasks:', {
+    taskId: props.task.id,
+    taskText: props.task.text,
+    childrenCount: children.length,
+    children: children.map(c => ({ id: c.id, text: c.text, parentTaskId: c.parentTaskId }))
+  })
+  return children
+})
+
+// 前置任务（手动依赖）
+const dependencyTasks = computed(() => {
+  return taskStore.getWaitForTasks(props.task.id)
+})
+
+// 后置任务（手动依赖）
+const blockedTasks = computed(() => {
+  return taskStore.getWaitingTasks(props.task.id)
+})
+
 const handleClearWaitFor = async () => {
   await taskStore.clearWaitFor(props.task.id)
   emit('refresh')
 }
 
+// 清除手动依赖（不影响父子关系）
+const handleClearDependencies = async () => {
+  // 直接清除所有依赖
+  await taskStore.clearWaitFor(props.task.id)
+  emit('refresh')
+}
+
 const handleSetWaitFor = async (waitForTaskIds) => {
+  // 直接设置依赖，不自动添加父任务
   await taskStore.setWaitFor(props.task.id, waitForTaskIds)
   showWaitForSelector.value = false
   emit('refresh')
@@ -1727,18 +1825,39 @@ section h3 {
   color: #666;
 }
 
-.wait-for-card, .waiting-tasks-card {
+.wait-for-card, .waiting-tasks-card, .parent-task-card, .child-tasks-card, .blocked-tasks-card {
   margin-bottom: 1rem;
 }
 
 .card-header {
   margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
 
 .card-title {
   font-size: 0.9rem;
   font-weight: 600;
   color: #666;
+}
+
+.relation-badge {
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.relation-badge.parent {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.relation-badge.dependency {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
 }
 
 .task-card {
