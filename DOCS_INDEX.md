@@ -1,8 +1,8 @@
 # 文档索引 | Documentation Index
 
 **版本**: v0.7.8  
-**更新日期**: 2026-03-01  
-**文档总数**: 15 份核心文档 + 96 份草稿 + 94 份审计报告
+**更新日期**: 2026-03-02  
+**文档总数**: 18 份核心文档 + 96 份草稿 + 98 份审计报告
 
 ---
 
@@ -15,22 +15,32 @@
 | 文档名称 | 状态 | 版本 | 描述 |
 |---------|------|------|------|
 | [README.md](./README.md) | ✅ 最新 | v0.7.8 | 项目概览、功能列表、安装指南、版本历史 |
-| [CHANGELOG.md](./CHANGELOG.md) | ✅ 最新 | v0.7.8 | 完整的版本变更记录 |
+| [CHANGELOG.md](./CHANGELOG.md) | ✅ 最新 | v0.7.8 | 完整的版本变更记录（已统一版本号） |
 | [LICENSE](./LICENSE) | ✅ 最新 | MIT | 开源协议 |
+| [RELEASE_NOTES_v0.7.8.md](./RELEASE_NOTES_v0.7.8.md) | ✅ 最新 | v0.7.8 | v0.7.8版本发布说明 |
 
 #### 用户文档
 
 | 文档名称 | 状态 | 版本 | 描述 |
 |---------|------|------|------|
-| [USER_MANUAL.md](./USER_MANUAL.md) | ⚠️ 需更新 | v1.7.6 | 完整的用户手册 |
-| [QUICK_START.md](./QUICK_START.md) | ⚠️ 需更新 | v1.7.0 | 快速开始指南 |
-| [FEATURES.md](./FEATURES.md) | ⚠️ 需更新 | v1.7.6 | 功能列表详解 |
+| [USER_MANUAL.md](./USER_MANUAL.md) | ✅ 最新 | v0.7.8 | 完整的用户手册 |
+| [QUICK_START.md](./QUICK_START.md) | ✅ 最新 | v0.7.8 | 快速开始指南 |
+| [FEATURES.md](./FEATURES.md) | ✅ 最新 | v0.7.8 | 功能列表详解 |
 
 #### 开发文档
 
 | 文档名称 | 状态 | 版本 | 描述 |
 |---------|------|------|------|
-| [DEVELOPER.md](./DEVELOPER.md) | ⚠️ 需更新 | v1.7.6 | 开发者指南、技术架构 |
+| [DEVELOPER.md](./DEVELOPER.md) | ✅ 最新 | v0.7.8 | 开发者指南、技术架构 |
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | ✅ 最新 | v0.7.8 | 系统架构文档 |
+| [API_REFERENCE.md](./API_REFERENCE.md) | ✅ 最新 | v0.7.8 | API参考文档 |
+| [TESTING_GUIDE.md](./TESTING_GUIDE.md) | ✅ 最新 | v0.7.8 | 测试指南 |
+
+#### 技术说明文档
+
+| 文档名称 | 状态 | 版本 | 描述 |
+|---------|------|------|------|
+| [CLIPBOARD_LOGIC_EXPLANATION.md](./CLIPBOARD_LOGIC_EXPLANATION.md) | ✅ 最新 | v0.7.8 | 剪贴板功能技术限制说明 |
 
 #### 管理文档
 
@@ -40,14 +50,14 @@
 | [DOC_STANDARDS.md](./DOC_STANDARDS.md) | ✅ 最新 | v1.0 | 文档标准 |
 | [DOCS_INDEX.md](./DOCS_INDEX.md) | ✅ 最新 | v0.7.8 | 本文档 |
 
-#### 审计文档（v0.7.8）
+#### 审计与清理文档（v0.7.8）
 
 | 文档名称 | 状态 | 版本 | 描述 |
 |---------|------|------|------|
-| [DOC_AUDIT_REPORT_V0.7.8_CRITICAL.md](./DOC_AUDIT_REPORT_V0.7.8_CRITICAL.md) | ✅ 最新 | v0.7.8 | 批判性审计报告 |
-| [DOC_ISSUES_LIST_V0.7.8.md](./DOC_ISSUES_LIST_V0.7.8.md) | ✅ 最新 | v0.7.8 | 问题清单（10个问题） |
-| [DOC_MAINTENANCE_SUMMARY_V0.7.8.md](./DOC_MAINTENANCE_SUMMARY_V0.7.8.md) | ✅ 最新 | v0.7.8 | 维护完成报告 |
-| [DOC_CLEANUP_PLAN_V0.7.8.md](./DOC_CLEANUP_PLAN_V0.7.8.md) | ✅ 最新 | v0.7.8 | 文档整理计划 |
+| [COMPREHENSIVE_AUDIT_REPORT_v0.7.8.md](./COMPREHENSIVE_AUDIT_REPORT_v0.7.8.md) | ✅ 最新 | v0.7.8 | 综合审计报告（批判性视角） |
+| [AUDIT_REPORT_v0.7.8.md](./AUDIT_REPORT_v0.7.8.md) | ✅ 最新 | v0.7.8 | 文档审计报告 |
+| [CLEANUP_GUIDE_v0.7.8.md](./CLEANUP_GUIDE_v0.7.8.md) | ✅ 最新 | v0.7.8 | 清理执行指南 |
+| [MATERIALS_CLEANUP_LOG_*.md](./MATERIALS_CLEANUP_LOG_*.md) | ✅ 最新 | v0.7.8 | 材料清理日志 |
 | [DOC_DELIVERY_CHECKLIST_V0.7.8.md](./DOC_DELIVERY_CHECKLIST_V0.7.8.md) | ✅ 最新 | v0.7.8 | 交付清单 |
 | [VERSION_FIX_REPORT_V0.7.8.md](./VERSION_FIX_REPORT_V0.7.8.md) | ✅ 最新 | v0.7.8 | 版本号修复报告 |
 | [P0_EXECUTION_REPORT_V0.7.8.md](./P0_EXECUTION_REPORT_V0.7.8.md) | ✅ 最新 | v0.7.8 | P0任务执行报告 |
