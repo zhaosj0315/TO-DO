@@ -25,16 +25,16 @@
 
 | 文件名 | 类型 | 说明 |
 |--------|------|------|
-| DOC_AUDIT_REPORT_V1.7.8_CRITICAL.md | 审计报告 | 批判性审查报告 |
-| DOC_CLEANUP_PLAN_V1.7.8.md | 清理计划 | 文档清理计划 |
-| DOC_DELIVERY_CHECKLIST_V1.7.8.md | 交付清单 | 文档交付检查清单 |
-| DOC_ISSUES_LIST_V1.7.8.md | 问题清单 | 文档问题列表 |
-| DOC_MAINTENANCE_SUMMARY_V1.7.8.md | 维护总结 | 文档维护总结 |
-| P0_EXECUTION_REPORT_V1.7.8.md | 执行报告 | P0任务执行报告 |
-| P1_EXECUTION_REPORT_V1.7.8.md | 执行报告 | P1任务执行报告 |
-| P1_EXECUTION_COMPLETE_V1.7.8.md | 完成报告 | P1任务完成报告 |
-| VERSION_FIX_REPORT_V1.7.8.md | 修复报告 | 版本修复报告 |
-| TERMINOLOGY_UNIFICATION_REPORT_V1.7.8.md | 统一报告 | 术语统一报告 |
+| DOC_AUDIT_REPORT_V0.7.8_CRITICAL.md | 审计报告 | 批判性审查报告 |
+| DOC_CLEANUP_PLAN_V0.7.8.md | 清理计划 | 文档清理计划 |
+| DOC_DELIVERY_CHECKLIST_V0.7.8.md | 交付清单 | 文档交付检查清单 |
+| DOC_ISSUES_LIST_V0.7.8.md | 问题清单 | 文档问题列表 |
+| DOC_MAINTENANCE_SUMMARY_V0.7.8.md | 维护总结 | 文档维护总结 |
+| P0_EXECUTION_REPORT_V0.7.8.md | 执行报告 | P0任务执行报告 |
+| P1_EXECUTION_REPORT_V0.7.8.md | 执行报告 | P1任务执行报告 |
+| P1_EXECUTION_COMPLETE_V0.7.8.md | 完成报告 | P1任务完成报告 |
+| VERSION_FIX_REPORT_V0.7.8.md | 修复报告 | 版本修复报告 |
+| TERMINOLOGY_UNIFICATION_REPORT_V0.7.8.md | 统一报告 | 术语统一报告 |
 
 **清理数量**: 10 个文件  
 **清理方式**: 移动到 docs/audits/（归档保存）
@@ -64,7 +64,7 @@
 
 | 文件名 | 类型 | 说明 |
 |--------|------|------|
-| DOC_MAINTENANCE_FINAL_REPORT_V1.7.8.md | 最终报告 | 汇总所有维护工作 |
+| DOC_MAINTENANCE_FINAL_REPORT_V0.7.8.md | 最终报告 | 汇总所有维护工作 |
 
 ---
 
@@ -158,7 +158,7 @@ TO-DO/
 10. DOCS_INDEX.md - 文档索引
 11. DOC_MANAGEMENT_POLICY.md - 管理政策
 12. DOC_STANDARDS.md - 文档标准
-13. DOC_MAINTENANCE_FINAL_REPORT_V1.7.8.md - 最终报告
+13. DOC_MAINTENANCE_FINAL_REPORT_V0.7.8.md - 最终报告
 
 ---
 
@@ -167,16 +167,16 @@ TO-DO/
 所有过程性材料已归档到：
 ```
 docs/audits/
-├── DOC_AUDIT_REPORT_V1.7.8_CRITICAL.md
-├── DOC_CLEANUP_PLAN_V1.7.8.md
-├── DOC_DELIVERY_CHECKLIST_V1.7.8.md
-├── DOC_ISSUES_LIST_V1.7.8.md
-├── DOC_MAINTENANCE_SUMMARY_V1.7.8.md
-├── P0_EXECUTION_REPORT_V1.7.8.md
-├── P1_EXECUTION_REPORT_V1.7.8.md
-├── P1_EXECUTION_COMPLETE_V1.7.8.md
-├── VERSION_FIX_REPORT_V1.7.8.md
-└── TERMINOLOGY_UNIFICATION_REPORT_V1.7.8.md
+├── DOC_AUDIT_REPORT_V0.7.8_CRITICAL.md
+├── DOC_CLEANUP_PLAN_V0.7.8.md
+├── DOC_DELIVERY_CHECKLIST_V0.7.8.md
+├── DOC_ISSUES_LIST_V0.7.8.md
+├── DOC_MAINTENANCE_SUMMARY_V0.7.8.md
+├── P0_EXECUTION_REPORT_V0.7.8.md
+├── P1_EXECUTION_REPORT_V0.7.8.md
+├── P1_EXECUTION_COMPLETE_V0.7.8.md
+├── VERSION_FIX_REPORT_V0.7.8.md
+└── TERMINOLOGY_UNIFICATION_REPORT_V0.7.8.md
 ```
 
 ---

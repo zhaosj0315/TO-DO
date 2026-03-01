@@ -1,6 +1,6 @@
 # 文档维护最终报告 | Final Documentation Maintenance Report
 
-**版本**: v1.7.8  
+**版本**: v0.7.8  
 **执行日期**: 2026-03-01  
 **执行人**: Kiro AI  
 **状态**: ✅ 全部完成
@@ -9,7 +9,7 @@
 
 ## 📋 执行摘要
 
-本次文档维护遵循"代码封板，文档适配"原则，完成了 TO-DO App v1.7.8 的全面文档审计、清理和更新工作。
+本次文档维护遵循"代码封板，文档适配"原则，完成了 TO-DO App v0.7.8 的全面文档审计、清理和更新工作。
 
 ### 核心成果
 
@@ -35,7 +35,7 @@
 
 ### 1. 批判性审计 ✅
 
-**文件**: `DOC_AUDIT_REPORT_V1.7.8_CRITICAL.md`
+**文件**: `DOC_AUDIT_REPORT_V0.7.8_CRITICAL.md`
 
 **发现问题**: 10 个
 - 🔴 严重: 5 个
@@ -43,7 +43,7 @@
 - 🟢 轻微: 2 个
 
 **关键发现**:
-- 版本号不一致（v1.7.10 vs v1.7.8）
+- 版本号不一致（v1.7.10 vs v0.7.8）
 - 未来版本记录残留（v1.7.12, v1.7.11, v1.7.10）
 - 根目录文档过多（50+ 个）
 
@@ -68,7 +68,7 @@
 **修改内容**:
 - ❌ 删除未来版本（v1.7.12, v1.7.11, v1.7.10）
 - ❌ 删除"NEW in v1.7.7"标签
-- ✅ 添加 v1.7.8 更新说明
+- ✅ 添加 v0.7.8 更新说明
 - ✅ 补充重复任务自动重置说明
 
 ---
@@ -77,7 +77,7 @@
 
 **新增内容**:
 ```markdown
-### v1.7.8 (2026-03-01)
+### v0.7.8 (2026-03-01)
 - 🐛 重复任务逻辑修复
 - 🐛 Bottom Sheet 布局统一
 - 🎨 UI优化
@@ -89,13 +89,13 @@
 
 **文件**: `src/views/TodoView.vue` (lines 4393-4500)
 
-**修复**: v1.7.10 → v1.7.8
+**修复**: v1.7.10 → v0.7.8
 
 ---
 
 ### 6. DOCS_INDEX.md 创建 ✅
 
-**内容**: v1.7.8 文档索引，反映重组后的结构
+**内容**: v0.7.8 文档索引，反映重组后的结构
 
 ---
 
@@ -104,7 +104,7 @@
 ### 1. USER_MANUAL.md 更新 ✅
 
 **修改**:
-- 版本号: v1.7.8
+- 版本号: v0.7.8
 - 新增: 重复任务自动重置说明
 
 ---
@@ -112,7 +112,7 @@
 ### 2. DEVELOPER.md 更新 ✅
 
 **修改**:
-- 版本号: v1.7.8
+- 版本号: v0.7.8
 - 新增: Bottom Sheet 组件规范（含 CSS 示例）
 
 ---
@@ -129,7 +129,7 @@
 ### 4. FEATURES.md 更新 ✅
 
 **修改**:
-- 版本号: v1.7.8
+- 版本号: v0.7.8
 - 新增: 最新更新章节
 
 ---
@@ -234,35 +234,35 @@
 10. DOC_MANAGEMENT_POLICY.md
 11. DOC_STANDARDS.md
 12. DOCS_INDEX.md
-13. DOC_AUDIT_REPORT_V1.7.8_CRITICAL.md
-14. DOC_MAINTENANCE_SUMMARY_V1.7.8.md
-15. TERMINOLOGY_UNIFICATION_REPORT_V1.7.8.md
+13. DOC_AUDIT_REPORT_V0.7.8_CRITICAL.md
+14. DOC_MAINTENANCE_SUMMARY_V0.7.8.md
+15. TERMINOLOGY_UNIFICATION_REPORT_V0.7.8.md
 
 ---
 
 ## 🔧 代码修复记录
 
 ### 1. CHANGELOG.md
-- 添加 v1.7.8 版本记录
+- 添加 v0.7.8 版本记录
 
 ### 2. src/views/TodoView.vue
-- 修复 versionHistory: v1.7.10 → v1.7.8
+- 修复 versionHistory: v1.7.10 → v0.7.8
 
 ---
 
 ## 📝 生成的报告文档
 
-1. DOC_AUDIT_REPORT_V1.7.8_CRITICAL.md
-2. DOC_CLEANUP_PLAN_V1.7.8.md
-3. DOC_ISSUES_LIST_V1.7.8.md
-4. DOC_DELIVERY_CHECKLIST_V1.7.8.md
-5. P0_EXECUTION_REPORT_V1.7.8.md
-6. P1_EXECUTION_REPORT_V1.7.8.md
-7. P1_EXECUTION_COMPLETE_V1.7.8.md
-8. VERSION_FIX_REPORT_V1.7.8.md
-9. DOC_MAINTENANCE_SUMMARY_V1.7.8.md
-10. TERMINOLOGY_UNIFICATION_REPORT_V1.7.8.md
-11. DOC_MAINTENANCE_FINAL_REPORT_V1.7.8.md（本文档）
+1. DOC_AUDIT_REPORT_V0.7.8_CRITICAL.md
+2. DOC_CLEANUP_PLAN_V0.7.8.md
+3. DOC_ISSUES_LIST_V0.7.8.md
+4. DOC_DELIVERY_CHECKLIST_V0.7.8.md
+5. P0_EXECUTION_REPORT_V0.7.8.md
+6. P1_EXECUTION_REPORT_V0.7.8.md
+7. P1_EXECUTION_COMPLETE_V0.7.8.md
+8. VERSION_FIX_REPORT_V0.7.8.md
+9. DOC_MAINTENANCE_SUMMARY_V0.7.8.md
+10. TERMINOLOGY_UNIFICATION_REPORT_V0.7.8.md
+11. DOC_MAINTENANCE_FINAL_REPORT_V0.7.8.md（本文档）
 
 ---
 
@@ -316,7 +316,7 @@
 ## 📅 后续维护建议
 
 ### 短期（1个月内）
-1. 补充截图到 v1.7.8
+1. 补充截图到 v0.7.8
 2. 验证所有链接有效性
 3. 收集用户反馈
 
@@ -335,15 +335,15 @@
 ## 🔗 相关文档
 
 - [文档管理政策](./DOC_MANAGEMENT_POLICY.md)
-- [文档审计报告](./DOC_AUDIT_REPORT_V1.7.8_CRITICAL.md)
-- [术语统一报告](./TERMINOLOGY_UNIFICATION_REPORT_V1.7.8.md)
+- [文档审计报告](./DOC_AUDIT_REPORT_V0.7.8_CRITICAL.md)
+- [术语统一报告](./TERMINOLOGY_UNIFICATION_REPORT_V0.7.8.md)
 - [文档索引](./DOCS_INDEX.md)
 
 ---
 
 ## 📌 总结
 
-本次文档维护工作历时 1 天，完成了 v1.7.8 版本的全面文档更新。通过系统化的审计、清理和重组，文档质量得到显著提升，为项目的长期维护奠定了坚实基础。
+本次文档维护工作历时 1 天，完成了 v0.7.8 版本的全面文档更新。通过系统化的审计、清理和重组，文档质量得到显著提升，为项目的长期维护奠定了坚实基础。
 
 **关键成就**:
 - 📚 文档体系完整（用户+开发+维护）

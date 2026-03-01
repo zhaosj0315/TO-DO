@@ -1,6 +1,6 @@
 # 开发者文档 | Developer Documentation
 
-**版本**: v1.7.8  
+**版本**: v0.7.8  
 **更新日期**: 2026-03-01
 
 ## 🏗️ 架构概览
@@ -111,7 +111,7 @@ const someAIFunction = async () => {
 
 ---
 
-### Bottom Sheet 组件规范 (v1.7.8)
+### Bottom Sheet 组件规范 (v0.7.8)
 
 **设计原则**: 所有 UI 组件统一使用 Bottom Sheet 样式（从底部滑出，左右全屏）
 
@@ -158,7 +158,7 @@ const someAIFunction = async () => {
 }
 ```
 
-**已统一的组件** (v1.7.8):
+**已统一的组件** (v0.7.8):
 1. `AddDependencyModal.vue` - 添加依赖关系
 2. `SmartTaskSplitter.vue` - AI任务拆分
 3. `WaitForSelector.vue` - 等待任务选择器

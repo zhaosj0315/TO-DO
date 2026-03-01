@@ -1,6 +1,6 @@
 # 文档索引 | Documentation Index
 
-**版本**: v1.7.8  
+**版本**: v0.7.8  
 **更新日期**: 2026-03-01  
 **文档总数**: 15 份核心文档 + 96 份草稿 + 94 份审计报告
 
@@ -14,8 +14,8 @@
 
 | 文档名称 | 状态 | 版本 | 描述 |
 |---------|------|------|------|
-| [README.md](./README.md) | ✅ 最新 | v1.7.8 | 项目概览、功能列表、安装指南、版本历史 |
-| [CHANGELOG.md](./CHANGELOG.md) | ✅ 最新 | v1.7.8 | 完整的版本变更记录 |
+| [README.md](./README.md) | ✅ 最新 | v0.7.8 | 项目概览、功能列表、安装指南、版本历史 |
+| [CHANGELOG.md](./CHANGELOG.md) | ✅ 最新 | v0.7.8 | 完整的版本变更记录 |
 | [LICENSE](./LICENSE) | ✅ 最新 | MIT | 开源协议 |
 
 #### 用户文档
@@ -38,19 +38,19 @@
 |---------|------|------|------|
 | [DOC_MANAGEMENT_POLICY.md](./DOC_MANAGEMENT_POLICY.md) | ✅ 最新 | v1.0 | 文档开发管理规范 |
 | [DOC_STANDARDS.md](./DOC_STANDARDS.md) | ✅ 最新 | v1.0 | 文档标准 |
-| [DOCS_INDEX.md](./DOCS_INDEX.md) | ✅ 最新 | v1.7.8 | 本文档 |
+| [DOCS_INDEX.md](./DOCS_INDEX.md) | ✅ 最新 | v0.7.8 | 本文档 |
 
-#### 审计文档（v1.7.8）
+#### 审计文档（v0.7.8）
 
 | 文档名称 | 状态 | 版本 | 描述 |
 |---------|------|------|------|
-| [DOC_AUDIT_REPORT_V1.7.8_CRITICAL.md](./DOC_AUDIT_REPORT_V1.7.8_CRITICAL.md) | ✅ 最新 | v1.7.8 | 批判性审计报告 |
-| [DOC_ISSUES_LIST_V1.7.8.md](./DOC_ISSUES_LIST_V1.7.8.md) | ✅ 最新 | v1.7.8 | 问题清单（10个问题） |
-| [DOC_MAINTENANCE_SUMMARY_V1.7.8.md](./DOC_MAINTENANCE_SUMMARY_V1.7.8.md) | ✅ 最新 | v1.7.8 | 维护完成报告 |
-| [DOC_CLEANUP_PLAN_V1.7.8.md](./DOC_CLEANUP_PLAN_V1.7.8.md) | ✅ 最新 | v1.7.8 | 文档整理计划 |
-| [DOC_DELIVERY_CHECKLIST_V1.7.8.md](./DOC_DELIVERY_CHECKLIST_V1.7.8.md) | ✅ 最新 | v1.7.8 | 交付清单 |
-| [VERSION_FIX_REPORT_V1.7.8.md](./VERSION_FIX_REPORT_V1.7.8.md) | ✅ 最新 | v1.7.8 | 版本号修复报告 |
-| [P0_EXECUTION_REPORT_V1.7.8.md](./P0_EXECUTION_REPORT_V1.7.8.md) | ✅ 最新 | v1.7.8 | P0任务执行报告 |
+| [DOC_AUDIT_REPORT_V0.7.8_CRITICAL.md](./DOC_AUDIT_REPORT_V0.7.8_CRITICAL.md) | ✅ 最新 | v0.7.8 | 批判性审计报告 |
+| [DOC_ISSUES_LIST_V0.7.8.md](./DOC_ISSUES_LIST_V0.7.8.md) | ✅ 最新 | v0.7.8 | 问题清单（10个问题） |
+| [DOC_MAINTENANCE_SUMMARY_V0.7.8.md](./DOC_MAINTENANCE_SUMMARY_V0.7.8.md) | ✅ 最新 | v0.7.8 | 维护完成报告 |
+| [DOC_CLEANUP_PLAN_V0.7.8.md](./DOC_CLEANUP_PLAN_V0.7.8.md) | ✅ 最新 | v0.7.8 | 文档整理计划 |
+| [DOC_DELIVERY_CHECKLIST_V0.7.8.md](./DOC_DELIVERY_CHECKLIST_V0.7.8.md) | ✅ 最新 | v0.7.8 | 交付清单 |
+| [VERSION_FIX_REPORT_V0.7.8.md](./VERSION_FIX_REPORT_V0.7.8.md) | ✅ 最新 | v0.7.8 | 版本号修复报告 |
+| [P0_EXECUTION_REPORT_V0.7.8.md](./P0_EXECUTION_REPORT_V0.7.8.md) | ✅ 最新 | v0.7.8 | P0任务执行报告 |
 
 ---
 
@@ -124,8 +124,8 @@ docs/
 3. 查看 [docs/features/](./docs/features/) 功能实现文档
 
 #### 查看审计报告
-1. 最新审计: [DOC_AUDIT_REPORT_V1.7.8_CRITICAL.md](./DOC_AUDIT_REPORT_V1.7.8_CRITICAL.md)
-2. 问题清单: [DOC_ISSUES_LIST_V1.7.8.md](./DOC_ISSUES_LIST_V1.7.8.md)
+1. 最新审计: [DOC_AUDIT_REPORT_V0.7.8_CRITICAL.md](./DOC_AUDIT_REPORT_V0.7.8_CRITICAL.md)
+2. 问题清单: [DOC_ISSUES_LIST_V0.7.8.md](./DOC_ISSUES_LIST_V0.7.8.md)
 3. 历史审计: [docs/audits/](./docs/audits/)
 
 #### 查看历史版本
@@ -206,7 +206,7 @@ docs/
 - **定期审查**: 每月一次
 
 ### 最近审查记录
-- **v1.7.8 审查**: 2026-03-01（批判性审查）
+- **v0.7.8 审查**: 2026-03-01（批判性审查）
   - 发现 10 个问题
   - 修复 2 个严重问题
   - 整理 50+ 临时文档
@@ -220,10 +220,10 @@ docs/
 
 | 文档 | 当前版本 | 目标版本 | 说明 |
 |------|---------|---------|------|
-| USER_MANUAL.md | v1.7.6 | v1.7.8 | 补充重复任务说明 |
-| DEVELOPER.md | v1.7.6 | v1.7.8 | 补充 Bottom Sheet 规范 |
-| QUICK_START.md | v1.7.0 | v1.7.8 | 简化快速开始流程 |
-| FEATURES.md | v1.7.6 | v1.7.8 | 补充 v1.7.8 新功能 |
+| USER_MANUAL.md | v1.7.6 | v0.7.8 | 补充重复任务说明 |
+| DEVELOPER.md | v1.7.6 | v0.7.8 | 补充 Bottom Sheet 规范 |
+| QUICK_START.md | v1.7.0 | v0.7.8 | 简化快速开始流程 |
+| FEATURES.md | v1.7.6 | v0.7.8 | 补充 v0.7.8 新功能 |
 
 ### 中优先级（下周）
 
@@ -259,4 +259,4 @@ docs/
 **文档维护**: 开发团队  
 **最后更新**: 2026-03-01  
 **下次审查**: 2026-04-01  
-**文档版本**: v1.7.8
+**文档版本**: v0.7.8
