@@ -411,9 +411,9 @@
               <a href="https://github.com/zhaosj0315/TO-DO" target="_blank" class="footer-link">GitHub</a>
             </p>
             <p class="footer-links">
-              <a href="https://github.com/zhaosj0315/TO-DO/blob/main/LICENSE" target="_blank" class="footer-link">
-                {{ currentLanguage === 'zh' ? '📄 开源协议' : '📄 License' }}
-              </a>
+              <span class="footer-link" @click="showPrivacyPolicy = true">
+                {{ currentLanguage === 'zh' ? '🔒 隐私政策' : '🔒 Privacy' }}
+              </span>
               <span class="footer-divider">·</span>
               <span class="footer-link" @click="showSupport = true">
                 {{ currentLanguage === 'zh' ? '💬 反馈' : '💬 Feedback' }}
