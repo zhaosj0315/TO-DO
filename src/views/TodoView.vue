@@ -2341,6 +2341,23 @@
       
       <!-- 输入区 -->
       <div class="input-wrapper">
+        <!-- AI 智能建议卡片 -->
+        <div v-if="showAISuggestions && aiSuggestionsList.length > 0" class="ai-suggestions-card">
+          <div class="suggestions-header">
+            <span>💡 AI 建议</span>
+            <button @click="showAISuggestions = false" class="btn-close-suggestions">✕</button>
+          </div>
+          <ul class="suggestions-list">
+            <li v-for="(suggestion, index) in aiSuggestionsList" :key="index">
+              {{ suggestion }}
+            </li>
+          </ul>
+          <div class="suggestions-actions">
+            <button @click="adoptSuggestions" class="btn-adopt">✓ 采纳建议</button>
+            <button @click="showAISuggestions = false" class="btn-ignore">✕ 忽略</button>
+          </div>
+        </div>
+        
         <!-- 悬浮提示标签 -->
         <div v-if="newTaskDescription.length < 50" class="floating-hint">
           {{ getWordCountHint() }}
@@ -2355,8 +2372,20 @@
       
       <!-- 底部工具栏 -->
       <div class="toolbar">
+        <button class="toolbar-btn" @click="pasteFromClipboard">
+          📋 粘贴
+        </button>
+        <button class="toolbar-btn" @click="clearDescription">
+          🔄 清空
+        </button>
+        <button class="toolbar-btn" @click="startVoiceInput" :disabled="isRecording">
+          {{ isRecording ? '🔴 录音中...' : '🎤 语音' }}
+        </button>
+        <button class="toolbar-btn" @click="generateAISuggestions" :disabled="aiLoading || !quickTaskInput.trim()">
+          {{ aiLoading ? '⏳ 思考中...' : '💡 AI 建议' }}
+        </button>
         <button class="toolbar-btn" @click="continueDescription" :disabled="aiLoading">
-          {{ aiLoading ? '⏳ AI 思考中...' : '🤖 AI 续写' }}
+          {{ aiLoading ? '⏳ 思考中...' : '🤖 AI 续写' }}
         </button>
       </div>
     </div>
@@ -4669,6 +4698,9 @@ const descEditStartTime = ref(null)
 const descEditDuration = ref(0)
 let descEditTimer = null
 const currentDateTimeValue = ref('')
+const showAISuggestions = ref(false)
+const aiSuggestionsList = ref([])
+const isRecording = ref(false)
 
 // 当前日期时间（年月日时分秒）
 const currentDateTime = computed(() => currentDateTimeValue.value)
@@ -4750,10 +4782,158 @@ const closeFullscreenDesc = () => {
   tempDescription.value = newTaskDescription.value.trim()
   
   showFullscreenDesc.value = false
+  showAISuggestions.value = false
+  aiSuggestionsList.value = []
+  
   if (descEditTimer) {
     clearInterval(descEditTimer)
     descEditTimer = null
   }
+}
+
+// 📋 粘贴剪贴板内容
+const pasteFromClipboard = async () => {
+  try {
+    const text = await navigator.clipboard.readText()
+    if (text) {
+      newTaskDescription.value += text
+      showNotification('✅ 已粘贴', 'success')
+    }
+  } catch (err) {
+    showNotification('❌ 粘贴失败，请手动粘贴', 'error')
+  }
+}
+
+// 🔄 清空描述
+const clearDescription = () => {
+  if (!newTaskDescription.value.trim()) {
+    showNotification('描述已经是空的', 'info')
+    return
+  }
+  
+  if (confirm('确定要清空描述吗？')) {
+    newTaskDescription.value = ''
+    showNotification('✅ 已清空', 'success')
+  }
+}
+
+// 🎤 语音输入
+const startVoiceInput = async () => {
+  // 检查浏览器支持
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    showNotification('❌ 您的浏览器不支持语音识别', 'error')
+    return
+  }
+  
+  try {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    const recognition = new SpeechRecognition()
+    
+    recognition.lang = 'zh-CN'
+    recognition.continuous = false
+    recognition.interimResults = false
+    
+    recognition.onstart = () => {
+      isRecording.value = true
+      showNotification('🎤 开始录音...', 'info')
+    }
+    
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript
+      newTaskDescription.value += transcript
+      showNotification('✅ 识别成功', 'success')
+    }
+    
+    recognition.onerror = (event) => {
+      console.error('语音识别错误:', event.error)
+      showNotification('❌ 识别失败，请重试', 'error')
+    }
+    
+    recognition.onend = () => {
+      isRecording.value = false
+    }
+    
+    recognition.start()
+  } catch (err) {
+    console.error('语音输入错误:', err)
+    showNotification('❌ 语音输入失败', 'error')
+    isRecording.value = false
+  }
+}
+
+// 💡 生成 AI 智能建议
+const generateAISuggestions = async () => {
+  if (!quickTaskInput.value.trim()) {
+    showNotification('请先输入任务标题', 'error')
+    return
+  }
+  
+  try {
+    aiLoading.value = true
+    aiLoadingText.value = 'AI 正在分析...'
+    
+    const defaultModel = getDefaultAIModel()
+    if (!defaultModel) {
+      showNotification('请先配置 AI 模型', 'error')
+      aiLoading.value = false
+      return
+    }
+    
+    const prompt = `请根据任务标题"${quickTaskInput.value}"，生成3-5条具体的执行步骤或要点。
+要求：
+1. 每条建议简洁明了（10-20字）
+2. 按执行顺序排列
+3. 具有可操作性
+4. 只返回建议列表，每行一条，以 "- " 开头`
+    
+    const response = await fetch(defaultModel.apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${defaultModel.apiKey}`
+      },
+      body: JSON.stringify({
+        model: defaultModel.modelName,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7,
+        max_tokens: 500
+      })
+    })
+    
+    if (!response.ok) throw new Error('AI 请求失败')
+    
+    const data = await response.json()
+    const content = data.choices[0].message.content
+    
+    // 解析建议列表
+    const suggestions = content
+      .split('\n')
+      .filter(line => line.trim().startsWith('-'))
+      .map(line => line.trim().substring(2).trim())
+      .filter(line => line.length > 0)
+    
+    if (suggestions.length > 0) {
+      aiSuggestionsList.value = suggestions
+      showAISuggestions.value = true
+      showNotification('✅ AI 建议已生成', 'success')
+    } else {
+      showNotification('❌ 未能生成建议', 'error')
+    }
+  } catch (err) {
+    console.error('AI 建议生成失败:', err)
+    showNotification('❌ AI 建议生成失败', 'error')
+  } finally {
+    aiLoading.value = false
+    aiLoadingText.value = ''
+  }
+}
+
+// 采纳 AI 建议
+const adoptSuggestions = () => {
+  const suggestionsText = aiSuggestionsList.value.map((s, i) => `${i + 1}. ${s}`).join('\n')
+  newTaskDescription.value = suggestionsText + '\n\n' + newTaskDescription.value
+  showAISuggestions.value = false
+  showNotification('✅ 已采纳建议', 'success')
 }
 
 // AI 续写描述
@@ -16307,6 +16487,108 @@ watch(() => reportData.value, (newData) => {
   pointer-events: none;
 }
 
+/* AI 智能建议卡片 */
+.ai-suggestions-card {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  right: 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  z-index: 2;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.suggestions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.btn-close-suggestions {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.suggestions-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.75rem 0;
+}
+
+.suggestions-list li {
+  color: white;
+  font-size: 13px;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  line-height: 1.4;
+}
+
+.suggestions-list li:last-child {
+  border-bottom: none;
+}
+
+.suggestions-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-adopt,
+.btn-ignore {
+  flex: 1;
+  padding: 0.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-adopt {
+  background: white;
+  color: #667eea;
+}
+
+.btn-adopt:active {
+  transform: scale(0.95);
+}
+
+.btn-ignore {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.btn-ignore:active {
+  transform: scale(0.95);
+}
+
 .fullscreen-desc-textarea {
   flex: 1;
   width: 100%;
@@ -16331,24 +16613,28 @@ watch(() => reportData.value, (newData) => {
 /* 底部工具栏 */
 .toolbar {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
   padding: 0.75rem 1rem;
   background: #f8f8f8;
   border-top: 0.5px solid #e8e8e8;
   padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  overflow-x: auto;
 }
 
 .toolbar-btn {
-  padding: 0.6rem 1.5rem;
+  padding: 0.5rem 0.75rem;
   background: #007aff;
   color: white;
   border: none;
   border-radius: 8px;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .toolbar-btn:active {
