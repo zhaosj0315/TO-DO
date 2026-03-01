@@ -2315,8 +2315,7 @@
       <div class="fullscreen-desc-header">
         <!-- 顶层：导航栏 -->
         <div class="nav-bar">
-          <button class="nav-btn-text" @click="closeFullscreenDesc">取消</button>
-          <div class="task-name-center">
+          <div class="task-name-left">
             <input 
               v-model="quickTaskInput" 
               type="text" 
@@ -16186,12 +16185,17 @@ watch(() => reportData.value, (newData) => {
   padding: 0 1rem;
 }
 
+.task-name-left {
+  flex: 1;
+  padding: 0 1rem;
+}
+
 .task-name-input {
   width: 100%;
   font-size: 17px;
   font-weight: 600;
   color: #000;
-  text-align: center;
+  text-align: left;
   border: none;
   background: transparent;
   outline: none;
