@@ -4684,16 +4684,6 @@ const displayInputValue = computed(() => {
   return quickTaskInput.value  // 无描述时只显示标题
 })
 
-const currentDateTime = computed(() => {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = now.getMonth() + 1
-  const day = now.getDate()
-  const hours = String(now.getHours()).padStart(2, '0')
-  const minutes = String(now.getMinutes()).padStart(2, '0')
-  return `${year}年${month}月${day}日 ${hours}:${minutes}`
-})
-
 const descEditTime = computed(() => {
   const seconds = descEditDuration.value
   if (seconds < 60) return `编辑 ${seconds} 秒`
