@@ -2329,8 +2329,13 @@
         
         <!-- 中层：状态栏 -->
         <div class="status-bar">
-          <span v-if="descEditDuration > 0" class="status-text">{{ descEditTime }}</span>
-          <span v-if="newTaskDescription.length > 0" class="status-text">{{ newTaskDescription.length }} 字</span>
+          <div class="status-left">
+            <span v-if="descEditDuration > 0" class="status-text">编辑 {{ descEditDuration }} 秒</span>
+            <span v-if="newTaskDescription.length > 0" class="status-text">{{ newTaskDescription.length }} 字</span>
+          </div>
+          <div class="status-right">
+            <span class="status-text">{{ currentDateTime }}</span>
+          </div>
         </div>
       </div>
       
@@ -4654,6 +4659,22 @@ const showFullscreenDesc = ref(false)
 const descEditStartTime = ref(null)
 const descEditDuration = ref(0)
 let descEditTimer = null
+const currentDateTimeValue = ref('')
+
+// 当前日期时间（年月日时分秒）
+const currentDateTime = computed(() => currentDateTimeValue.value)
+
+// 更新当前时间
+const updateCurrentDateTime = () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  const hour = String(now.getHours()).padStart(2, '0')
+  const minute = String(now.getMinutes()).padStart(2, '0')
+  const second = String(now.getSeconds()).padStart(2, '0')
+  currentDateTimeValue.value = `${year}/${month}/${day} ${hour}:${minute}:${second}`
+}
 
 // 🆕 统一输入框计算属性
 const displayInputValue = computed(() => {
@@ -4715,9 +4736,13 @@ const openFullscreenDesc = () => {
   // 🆕 只加载描述到编辑器（标题固定显示，不可编辑）
   newTaskDescription.value = tempDescription.value
   
-  // 每秒更新编辑时长
+  // 初始化时间显示
+  updateCurrentDateTime()
+  
+  // 每秒更新编辑时长和当前时间
   descEditTimer = setInterval(() => {
     descEditDuration.value = Math.floor((Date.now() - descEditStartTime.value) / 1000)
+    updateCurrentDateTime()
   }, 1000)
 }
 
@@ -16237,11 +16262,21 @@ watch(() => reportData.value, (newData) => {
 /* 中层：状态栏 */
 .status-bar {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
-  gap: 1rem;
   padding: 0.5rem 1rem;
   background: transparent;
+}
+
+.status-left {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.status-right {
+  display: flex;
+  align-items: center;
 }
 
 .status-text {
