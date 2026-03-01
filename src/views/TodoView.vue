@@ -2361,9 +2361,10 @@
         <!-- 剪贴板历史选择器 -->
         <div v-if="showClipboardHistory" class="clipboard-history-sheet">
           <div class="history-header">
-            <span>📋 剪贴板历史</span>
+            <span>📋 最近粘贴</span>
             <button @click="showClipboardHistory = false" class="btn-close-history">✕</button>
           </div>
+          <div class="history-tip">长按"📋 粘贴"按钮可打开此列表</div>
           <div class="history-list">
             <div 
               v-for="(item, index) in clipboardHistory" 
@@ -2394,7 +2395,13 @@
       
       <!-- 底部工具栏 -->
       <div class="toolbar">
-        <button class="toolbar-btn" @click="pasteFromClipboard">
+        <button 
+          class="toolbar-btn" 
+          @click="pasteFromClipboard"
+          @contextmenu.prevent="showPasteHistory"
+          @touchstart="handlePasteTouchStart"
+          @touchend="handlePasteTouchEnd"
+        >
           📋 粘贴
         </button>
         <button class="toolbar-btn" @click="clearDescription">
@@ -4606,6 +4613,7 @@ const initVersionHistory = () => {
         '拍照OCR + AI文本增强'
       ],
       improvements: [
+        '剪贴板粘贴逻辑优化（点击直接粘贴+长按显示历史）',
         'AI建议卡片（紫色渐变+滑入动画+可采纳或忽略）',
         '全屏编辑导航栏优化（删除取消按钮+标题左对齐）',
         '工具栏横向滚动布局（4个按钮紧凑排列）',
@@ -4621,6 +4629,8 @@ const initVersionHistory = () => {
         'AI问答markdown渲染优化（列表、表格、emoji）'
       ],
       fixes: [
+        '修复剪贴板粘贴需要2步操作的问题（改为1步直接粘贴）',
+        '修复showPasteHistory函数重复声明导致构建失败',
         '修复安卓粘贴功能（使用Capacitor Clipboard API）',
         '修复AI建议功能的模型配置获取（直接从localStorage读取）',
         '修复AI建议API路径问题（统一使用/v1/chat/completions）',
@@ -4830,8 +4840,12 @@ const pasteFromClipboard = async () => {
     // 加载历史记录
     const history = JSON.parse(localStorage.getItem('clipboard_history') || '[]')
     
-    // 如果当前剪贴板有内容且不在历史中，添加到历史
+    // 如果当前剪贴板有内容，直接粘贴并记录
     if (value && value.trim()) {
+      // 粘贴到输入框
+      newTaskDescription.value += value
+      
+      // 记录到历史（去重）
       const exists = history.some(item => item.text === value)
       if (!exists) {
         history.unshift({
@@ -4847,18 +4861,39 @@ const pasteFromClipboard = async () => {
         if (history.length > 10) history.pop()
         localStorage.setItem('clipboard_history', JSON.stringify(history))
       }
-    }
-    
-    // 显示历史记录选择器
-    if (history.length > 0) {
-      clipboardHistory.value = history
-      showClipboardHistory.value = true
+      
+      showNotification('✅ 已粘贴', 'success')
     } else {
-      showNotification('剪贴板历史为空', 'info')
+      showNotification('剪贴板为空', 'info')
     }
   } catch (err) {
     console.error('读取剪贴板失败:', err)
     showNotification('❌ 读取剪贴板失败', 'error')
+  }
+}
+
+// 📋 显示粘贴历史（长按粘贴按钮）
+const showPasteHistory = () => {
+  const history = JSON.parse(localStorage.getItem('clipboard_history') || '[]')
+  if (history.length > 0) {
+    clipboardHistory.value = history
+    showClipboardHistory.value = true
+  } else {
+    showNotification('暂无粘贴历史', 'info')
+  }
+}
+
+// 长按检测
+let pasteLongPressTimer = null
+const handlePasteTouchStart = () => {
+  pasteLongPressTimer = setTimeout(() => {
+    showPasteHistory()
+  }, 500) // 长按500ms触发
+}
+const handlePasteTouchEnd = () => {
+  if (pasteLongPressTimer) {
+    clearTimeout(pasteLongPressTimer)
+    pasteLongPressTimer = null
   }
 }
 
@@ -16680,6 +16715,14 @@ watch(() => reportData.value, (newData) => {
   border-bottom: 1px solid #e8e8e8;
   font-weight: 600;
   font-size: 15px;
+}
+
+.history-tip {
+  padding: 0.5rem 1rem;
+  font-size: 12px;
+  color: #999;
+  background: #f8f8f8;
+  text-align: center;
 }
 
 .btn-close-history {
