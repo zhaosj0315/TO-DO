@@ -29,12 +29,12 @@ This is an **offline Android To-Do management application** built with **Vue 3**
   - **Task Navigation**: Click waiting task card to jump to details
   - **Data Migration**: Auto-add waitFor field to old tasks
   - **Note**: Repeat tasks (daily/weekly/weekday) automatically reset to pending status each day/week
-- **AI Proactive Assistant** 🤖 (v1.7.6):
+- **AI Proactive Assistant** 🤖 (v0.7.6):
   - **Smart Reminder Card**: Auto-detect overdue and pending tasks with proactive reminders
   - **Daily Smart Summary**: Daily work summary with AI insights and tomorrow's plan
   - **Weekly/Monthly Report Generator**: Auto-generate structured reports with export options
   - **Smart Task Splitter**: AI-powered task decomposition with 4 templates and time estimation
-- **AI Chat Assistant** 🤖 (v1.7.4):
+- **AI Chat Assistant** 🤖 (v0.7.4):
   - **Intelligent Q&A**: Ask questions about your tasks in natural language
   - **Multi-Model Support**: Pangu AI, OpenAI, or local models (Ollama)
   - **Complete Data Context**: AI has access to all task data, logs, and statistics
@@ -80,7 +80,7 @@ This is an **offline Android To-Do management application** built with **Vue 3**
   - **Deadline Display**: Auto-calculated deadline with color-coded urgency
   - **Pomodoro System**: Visual tomato count based on priority (🍅🍅🍅🍅)
   - **Pin to Top**: Pin important tasks to stay at the top of the list (📌 button)
-- **Task Execution Logs** 💬 (v1.7.0):
+- **Task Execution Logs** 💬 (v0.7.0):
   - **6 Log Types**: Start, Progress, Block, Solution, Milestone, Complete
   - **Unlimited Logs**: Add multiple logs per task to track execution process
   - **Auto Timestamp**: Time automatically recorded when adding logs
@@ -94,7 +94,7 @@ This is an **offline Android To-Do management application** built with **Vue 3**
   - **Timeline View**: Visual timeline showing creation → deadline → completion with color-coded urgency
   - **Unified Entry**: Click task title or description to open the same Bottom Sheet
   - **Log Badges**: Task cards display log count (💬 X) and progress (📊 X%)
-  - **Editable Properties** (NEW in v1.7.7): All log fields and AI summaries are directly editable
+  - **Editable Properties** (NEW in v0.7.7): All log fields and AI summaries are directly editable
     - 📊 Progress: Edit percentage (0-100%)
     - ⏱️ Duration: Edit time in minutes
     - 😊 Mood: Change mood status (Good/Neutral/Bad)
@@ -190,12 +190,12 @@ This is an **offline Android To-Do management application** built with **Vue 3**
   - **任务跳转**：点击等待的任务卡片可跳转到详情
   - **数据迁移**：自动为旧任务添加 waitFor 字段
   - **注意**：重复任务（每天/每周/工作日）完成后会在第二天/下周自动重置为待办状态
-- **AI主动式助手** 🤖 (v1.7.6 新增):
+- **AI主动式助手** 🤖 (v0.7.6 新增):
   - **智能提醒卡片**: 自动检测逾期和待办任务，主动提醒
   - **每日智能总结**: 每日工作总结，AI 建议，明日计划
   - **周报/月报生成**: 自动生成结构化报告，支持导出
   - **智能任务分解**: AI 驱动的任务拆解，4种模板，时间估算
-- **AI智能问答** 🤖 (v1.7.4 新增):
+- **AI智能问答** 🤖 (v0.7.4 新增):
   - **自然语言问答**: 用自然语言询问任务相关问题
   - **多模型支持**: 盘古大模型、OpenAI、本地模型（Ollama）
   - **完整数据上下文**: AI可访问所有任务数据、日志、统计信息
@@ -241,7 +241,7 @@ This is an **offline Android To-Do management application** built with **Vue 3**
   - **截止时间显示**: 自动计算截止时间，颜色分级提醒
   - **番茄钟系统**: 根据优先级显示番茄数（🍅🍅🍅🍅）
   - **置顶功能**: 点击📌按钮将重要任务置顶（📌 按钮）
-- **任务执行日志** 💬 (v1.7.0 新增):
+- **任务执行日志** 💬 (v0.7.0 新增):
   - **6种日志类型**: 开始、进展、阻碍、方案、里程碑、完成
   - **无限追加日志**: 每个任务可添加多条日志记录执行过程
   - **时间自动记录**: 添加日志时自动记录时间戳
@@ -456,7 +456,7 @@ userInfo[username] = {
 
 ## 📝 版本历史 | Version History
 
-### v1.7.8 (2026-03-01)
+### v0.7.8 (2026-03-01)
 - 🐛 **重复任务逻辑修复**:
   - 修复 `weekday`（工作日重复）和 `weekly`（每周重复）类型任务缺少截止时间计算的问题
   - 新增重复任务自动重置功能：
