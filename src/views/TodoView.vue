@@ -4825,7 +4825,11 @@ const generateAISuggestions = async () => {
     aiLoading.value = true
     aiLoadingText.value = 'AI 正在分析...'
     
-    const defaultModel = getDefaultAIModel()
+    // 获取默认模型配置
+    const models = JSON.parse(localStorage.getItem('ai_models') || '[]')
+    const defaultModelId = localStorage.getItem('ai_default_model')
+    const defaultModel = models.find(m => m.id === defaultModelId) || models[0]
+    
     if (!defaultModel) {
       showNotification('请先配置 AI 模型', 'error')
       aiLoading.value = false
@@ -4847,14 +4851,20 @@ const generateAISuggestions = async () => {
 - 第二步要做什么
 - 第三步要做什么`
     
-    const response = await fetch(defaultModel.apiUrl, {
+    // 确保 URL 包含完整路径
+    let apiUrl = defaultModel.url
+    if (defaultModel.type === 'openai' && !apiUrl.includes('/v1/chat/completions')) {
+      apiUrl = apiUrl.replace(/\/v1.*$/, '').replace(/\/$/, '') + '/v1/chat/completions'
+    }
+    
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${defaultModel.apiKey}`
       },
       body: JSON.stringify({
-        model: defaultModel.modelName,
+        model: defaultModel.model,
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.7,
         max_tokens: 500
