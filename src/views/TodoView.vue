@@ -3319,7 +3319,7 @@
           <button class="back-btn" @click="showVersionModal = false">
             <span>← 返回</span>
           </button>
-          <h3>🎉 版本更新</h3>
+          <h3>{{ versionModalTitle }}</h3>
           <div style="width: 80px;"></div>
         </div>
         
@@ -4388,6 +4388,8 @@ const batchDeleteReports = () => {
 const showVersionModal = ref(false) // 版本历史弹窗
 const versionHistory = ref([]) // 版本历史列表
 const hasUnreadVersions = ref(false) // 是否有未读版本
+const CURRENT_VERSION = '0.7.8' // 当前应用版本
+const versionModalTitle = ref('🎉 版本更新') // 弹窗标题（动态）
 
 // 版本历史数据
 const initVersionHistory = () => {
@@ -4457,6 +4459,38 @@ const initVersionHistory = () => {
     v.read = readVersions.includes(v.version)
   })
   hasUnreadVersions.value = versionHistory.value.some(v => !v.read)
+}
+
+// 检查版本更新（首次打开或版本升级时自动弹出）
+const checkVersionUpdate = () => {
+  const lastVersion = localStorage.getItem('last_app_version')
+  
+  // 首次打开应用 或 版本号变化
+  if (!lastVersion || lastVersion !== CURRENT_VERSION) {
+    // 延迟1秒弹出，避免与其他弹窗冲突
+    setTimeout(() => {
+      initVersionHistory()
+      
+      // 设置弹窗标题
+      if (!lastVersion) {
+        versionModalTitle.value = '👋 欢迎使用 TO-DO App'
+      } else if (lastVersion !== CURRENT_VERSION) {
+        versionModalTitle.value = `🎉 版本升级 ${lastVersion} → ${CURRENT_VERSION}`
+      }
+      
+      showVersionModal.value = true
+      
+      // 保存当前版本号
+      localStorage.setItem('last_app_version', CURRENT_VERSION)
+      
+      // 如果是版本升级，显示提示
+      if (lastVersion && lastVersion !== CURRENT_VERSION) {
+        console.log(`版本升级: ${lastVersion} → ${CURRENT_VERSION}`)
+      } else {
+        console.log('首次打开应用，显示版本说明')
+      }
+    }, 1000)
+  }
 }
 
 // 显示版本历史
@@ -10124,6 +10158,9 @@ onMounted(async () => {
   if (savedPriorityMode) {
     priorityMode.value = savedPriorityMode
   }
+  
+  // 检查版本更新（首次打开或版本升级时自动弹出）
+  checkVersionUpdate()
   
   // 检查并显示 AI 建议（延迟 2 秒）
   setTimeout(() => {
