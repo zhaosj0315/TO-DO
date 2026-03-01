@@ -491,11 +491,15 @@
     </div>
 
     <!-- 数据说明弹窗 -->
+    <!-- 数据说明弹窗 (Bottom Sheet) -->
     <div v-if="showDataInfo" class="modal-overlay" @click.self="showDataInfo = false">
-      <div class="modal-content data-info-modal">
+      <div class="report-bottom-sheet">
         <div class="modal-header">
+          <button class="back-btn" @click="showDataInfo = false">
+            <span>← 返回</span>
+          </button>
           <h3>📊 数据存储说明</h3>
-          <button class="close-btn" @click="showDataInfo = false">&times;</button>
+          <div style="width: 80px;"></div>
         </div>
         <div class="modal-body">
           <h4>💾 存储方式</h4>
@@ -1334,11 +1338,15 @@
     </div>
 
     <!-- 使用指南弹窗 -->
+    <!-- 使用指南弹窗 (Bottom Sheet) -->
     <div v-if="showUserGuide" class="modal-overlay" @click.self="showUserGuide = false">
-      <div class="modal-content privacy-modal">
+      <div class="report-bottom-sheet">
         <div class="modal-header">
+          <button class="back-btn" @click="showUserGuide = false">
+            <span>← 返回</span>
+          </button>
           <h3>📖 {{ currentLanguage === 'zh' ? '使用指南' : 'User Guide' }}</h3>
-          <button class="close-btn" @click="showUserGuide = false">&times;</button>
+          <div style="width: 80px;"></div>
         </div>
         <div class="modal-body privacy-content">
           <h4>一、快速开始</h4>
