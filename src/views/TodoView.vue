@@ -2316,7 +2316,15 @@
         <!-- 顶层：导航栏 -->
         <div class="nav-bar">
           <button class="nav-btn-text" @click="closeFullscreenDesc">取消</button>
-          <div class="task-name-center">{{ quickTaskInput || '新任务' }}</div>
+          <div class="task-name-center">
+            <input 
+              v-model="quickTaskInput" 
+              type="text" 
+              class="task-name-input"
+              placeholder="任务标题"
+              @keydown.enter.prevent
+            />
+          </div>
           <button class="nav-btn-primary" @click="closeFullscreenDesc">完成</button>
         </div>
         
@@ -16176,6 +16184,23 @@ watch(() => reportData.value, (newData) => {
   overflow: hidden;
   text-overflow: ellipsis;
   padding: 0 1rem;
+}
+
+.task-name-input {
+  width: 100%;
+  font-size: 17px;
+  font-weight: 600;
+  color: #000;
+  text-align: center;
+  border: none;
+  background: transparent;
+  outline: none;
+  padding: 0;
+}
+
+.task-name-input::placeholder {
+  color: #999;
+  font-weight: 500;
 }
 
 .nav-btn-primary {
