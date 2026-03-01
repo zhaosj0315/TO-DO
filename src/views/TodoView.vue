@@ -3588,6 +3588,7 @@ import { useRouter } from 'vue-router'
 import { useOfflineTaskStore } from '../stores/offlineTaskStore'
 import { useOfflineUserStore } from '../stores/offlineUserStore'
 import { Preferences } from '@capacitor/preferences'
+import { Clipboard } from '@capacitor/clipboard'
 import AIAssistButton from '../components/AIAssistButton.vue'
 import AITextMenu from '../components/AITextMenu.vue'
 import AITextResultSheet from '../components/AITextResultSheet.vue'
@@ -4797,12 +4798,16 @@ const closeFullscreenDesc = () => {
 // 📋 粘贴剪贴板内容
 const pasteFromClipboard = async () => {
   try {
-    const text = await navigator.clipboard.readText()
-    if (text) {
-      newTaskDescription.value += text
+    // 使用 Capacitor Clipboard API（支持移动端）
+    const { value } = await Clipboard.read()
+    if (value) {
+      newTaskDescription.value += value
       showNotification('✅ 已粘贴', 'success')
+    } else {
+      showNotification('剪贴板为空', 'info')
     }
   } catch (err) {
+    console.error('粘贴失败:', err)
     showNotification('❌ 粘贴失败，请手动粘贴', 'error')
   }
 }
