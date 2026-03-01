@@ -2358,6 +2358,28 @@
           </div>
         </div>
         
+        <!-- 剪贴板历史选择器 -->
+        <div v-if="showClipboardHistory" class="clipboard-history-sheet">
+          <div class="history-header">
+            <span>📋 剪贴板历史</span>
+            <button @click="showClipboardHistory = false" class="btn-close-history">✕</button>
+          </div>
+          <div class="history-list">
+            <div 
+              v-for="(item, index) in clipboardHistory" 
+              :key="index"
+              class="history-item"
+              @click="selectClipboardItem(item.text)"
+            >
+              <div class="history-text">{{ item.text.substring(0, 100) }}{{ item.text.length > 100 ? '...' : '' }}</div>
+              <div class="history-time">{{ item.time }}</div>
+            </div>
+          </div>
+          <div class="history-footer">
+            <button @click="clearClipboardHistory" class="btn-clear-history">🗑️ 清空历史</button>
+          </div>
+        </div>
+        
         <!-- 悬浮提示标签 -->
         <div v-if="newTaskDescription.length < 50" class="floating-hint">
           {{ getWordCountHint() }}
@@ -4705,6 +4727,8 @@ let descEditTimer = null
 const currentDateTimeValue = ref('')
 const showAISuggestions = ref(false)
 const aiSuggestionsList = ref([])
+const showClipboardHistory = ref(false)
+const clipboardHistory = ref([])
 
 // 当前日期时间（年月日时分秒）
 const currentDateTime = computed(() => currentDateTimeValue.value)
@@ -4798,17 +4822,58 @@ const closeFullscreenDesc = () => {
 // 📋 粘贴剪贴板内容
 const pasteFromClipboard = async () => {
   try {
-    // 使用 Capacitor Clipboard API（支持移动端）
+    // 读取当前剪贴板
     const { value } = await Clipboard.read()
-    if (value) {
-      newTaskDescription.value += value
-      showNotification('✅ 已粘贴', 'success')
+    
+    // 加载历史记录
+    const history = JSON.parse(localStorage.getItem('clipboard_history') || '[]')
+    
+    // 如果当前剪贴板有内容且不在历史中，添加到历史
+    if (value && value.trim()) {
+      const exists = history.some(item => item.text === value)
+      if (!exists) {
+        history.unshift({
+          text: value,
+          time: new Date().toLocaleString('zh-CN', { 
+            month: '2-digit', 
+            day: '2-digit', 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          })
+        })
+        // 只保留最近10条
+        if (history.length > 10) history.pop()
+        localStorage.setItem('clipboard_history', JSON.stringify(history))
+      }
+    }
+    
+    // 显示历史记录选择器
+    if (history.length > 0) {
+      clipboardHistory.value = history
+      showClipboardHistory.value = true
     } else {
-      showNotification('剪贴板为空', 'info')
+      showNotification('剪贴板历史为空', 'info')
     }
   } catch (err) {
-    console.error('粘贴失败:', err)
-    showNotification('❌ 粘贴失败，请手动粘贴', 'error')
+    console.error('读取剪贴板失败:', err)
+    showNotification('❌ 读取剪贴板失败', 'error')
+  }
+}
+
+// 选择剪贴板历史项
+const selectClipboardItem = (text) => {
+  newTaskDescription.value += text
+  showClipboardHistory.value = false
+  showNotification('✅ 已粘贴', 'success')
+}
+
+// 清空剪贴板历史
+const clearClipboardHistory = () => {
+  if (confirm('确定要清空剪贴板历史吗？')) {
+    localStorage.removeItem('clipboard_history')
+    clipboardHistory.value = []
+    showClipboardHistory.value = false
+    showNotification('✅ 已清空', 'success')
   }
 }
 
@@ -16578,6 +16643,107 @@ watch(() => reportData.value, (newData) => {
 
 .btn-ignore:active {
   transform: scale(0.95);
+}
+
+/* 剪贴板历史选择器 */
+.clipboard-history-sheet {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-height: 60%;
+  background: white;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #e8e8e8;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.btn-close-history {
+  background: #f0f0f0;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.history-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.history-item {
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  background: #f8f8f8;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.history-item:active {
+  background: #e8e8e8;
+  transform: scale(0.98);
+}
+
+.history-text {
+  font-size: 14px;
+  color: #333;
+  line-height: 1.4;
+  margin-bottom: 0.25rem;
+}
+
+.history-time {
+  font-size: 11px;
+  color: #999;
+}
+
+.history-footer {
+  padding: 0.75rem;
+  border-top: 1px solid #e8e8e8;
+}
+
+.btn-clear-history {
+  width: 100%;
+  padding: 0.6rem;
+  background: #ff3b30;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btn-clear-history:active {
+  opacity: 0.8;
 }
 
 .fullscreen-desc-textarea {
