@@ -2378,9 +2378,6 @@
         <button class="toolbar-btn" @click="clearDescription">
           🔄 清空
         </button>
-        <button class="toolbar-btn" @click="startVoiceInput" :disabled="isRecording">
-          {{ isRecording ? '🔴 录音中...' : '🎤 语音' }}
-        </button>
         <button class="toolbar-btn" @click="generateAISuggestions" :disabled="aiLoading || !quickTaskInput.trim()">
           {{ aiLoading ? '⏳ 思考中...' : '💡 AI 建议' }}
         </button>
@@ -4700,7 +4697,6 @@ let descEditTimer = null
 const currentDateTimeValue = ref('')
 const showAISuggestions = ref(false)
 const aiSuggestionsList = ref([])
-const isRecording = ref(false)
 
 // 当前日期时间（年月日时分秒）
 const currentDateTime = computed(() => currentDateTimeValue.value)
@@ -4818,49 +4814,6 @@ const clearDescription = () => {
 }
 
 // 🎤 语音输入
-const startVoiceInput = async () => {
-  // 检查浏览器支持
-  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-    showNotification('❌ 您的浏览器不支持语音识别', 'error')
-    return
-  }
-  
-  try {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-    const recognition = new SpeechRecognition()
-    
-    recognition.lang = 'zh-CN'
-    recognition.continuous = false
-    recognition.interimResults = false
-    
-    recognition.onstart = () => {
-      isRecording.value = true
-      showNotification('🎤 开始录音...', 'info')
-    }
-    
-    recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript
-      newTaskDescription.value += transcript
-      showNotification('✅ 识别成功', 'success')
-    }
-    
-    recognition.onerror = (event) => {
-      console.error('语音识别错误:', event.error)
-      showNotification('❌ 识别失败，请重试', 'error')
-    }
-    
-    recognition.onend = () => {
-      isRecording.value = false
-    }
-    
-    recognition.start()
-  } catch (err) {
-    console.error('语音输入错误:', err)
-    showNotification('❌ 语音输入失败', 'error')
-    isRecording.value = false
-  }
-}
-
 // 💡 生成 AI 智能建议
 const generateAISuggestions = async () => {
   if (!quickTaskInput.value.trim()) {
@@ -4879,12 +4832,20 @@ const generateAISuggestions = async () => {
       return
     }
     
-    const prompt = `请根据任务标题"${quickTaskInput.value}"，生成3-5条具体的执行步骤或要点。
+    const prompt = `请根据任务标题"${quickTaskInput.value}"，生成一段详细的任务描述建议。
+
 要求：
-1. 每条建议简洁明了（10-20字）
-2. 按执行顺序排列
-3. 具有可操作性
-4. 只返回建议列表，每行一条，以 "- " 开头`
+1. 描述任务的目标和意义
+2. 列出3-5个关键执行步骤或要点
+3. 每个要点简洁明了（10-20字）
+4. 按执行顺序排列
+5. 具有可操作性
+6. 只返回建议列表，每行一条，以 "- " 开头
+
+示例格式：
+- 第一步要做什么
+- 第二步要做什么
+- 第三步要做什么`
     
     const response = await fetch(defaultModel.apiUrl, {
       method: 'POST',
