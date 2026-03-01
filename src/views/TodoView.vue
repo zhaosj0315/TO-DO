@@ -4851,17 +4851,21 @@ const generateAISuggestions = async () => {
 - 第二步要做什么
 - 第三步要做什么`
     
-    // 确保 URL 包含完整路径
+    // 确保 URL 使用 OpenAI 兼容接口
     let apiUrl = defaultModel.url
-    if (defaultModel.type === 'openai' && !apiUrl.includes('/v1/chat/completions')) {
-      apiUrl = apiUrl.replace(/\/v1.*$/, '').replace(/\/$/, '') + '/v1/chat/completions'
+    if (!apiUrl.includes('/v1/chat/completions')) {
+      // 移除可能存在的旧路径，添加标准路径
+      apiUrl = apiUrl.replace(/\/api\/.*$/, '').replace(/\/v1.*$/, '').replace(/\/$/, '') + '/v1/chat/completions'
     }
+    
+    console.log('💡 AI建议 - API URL:', apiUrl)
+    console.log('💡 AI建议 - Model:', defaultModel.model)
     
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${defaultModel.apiKey}`
+        'Authorization': `Bearer ${defaultModel.apiKey || 'dummy'}`
       },
       body: JSON.stringify({
         model: defaultModel.model,
@@ -4871,7 +4875,11 @@ const generateAISuggestions = async () => {
       })
     })
     
-    if (!response.ok) throw new Error('AI 请求失败')
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('AI 请求失败:', response.status, errorText)
+      throw new Error(`AI 请求失败: ${response.status}`)
+    }
     
     const data = await response.json()
     const content = data.choices[0].message.content
