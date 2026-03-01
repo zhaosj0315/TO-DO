@@ -105,13 +105,13 @@ if [ "$BUILD_MAC" = true ]; then
     
     if sh build-mac.sh; then
         # 移动 macOS ZIP 到 release 目录
-        if [ -f "TODO-App-1.7.5-mac-x64.zip" ]; then
-            mv TODO-App-1.7.5-mac-x64.zip "$RELEASE_DIR/"
+        if [ -f "TODO-App-0.7.8-mac-x64.zip" ]; then
+            mv TODO-App-0.7.8-mac-x64.zip "$RELEASE_DIR/"
         fi
-        if [ -f "TODO-App-1.7.5-mac-arm64.zip" ]; then
-            mv TODO-App-1.7.5-mac-arm64.zip "$RELEASE_DIR/"
+        if [ -f "TODO-App-0.7.8-mac-arm64.zip" ]; then
+            mv TODO-App-0.7.8-mac-arm64.zip "$RELEASE_DIR/"
         fi
-        echo -e "${GREEN}✅ macOS 打包成功 → release/TODO-App-1.7.5-mac-*.zip${NC}"
+        echo -e "${GREEN}✅ macOS 打包成功 → release/TODO-App-0.7.8-mac-*.zip${NC}"
         SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
     else
         echo -e "${RED}❌ macOS 打包失败${NC}"
@@ -127,7 +127,7 @@ if [ "$BUILD_WINDOWS" = true ]; then
     echo "=========================================="
     
     if sh build-windows.sh; then
-        echo -e "${GREEN}✅ Windows 打包成功 → release/TODO App Setup 1.7.5.exe${NC}"
+        echo -e "${GREEN}✅ Windows 打包成功 → release/TODO App Setup 0.7.8.exe${NC}"
         SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
     else
         echo -e "${RED}❌ Windows 打包失败${NC}"
@@ -164,19 +164,19 @@ if [ "$BUILD_APK" = true ] && [ -f "$RELEASE_DIR/TODO-App.apk" ]; then
 fi
 
 if [ "$BUILD_MAC" = true ]; then
-    if [ -f "$RELEASE_DIR/TODO-App-1.7.5-mac-x64.zip" ]; then
-        MAC_X64_SIZE=$(ls -lh "$RELEASE_DIR/TODO-App-1.7.5-mac-x64.zip" | awk '{print $5}')
-        echo -e "🍎 macOS x64:  ${GREEN}TODO-App-1.7.5-mac-x64.zip${NC} (${MAC_X64_SIZE})"
+    if [ -f "$RELEASE_DIR/TODO-App-0.7.8-mac-x64.zip" ]; then
+        MAC_X64_SIZE=$(ls -lh "$RELEASE_DIR/TODO-App-0.7.8-mac-x64.zip" | awk '{print $5}')
+        echo -e "🍎 macOS x64:  ${GREEN}TODO-App-0.7.8-mac-x64.zip${NC} (${MAC_X64_SIZE})"
     fi
-    if [ -f "$RELEASE_DIR/TODO-App-1.7.5-mac-arm64.zip" ]; then
-        MAC_ARM_SIZE=$(ls -lh "$RELEASE_DIR/TODO-App-1.7.5-mac-arm64.zip" | awk '{print $5}')
-        echo -e "🍎 macOS arm64:  ${GREEN}TODO-App-1.7.5-mac-arm64.zip${NC} (${MAC_ARM_SIZE})"
+    if [ -f "$RELEASE_DIR/TODO-App-0.7.8-mac-arm64.zip" ]; then
+        MAC_ARM_SIZE=$(ls -lh "$RELEASE_DIR/TODO-App-0.7.8-mac-arm64.zip" | awk '{print $5}')
+        echo -e "🍎 macOS arm64:  ${GREEN}TODO-App-0.7.8-mac-arm64.zip${NC} (${MAC_ARM_SIZE})"
     fi
 fi
 
-if [ "$BUILD_WINDOWS" = true ] && [ -f "$RELEASE_DIR/TODO App Setup 1.7.5.exe" ]; then
-    WIN_SIZE=$(ls -lh "$RELEASE_DIR/TODO App Setup 1.7.5.exe" | awk '{print $5}')
-    echo -e "🪟 Windows:  ${GREEN}TODO App Setup 1.7.5.exe${NC} (${WIN_SIZE})"
+if [ "$BUILD_WINDOWS" = true ] && [ -f "$RELEASE_DIR/TODO App Setup 0.7.8.exe" ]; then
+    WIN_SIZE=$(ls -lh "$RELEASE_DIR/TODO App Setup 0.7.8.exe" | awk '{print $5}')
+    echo -e "🪟 Windows:  ${GREEN}TODO App Setup 0.7.8.exe${NC} (${WIN_SIZE})"
 fi
 
 echo ""

@@ -387,7 +387,7 @@
         <footer class="app-footer">
           <div class="footer-content">
             <p class="footer-main">
-              <span class="footer-version">TO-DO App v1.6.11</span>
+              <span class="footer-version">TO-DO App v0.7.8</span>
               <span class="footer-divider">·</span>
               <span class="footer-text">
                 {{ currentLanguage === 'zh' ? '完全离线 · 本地存储' : 'Offline · Local Storage' }}
@@ -400,31 +400,27 @@
                 {{ currentLanguage === 'zh' ? '📖 使用指南' : '📖 Guide' }}
               </span>
               <span class="footer-divider">·</span>
-              <span class="footer-link" @click="showChangelog = true">
-                {{ currentLanguage === 'zh' ? '📋 更新日志' : '📋 Changelog' }}
+              <span class="footer-link" @click="showDataInfo = true">
+                {{ currentLanguage === 'zh' ? '📊 数据说明' : '📊 Data Info' }}
               </span>
               <span class="footer-divider">·</span>
-              <a href="https://github.com/zhaosj0315/TO-DO/releases/tag/v1.6.11" target="_blank" class="footer-link">
-                {{ currentLanguage === 'zh' ? '📦 下载安装包' : '📦 Download' }}
+              <a href="https://github.com/zhaosj0315/TO-DO/releases" target="_blank" class="footer-link">
+                {{ currentLanguage === 'zh' ? '📦 下载' : '📦 Download' }}
               </a>
               <span class="footer-divider">·</span>
               <a href="https://github.com/zhaosj0315/TO-DO" target="_blank" class="footer-link">GitHub</a>
             </p>
             <p class="footer-links">
-              <span class="footer-link" @click="showPrivacyPolicy = true">
-                {{ currentLanguage === 'zh' ? '隐私政策' : 'Privacy' }}
-              </span>
-              <span class="footer-divider">·</span>
-              <span class="footer-link" @click="showDataInfo = true">
-                {{ currentLanguage === 'zh' ? '📊 数据说明' : '📊 Data Info' }}
-              </span>
+              <a href="https://github.com/zhaosj0315/TO-DO/blob/main/LICENSE" target="_blank" class="footer-link">
+                {{ currentLanguage === 'zh' ? '📄 开源协议' : '📄 License' }}
+              </a>
               <span class="footer-divider">·</span>
               <span class="footer-link" @click="showSupport = true">
                 {{ currentLanguage === 'zh' ? '💬 反馈' : '💬 Feedback' }}
               </span>
               <span class="footer-divider">·</span>
               <span class="footer-link" @click="toggleLanguage">
-                {{ currentLanguage === 'zh' ? '🌐 EN' : '🌐 中文' }}
+                {{ currentLanguage === 'zh' ? '🌐 语言' : '🌐 Language' }}
               </span>
             </p>
           </div>
@@ -4397,7 +4393,7 @@ const hasUnreadVersions = ref(false) // 是否有未读版本
 const initVersionHistory = () => {
   versionHistory.value = [
     {
-      version: '1.7.8',
+      version: '0.7.8',
       date: '2026-03-01',
       features: [
         '任务依赖关系系统（单向依赖+智能通知+自动清理）',
@@ -4429,7 +4425,7 @@ const initVersionHistory = () => {
       ]
     },
     {
-      version: '1.0.0',
+      version: '0.0.0',
       date: '2026-02-17',
       features: [
         '用户注册与登录系统',
