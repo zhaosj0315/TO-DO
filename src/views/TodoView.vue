@@ -429,14 +429,18 @@
     </main>
 
     <!-- 隐私政策模态框 -->
+    <!-- 隐私政策弹窗 (Bottom Sheet) -->
     <div v-if="showPrivacyPolicy" class="modal-overlay" @click.self="showPrivacyPolicy = false">
-      <div class="modal-content privacy-modal">
+      <div class="report-bottom-sheet">
         <div class="modal-header">
+          <button class="back-btn" @click="showPrivacyPolicy = false">
+            <span>← 返回</span>
+          </button>
           <h3>🔒 隐私政策</h3>
-          <button class="close-btn" @click="showPrivacyPolicy = false">&times;</button>
+          <div style="width: 80px;"></div>
         </div>
         <div class="modal-body privacy-content">
-          <p class="update-date"><strong>更新日期：2026年2月19日</strong></p>
+          <p class="update-date"><strong>更新日期：2026年3月1日</strong></p>
           
           <h4>1. 概述</h4>
           <p>TODO App（以下简称"本应用"）尊重并保护用户隐私。本隐私政策说明我们如何收集、使用和保护您的信息。</p>
@@ -448,17 +452,18 @@
           <h4>2. 信息收集</h4>
           <p>本应用完全离线运行，<strong>不收集任何用户数据</strong>。具体包括：</p>
           <ul>
-            <li>不收集个人身份信息（姓名、邮箱、电话等）</li>
-            <li>不收集设备信息</li>
-            <li>不收集位置信息</li>
-            <li>不收集使用行为数据</li>
-            <li>不使用任何分析工具或统计服务</li>
+            <li>✓ 不收集个人身份信息（姓名、邮箱、电话等）</li>
+            <li>✓ 不收集设备信息</li>
+            <li>✓ 不收集位置信息</li>
+            <li>✓ 不收集使用行为数据</li>
+            <li>✓ 不使用任何分析工具或统计服务</li>
+            <li>✓ 不使用任何广告 SDK</li>
           </ul>
           
           <h4>3. 数据存储</h4>
           <p>所有任务数据存储在您的设备本地存储中：</p>
           <ul>
-            <li>✓ 数据存储在设备本地</li>
+            <li>✓ 数据存储在设备本地（Capacitor Preferences API）</li>
             <li>✓ 数据不会上传到任何服务器</li>
             <li>✓ 数据不会与第三方共享</li>
             <li>✓ 卸载应用会删除所有本地数据</li>
@@ -468,23 +473,47 @@
           <h4>4. 权限说明</h4>
           <p>本应用申请的权限及用途：</p>
           <ul>
-            <li><strong>存储权限</strong>：用于保存任务数据到设备本地，以及导入导出Excel文件</li>
+            <li><strong>存储权限</strong>：用于保存任务数据到设备本地，以及导入导出文件</li>
             <li><strong>通知权限</strong>：用于任务提醒功能（可选，用户可在系统设置中关闭）</li>
+            <li><strong>相机权限</strong>：用于拍照识别文字功能（可选，仅在使用时申请）</li>
+            <li><strong>网络权限</strong>：仅用于 AI 功能（可选，用户主动配置后才使用）</li>
           </ul>
           
-          <h4>5. 数据安全</h4>
+          <h4>5. AI 功能说明</h4>
+          <p>本应用提供可选的 AI 功能（任务拆分、智能问答、报告生成）：</p>
+          <ul>
+            <li>✓ AI 功能完全可选，用户可选择不使用</li>
+            <li>✓ 需要用户主动配置 AI 模型（OpenAI/Ollama/自定义）</li>
+            <li>✓ 仅在用户主动使用 AI 功能时才会发送数据</li>
+            <li>✓ 发送的数据仅包含任务相关信息，不包含个人身份信息</li>
+            <li>✓ 支持本地 AI 模型（Ollama），完全离线运行</li>
+            <li>✓ 用户可随时删除 AI 配置，停止使用 AI 功能</li>
+          </ul>
+          
+          <h4>6. 数据安全</h4>
           <div class="highlight-box">
-            <p><strong>本应用不联网，数据完全在本地，不存在数据泄露风险。</strong></p>
+            <p><strong>本应用默认完全离线，数据完全在本地，不存在数据泄露风险。</strong></p>
+            <p><strong>AI 功能为可选功能，用户可选择使用本地模型或不使用。</strong></p>
           </div>
           
-          <h4>6. 第三方服务</h4>
-          <p>本应用<strong>不使用任何第三方服务或 SDK</strong>。</p>
+          <h4>7. 第三方服务</h4>
+          <p>本应用<strong>不使用任何第三方统计、分析或广告 SDK</strong>。</p>
+          <p>AI 功能使用的第三方服务（如 OpenAI）由用户自主选择和配置。</p>
           
-          <h4>7. 联系我们</h4>
+          <h4>8. 开源承诺</h4>
+          <ul>
+            <li>✓ 本应用完全开源（MIT License）</li>
+            <li>✓ 源代码可在 GitHub 审计</li>
+            <li>✓ 欢迎社区监督和贡献</li>
+            <li>✓ 项目地址：https://github.com/zhaosj0315/TO-DO</li>
+          </ul>
+          
+          <h4>9. 联系我们</h4>
           <div class="contact-box">
             <p>如对本隐私政策有任何疑问，请联系：</p>
             <p><strong>📧 邮箱：</strong>17858441076@163.com</p>
             <p><strong>📞 电话：</strong>17858441076</p>
+            <p><strong>🐙 GitHub：</strong>https://github.com/zhaosj0315/TO-DO</p>
           </div>
         </div>
       </div>
@@ -530,7 +559,7 @@
           
           <h4>📤 数据导出</h4>
           <div class="export-guide">
-            <p><strong>方式1：Excel 导出</strong></p>
+            <p><strong>方式1：Excel 导出（基础备份）</strong></p>
             <ol>
               <li>点击右上角 <strong>👤 个人主页</strong></li>
               <li>找到 <strong>数据管理</strong> 区域</li>
@@ -538,12 +567,36 @@
               <li>文件会保存到设备的下载目录</li>
             </ol>
             
-            <p><strong>导出内容包括</strong>：</p>
+            <p><strong>Excel 导出内容</strong>：</p>
             <ul>
               <li>任务标题、描述、分类、优先级</li>
               <li>创建时间、完成时间、截止时间</li>
               <li>任务类型、状态、周期设置</li>
-              <li>共 17 个完整字段</li>
+              <li>共 17 个基础字段</li>
+            </ul>
+
+            <p><strong>方式2：JSON 完整备份（推荐）⭐</strong></p>
+            <ol>
+              <li>点击右上角 <strong>👤 个人主页</strong></li>
+              <li>找到 <strong>数据管理</strong> 区域</li>
+              <li>点击 <strong>📦 导出完整备份</strong> 按钮</li>
+              <li>JSON 文件会保存到下载目录</li>
+            </ol>
+
+            <p><strong>JSON 完整备份内容（100%数据）</strong>：</p>
+            <ul>
+              <li>✅ 所有任务数据（包括已删除任务）</li>
+              <li>✅ 任务执行日志（所有日志记录）</li>
+              <li>✅ 番茄钟历史（所有专注记录）</li>
+              <li>✅ 用户信息（注册时间、绑定手机等）</li>
+              <li>✅ AI 配置（模型配置、对话历史）</li>
+              <li>✅ 个性化设置（语言、优先级模式等）</li>
+            </ul>
+
+            <p><strong>导入恢复</strong>：</p>
+            <ul>
+              <li>Excel 导入：仅恢复任务基础数据</li>
+              <li>JSON 导入：恢复 100% 完整数据（推荐）</li>
             </ul>
           </div>
           
@@ -1370,13 +1423,65 @@
           <h4>二、任务管理</h4>
           <ul>
             <li><strong>完成任务</strong>：点击任务前的复选框</li>
-            <li><strong>查看详情</strong>：点击任务标题</li>
+            <li><strong>查看详情</strong>：点击任务标题或描述</li>
             <li><strong>编辑任务</strong>：在详情页点击"编辑任务"</li>
             <li><strong>删除任务</strong>：点击任务右侧的🗑️图标</li>
             <li><strong>恢复任务</strong>：在回收站中点击"恢复"</li>
+            <li><strong>置顶任务</strong>：点击📌按钮将重要任务置顶</li>
           </ul>
 
-          <h4>三、筛选与搜索</h4>
+          <h4>三、任务执行日志 💬</h4>
+          <ul>
+            <li><strong>添加日志</strong>：任务详情页 → 添加日志</li>
+            <li><strong>6种日志类型</strong>：开始/进展/阻碍/方案/里程碑/完成</li>
+            <li><strong>记录进度</strong>：每次日志可标注进度百分比</li>
+            <li><strong>耗时追踪</strong>：记录每次推进的耗时</li>
+            <li><strong>心情追踪</strong>：记录执行过程中的心情状态</li>
+            <li><strong>查看统计</strong>：任务详情页查看执行统计数据</li>
+          </ul>
+
+          <h4>四、番茄钟计时器 🍅</h4>
+          <ul>
+            <li><strong>启动番茄钟</strong>：任务卡片点击🍅按钮</li>
+            <li><strong>专注模式</strong>：25分钟专注 + 5分钟休息</li>
+            <li><strong>长休息</strong>：每4个番茄钟后15分钟长休息</li>
+            <li><strong>查看历史</strong>：个人主页 → 番茄钟统计</li>
+            <li><strong>今日统计</strong>：查看今日专注时长和完成数</li>
+          </ul>
+
+          <h4>五、AI 功能 🤖</h4>
+          <p><strong>AI 任务拆分</strong></p>
+          <ul>
+            <li>任务创建区点击"AI拆分"按钮</li>
+            <li>输入任务标题和描述</li>
+            <li>选择拆分模板（快速/详细/时间优先/优先级优先）</li>
+            <li>预览并编辑子任务，一键创建</li>
+          </ul>
+
+          <p><strong>AI 智能问答</strong></p>
+          <ul>
+            <li>点击左下角🤖按钮打开AI问答</li>
+            <li>用自然语言询问任务相关问题</li>
+            <li>6个快捷问题一键获取洞察</li>
+            <li>支持多模型（OpenAI/Ollama/自定义）</li>
+          </ul>
+
+          <p><strong>AI 主动助手</strong></p>
+          <ul>
+            <li><strong>智能提醒</strong>：自动检测逾期和待办任务</li>
+            <li><strong>每日总结</strong>：每日工作总结 + AI建议</li>
+            <li><strong>报告生成</strong>：周报/月报/季报/年报自动生成</li>
+          </ul>
+
+          <h4>六、任务依赖关系 🔗</h4>
+          <ul>
+            <li><strong>设置依赖</strong>：任务详情页 → 设置依赖关系</li>
+            <li><strong>等待任务</strong>：选择需要等待完成的任务</li>
+            <li><strong>自动通知</strong>：依赖任务完成后自动通知</li>
+            <li><strong>状态显示</strong>：🔒等待中 / 🔓被依赖 / ✅无依赖</li>
+          </ul>
+
+          <h4>七、筛选与搜索</h4>
           <ul>
             <li><strong>快速筛选</strong>：点击统计卡片（全部/已完成/待办/已逾期）</li>
             <li><strong>高级筛选</strong>：点击🎛️按钮，可按日期/分类/优先级筛选</li>
@@ -1384,14 +1489,29 @@
             <li><strong>重置筛选</strong>：点击⟳刷新按钮</li>
           </ul>
 
-          <h4>四、数据管理</h4>
+          <h4>八、数据管理</h4>
+          <p><strong>Excel 导入导出</strong></p>
           <ul>
-            <li><strong>导出数据</strong>：个人主页 → 数据管理 → 导出Excel</li>
-            <li><strong>导入数据</strong>：个人主页 → 数据管理 → 导入Excel</li>
-            <li><strong>下载模板</strong>：个人主页 → 数据管理 → 下载模板</li>
+            <li>个人主页 → 数据管理 → 导出Excel</li>
+            <li>个人主页 → 数据管理 → 导入Excel</li>
+            <li>个人主页 → 数据管理 → 下载模板</li>
           </ul>
 
-          <h4>五、常见问题</h4>
+          <p><strong>完整备份（推荐）</strong></p>
+          <ul>
+            <li>个人主页 → 数据管理 → 导出完整备份（JSON）</li>
+            <li>包含任务+日志+番茄钟+用户信息（100%数据）</li>
+            <li>支持一键导入恢复所有数据</li>
+          </ul>
+
+          <p><strong>拍照识别</strong></p>
+          <ul>
+            <li>任务创建区点击📷按钮</li>
+            <li>拍照识别文字，自动填充任务标题</li>
+            <li>支持中英文混合识别（离线OCR）</li>
+          </ul>
+
+          <h4>九、常见问题</h4>
           <p><strong>Q: 如何修改用户名？</strong></p>
           <p>A: 点击右上角头像 → 个人主页 → 修改用户名</p>
 
@@ -1399,10 +1519,13 @@
           <p>A: 所有数据存储在设备本地，完全离线，不会上传到服务器</p>
 
           <p><strong>Q: 如何备份数据？</strong></p>
-          <p>A: 使用"导出Excel"功能定期备份数据</p>
+          <p>A: 推荐使用"导出完整备份"功能，包含100%数据</p>
 
           <p><strong>Q: 卸载应用会丢失数据吗？</strong></p>
           <p>A: 是的，卸载前请先导出数据备份</p>
+
+          <p><strong>Q: 如何配置AI功能？</strong></p>
+          <p>A: 个人主页 → AI配置 → 添加模型 → 设置为默认</p>
         </div>
       </div>
     </div>
