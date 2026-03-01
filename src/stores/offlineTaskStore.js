@@ -438,7 +438,9 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
     checkOverdueTasks() {
       const now = new Date()
       let hasChanges = false
+      
       this.tasks.forEach(task => {
+        // 处理"今天"类型任务的逾期
         if (task.type === 'today' && task.status !== 'completed') {
           const created = new Date(task.created_at)
           const endOfDay = new Date(created.getFullYear(), created.getMonth(), created.getDate(), 23, 59, 59)
@@ -447,7 +449,46 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
             hasChanges = true
           }
         }
+        
+        // 处理重复任务的自动重置
+        if (task.status === 'completed') {
+          const completedDate = task.completed_at ? new Date(task.completed_at) : null
+          if (!completedDate) return
+          
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+          const completedDay = new Date(completedDate.getFullYear(), completedDate.getMonth(), completedDate.getDate())
+          
+          // 每天重复：如果完成日期不是今天，重置为待办
+          if (task.type === 'daily' && completedDay < today) {
+            task.status = 'pending'
+            task.completed_at = null
+            hasChanges = true
+          }
+          
+          // 工作日重复：如果今天是工作日且完成日期不是今天，重置为待办
+          if (task.type === 'weekday') {
+            const dayOfWeek = now.getDay()
+            const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5
+            if (isWeekday && completedDay < today) {
+              task.status = 'pending'
+              task.completed_at = null
+              hasChanges = true
+            }
+          }
+          
+          // 每周重复：如果今天是指定的星期几且完成日期不是今天，重置为待办
+          if (task.type === 'weekly' && task.weekdays && task.weekdays.length > 0) {
+            const dayOfWeek = now.getDay()
+            const shouldRepeatToday = task.weekdays.includes(dayOfWeek)
+            if (shouldRepeatToday && completedDay < today) {
+              task.status = 'pending'
+              task.completed_at = null
+              hasChanges = true
+            }
+          }
+        }
       })
+      
       if (hasChanges) {
         this.saveTasks()
       }
@@ -693,6 +734,8 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       switch (task.type) {
         case 'today':
         case 'daily':
+        case 'weekday':
+          // 今天、每天重复、工作日重复：都是当天23:59:59截止
           return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
         
         case 'tomorrow':
@@ -706,6 +749,31 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
           const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek
           endOfWeek.setDate(endOfWeek.getDate() + daysUntilSunday)
           return new Date(endOfWeek.getFullYear(), endOfWeek.getMonth(), endOfWeek.getDate(), 23, 59, 59)
+        
+        case 'weekly':
+          // 每周重复：找到下一个指定的星期几
+          if (task.weekdays && task.weekdays.length > 0) {
+            const today = now.getDay()
+            const sortedWeekdays = [...task.weekdays].sort((a, b) => a - b)
+            
+            // 找到今天或之后最近的一个星期几
+            let nextWeekday = sortedWeekdays.find(day => day >= today)
+            
+            // 如果没找到，说明要到下周，取第一个
+            if (nextWeekday === undefined) {
+              nextWeekday = sortedWeekdays[0]
+            }
+            
+            const daysUntilNext = nextWeekday >= today 
+              ? nextWeekday - today 
+              : 7 - today + nextWeekday
+            
+            const nextDate = new Date(now)
+            nextDate.setDate(nextDate.getDate() + daysUntilNext)
+            return new Date(nextDate.getFullYear(), nextDate.getMonth(), nextDate.getDate(), 23, 59, 59)
+          }
+          // 如果没有设置星期几，默认当天截止
+          return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
         
         case 'custom_date':
           if (task.customDate) {
