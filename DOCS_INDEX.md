@@ -1,184 +1,107 @@
 # 文档索引 | Documentation Index
 
-**版本**: v1.7.6.2  
-**更新日期**: 2026-02-27  
-**文档总数**: 15 份核心文档 + 1 份技术文档（docs/releases/v1.7.6/）
+**版本**: v1.7.8  
+**更新日期**: 2026-03-01  
+**文档总数**: 15 份核心文档 + 96 份草稿 + 94 份审计报告
 
 ---
 
 ## 📚 文档分类
 
-### 🌟 核心文档（必读）
+### 🌟 核心文档（根目录）
 
-#### README.md
-- **状态**: ✅ 最新
-- **版本**: v1.7.6.2
-- **描述**: 项目概览、功能列表、安装指南、版本历史（含hotfix）
-- **适用人群**: 所有用户
+#### 项目文档
 
-#### CHANGELOG.md
-- **状态**: ✅ 最新
-- **版本**: v1.7.6.2
-- **描述**: 完整的版本变更记录（含v1.7.6.1和v1.7.6.2）
-- **适用人群**: 所有用户
+| 文档名称 | 状态 | 版本 | 描述 |
+|---------|------|------|------|
+| [README.md](./README.md) | ✅ 最新 | v1.7.8 | 项目概览、功能列表、安装指南、版本历史 |
+| [CHANGELOG.md](./CHANGELOG.md) | ✅ 最新 | v1.7.8 | 完整的版本变更记录 |
+| [LICENSE](./LICENSE) | ✅ 最新 | MIT | 开源协议 |
 
-#### LICENSE
-- **状态**: ✅ 最新
-- **版本**: MIT License
-- **描述**: 开源协议
-- **适用人群**: 开发者、贡献者
+#### 用户文档
 
----
+| 文档名称 | 状态 | 版本 | 描述 |
+|---------|------|------|------|
+| [USER_MANUAL.md](./USER_MANUAL.md) | ⚠️ 需更新 | v1.7.6 | 完整的用户手册 |
+| [QUICK_START.md](./QUICK_START.md) | ⚠️ 需更新 | v1.7.0 | 快速开始指南 |
+| [FEATURES.md](./FEATURES.md) | ⚠️ 需更新 | v1.7.6 | 功能列表详解 |
 
-### 📖 用户文档
+#### 开发文档
 
-#### QUICK_START.md
-- **状态**: ✅ 最新
-- **版本**: v1.7.0+
-- **描述**: 快速开始指南
-- **适用人群**: 新用户
+| 文档名称 | 状态 | 版本 | 描述 |
+|---------|------|------|------|
+| [DEVELOPER.md](./DEVELOPER.md) | ⚠️ 需更新 | v1.7.6 | 开发者指南、技术架构 |
 
-#### USER_MANUAL.md
-- **状态**: ✅ 最新
-- **版本**: v1.7.6.2
-- **描述**: 完整的用户手册（含AI功能章节）
-- **适用人群**: 所有用户
+#### 管理文档
 
-#### AI_CHAT_GUIDE.md
-- **状态**: ✅ 最新
-- **版本**: v1.7.5.2
-- **描述**: AI 问答功能使用指南
-- **适用人群**: 使用 AI 功能的用户
+| 文档名称 | 状态 | 版本 | 描述 |
+|---------|------|------|------|
+| [DOC_MANAGEMENT_POLICY.md](./DOC_MANAGEMENT_POLICY.md) | ✅ 最新 | v1.0 | 文档开发管理规范 |
+| [DOC_STANDARDS.md](./DOC_STANDARDS.md) | ✅ 最新 | v1.0 | 文档标准 |
+| [DOCS_INDEX.md](./DOCS_INDEX.md) | ✅ 最新 | v1.7.8 | 本文档 |
 
----
+#### 审计文档（v1.7.8）
 
-### 👨‍💻 开发文档
-
-#### DEVELOPER.md
-- **状态**: ✅ 最新
-- **版本**: v1.7.6.2
-- **描述**: 开发者指南、技术架构、API 参考、LoadingSpinner组件文档
-- **适用人群**: 开发者、贡献者
-
-#### IMPLEMENTATION_SUMMARY.md
-- **状态**: ✅ 最新
-- **版本**: v1.7.0
-- **描述**: 任务执行日志系统实现总结
-- **适用人群**: 开发者
-
-#### TESTING_GUIDE.md
-- **状态**: ✅ 最新
-- **版本**: v1.7.0
-- **描述**: 测试指南、测试用例
-- **适用人群**: 测试人员、开发者
+| 文档名称 | 状态 | 版本 | 描述 |
+|---------|------|------|------|
+| [DOC_AUDIT_REPORT_V1.7.8_CRITICAL.md](./DOC_AUDIT_REPORT_V1.7.8_CRITICAL.md) | ✅ 最新 | v1.7.8 | 批判性审计报告 |
+| [DOC_ISSUES_LIST_V1.7.8.md](./DOC_ISSUES_LIST_V1.7.8.md) | ✅ 最新 | v1.7.8 | 问题清单（10个问题） |
+| [DOC_MAINTENANCE_SUMMARY_V1.7.8.md](./DOC_MAINTENANCE_SUMMARY_V1.7.8.md) | ✅ 最新 | v1.7.8 | 维护完成报告 |
+| [DOC_CLEANUP_PLAN_V1.7.8.md](./DOC_CLEANUP_PLAN_V1.7.8.md) | ✅ 最新 | v1.7.8 | 文档整理计划 |
+| [DOC_DELIVERY_CHECKLIST_V1.7.8.md](./DOC_DELIVERY_CHECKLIST_V1.7.8.md) | ✅ 最新 | v1.7.8 | 交付清单 |
+| [VERSION_FIX_REPORT_V1.7.8.md](./VERSION_FIX_REPORT_V1.7.8.md) | ✅ 最新 | v1.7.8 | 版本号修复报告 |
+| [P0_EXECUTION_REPORT_V1.7.8.md](./P0_EXECUTION_REPORT_V1.7.8.md) | ✅ 最新 | v1.7.8 | P0任务执行报告 |
 
 ---
 
-### 🔨 构建文档
+### 📂 docs/ 目录结构
 
-#### APK_BUILD_GUIDE.md
-- **状态**: ✅ 最新
-- **版本**: v1.6.0+
-- **描述**: Android APK 完整构建指南
-- **适用人群**: Android 开发者
-
-#### APK_BUILD_QUICK.md
-- **状态**: ✅ 最新
-- **版本**: v1.6.0+
-- **描述**: Android APK 快速构建指南
-- **适用人群**: Android 开发者
-
-#### WINDOWS_BUILD_GUIDE.md
-- **状态**: ✅ 最新
-- **版本**: v1.6.11+
-- **描述**: Windows 安装包构建指南
-- **适用人群**: Windows 开发者
-
-#### BUILD_SCRIPTS_GUIDE.md
-- **状态**: ✅ 最新
-- **版本**: v1.7.5+
-- **描述**: 构建脚本使用指南
-- **适用人群**: 开发者
-
----
-
-### 📋 管理文档
-
-#### DOC_MANAGEMENT_POLICY.md
-- **状态**: ✅ 最新
-- **版本**: v1.0
-- **描述**: 文档开发管理规范
-- **适用人群**: 文档编写人员、开发者
-
-#### GIT_PUSH_POLICY.md
-- **状态**: ✅ 最新
-- **版本**: v1.0
-- **描述**: Git 推送规范（非必要不推送原则）
-- **适用人群**: 开发者、贡献者
-
----
-
-### 📦 发布文档
-
-#### RELEASE_NOTES_v1.7.5.2.md
-- **状态**: ✅ 最新
-- **版本**: v1.7.5.2
-- **描述**: v1.7.5.2 版本发布说明
-- **适用人群**: 所有用户
-
----
-
-### 🔍 审计文档
-
-#### AUDIT_REPORT_V1.7.6_HOTFIX.md
-- **状态**: ✅ 最新
-- **版本**: v1.7.6 Hotfix
-- **描述**: v1.7.6 hotfix版本材料审计报告
-- **适用人群**: 开发者、文档维护人员
-
----
-
-### 📋 技术文档（docs/releases/v1.7.6/）
-
-#### AI_LOADING_FIX_CHECKLIST.md
-- **状态**: ✅ 最新
-- **版本**: v1.7.6.1
-- **描述**: AI加载动画修复清单
-- **适用人群**: 开发者
-
----
-
-## 📂 归档文档
-
-### docs/archive/audits/
-- **内容**: 历史审计报告（v1.6.x 及更早）
-- **数量**: 50+ 份
-- **状态**: 📦 已归档
-
-### docs/archive/releases/
-- **内容**: 历史发布记录（v1.6.x 及更早）
-- **数量**: 15+ 份
-- **状态**: 📦 已归档
-
-### docs/archive/v1.7.5/
-- **内容**: v1.7.5 相关文档
-- **数量**: 10+ 份
-- **状态**: 📦 已归档
-
-### docs/archive/v1.7.0/
-- **内容**: v1.7.0 相关文档
-- **数量**: 8+ 份
-- **状态**: 📦 已归档
-
-### docs/archive/v1.6.x/
-- **内容**: v1.6 系列文档
-- **数量**: 20+ 份
-- **状态**: 📦 已归档
-
-### docs/archive/v1.5.x/
-- **内容**: v1.5 系列文档
-- **数量**: 5+ 份
-- **状态**: 📦 已归档
+```
+docs/
+├── drafts/          # 草稿文档（96份）
+│   ├── AI相关临时文档（5份）
+│   ├── 数据管理临时文档（3份）
+│   ├── UI优化临时文档（7份）
+│   ├── 教程更新临时文档（2份）
+│   ├── 报告功能临时文档（3份）
+│   ├── 筛选优化临时文档（2份）
+│   ├── 任务关系临时文档（13份）
+│   └── 其他临时文档（61份）
+│
+├── audits/          # 审计报告（94份）
+│   ├── v1.7.12审计（3份）
+│   ├── v1.7.10审计（4份）
+│   ├── v1.7.7审计（7份）
+│   ├── v1.7.6审计（3份）
+│   └── 历史审计（77份）
+│
+├── features/        # 功能文档（14份）
+│   ├── TASK_LOG_PHASE1.md
+│   ├── TASK_LOG_PHASE2.md
+│   ├── POMODORO_FEATURE.md
+│   └── ...
+│
+├── testing/         # 测试文档（5份）
+│   ├── TESTING_GUIDE.md
+│   ├── TEST_CASES.md
+│   └── ...
+│
+├── releases/        # 发布文档（按版本）
+│   ├── v1.7.6/
+│   ├── v1.7.5/
+│   └── ...
+│
+├── archive/         # 归档文档（11份）
+│   ├── audits/
+│   ├── releases/
+│   └── ...
+│
+├── user/            # 用户文档（3份）
+│   └── ...
+│
+└── developer/       # 开发文档（2份）
+    └── ...
+```
 
 ---
 
@@ -187,64 +110,79 @@
 ### 我想...
 
 #### 快速开始使用
-1. 阅读 [README.md](README.md) 了解项目概况
-2. 阅读 [QUICK_START.md](QUICK_START.md) 快速上手
-3. 查看 [RELEASE_NOTES_v1.7.5.2.md](RELEASE_NOTES_v1.7.5.2.md) 了解最新功能
+1. 阅读 [README.md](./README.md) 了解项目概况
+2. 阅读 [QUICK_START.md](./QUICK_START.md) 快速上手
+3. 查看 [CHANGELOG.md](./CHANGELOG.md) 了解最新功能
 
 #### 学习所有功能
-1. 阅读 [USER_MANUAL.md](USER_MANUAL.md) 完整用户手册
-2. 阅读 [AI_CHAT_GUIDE.md](AI_CHAT_GUIDE.md) 学习 AI 功能
+1. 阅读 [USER_MANUAL.md](./USER_MANUAL.md) 完整用户手册
+2. 阅读 [FEATURES.md](./FEATURES.md) 功能详解
 
 #### 参与开发
-1. 阅读 [DEVELOPER.md](DEVELOPER.md) 开发者指南
-2. 阅读 [DOC_MANAGEMENT_POLICY.md](DOC_MANAGEMENT_POLICY.md) 文档规范
-3. 阅读 [GIT_PUSH_POLICY.md](GIT_PUSH_POLICY.md) 推送规范
+1. 阅读 [DEVELOPER.md](./DEVELOPER.md) 开发者指南
+2. 阅读 [DOC_MANAGEMENT_POLICY.md](./DOC_MANAGEMENT_POLICY.md) 文档规范
+3. 查看 [docs/features/](./docs/features/) 功能实现文档
 
-#### 构建应用
-1. Android: [APK_BUILD_GUIDE.md](APK_BUILD_GUIDE.md) 或 [APK_BUILD_QUICK.md](APK_BUILD_QUICK.md)
-2. Windows: [WINDOWS_BUILD_GUIDE.md](WINDOWS_BUILD_GUIDE.md)
-3. 脚本: [BUILD_SCRIPTS_GUIDE.md](BUILD_SCRIPTS_GUIDE.md)
+#### 查看审计报告
+1. 最新审计: [DOC_AUDIT_REPORT_V1.7.8_CRITICAL.md](./DOC_AUDIT_REPORT_V1.7.8_CRITICAL.md)
+2. 问题清单: [DOC_ISSUES_LIST_V1.7.8.md](./DOC_ISSUES_LIST_V1.7.8.md)
+3. 历史审计: [docs/audits/](./docs/audits/)
 
 #### 查看历史版本
-1. 阅读 [CHANGELOG.md](CHANGELOG.md) 查看所有版本变更
-2. 访问 `docs/archive/` 查看历史文档
+1. 阅读 [CHANGELOG.md](./CHANGELOG.md) 查看所有版本变更
+2. 访问 [docs/releases/](./docs/releases/) 查看历史发布文档
+3. 访问 [docs/archive/](./docs/archive/) 查看归档文档
 
 ---
 
 ## 📊 文档统计
 
-### 根目录文档
-- **核心文档**: 3 份
-- **用户文档**: 3 份
-- **开发文档**: 3 份
-- **构建文档**: 4 份
-- **管理文档**: 2 份
-- **发布文档**: 1 份
-- **总计**: 16 份
+### 根目录文档（15份）
 
-### 归档文档
-- **审计报告**: 50+ 份
-- **发布记录**: 15+ 份
-- **版本文档**: 40+ 份
-- **总计**: 100+ 份
+| 类型 | 数量 | 状态 |
+|------|------|------|
+| 项目文档 | 3 | ✅ 最新 |
+| 用户文档 | 3 | ⚠️ 需更新 |
+| 开发文档 | 1 | ⚠️ 需更新 |
+| 管理文档 | 3 | ✅ 最新 |
+| 审计文档 | 5 | ✅ 最新 |
+
+### docs/ 目录文档（209份）
+
+| 目录 | 数量 | 说明 |
+|------|------|------|
+| drafts/ | 96 | 临时文档、草稿 |
+| audits/ | 94 | 历史审计报告 |
+| features/ | 14 | 功能文档 |
+| testing/ | 5 | 测试文档 |
+| releases/ | - | 发布文档（按版本） |
+| archive/ | 11 | 归档文档 |
+| user/ | 3 | 用户文档 |
+| developer/ | 2 | 开发文档 |
+
+### 总计
+
+- **根目录**: 15 份
+- **docs/**: 209+ 份
+- **总计**: 224+ 份
 
 ---
 
 ## 🔄 文档更新频率
 
 ### 每次代码变更
-- README.md（如有新功能）
-- CHANGELOG.md（必须）
+- ✅ CHANGELOG.md（必须）
+- ✅ README.md（如有新功能）
 
 ### 每次版本发布
-- README.md（版本历史）
-- CHANGELOG.md（版本记录）
-- RELEASE_NOTES_v*.md（新建）
+- ✅ README.md（版本历史）
+- ✅ CHANGELOG.md（版本记录）
+- ✅ 审计报告（文档审查）
 
 ### 定期更新
-- USER_MANUAL.md（功能变更时）
-- DEVELOPER.md（架构变更时）
-- DOCS_INDEX.md（文档结构变更时）
+- ⏰ USER_MANUAL.md（功能变更时）
+- ⏰ DEVELOPER.md（架构变更时）
+- ⏰ DOCS_INDEX.md（文档结构变更时）
 
 ---
 
@@ -267,6 +205,34 @@
 - **版本审查**: 每次版本发布前
 - **定期审查**: 每月一次
 
+### 最近审查记录
+- **v1.7.8 审查**: 2026-03-01（批判性审查）
+  - 发现 10 个问题
+  - 修复 2 个严重问题
+  - 整理 50+ 临时文档
+  - 更新 README.md 和 CHANGELOG.md
+
+---
+
+## ⚠️ 待更新文档
+
+### 高优先级（本周）
+
+| 文档 | 当前版本 | 目标版本 | 说明 |
+|------|---------|---------|------|
+| USER_MANUAL.md | v1.7.6 | v1.7.8 | 补充重复任务说明 |
+| DEVELOPER.md | v1.7.6 | v1.7.8 | 补充 Bottom Sheet 规范 |
+| QUICK_START.md | v1.7.0 | v1.7.8 | 简化快速开始流程 |
+| FEATURES.md | v1.7.6 | v1.7.8 | 补充 v1.7.8 新功能 |
+
+### 中优先级（下周）
+
+| 文档 | 状态 | 说明 |
+|------|------|------|
+| API_REFERENCE.md | ❌ 不存在 | 需创建 |
+| ARCHITECTURE.md | ❌ 不存在 | 需创建 |
+| TESTING_GUIDE.md | ❌ 不存在 | 需创建（根目录） |
+
 ---
 
 ## 📞 反馈与贡献
@@ -276,12 +242,21 @@
 - **Pull Request**: 直接提交文档修改 PR
 
 ### 文档贡献指南
-1. 遵循 [DOC_MANAGEMENT_POLICY.md](DOC_MANAGEMENT_POLICY.md)
+1. 遵循 [DOC_MANAGEMENT_POLICY.md](./DOC_MANAGEMENT_POLICY.md)
 2. 使用标准文档模板
 3. 提交 PR 并等待审查
 
 ---
 
+## 🔗 相关链接
+
+- [GitHub Repository](https://github.com/zhaosj0315/TO-DO)
+- [Issue Tracker](https://github.com/zhaosj0315/TO-DO/issues)
+- [Pull Requests](https://github.com/zhaosj0315/TO-DO/pulls)
+
+---
+
 **文档维护**: 开发团队  
-**最后更新**: 2026-02-26  
-**下次审查**: 2026-03-26
+**最后更新**: 2026-03-01  
+**下次审查**: 2026-04-01  
+**文档版本**: v1.7.8

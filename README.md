@@ -12,14 +12,14 @@
 This is an **offline Android To-Do management application** built with **Vue 3** and **Capacitor**. All data is stored locally on the device using Capacitor Preferences API, requiring **no internet connection or backend server**.
 
 ### 🌟 Key Features
-- **AI Task Splitter** 🤖 (NEW in v1.7.7):
+- **AI Task Splitter** 🤖:
   - **Smart Task Decomposition**: Input task title and description, AI automatically splits into executable subtasks
   - **Subtask Preview**: Bottom Sheet displays split results with edit and delete support
   - **Auto Dependency Setup**: Subtasks automatically depend on parent task completion
   - **Smart Time Conversion**: AI returns hours, automatically converted to minutes for display
   - **4 Split Templates**: Quick split, detailed split, time-priority, priority-first
   - **Estimated Duration**: AI estimates time for each subtask (0.5-8 hours)
-- **Task Dependency System** 🔗 (NEW in v1.7.7):
+- **Task Dependency System** 🔗:
   - **One-way Dependency**: A task can "wait for" another task to complete
   - **Dependency Selector**: Search, filter, single-select mode
   - **Status Display**: Waiting🔒 / Depended🔓 / No Dependency✅
@@ -28,6 +28,7 @@ This is an **offline Android To-Do management application** built with **Vue 3**
   - **Auto Cleanup**: Auto-clear dependencies when task is deleted
   - **Task Navigation**: Click waiting task card to jump to details
   - **Data Migration**: Auto-add waitFor field to old tasks
+  - **Note**: Repeat tasks (daily/weekly/weekday) automatically reset to pending status each day/week
 - **AI Proactive Assistant** 🤖 (v1.7.6):
   - **Smart Reminder Card**: Auto-detect overdue and pending tasks with proactive reminders
   - **Daily Smart Summary**: Daily work summary with AI insights and tomorrow's plan
@@ -55,16 +56,16 @@ This is an **offline Android To-Do management application** built with **Vue 3**
   - Overdue alerts with humorous messages ("Tomatoes are escaping!")
   - 1-hour warning before deadline
   - Anti-spam mechanism (one notification per task per status)
-- **Pomodoro Timer** 🍅:
+- **番茄钟计时器 (Pomodoro Timer)** 🍅:
   - **25-minute Focus Sessions**: Full-screen purple gradient timer interface
   - **Automatic Break Mode**: 5-minute short break / 15-minute long break (every 4th)
   - **Circular Progress Bar**: Visual countdown with SVG animation
   - **Pause/Resume/Abandon**: Full control during focus sessions
   - **Skip Break / Continue Next**: Quick actions after break completion
-  - **Pomodoro History**: Track all completed focus sessions with timestamps
-  - **Today's Focus Stats**: View today's focus time and completed pomodoros
-  - **Weekly Statistics**: Track weekly pomodoro completion
-  - **Task Integration**: Start pomodoro directly from task cards (🍅 button)
+  - **番茄钟历史记录**: Track all completed focus sessions with timestamps
+  - **Today's Focus Stats**: View today's focus time and completed sessions
+  - **Weekly Statistics**: Track weekly completion
+  - **Task Integration**: Start timer directly from task cards (🍅 button)
 - **Dashboard & Stats**:
   - Grid layout with 5 stat cards (Completion Rate, All, Completed, Pending, Overdue)
   - Search bar with filter and add buttons
@@ -172,14 +173,14 @@ This is an **offline Android To-Do management application** built with **Vue 3**
 这是一个基于 **Vue 3** 和 **Capacitor** 构建的 **Android离线待办事项管理应用**。所有数据使用 Capacitor Preferences API 存储在设备本地，**无需网络连接或后端服务器**。
 
 ### 🌟 核心功能
-- **AI任务拆分** 🤖 (v1.7.7 新增):
+- **AI任务拆分** 🤖:
   - **智能任务拆解**：输入任务标题和描述，AI自动拆分为可执行子任务
   - **子任务预览**：Bottom Sheet展示拆分结果，支持编辑和删除
   - **依赖关系自动设置**：子任务自动依赖父任务，完成父任务后子任务才能开始
   - **预计时长智能转换**：AI返回小时数，自动转换为分钟显示
   - **4种拆分模板**：快速拆分、详细拆分、时间优先、优先级优先
   - **预估时长**：AI为每个子任务估算时长（0.5-8小时）
-- **任务依赖关系** 🔗 (v1.7.7 新增):
+- **任务依赖关系** 🔗:
   - **单向依赖**：一个任务可以"等待"另一个任务完成
   - **依赖选择器**：搜索、筛选、单选模式
   - **状态显示**：等待中🔒/被依赖🔓/无依赖✅
@@ -188,6 +189,7 @@ This is an **offline Android To-Do management application** built with **Vue 3**
   - **自动清理**：删除任务时自动清除依赖关系
   - **任务跳转**：点击等待的任务卡片可跳转到详情
   - **数据迁移**：自动为旧任务添加 waitFor 字段
+  - **注意**：重复任务（每天/每周/工作日）完成后会在第二天/下周自动重置为待办状态
 - **AI主动式助手** 🤖 (v1.7.6 新增):
   - **智能提醒卡片**: 自动检测逾期和待办任务，主动提醒
   - **每日智能总结**: 每日工作总结，AI 建议，明日计划
@@ -454,86 +456,25 @@ userInfo[username] = {
 
 ## 📝 版本历史 | Version History
 
-### v1.7.12 (2026-02-28)
-- ✨ **统一输入框功能**:
-  - **UI简化**：两个输入框（标题+描述）合并为一个单行输入框
-  - **三个功能按钮**：🤖 AI分析、📷 拍照识别、⛶ 展开编辑
-  - **三个点提示**：有描述时显示"标题..."（紫色字体+加粗）
-  - **智能占位符**："输入任务标题（点击 ⛶ 可添加详细描述）"
-  - **快速添加**：只输入标题，按回车即可创建任务
-  - **详细添加**：点击⛶打开全屏编辑器，输入多行描述
-- 🎨 **全屏编辑器优化**:
-  - **标题固定显示**：标题显示在导航栏中间（不可编辑）
-  - **描述独立编辑**：textarea只用于编辑描述内容
-  - **避免重复**：标题只显示一次，不会在编辑器中重复
-  - **职责清晰**：标题和描述分离，用户体验更好
-- 📊 **任务描述显示优化**:
-  - **完整显示**：任务卡片中的描述完整显示，自适应高度
-  - **删除折叠功能**：移除展开/收起按钮（约40行代码）
-  - **保持换行**：描述保留原始换行格式
-  - **视觉优化**：浅灰背景+左侧彩色边框（根据优先级）
-- 🎯 **用户体验提升**:
-  - UI简化：输入流程更简洁
-  - 视觉提示：三个点清晰提示有描述
-  - 流畅交互：全屏编辑器职责清晰
-  - 代码优化：删除约40行冗余代码
-
-### v1.7.11 (2026-02-28)
-- 📚 **演示模式扩展**（22步→30步）:
-  - **新增8个步骤**：完整覆盖v1.7.2-v1.7.10的所有新功能
-  - **步骤22**：AI智能问答（v1.7.4功能）
-  - **步骤23**：AI主动式助手（v1.7.6功能）
-  - **步骤24**：任务依赖关系（v1.7.7功能）
-  - **步骤25**：拍照OCR识别（v1.7.3功能）
-  - **步骤26**：文本选中提取（v1.7.10功能）
-  - **步骤27**：高级筛选优化（v1.7.10功能）
-  - **步骤28**：报告功能（v1.7.10功能）
-  - **步骤29**：AI任务拆分（v1.7.7功能）
-  - **步骤30**：完成页（功能回顾）
-  - **预计时长**：8-10分钟 → 15-18分钟
-  - **功能覆盖**：70% → 100%
-- 📊 **数据管理优化**:
-  - **任务字段扩展**：新增aiSummary字段（AI生成的任务总结）
-  - **Excel导出扩展**：新增等待任务数、父任务ID字段（20→22个字段）
-  - **备份说明更新**：明确包含所有报告类型和任务关系
-  - **模板字段更新**：Excel模板从20个字段增加到22个
-- 🐛 **Bug修复**:
-  - **localStorage配额超限**：Web端备份存储量减少99%
-  - **备份记录优化**：从10个减至3个，只保存元数据
-  - **Web端恢复重构**：改为文件上传方式
-  - **异常处理**：添加try-catch避免崩溃
-- 🎯 **核心价值**:
-  - 演示模式功能覆盖率100%
-  - 数据备份覆盖率100%
-  - Web端备份不再报错
-
-### v1.7.10 (2026-02-28)
-- ✨ **AI任务提取功能统一化**:
-  - **统一Prompt配置**：创建aiPromptConfig.js统一所有AI服务的提取逻辑
-  - **提取属性扩展**：从5个扩展到9个（新增startTime/type/customDate/customTime）
-  - **4种提取模式**：extract（批量提取）/enhance（OCR增强）/classify（智能分类）/chat（对话提取）
-  - **统一规则**：时间提取/分类判断/优先级判断/任务类型推断完全统一
-  - **数据标准化**：统一JSON解析和容错处理，自动拆分时间字段
-  - **代码优化**：代码重复降低80%，维护成本降低75%
-- 📊 **高级筛选功能全面优化**:
-  - **快捷场景**（新增6个）：今日待办/本周待办/今日逾期/高优先级/工作任务/学习任务
-  - **快捷日期扩展**：从3个扩展到12个（今天/昨天/本周/上周/本月/上月/全部逾期/最近7天/最近30天）
-  - **时间维度优化**：从3个按钮改为下拉选择器（节省空间60%）
-  - **筛选结果提示**：实时显示筛选结果数量和当前条件
-  - **布局紧凑化**：高度减少30%（600px→420px），无需滚动
-  - **操作效率提升**：操作步骤减少50%，一键直达常用场景
-- 📋 **报告功能全面整合优化**:
-  - **报告类型扩展**：从5种扩展到7种（新增日报和半年报）
-  - **报告模板扩展**：从3种扩展到4种（新增工作报告模板）
-  - **工作报告模板**：保留原"快速生成周报"的所有信息（8个section）
-    - 智能总结、数据概览、上期完成、本期目标、本期进展、关键工作、下期计划、风险问题
-  - **通用时间维度**：工作报告模板适用于所有报告类型（日/周/月/季/半年/年）
-  - **修复切换按钮**：点击任意报告类型直接显示对应报告，不再显示多余切换按钮
-  - **28种组合**：7种报告类型 × 4种报告模板 = 28种灵活组合
-- 🎯 **核心价值**:
-  - AI提取准确率提升40%，功能完善度提升80%
-  - 筛选效率提升60%，视觉体验提升50%
-  - 报告功能统一入口，灵活选择，信息完整
+### v1.7.8 (2026-03-01)
+- 🐛 **重复任务逻辑修复**:
+  - 修复 `weekday`（工作日重复）和 `weekly`（每周重复）类型任务缺少截止时间计算的问题
+  - 新增重复任务自动重置功能：
+    - 每天重复（daily）：完成后第二天自动重置为待办
+    - 工作日重复（weekday）：每个工作日自动重置
+    - 每周重复（weekly）：每周指定日子自动重置
+  - 修复重复任务完成后不会重新出现在待办列表的问题
+- 🐛 **Bottom Sheet 布局统一**:
+  - 修复 AddDependencyModal 为全屏宽度 Bottom Sheet
+  - 修复 SmartTaskSplitter 为从底部滑出布局
+  - 修复 WaitForSelector 为全屏 Bottom Sheet
+  - 优化搜索功能：支持多关键词模糊匹配
+  - 修复 text 字段 undefined 导致的崩溃问题
+- 🎨 **UI优化**:
+  - 统一所有弹窗为 Bottom Sheet 样式（从底部滑出，左右全屏）
+  - 优化动画效果：从 `translateY(100%)` 滑出
+  - 优化阴影效果：向上的阴影
+  - 移除模糊效果以提升性能
 
 ### v1.7.7 (2026-02-27)
 - ✨ **任务依赖关系系统**（极简设计）:

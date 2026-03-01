@@ -4397,34 +4397,20 @@ const hasUnreadVersions = ref(false) // 是否有未读版本
 const initVersionHistory = () => {
   versionHistory.value = [
     {
-      version: '1.7.10',
-      date: '2026-02-28',
-      features: [
-        'AI文本处理功能全面优化（Bottom Sheet布局+原文对比）',
-        '回收站功能全面优化（删除时间记录+智能排序+完善信息展示）',
-        '刷新按钮功能完善（重置所有状态+关闭所有弹窗）',
-        'AI文本菜单从底部弹出（10个功能按钮+左右全屏）',
-        'AI处理结果对比展示（原文黄色+处理结果绿色）',
-        '回收站按删除时间倒序排序（最新删除的在最上面）',
-        '智能时间显示（刚刚/X分钟前/X小时前/X天前/具体日期）',
-        'AI报告生成改为Bottom Sheet布局（周报/月报/季报/年报）'
-      ],
+      version: '1.7.8',
+      date: '2026-03-01',
+      features: [],
       improvements: [
-        'AI文本菜单改为Bottom Sheet布局（统一视觉风格）',
-        'AI提取任务弹窗改为左右全屏（完美适配所有设备）',
-        'AI报告生成改为左右全屏（完美适配所有设备）',
-        '回收站独立组件化（TrashModal.vue）',
-        '任务信息展示增强（分类/优先级/删除时间/描述）',
-        '操作按钮优化（绿色恢复/红色删除+悬停动画）',
-        '统计信息栏（已删除任务数量+清空回收站）',
-        '所有弹窗统一紫色渐变头部设计（8个Bottom Sheet组件）'
+        'Bottom Sheet布局统一（3个弹窗改为从底部滑出+左右全屏）',
+        '搜索功能优化（支持多关键词模糊匹配）'
       ],
       fixes: [
-        '修复AI文本菜单在某些设备上不可见',
-        '修复点击功能按钮无响应（闪一下）问题',
-        '修复useTextSelection类名检查错误',
-        '修复刷新按钮未清空输入框和关闭弹窗',
-        '修复事件处理流程和日志输出'
+        '修复重复任务逻辑（weekday和weekly类型缺少截止时间计算）',
+        '修复重复任务自动重置功能（每天/工作日/每周自动重置为待办）',
+        '修复AddDependencyModal为全屏宽度Bottom Sheet',
+        '修复SmartTaskSplitter为从底部滑出布局',
+        '修复WaitForSelector为全屏Bottom Sheet',
+        '修复text字段undefined导致的崩溃问题'
       ]
     },
     {

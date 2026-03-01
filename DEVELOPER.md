@@ -1,7 +1,7 @@
 # 开发者文档 | Developer Documentation
 
-**版本**: v1.7.6  
-**更新日期**: 2026-02-27
+**版本**: v1.7.8  
+**更新日期**: 2026-03-01
 
 ## 🏗️ 架构概览
 
@@ -108,6 +108,67 @@ const someAIFunction = async () => {
 - AI续写
 - OCR拍照识别
 - 周报/月报生成
+
+---
+
+### Bottom Sheet 组件规范 (v1.7.8)
+
+**设计原则**: 所有 UI 组件统一使用 Bottom Sheet 样式（从底部滑出，左右全屏）
+
+**标准样式**:
+```css
+/* 遮罩层 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;      /* 底部对齐 */
+  justify-content: center;
+  z-index: 2000;
+  padding: 0;                  /* 无内边距 */
+  animation: fadeIn 0.2s;
+}
+
+/* 内容容器 */
+.modal-content {
+  background: white;
+  border-radius: 16px 16px 0 0;  /* 只保留顶部圆角 */
+  width: 100%;                    /* 全屏宽度 */
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);  /* 向上的阴影 */
+  animation: slideUp 0.3s ease;
+  margin: 0;
+}
+
+/* 动画 */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }  /* 从底部完全滑出 */
+  to { transform: translateY(0); }
+}
+```
+
+**已统一的组件** (v1.7.8):
+1. `AddDependencyModal.vue` - 添加依赖关系
+2. `SmartTaskSplitter.vue` - AI任务拆分
+3. `WaitForSelector.vue` - 等待任务选择器
+
+**实现要点**:
+- 使用 `align-items: flex-end` 确保从底部对齐
+- 使用 `width: 100%` 确保左右全屏
+- 使用 `translateY(100%)` 实现从底部滑出动画
+- 移除 `backdrop-filter: blur()` 以提升性能
+- 使用向上的阴影效果
 
 ---
 
