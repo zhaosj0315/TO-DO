@@ -4590,6 +4590,7 @@ const initVersionHistory = () => {
       version: '0.7.8',
       date: '2026-03-02',
       features: [
+        '剪贴板历史记录（最近10次+时间戳+一键选择粘贴）',
         '全屏编辑工具栏增强（📋粘贴+🔄清空+💡AI建议+🤖AI续写）',
         'AI智能建议（基于任务标题生成描述建议+3-5个执行步骤）',
         '全屏编辑支持标题编辑（标题+描述同时编辑）',
@@ -4620,6 +4621,7 @@ const initVersionHistory = () => {
         'AI问答markdown渲染优化（列表、表格、emoji）'
       ],
       fixes: [
+        '修复安卓粘贴功能（使用Capacitor Clipboard API）',
         '修复AI建议功能的模型配置获取（直接从localStorage读取）',
         '修复AI建议API路径问题（统一使用/v1/chat/completions）',
         '修复AI建议模型字段名（modelName兼容model）',
