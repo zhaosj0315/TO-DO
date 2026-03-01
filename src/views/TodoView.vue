@@ -4859,7 +4859,7 @@ const generateAISuggestions = async () => {
     }
     
     console.log('💡 AI建议 - API URL:', apiUrl)
-    console.log('💡 AI建议 - Model:', defaultModel.model)
+    console.log('💡 AI建议 - Model:', defaultModel.modelName || defaultModel.model)
     
     const response = await fetch(apiUrl, {
       method: 'POST',
@@ -4868,7 +4868,7 @@ const generateAISuggestions = async () => {
         'Authorization': `Bearer ${defaultModel.apiKey || 'dummy'}`
       },
       body: JSON.stringify({
-        model: defaultModel.model,
+        model: defaultModel.modelName || defaultModel.model,
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.7,
         max_tokens: 500
