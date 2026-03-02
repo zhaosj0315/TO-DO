@@ -22,6 +22,16 @@
   - 预览模式支持AI拆分：预览中可使用AI拆分，父任务和子任务原子性保存
   - 一次性保存：预览模式下，父任务和所有子任务一次性创建
 
+### 修复 (Fixed)
+- 🔙 **Android返回手势支持**:
+  - 修复11个弹窗缺少返回手势支持的问题
+  - 新增返回按钮处理：模板详情/编辑、自定义报告、周报、备份列表、导入预览、更新日志、剪贴板历史、子任务建议、任务预览、AI拆分
+  - 符合Android Material Design规范
+- 🎨 **Bottom Sheet样式统一**:
+  - 修复备份列表弹窗：居中样式 → Bottom Sheet
+  - 修复更新日志弹窗：居中样式 → Bottom Sheet
+  - 统一所有弹窗从底部滑出，左右全屏
+
 ### 优化 (Changed)
 - 🤖 **AI拆分优化**:
   - 默认数量改为3个：AI拆分子任务默认数量从5个改为3个
@@ -42,6 +52,8 @@
   - 新增 SUBTASK_QUICK_CREATE_GUIDE.md（子任务智能识别功能说明）
   - 新增 TASK_PREVIEW_GUIDE.md（任务预览功能使用指南）
   - 新增 TASK_INPUT_FEATURES_AUDIT.md（任务输入框功能审查报告）
+  - 新增 ANDROID_BACK_GESTURE_FIX_V0.7.9.md（返回手势修复文档）
+  - 新增 MODAL_AUDIT_AND_FIX_V0.7.9.md（弹窗审查与修复清单）
   - 更新 SUBTASK_IMPLEMENTATION_SUMMARY.md（实施总结）
   - 更新 README.md（v0.7.9版本历史和功能特性）
 
