@@ -4687,19 +4687,29 @@ const initVersionHistory = () => {
         '✨ 子任务智能识别：自动检测任务描述中的列表项（支持5种格式：数字、破折号、星号、圆点、圆圈数字）',
         '✨ 任务预览模式：全屏编辑新增"预览"按钮，可查看、编辑、AI拆分后原子性保存',
         '🤖 AI拆分优化：默认子任务数量从5个改为3个，预览模式完全集成AI拆分',
-        '🎨 智能提示气泡：检测到2个以上列表项时弹出蓝色渐变提示卡片'
+        '🎨 智能提示气泡：检测到2个以上列表项时弹出蓝色渐变提示卡片',
+        '💡 AI生成预览框：AI建议/续写生成后先预览，可编辑后再采纳',
+        '📋 快捷模板选择器：6个预设模板（周报/月报/会议纪要/学习计划/购物清单/项目计划）',
+        '🔄 多轮对话：AI生成支持重新生成，不满意可多次尝试',
+        '📷 拍照识别：全屏编辑工具栏新增拍照按钮，复用OCR功能'
       ],
       improvements: [
         '📏 自适应高度优化：任务描述、AI总结、日志描述全部支持自适应高度（输入时实时调整+初始渲染自动适配）',
         '✏️ AI总结可编辑：AI总结内容支持直接编辑，失焦自动保存',
         '🗑️ 代码精简：删除约180行重复代码，优化任务创建流程',
-        '📚 文档完善：新增子任务智能识别、任务输入功能审查、实施总结文档',
-        '🎯 轻量级设计：不重复造轮子，复用现有AI拆分功能'
+        '📚 文档完善：新增子任务智能识别、任务输入功能审查、实施总结、AI建议优化、语音拍照功能文档',
+        '🎯 轻量级设计：不重复造轮子，复用现有AI拆分功能',
+        '🎨 统一Bottom Sheet样式：所有弹窗从底部滑出，左右全屏',
+        '🔧 AI兼容性增强：支持多种返回格式（content/reasoning/response字段）',
+        '📝 max_tokens增加到1000：避免AI生成内容截断'
       ],
       fixes: [
         '修复全屏编辑工具栏重复的"🤖 AI拆分"按钮',
         '修复预览模式下父任务和子任务保存不同步的问题',
-        '修复任务详情页面长文本显示不全的问题（textarea自适应高度）'
+        '修复任务详情页面长文本显示不全的问题（textarea自适应高度）',
+        '修复AI总结原文显示问题',
+        '修复弹窗z-index被遮挡问题',
+        '修复textarea自适应高度初始化问题'
       ]
     },
     {
@@ -11400,6 +11410,18 @@ onMounted(async () => {
         console.log('✅ 关闭剪贴板历史')
         showClipboardHistory.value = false
         return
+      } else if (showAISuggestions.value) {
+        console.log('✅ 关闭AI建议卡片')
+        showAISuggestions.value = false
+        return
+      } else if (showAIPreview.value) {
+        console.log('✅ 关闭AI预览')
+        showAIPreview.value = false
+        return
+      } else if (showTemplateSelector.value) {
+        console.log('✅ 关闭模板选择器')
+        showTemplateSelector.value = false
+        return
       } else if (showSubtaskSuggestion.value) {
         console.log('✅ 关闭子任务建议')
         showSubtaskSuggestion.value = false
@@ -11418,9 +11440,11 @@ onMounted(async () => {
         showSubtaskPreview.value = false
         return
       } else if (showTaskInputPreview.value) {
-        console.log('✅ 关闭任务输入预览')
+        console.log('✅ 关闭任务输入预览，返回全屏编辑')
         showTaskInputPreview.value = false
         previewTaskData.value = null
+        // 重新打开全屏编辑器
+        showFullscreenDesc.value = true
         return
       } else if (showTaskSplitter.value) {
         console.log('✅ 关闭AI任务拆分')
