@@ -16,8 +16,13 @@ This is an **offline Android To-Do management application** built with **Vue 3**
   - **Auto List Detection**: Automatically detects list items in task description (5 formats supported)
   - **Smart Suggestion Bubble**: Preview detected subtasks before creation
   - **Guide to AI Split**: Prompts users to use AI split feature in task details
-  - **Fullscreen AI Split**: Direct AI split button in fullscreen edit mode toolbar
   - **Lightweight Design**: No duplicate features, reuses existing AI split functionality
+- **Task Preview Mode** 👁️ (v0.7.9):
+  - **Dual Button Mode**: "Complete" and "Preview" buttons in fullscreen edit navbar
+  - **Complete Button**: Quick input mode - close editor, adjust properties on home, then submit
+  - **Preview Button**: Open preview modal to view, edit, and AI split before saving
+  - **Atomic Save**: Parent task and all subtasks saved together in preview mode
+  - **AI Split Integration**: Use AI split in preview mode with 3 default subtasks
 - **AI Task Splitter** 🤖:
   - **Smart Task Decomposition**: Input task title and description, AI automatically splits into executable subtasks
   - **Subtask Preview**: Bottom Sheet displays split results with edit and delete support
@@ -183,8 +188,13 @@ This is an **offline Android To-Do management application** built with **Vue 3**
   - **自动列表识别**：自动检测任务描述中的列表项（支持5种格式）
   - **智能建议气泡**：创建前预览检测到的子任务
   - **引导使用AI拆分**：提示用户在任务详情页使用"🤖 AI拆分"功能
-  - **全屏编辑AI拆分**：全屏编辑模式工具栏直接AI拆分按钮
   - **轻量级设计**：不重复造轮子，复用现有AI拆分功能
+- **任务预览模式** 👁️ (v0.7.9 新增):
+  - **双按钮模式**：全屏编辑导航栏新增"完成"和"预览"两个按钮
+  - **完成按钮**：快速输入模式，关闭编辑器，返回首页调整属性后提交
+  - **预览按钮**：打开预览弹窗，可查看、编辑、AI拆分后一次性保存
+  - **原子性保存**：预览模式下父任务和所有子任务一次性创建
+  - **AI拆分集成**：预览模式中使用AI拆分，默认3个子任务
 - **AI任务拆分** 🤖:
   - **智能任务拆解**：输入任务标题和描述，AI自动拆分为可执行子任务
   - **子任务预览**：Bottom Sheet展示拆分结果，支持编辑和删除
@@ -479,21 +489,28 @@ userInfo[username] = {
   - **智能提示气泡**：检测到2个以上列表项时弹出提示（蓝色渐变卡片）
   - **引导使用AI拆分**：提示用户在任务详情页使用"🤖 AI拆分"功能
   - **轻量级设计**：不重复造轮子，复用现有AI拆分功能
-- ✨ **全屏编辑AI拆分功能** 🤖:
-  - **工具栏新增按钮**：在全屏编辑模式底部工具栏添加"🤖 AI拆分"按钮
-  - **直接拆分子任务**：根据任务标题和描述，直接调用AI拆分功能
-  - **自动创建父任务**：拆分完成后自动创建父任务和所有子任务
-  - **完整属性继承**：子任务继承父任务的分类、优先级、日期等属性
-  - **复用现有逻辑**：完全复用任务详情页的AI拆分功能
+- ✨ **任务预览功能** 👁️:
+  - **双按钮模式**：全屏编辑导航栏新增"完成"和"预览"两个按钮
+  - **完成按钮**：快速输入模式，关闭全屏编辑返回首页，调整属性后提交
+  - **预览按钮**：打开预览弹窗，可查看、编辑、AI拆分后一次性保存
+  - **预览模式支持AI拆分**：预览中可使用AI拆分，父任务和子任务原子性保存
+  - **一次性保存**：预览模式下，父任务和所有子任务一次性创建
+- 🤖 **AI拆分优化**:
+  - **默认数量改为3个**：AI拆分子任务默认数量从5个改为3个
+  - **预览模式集成**：预览弹窗完全复用TaskDetailModal，支持所有功能
 - 🎨 **UI增强**:
   - 新增智能提示气泡（蓝色渐变背景，滑入动画）
   - 预览检测到的子任务（前3个）
   - 底部提示文字引导用户使用AI拆分
-  - 工具栏新增"🤖 AI拆分"按钮
+  - 全屏编辑导航栏双按钮布局（完成/预览）
+- 🗑️ **功能优化**:
+  - **简化工具栏**：移除重复的"🤖 AI拆分"按钮，通过预览模式统一入口
+  - **代码精简**：删除约180行重复代码，优化任务创建流程
 - 📚 **文档完善**:
   - 新增 SUBTASK_QUICK_CREATE_GUIDE.md（子任务智能识别功能说明）
   - 新增 TASK_INPUT_FEATURES_AUDIT.md（任务输入框功能审查报告）
-  - 详细说明智能识别 + AI拆分的配合使用
+  - 新增 SUBTASK_IMPLEMENTATION_SUMMARY.md（实施总结）
+  - 详细说明智能识别 + 预览 + AI拆分的配合使用
 
 ### v0.7.8 (2026-03-02)
 - ✨ **剪贴板历史功能**:
