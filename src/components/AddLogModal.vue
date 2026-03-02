@@ -288,7 +288,9 @@ const formData = ref({
   type: props.defaultType,
   content: '',
   duration: null,
-  progress: props.task.stats?.progressHistory[props.task.stats.progressHistory.length - 1] || 0,
+  progress: props.task.stats?.progressHistory?.length > 0 
+    ? props.task.stats.progressHistory[props.task.stats.progressHistory.length - 1] 
+    : 0,
   tags: [],
   mood: null,
   rating: null,

@@ -1,6 +1,6 @@
 <template>
   <div v-if="visible" class="stats-overlay" @click.self="$emit('close')">
-    <div class="stats-container">
+    <div class="bottom-sheet">
       <div class="stats-header">
         <h3>📊 数据统计</h3>
         <button class="close-btn" @click="$emit('close')">✕</button>
@@ -423,31 +423,33 @@ watch(() => props.visible, async (newVal) => {
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   z-index: 10006;
   backdrop-filter: blur(8px);
 }
 
-.stats-container {
-  background: white;
-  border-radius: 16px;
-  width: 96%;
-  max-width: 900px;
+.bottom-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   max-height: 90vh;
+  background: white;
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.3s ease-out;
+  overflow-y: auto;
+  z-index: 10007;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  animation: slideUp 0.3s ease;
 }
 
 @keyframes slideUp {
   from {
-    opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(100%);
   }
   to {
-    opacity: 1;
     transform: translateY(0);
   }
 }
@@ -460,7 +462,8 @@ watch(() => props.visible, async (newVal) => {
   border-bottom: 1px solid #e0e0e0;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  border-radius: 16px 16px 0 0;
+  border-radius: 20px 20px 0 0;
+  flex-shrink: 0;
 }
 
 .stats-header h3 {

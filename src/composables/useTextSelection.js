@@ -21,7 +21,65 @@ export function useTextSelection(containerRef) {
         return
       }
 
-      // 检查选中的文本是否在容器内
+      // ✅ 优化1: 最小字数限制（10个字符）
+      if (text.length < 10) {
+        console.log('useTextSelection - text too short (<10 chars)')
+        return
+      }
+
+      // ✅ 优化2: 过滤纯数字
+      if (/^\d+$/.test(text)) {
+        console.log('useTextSelection - pure number, skipped')
+        return
+      }
+
+      // ✅ 优化3: 过滤单个单词（无空格、无标点，且长度<20）
+      if (!/[\s\p{P}]/u.test(text) && text.length < 20) {
+        console.log('useTextSelection - single word, skipped')
+        return
+      }
+
+      // ✅ 优化4: 限制触发区域（只在可编辑区域）
+      // 检查是否在textarea或可编辑元素内
+      let isInAllowedContainer = false
+      
+      // 方法1: 检查anchorNode是否是textarea或其父元素
+      let currentNode = selection.anchorNode
+      
+      while (currentNode) {
+        if (currentNode.nodeType === Node.ELEMENT_NODE) {
+          const element = currentNode
+          
+          // 检查是否是textarea或可编辑元素
+          if (element.tagName === 'TEXTAREA' || 
+              element.contentEditable === 'true' ||
+              element.classList.contains('editable-content')) {
+            isInAllowedContainer = true
+            break
+          }
+          
+          // ✅ 检查该元素内是否包含textarea（解决跨元素选择问题）
+          if (element.querySelector && element.querySelector('textarea')) {
+            isInAllowedContainer = true
+            break
+          }
+        }
+        currentNode = currentNode.parentNode
+      }
+      
+      if (!isInAllowedContainer) {
+        console.log('useTextSelection - not in allowed container')
+        return
+      }
+
+      // ✅ 优化5: 过滤按钮、链接内的文字
+      const element = selection.anchorNode.parentElement
+      if (element && (element.closest('button') || element.closest('a'))) {
+        console.log('useTextSelection - in button or link, skipped')
+        return
+      }
+
+      // 检查选中的文本是否在容器内（保留原有逻辑）
       if (containerRef?.value && !containerRef.value.contains(selection.anchorNode)) {
         console.log('useTextSelection - text not in container')
         return
