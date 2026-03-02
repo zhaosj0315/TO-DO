@@ -1,5 +1,7 @@
 # TO-DO App | 跨平台离线待办事项管理应用
 
+**当前版本**: v0.7.9  
+**更新日期**: 2026-03-02  
 **支持平台**: Android / Windows / iOS / Mac
 
 [English](#english) | [中文](#中文)
