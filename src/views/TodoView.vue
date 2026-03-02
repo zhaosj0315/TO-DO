@@ -133,6 +133,30 @@
             </div>
           </div>
 
+          <!-- 🌳 子任务自动识别建议气泡 -->
+          <div v-if="showSubtaskSuggestion" class="subtask-suggestion-bubble">
+            <div class="suggestion-content">
+              <span class="suggestion-icon">🌳</span>
+              <span class="suggestion-text">
+                检测到 {{ detectedSubtasks.length }} 个子任务，建议使用AI拆分功能
+              </span>
+            </div>
+            <div class="subtask-preview">
+              <div v-for="(subtask, index) in detectedSubtasks.slice(0, 3)" :key="index" class="subtask-preview-item">
+                {{ index + 1 }}. {{ subtask }}
+              </div>
+              <div v-if="detectedSubtasks.length > 3" class="subtask-more">
+                +{{ detectedSubtasks.length - 3 }} 个子任务
+              </div>
+            </div>
+            <div class="suggestion-actions">
+              <button @click="ignoreDetectedSubtasks" class="btn-dismiss">✕ 知道了</button>
+            </div>
+            <div class="subtask-tip">
+              💡 提示：创建任务后，在任务详情页点击"🤖 AI拆分"可以智能拆分子任务
+            </div>
+          </div>
+
           <!-- 只有输入任务名称后才显示属性配置 -->
           <template v-if="quickTaskInput.trim()">
             <!-- 属性配置 -->
@@ -2232,6 +2256,16 @@
       @hide-loading="handleHideLoading"
     />
 
+    <!-- 🆕 任务输入预览弹窗 -->
+    <TaskDetailModal
+      v-if="showTaskInputPreview && previewTaskData"
+      :task="previewTaskData"
+      :is-preview="true"
+      @close="showTaskInputPreview = false; previewTaskData = null"
+      @save="saveTaskFromPreview"
+      @split="handlePreviewSplit"
+    />
+
     <!-- 子任务预览弹窗 -->
     <SubtaskPreviewModal
       :visible="showSubtaskPreview"
@@ -2279,7 +2313,7 @@
       :task-title="taskToSplit.text"
       :task-description="taskToSplit.description"
       @close="showTaskSplitter = false; taskToSplit = null"
-      @create="createSubtasks"
+      @create="showTaskInputPreview ? createSubtasksFromPreview : createSubtasks"
     />
 
     <!-- 数据统计 -->
@@ -2324,7 +2358,10 @@
               @keydown.enter.prevent
             />
           </div>
-          <button class="nav-btn-primary" @click="closeFullscreenDesc">完成</button>
+          <div class="nav-buttons">
+            <button class="nav-btn-secondary" @click="closeFullscreenDesc">完成</button>
+            <button class="nav-btn-primary" @click="previewTask">预览</button>
+          </div>
         </div>
         
         <!-- 中层：状态栏 -->
@@ -4069,6 +4106,10 @@ const newTaskDescription = ref('')
 const quickTaskInput = ref('')  // 单行输入框内容（标题）
 const tempDescription = ref('')  // 临时保存的描述
 
+// 🌳 子任务快速创建相关（仅自动识别）
+const showSubtaskSuggestion = ref(false)  // 显示自动识别的子任务建议
+const detectedSubtasks = ref([])  // 自动识别的子任务列表
+
 const newTaskType = ref('today')
 const customDateTime = ref('')
 const newTaskCategory = ref('work')
@@ -4109,6 +4150,8 @@ const showAIReport = ref(false)
 const showTaskSplitter = ref(false)
 const taskToSplit = ref(null)
 const showDataStats = ref(false)
+const showTaskInputPreview = ref(false)  // 🆕 任务输入预览弹窗
+const previewTaskData = ref(null)  // 🆕 预览的任务数据
 
 // 文本选择菜单（使用新的 composable）
 const todoLayoutRef = ref(null)
@@ -4205,7 +4248,7 @@ const openTaskSplitterForNew = () => {
 }
 
 // 创建子任务
-const createSubtasks = (subtasks) => {
+const createSubtasks = async (subtasks) => {
   console.log('=== 开始创建子任务 ===')
   console.log('父任务:', taskToSplit.value)
   console.log('子任务数量:', subtasks.length)
@@ -4213,12 +4256,13 @@ const createSubtasks = (subtasks) => {
   if (!taskToSplit.value || subtasks.length === 0) return
   
   const parentTask = taskToSplit.value
+  
   const now = new Date()
   const subtaskIds = []
   
   subtasks.forEach((subtask, index) => {
     const newTask = {
-      id: Date.now() + index,  // 使用整数ID
+      id: Date.now() + index,
       text: subtask.title,
       description: subtask.description || '',
       type: 'today',
@@ -4227,12 +4271,12 @@ const createSubtasks = (subtasks) => {
       status: 'pending',
       created_at: now.toISOString(),
       user_id: taskStore.currentUser,
-      parentTaskId: Number(parentTask.id),  // 确保是数字类型
+      parentTaskId: Number(parentTask.id),
       estimatedHours: subtask.estimatedHours || 1,
-      waitFor: []  // 明确设置为空数组
+      waitFor: []
     }
     
-    console.log(`创建子任务 ${index + 1}:`, newTask.text, 'ID:', newTask.id, 'parentTaskId:', newTask.parentTaskId, 'waitFor:', newTask.waitFor)
+    console.log(`创建子任务 ${index + 1}:`, newTask.text, 'ID:', newTask.id, 'parentTaskId:', newTask.parentTaskId)
     taskStore.addTask(newTask)
     subtaskIds.push(newTask.id)
   })
@@ -4247,7 +4291,6 @@ const createSubtasks = (subtasks) => {
     console.log('更新父任务 - subtasks:', parentTask.subtasks)
     taskStore.updateTask(parentTask)
     
-    // 验证更新是否成功
     const updatedParent = taskStore.tasks.find(t => t.id === parentTask.id)
     console.log('从store读取的父任务 - subtasks:', updatedParent?.subtasks)
     
@@ -4818,9 +4861,10 @@ const openFullscreenDesc = () => {
 }
 
 const closeFullscreenDesc = () => {
-  // 🆕 只保存描述（标题不变）
+  // 🆕 保存描述
   tempDescription.value = newTaskDescription.value.trim()
   
+  // 关闭全屏编辑
   showFullscreenDesc.value = false
   showAISuggestions.value = false
   aiSuggestionsList.value = []
@@ -4829,6 +4873,201 @@ const closeFullscreenDesc = () => {
     clearInterval(descEditTimer)
     descEditTimer = null
   }
+  
+  // 🌳 检测子任务（自动识别列表）
+  const subtasks = detectSubtasksFromDescription(newTaskDescription.value)
+  if (subtasks.length >= 2) {
+    detectedSubtasks.value = subtasks
+    showSubtaskSuggestion.value = true
+  }
+}
+
+// 🌳 从描述中检测子任务列表
+const detectSubtasksFromDescription = (description) => {
+  if (!description || !description.trim()) return []
+  
+  const patterns = [
+    /^\d+[\.\、]\s*(.+)$/gm,        // 1. 任务名 或 1、任务名
+    /^[-\-]\s*(.+)$/gm,             // - 任务名
+    /^\*\s*(.+)$/gm,                // * 任务名
+    /^[•·]\s*(.+)$/gm,              // • 任务名 或 · 任务名
+    /^[①②③④⑤⑥⑦⑧⑨⑩]\s*(.+)$/gm,  // ① 任务名
+  ]
+  
+  let subtasks = []
+  patterns.forEach(pattern => {
+    const matches = [...description.matchAll(pattern)]
+    matches.forEach(match => {
+      const taskName = match[1].trim()
+      if (taskName && taskName.length > 0 && taskName.length <= 100) {
+        subtasks.push(taskName)
+      }
+    })
+  })
+  
+  // 去重
+  subtasks = [...new Set(subtasks)]
+  
+  return subtasks
+}
+
+// 🌳 忽略自动识别的子任务
+const ignoreDetectedSubtasks = () => {
+  showSubtaskSuggestion.value = false
+  detectedSubtasks.value = []
+}
+
+// 🆕 预览任务
+const previewTask = () => {
+  if (!quickTaskInput.value.trim()) {
+    showNotification('请输入任务标题', 'warning')
+    return
+  }
+  
+  // 解析日期时间
+  let customDate = null
+  let customTime = null
+  if (newTaskType.value === 'custom_date' && customDateTime.value) {
+    const dt = new Date(customDateTime.value)
+    customDate = customDateTime.value.split('T')[0]
+    customTime = `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`
+  }
+  
+  // 创建预览任务对象
+  previewTaskData.value = {
+    id: Date.now(),  // 临时ID
+    text: quickTaskInput.value.trim(),
+    description: newTaskDescription.value.trim(),
+    type: newTaskType.value,
+    category: newTaskCategory.value,
+    priority: newTaskPriority.value,
+    weekdays: newTaskType.value === 'weekly' ? selectedWeekdays.value : null,
+    customDate: customDate,
+    customTime: customTime,
+    status: 'pending',
+    created_at: new Date().toISOString(),
+    enableReminder: enableReminder.value,
+    reminderTime: enableReminder.value && reminderDateTime.value ? new Date(reminderDateTime.value).toISOString() : null,
+    forceReminder: enableReminder.value,
+    logs: [],
+    stats: {
+      sessionCount: 0,
+      totalDuration: 0,
+      averageDuration: 0,
+      blocksResolved: 0
+    }
+  }
+  
+  // 关闭全屏编辑，打开预览
+  showFullscreenDesc.value = false
+  showTaskInputPreview.value = true
+}
+
+// 🆕 从预览保存任务
+const saveTaskFromPreview = async () => {
+  if (!previewTaskData.value) return
+  
+  const task = {
+    text: previewTaskData.value.text,
+    description: previewTaskData.value.description,
+    type: previewTaskData.value.type,
+    category: previewTaskData.value.category,
+    priority: previewTaskData.value.priority,
+    weekdays: previewTaskData.value.weekdays,
+    customDate: previewTaskData.value.customDate,
+    customTime: previewTaskData.value.customTime,
+    enableReminder: previewTaskData.value.enableReminder,
+    reminderTime: previewTaskData.value.reminderTime,
+    forceReminder: previewTaskData.value.forceReminder
+  }
+  
+  const createdTask = await taskStore.addTask(task)
+  
+  // 🆕 如果有子任务，创建子任务
+  if (previewTaskData.value.subtasks && previewTaskData.value.subtasks.length > 0) {
+    const now = new Date()
+    const subtaskIds = []
+    
+    for (let i = 0; i < previewTaskData.value.subtasks.length; i++) {
+      const subtask = previewTaskData.value.subtasks[i]
+      const newTask = {
+        id: Date.now() + i,
+        text: subtask.title,
+        description: subtask.description || '',
+        type: 'today',
+        category: createdTask.category,
+        priority: subtask.priority || 'medium',
+        status: 'pending',
+        created_at: now.toISOString(),
+        user_id: taskStore.currentUser,
+        parentTaskId: Number(createdTask.id),
+        estimatedHours: subtask.estimatedHours || 1,
+        waitFor: []
+      }
+      
+      await taskStore.addTask(newTask)
+      subtaskIds.push(newTask.id)
+    }
+    
+    // 更新父任务：记录子任务列表
+    createdTask.hasSplitted = true
+    createdTask.subtaskCount = previewTaskData.value.subtasks.length
+    createdTask.subtasks = subtaskIds
+    await taskStore.updateTask(createdTask)
+    
+    showNotification(`✅ 成功创建主任务和 ${previewTaskData.value.subtasks.length} 个子任务！`, 'success')
+  } else {
+    // 如果启用了提醒，调度通知
+    if (previewTaskData.value.enableReminder && previewTaskData.value.reminderTime) {
+      await scheduleTaskReminder(createdTask)
+    }
+    
+    showNotification('任务创建成功！', 'success')
+  }
+  
+  // 清空输入框
+  quickTaskInput.value = ''
+  tempDescription.value = ''
+  newTaskDescription.value = ''
+  newTaskType.value = 'today'
+  customDateTime.value = ''
+  newTaskCategory.value = 'work'
+  newTaskPriority.value = 'medium'
+  selectedWeekdays.value = []
+  enableReminder.value = false
+  reminderDateTime.value = ''
+  
+  // 清空子任务相关状态
+  showSubtaskSuggestion.value = false
+  detectedSubtasks.value = []
+  
+  // 关闭预览
+  showTaskInputPreview.value = false
+  previewTaskData.value = null
+  
+  // 更新每日摘要通知
+  await scheduleDailySummaryNotification()
+}
+
+// 🆕 处理预览模式的AI拆分
+const handlePreviewSplit = () => {
+  if (!previewTaskData.value) return
+  
+  // 设置taskToSplit为预览任务
+  taskToSplit.value = previewTaskData.value
+  showTaskSplitter.value = true
+}
+
+// 🆕 从预览模式创建子任务（不保存父任务，只更新预览数据）
+const createSubtasksFromPreview = (subtasks) => {
+  if (!previewTaskData.value || subtasks.length === 0) return
+  
+  // 将子任务保存到预览数据中
+  previewTaskData.value.subtasks = subtasks
+  
+  showTaskSplitter.value = false
+  taskToSplit.value = null
+  showNotification(`✅ 已添加 ${subtasks.length} 个子任务到预览`, 'success')
 }
 
 // 📋 粘贴剪贴板内容
@@ -6717,6 +6956,8 @@ const addTask = async () => {
     console.log('⚠️ 未启用提醒或未设置时间')
   }
   
+  showNotification('任务添加成功！', 'success')
+  
   // 🆕 清空统一输入框
   quickTaskInput.value = ''
   tempDescription.value = ''
@@ -6733,7 +6974,9 @@ const addTask = async () => {
   forceReminder.value = false
   reminderDateTime.value = ''
   
-  showNotification('任务添加成功！', 'success')
+  // 🌳 清空子任务相关状态
+  showSubtaskSuggestion.value = false
+  detectedSubtasks.value = []
   
   // 更新每日摘要通知
   await scheduleDailySummaryNotification()
@@ -16376,6 +16619,47 @@ watch(() => reportData.value, (newData) => {
   background: #e0e0e0;
 }
 
+/* 🌳 子任务自动识别建议气泡 */
+.subtask-suggestion-bubble {
+  background: linear-gradient(135deg, #e6f7ff 0%, #f0f5ff 100%);
+  border: 2px solid #40a9ff;
+  border-radius: 12px;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+  animation: slideDown 0.3s ease-out;
+}
+
+.subtask-preview {
+  margin: 0.5rem 0;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 8px;
+}
+
+.subtask-preview-item {
+  font-size: 0.8rem;
+  color: #555;
+  padding: 0.25rem 0;
+  line-height: 1.4;
+}
+
+.subtask-more {
+  font-size: 0.75rem;
+  color: #999;
+  font-style: italic;
+  margin-top: 0.25rem;
+}
+
+.subtask-tip {
+  font-size: 0.75rem;
+  color: #666;
+  padding: 0.5rem;
+  background: rgba(102, 126, 234, 0.1);
+  border-radius: 6px;
+  margin-top: 0.5rem;
+  line-height: 1.4;
+}
+
 /* 描述框带 AI 按钮 */
 .textarea-with-ai {
   position: relative;
@@ -16504,6 +16788,12 @@ watch(() => reportData.value, (newData) => {
   font-weight: 500;
 }
 
+.nav-buttons {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
 .nav-btn-primary {
   background: transparent;
   border: none;
@@ -16516,7 +16806,20 @@ watch(() => reportData.value, (newData) => {
   text-align: right;
 }
 
-.nav-btn-primary:active {
+.nav-btn-secondary {
+  background: transparent;
+  border: none;
+  color: #666;
+  font-size: 17px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  min-width: 50px;
+  text-align: right;
+}
+
+.nav-btn-primary:active,
+.nav-btn-secondary:active {
   opacity: 0.4;
 }
 

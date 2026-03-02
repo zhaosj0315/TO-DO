@@ -12,6 +12,12 @@
 This is an **offline Android To-Do management application** built with **Vue 3** and **Capacitor**. All data is stored locally on the device using Capacitor Preferences API, requiring **no internet connection or backend server**.
 
 ### 🌟 Key Features
+- **Quick Subtask Creation** 🌳 (v0.7.9):
+  - **Auto List Detection**: Automatically detects list items in task description (5 formats supported)
+  - **Smart Suggestion Bubble**: Preview detected subtasks before creation
+  - **Guide to AI Split**: Prompts users to use AI split feature in task details
+  - **Fullscreen AI Split**: Direct AI split button in fullscreen edit mode toolbar
+  - **Lightweight Design**: No duplicate features, reuses existing AI split functionality
 - **AI Task Splitter** 🤖:
   - **Smart Task Decomposition**: Input task title and description, AI automatically splits into executable subtasks
   - **Subtask Preview**: Bottom Sheet displays split results with edit and delete support
@@ -173,6 +179,12 @@ This is an **offline Android To-Do management application** built with **Vue 3**
 这是一个基于 **Vue 3** 和 **Capacitor** 构建的 **Android离线待办事项管理应用**。所有数据使用 Capacitor Preferences API 存储在设备本地，**无需网络连接或后端服务器**。
 
 ### 🌟 核心功能
+- **子任务智能识别** 🌳 (v0.7.9 新增):
+  - **自动列表识别**：自动检测任务描述中的列表项（支持5种格式）
+  - **智能建议气泡**：创建前预览检测到的子任务
+  - **引导使用AI拆分**：提示用户在任务详情页使用"🤖 AI拆分"功能
+  - **全屏编辑AI拆分**：全屏编辑模式工具栏直接AI拆分按钮
+  - **轻量级设计**：不重复造轮子，复用现有AI拆分功能
 - **AI任务拆分** 🤖:
   - **智能任务拆解**：输入任务标题和描述，AI自动拆分为可执行子任务
   - **子任务预览**：Bottom Sheet展示拆分结果，支持编辑和删除
@@ -455,6 +467,33 @@ userInfo[username] = {
 - ✅ 通知提示
 
 ## 📝 版本历史 | Version History
+
+### v0.7.9 (2026-03-02)
+- ✨ **子任务智能识别功能** 🌳:
+  - **自动列表识别**：自动检测任务描述中的列表项（支持5种格式）
+    - 数字列表：`1. 任务名` 或 `1、任务名`
+    - 破折号列表：`- 任务名`
+    - 星号列表：`* 任务名`
+    - 圆点列表：`• 任务名` 或 `· 任务名`
+    - 圆圈数字：`① 任务名`
+  - **智能提示气泡**：检测到2个以上列表项时弹出提示（蓝色渐变卡片）
+  - **引导使用AI拆分**：提示用户在任务详情页使用"🤖 AI拆分"功能
+  - **轻量级设计**：不重复造轮子，复用现有AI拆分功能
+- ✨ **全屏编辑AI拆分功能** 🤖:
+  - **工具栏新增按钮**：在全屏编辑模式底部工具栏添加"🤖 AI拆分"按钮
+  - **直接拆分子任务**：根据任务标题和描述，直接调用AI拆分功能
+  - **自动创建父任务**：拆分完成后自动创建父任务和所有子任务
+  - **完整属性继承**：子任务继承父任务的分类、优先级、日期等属性
+  - **复用现有逻辑**：完全复用任务详情页的AI拆分功能
+- 🎨 **UI增强**:
+  - 新增智能提示气泡（蓝色渐变背景，滑入动画）
+  - 预览检测到的子任务（前3个）
+  - 底部提示文字引导用户使用AI拆分
+  - 工具栏新增"🤖 AI拆分"按钮
+- 📚 **文档完善**:
+  - 新增 SUBTASK_QUICK_CREATE_GUIDE.md（子任务智能识别功能说明）
+  - 新增 TASK_INPUT_FEATURES_AUDIT.md（任务输入框功能审查报告）
+  - 详细说明智能识别 + AI拆分的配合使用
 
 ### v0.7.8 (2026-03-02)
 - ✨ **剪贴板历史功能**:

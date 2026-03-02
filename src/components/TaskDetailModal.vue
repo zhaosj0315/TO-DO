@@ -500,14 +500,23 @@
         >
           🔨 AI拆解任务
         </button>
+        <!-- 🆕 预览模式显示保存按钮 -->
         <button
-          v-if="task.status !== 'completed'"
+          v-if="isPreview"
+          class="save-btn"
+          @click="emit('save')"
+        >
+          ✅ 确认保存
+        </button>
+        <!-- 正常模式显示完成和删除按钮 -->
+        <button
+          v-if="!isPreview && task.status !== 'completed'"
           class="complete-btn"
           @click="handleComplete"
         >
           ✅ 标记完成
         </button>
-        <button class="delete-btn" @click="handleDelete">
+        <button v-if="!isPreview" class="delete-btn" @click="handleDelete">
           🗑️ 删除任务
         </button>
       </div>
@@ -586,10 +595,14 @@ const props = defineProps({
   task: {
     type: Object,
     required: true
+  },
+  isPreview: {  // 🆕 是否为预览模式
+    type: Boolean,
+    default: false
   }
 })
 
-const emit = defineEmits(['close', 'edit', 'refresh', 'split', 'show-loading', 'hide-loading'])
+const emit = defineEmits(['close', 'edit', 'refresh', 'split', 'show-loading', 'hide-loading', 'save'])  // 🆕 添加save事件
 
 const taskStore = useOfflineTaskStore()
 const showAddLogModal = ref(false)
@@ -2499,6 +2512,12 @@ section h3 {
 .complete-btn {
   background: #4caf50;
   color: white;
+}
+
+.save-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: 600;
 }
 
 .delete-btn {

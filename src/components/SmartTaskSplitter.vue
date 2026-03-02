@@ -130,7 +130,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'create'])
 
-const subtaskCount = ref(5)
+const subtaskCount = ref(3)  // 🆕 默认3个子任务
 const selectedTemplate = ref('')
 const subtasks = ref([])
 const isGenerating = ref(false)
