@@ -21,11 +21,17 @@
 
         <!-- 输入框 -->
         <div class="input-section">
-          <div class="section-title">📝 描述你的待办事项</div>
+          <div class="section-title">
+            📝 描述你的待办事项
+            <label class="parser-toggle">
+              <input type="checkbox" v-model="useSmartParser" />
+              <span>⚡ 智能解析（离线、快速）</span>
+            </label>
+          </div>
           <textarea
             v-model="userInput"
             class="chat-input"
-            placeholder="例如：明天上午要开会讨论项目进度，下午要完成报告，晚上要复习英语..."
+            placeholder="例如：明天上午9点开会，下午3点写报告（紧急），晚上学习英语..."
             rows="6"
             @keydown.ctrl.enter="handleExtract"
           ></textarea>
@@ -100,6 +106,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { AIChatService } from '../services/aiChatService'
+import { SmartTaskParser } from '../services/smartTaskParser'
 
 const props = defineProps({
   visible: Boolean
@@ -111,6 +118,7 @@ const userInput = ref('')
 const extractedTasks = ref([])
 const isLoading = ref(false)
 const errorMessage = ref('')
+const useSmartParser = ref(true) // 默认使用智能解析
 
 watch(() => props.visible, (newVal) => {
   if (newVal) {
@@ -128,7 +136,25 @@ const handleExtract = async () => {
   errorMessage.value = ''
 
   try {
-    const tasks = await AIChatService.extractTasksFromChat(userInput.value)
+    let tasks = []
+    
+    if (useSmartParser.value) {
+      // 使用本地智能解析（快速、离线）
+      const parsed = SmartTaskParser.parse(userInput.value)
+      tasks = parsed.tasks.map(t => ({
+        text: t.title,
+        description: t.description,
+        type: t.type,
+        customDate: t.customDate,
+        customTime: t.customTime,
+        priority: t.priority,
+        category: t.category
+      }))
+    } else {
+      // 使用AI解析（需要网络）
+      tasks = await AIChatService.extractTasksFromChat(userInput.value)
+    }
+    
     extractedTasks.value = tasks
     
     if (tasks.length === 0) {

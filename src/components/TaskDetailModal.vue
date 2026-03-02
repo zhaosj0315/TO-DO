@@ -850,6 +850,19 @@ onMounted(() => {
   })
 })
 
+// 监听弹窗显示，自动调整所有textarea高度
+watch(() => props.visible, (newVal) => {
+  if (newVal) {
+    nextTick(() => {
+      const textareas = document.querySelectorAll('.log-content-textarea')
+      textareas.forEach(textarea => {
+        textarea.style.height = 'auto'
+        textarea.style.height = textarea.scrollHeight + 'px'
+      })
+    })
+  }
+})
+
 // 排序后的日志（最新的在上面）
 
 // 排序后的日志（最新的在上面）

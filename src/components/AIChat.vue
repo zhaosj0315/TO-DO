@@ -880,23 +880,38 @@ const handleTaskCreation = async (text) => {
   })
   
   try {
-    const tasks = await AIChatService.extractTasksFromChat(text)
+    // 使用智能解析器（快速、离线）
+    const { SmartTaskParser } = await import('../services/smartTaskParser')
+    const parsed = SmartTaskParser.parse(text)
+    const tasks = parsed.tasks.map(t => ({
+      text: t.title,
+      description: t.description,
+      type: t.type,
+      customDate: t.customDate,
+      customTime: t.customTime,
+      priority: t.priority,
+      category: t.category
+    }))
     
     if (tasks.length === 0) {
       messages.value[assistantMsgIndex].content = '❌ 未识别到任务，请尝试更明确的描述。\n\n例如："明天上午开会，下午写报告"'
     } else {
-      extractedTasks.value = tasks
-      
       // 显示提取结果
       let resultText = `✨ 已提取 ${tasks.length} 个任务：\n\n`
       tasks.forEach((task, index) => {
         resultText += `${index + 1}. **${task.text}**\n`
         resultText += `   - 分类：${getCategoryLabel(task.category)}\n`
-        resultText += `   - 优先级：${getPriorityLabel(task.priority)}\n\n`
+        resultText += `   - 优先级：${getPriorityLabel(task.priority)}\n`
+        if (task.customDate) resultText += `   - 日期：${task.customDate}\n`
+        if (task.customTime) resultText += `   - 时间：${task.customTime}\n`
+        resultText += '\n'
       })
-      resultText += '💡 回复 "确认创建" 或 "创建" 来添加这些任务'
+      resultText += '💡 正在打开任务预览...'
       
       messages.value[assistantMsgIndex].content = resultText
+      
+      // 直接触发创建任务弹窗
+      emit('createTasks', tasks)
     }
   } catch (error) {
     messages.value[assistantMsgIndex].content = `❌ 提取失败：${error.message}`

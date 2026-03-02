@@ -37,6 +37,43 @@
           <div ref="priorityChart" class="chart-container"></div>
         </div>
 
+        <!-- 时间热力图 -->
+        <div class="chart-section">
+          <h4>🗓️ 365天完成热力图</h4>
+          <div ref="heatmapChart" class="heatmap-container"></div>
+        </div>
+
+        <!-- 任务执行质量分析 -->
+        <div class="quality-section">
+          <h4>⭐ 任务执行质量</h4>
+          <div class="quality-grid">
+            <div class="quality-card">
+              <div class="card-icon">💬</div>
+              <div class="card-value">{{ avgLogsPerTask }}</div>
+              <div class="card-label">平均日志数</div>
+              <div class="card-desc">任务推进频率</div>
+            </div>
+            <div class="quality-card">
+              <div class="card-icon">⚠️</div>
+              <div class="card-value">{{ avgBlocksPerTask }}</div>
+              <div class="card-label">平均阻碍数</div>
+              <div class="card-desc">任务难度指标</div>
+            </div>
+            <div class="quality-card">
+              <div class="card-icon">⭐</div>
+              <div class="card-value">{{ avgRating }}/5</div>
+              <div class="card-label">平均完成评分</div>
+              <div class="card-desc">任务质量指标</div>
+            </div>
+            <div class="quality-card">
+              <div class="card-icon">📊</div>
+              <div class="card-value">{{ avgProgress }}%</div>
+              <div class="card-label">平均进度</div>
+              <div class="card-desc">任务完成度</div>
+            </div>
+          </div>
+        </div>
+
         <!-- 效率分析 -->
         <div class="efficiency-section">
           <h4>💡 效率分析</h4>
@@ -84,6 +121,7 @@ const taskStore = useOfflineTaskStore()
 const trendChart = ref(null)
 const categoryChart = ref(null)
 const priorityChart = ref(null)
+const heatmapChart = ref(null)
 
 const selectedRange = ref('week')
 const timeRanges = [
@@ -97,9 +135,16 @@ const completionRate = ref(0)
 const mostProductiveTime = ref('--:--')
 const totalTasks = ref(0)
 
+// 任务执行质量指标
+const avgLogsPerTask = ref(0)
+const avgBlocksPerTask = ref(0)
+const avgRating = ref(0)
+const avgProgress = ref(0)
+
 let trendChartInstance = null
 let categoryChartInstance = null
 let priorityChartInstance = null
+let heatmapChartInstance = null
 
 // 获取时间范围的任务
 const getTasksInRange = (days) => {
@@ -219,6 +264,126 @@ const calculateEfficiency = (days) => {
     )
     mostProductiveTime.value = `${maxHour[0]}:00-${maxHour[0] + 1}:00`
   }
+  
+  // 任务执行质量分析
+  if (completedTasks.length > 0) {
+    // 平均日志数
+    const totalLogs = completedTasks.reduce((sum, task) => 
+      sum + (task.logs?.length || 0), 0)
+    avgLogsPerTask.value = (totalLogs / completedTasks.length).toFixed(1)
+    
+    // 平均阻碍数
+    const totalBlocks = completedTasks.reduce((sum, task) => {
+      const blocks = task.logs?.filter(log => log.type === 'block').length || 0
+      return sum + blocks
+    }, 0)
+    avgBlocksPerTask.value = (totalBlocks / completedTasks.length).toFixed(1)
+    
+    // 平均完成评分
+    const tasksWithRating = completedTasks.filter(task => 
+      task.logs?.some(log => log.type === 'complete' && log.rating))
+    if (tasksWithRating.length > 0) {
+      const totalRating = tasksWithRating.reduce((sum, task) => {
+        const completeLog = task.logs.find(log => log.type === 'complete')
+        return sum + (completeLog?.rating || 0)
+      }, 0)
+      avgRating.value = (totalRating / tasksWithRating.length).toFixed(1)
+    } else {
+      avgRating.value = 0
+    }
+    
+    // 平均进度
+    const totalProgress = completedTasks.reduce((sum, task) => 
+      sum + (task.stats?.latestProgress || 100), 0)
+    avgProgress.value = Math.round(totalProgress / completedTasks.length)
+  } else {
+    avgLogsPerTask.value = 0
+    avgBlocksPerTask.value = 0
+    avgRating.value = 0
+    avgProgress.value = 0
+  }
+}
+
+// 生成热力图数据（365天）
+const generateHeatmapData = () => {
+  const data = []
+  const now = new Date()
+  
+  // 生成过去365天的数据
+  for (let i = 364; i >= 0; i--) {
+    const date = new Date(now)
+    date.setDate(date.getDate() - i)
+    const dateStr = date.toISOString().split('T')[0]
+    
+    // 统计当天完成的任务数
+    const count = taskStore.tasks.filter(task => {
+      if (task.status !== 'completed' || !task.completed_at) return false
+      const completedDate = new Date(task.completed_at).toISOString().split('T')[0]
+      return completedDate === dateStr
+    }).length
+    
+    data.push([dateStr, count])
+  }
+  
+  return data
+}
+
+// 初始化热力图
+const initHeatmapChart = () => {
+  if (!heatmapChart.value) return
+  
+  heatmapChartInstance = echarts.init(heatmapChart.value)
+  
+  const data = generateHeatmapData()
+  const maxValue = Math.max(...data.map(d => d[1]), 1)
+  
+  const option = {
+    tooltip: {
+      position: 'top',
+      formatter: (params) => {
+        return `${params.data[0]}<br/>完成 ${params.data[1]} 个任务`
+      }
+    },
+    visualMap: {
+      min: 0,
+      max: maxValue,
+      calculable: true,
+      orient: 'horizontal',
+      left: 'center',
+      bottom: '0',
+      inRange: {
+        color: ['#ebedf0', '#c6e48b', '#7bc96f', '#239a3b', '#196127']
+      },
+      text: ['多', '少']
+    },
+    calendar: {
+      top: 50,
+      left: 30,
+      right: 30,
+      cellSize: ['auto', 13],
+      range: [
+        new Date(new Date().getTime() - 364 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        new Date().toISOString().split('T')[0]
+      ],
+      itemStyle: {
+        borderWidth: 0.5
+      },
+      yearLabel: { show: false },
+      dayLabel: {
+        nameMap: ['日', '一', '二', '三', '四', '五', '六']
+      },
+      monthLabel: {
+        nameMap: 'cn'
+      }
+    },
+    series: {
+      type: 'heatmap',
+      coordinateSystem: 'calendar',
+      data: data
+    }
+  }
+  
+  heatmapChartInstance.setOption(option)
 }
 
 // 初始化趋势图
@@ -386,6 +551,14 @@ const updateCharts = () => {
       series: [{ data: data.map(item => item.value) }]
     })
   }
+  
+  // 热力图不受时间范围影响，始终显示365天
+  if (heatmapChartInstance) {
+    const data = generateHeatmapData()
+    heatmapChartInstance.setOption({
+      series: [{ data }]
+    })
+  }
 }
 
 // 监听弹窗显示
@@ -395,6 +568,7 @@ watch(() => props.visible, async (newVal) => {
     initTrendChart()
     initCategoryChart()
     initPriorityChart()
+    initHeatmapChart()
     calculateEfficiency(7)
   } else {
     // 销毁图表实例
@@ -409,6 +583,10 @@ watch(() => props.visible, async (newVal) => {
     if (priorityChartInstance) {
       priorityChartInstance.dispose()
       priorityChartInstance = null
+    }
+    if (heatmapChartInstance) {
+      heatmapChartInstance.dispose()
+      heatmapChartInstance = null
     }
   }
 })
@@ -578,13 +756,49 @@ watch(() => props.visible, async (newVal) => {
   color: #666;
 }
 
+/* 热力图容器 */
+.heatmap-container {
+  height: 200px;
+  margin-top: 1rem;
+}
+
+/* 任务执行质量分析 */
+.quality-section {
+  margin-top: 2rem;
+}
+
+.quality-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.quality-card {
+  background: linear-gradient(135deg, #00b89415 0%, #0984e315 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.quality-card .card-desc {
+  font-size: 0.75rem;
+  color: #999;
+  margin-top: 0.25rem;
+}
+
 @media (max-width: 768px) {
-  .efficiency-grid {
+  .efficiency-grid,
+  .quality-grid {
     grid-template-columns: 1fr;
   }
   
   .chart-container {
     height: 250px;
+  }
+  
+  .heatmap-container {
+    height: 180px;
   }
 }
 </style>

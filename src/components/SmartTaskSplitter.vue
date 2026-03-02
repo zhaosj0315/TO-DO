@@ -103,7 +103,7 @@
           @click="createSubtasks" 
           class="btn btn-primary"
         >
-          ✅ 创建 {{ subtasks.length }} 个子任务
+          ✅ {{ parentTask ? '创建' : '确认创建' }} {{ subtasks.length }} 个任务
         </button>
       </div>
     </div>
@@ -125,10 +125,15 @@ import { AITaskSplitter } from '@/services/aiTaskSplitter'
 const props = defineProps({
   visible: Boolean,
   taskTitle: String,
-  taskDescription: String
+  taskDescription: String,
+  parentTask: Object,
+  initialSubtasks: {
+    type: Array,
+    default: () => []
+  }
 })
 
-const emit = defineEmits(['close', 'create'])
+const emit = defineEmits(['close', 'create', 'confirm'])
 
 const subtaskCount = ref(3)  // 🆕 默认3个子任务
 const selectedTemplate = ref('')
@@ -228,13 +233,28 @@ const createSubtasks = () => {
   if (subtasks.value.length === 0) return
   
   emit('create', subtasks.value)
+  emit('confirm', subtasks.value)
   emit('close')
 }
 
 // 重置状态
 watch(() => props.visible, (newVal) => {
   if (newVal) {
-    subtasks.value = []
+    // 如果有预填充的子任务，使用它们
+    if (props.initialSubtasks && props.initialSubtasks.length > 0) {
+      subtasks.value = props.initialSubtasks.map(task => ({
+        title: task.text || task.title,
+        description: task.description || '',
+        estimatedHours: 1,
+        priority: task.priority || 'medium',
+        category: task.category || 'life',
+        type: task.type || 'today',
+        customDate: task.customDate || null,
+        customTime: task.customTime || null
+      }))
+    } else {
+      subtasks.value = []
+    }
     selectedTemplate.value = ''
     error.value = ''
   }

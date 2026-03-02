@@ -2332,6 +2332,15 @@
       @createTasks="handleChatCreateTasks"
     />
 
+    <!-- AI提取任务预览（复用SmartTaskSplitter） -->
+    <SmartTaskSplitter
+      :visible="showAITaskPreview"
+      :parent-task="null"
+      :initial-subtasks="aiExtractedTasks"
+      @close="showAITaskPreview = false"
+      @confirm="handleConfirmAITasks"
+    />
+
     <!-- AI模型配置 -->
     <AIModelConfig
       :visible="showAIConfig"
@@ -4142,6 +4151,8 @@ const showPomodoroStats = ref(false)
 const showSupport = ref(false)
 const showAIConfig = ref(false)
 const showAIChat = ref(false)
+const aiExtractedTasks = ref([])
+const showAITaskPreview = ref(false)
 const showAIResult = ref(false)
 const aiResultText = ref('')
 const aiResultAction = ref('')
@@ -4631,15 +4642,34 @@ const batchDeleteReports = () => {
 const showVersionModal = ref(false) // 版本历史弹窗
 const versionHistory = ref([]) // 版本历史列表
 const hasUnreadVersions = ref(false) // 是否有未读版本
-const CURRENT_VERSION = '0.7.8' // 当前应用版本
+const CURRENT_VERSION = '0.7.9' // 当前应用版本
 const versionModalTitle = ref('🎉 版本更新') // 弹窗标题（动态）
 
 // 版本历史数据
 const initVersionHistory = () => {
   versionHistory.value = [
     {
-      version: '0.7.8',
+      version: '0.7.9',
       date: '2026-03-02',
+      features: [
+        '✨ 子任务智能识别：自动检测任务描述中的列表项（支持5种格式：数字、破折号、星号、圆点、圆圈数字）',
+        '✨ 任务预览模式：全屏编辑新增"预览"按钮，可查看、编辑、AI拆分后原子性保存',
+        '🤖 AI拆分优化：默认子任务数量从5个改为3个，预览模式完全集成AI拆分',
+        '🎨 智能提示气泡：检测到2个以上列表项时弹出蓝色渐变提示卡片'
+      ],
+      improvements: [
+        '🗑️ 代码精简：删除约180行重复代码，优化任务创建流程',
+        '📚 文档完善：新增子任务智能识别、任务输入功能审查、实施总结文档',
+        '🎯 轻量级设计：不重复造轮子，复用现有AI拆分功能'
+      ],
+      fixes: [
+        '修复全屏编辑工具栏重复的"🤖 AI拆分"按钮',
+        '修复预览模式下父任务和子任务保存不同步的问题'
+      ]
+    },
+    {
+      version: '0.7.8',
+      date: '2026-03-01',
       features: [
         '剪贴板历史记录（最近10次+时间戳+一键选择粘贴）',
         '全屏编辑工具栏增强（📋粘贴+🔄清空+💡AI建议+🤖AI续写）',
@@ -5371,14 +5401,36 @@ const generateWeeklyReport = async () => {
 const handleChatCreateTasks = (tasks) => {
   console.log('Creating tasks from chat:', tasks)
   
+  // 将任务数据存储到临时变量
+  aiExtractedTasks.value = tasks.map(task => ({
+    text: task.text || task.title || '未命名任务',
+    description: task.description || '',
+    type: task.type || 'today',
+    category: task.category || 'life',
+    priority: task.priority || 'medium',
+    customDate: task.customDate || null,
+    customTime: task.customTime || null
+  }))
+  
+  // 关闭AI对话窗口
+  showAIChat.value = false
+  
+  // 打开任务预览弹窗
+  showAITaskPreview.value = true
+}
+
+// 确认创建AI提取的任务
+const handleConfirmAITasks = (tasks) => {
   tasks.forEach(task => {
     const newTask = {
       id: Date.now() + Math.random(),
-      text: task.text || task.title || '未命名任务',
-      description: task.description || '',
-      type: task.type || 'today',
-      category: task.category || 'life',
-      priority: task.priority || 'medium',
+      text: task.text,
+      description: task.description,
+      type: task.type,
+      category: task.category,
+      priority: task.priority,
+      customDate: task.customDate,
+      customTime: task.customTime,
       status: 'pending',
       created_at: new Date().toISOString(),
       completed_at: null,
@@ -5392,29 +5444,15 @@ const handleChatCreateTasks = (tasks) => {
         avgDuration: 0,
         blockCount: 0,
         resolvedBlockCount: 0,
-        latestProgress: 0
+        latestProgress: 0,
+        progressHistory: []
       }
-    }
-    
-    // 如果有自定义日期和时间，添加到任务中
-    if (task.customDate) {
-      newTask.customDate = task.customDate
-    }
-    if (task.customTime) {
-      newTask.customTime = task.customTime
-    }
-    
-    // 如果AI识别到需要提醒，启用提醒功能
-    if (task.needReminder && task.reminderTime) {
-      newTask.enableReminder = true
-      newTask.reminderTime = task.reminderTime
-      console.log('启用提醒:', task.reminderTime)
     }
     
     taskStore.addTask(newTask)
   })
   
-  showNotification(`✅ 已创建 ${tasks.length} 个任务`, 'success')
+  showNotification(`✅ 成功创建 ${tasks.length} 个任务`)
 }
 
 // AI 每日规划
@@ -10848,6 +10886,13 @@ onMounted(async () => {
   
   // 设置任务Store的当前用户并加载该用户的任务
   await taskStore.setCurrentUser(userStore.currentUser)
+  
+  // 初始化智能提醒服务
+  const { SmartReminderService } = await import('../services/smartReminderService')
+  await SmartReminderService.init()
+  
+  // 每日检查（卡壳任务、连续完成天数）
+  await SmartReminderService.dailyCheck(taskStore.tasks)
   
   // 检查精确闹钟权限（首次使用）
   const { value: hasCheckedAlarm } = await Preferences.get({ key: 'hasCheckedAlarmPermission' })
