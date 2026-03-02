@@ -1620,8 +1620,9 @@
     </div>
 
     <!-- 更新日志弹窗 -->
+    <!-- 更新日志弹窗 (Bottom Sheet) -->
     <div v-if="showChangelog" class="modal-overlay" @click.self="showChangelog = false">
-      <div class="modal-content privacy-modal">
+      <div class="bottom-sheet">
         <div class="modal-header">
           <h3>📋 {{ currentLanguage === 'zh' ? '更新日志' : 'Changelog' }}</h3>
           <button class="close-btn" @click="showChangelog = false">&times;</button>
@@ -2470,9 +2471,9 @@
       </div>
     </div>
 
-    <!-- 备份管理弹窗 -->
+    <!-- 备份管理弹窗 (Bottom Sheet) -->
     <div v-if="showBackupList" class="modal-overlay" @click.self="showBackupList = false">
-      <div class="modal-content glass-card" style="max-width: 600px; width: 96%;">
+      <div class="bottom-sheet">
         <div class="modal-header">
           <h3>♻️ {{ t('backupManagement') }}</h3>
           <button class="close-btn" @click="showBackupList = false">&times;</button>
@@ -11227,6 +11228,42 @@ onMounted(async () => {
         console.log('✅ 关闭报告历史')
         showReportHistoryModal.value = false
         return
+      } else if (showTemplateDetail.value) {
+        console.log('✅ 关闭模板详情')
+        showTemplateDetail.value = false
+        return
+      } else if (showTemplateEditor.value) {
+        console.log('✅ 关闭模板编辑')
+        showTemplateEditor.value = false
+        return
+      } else if (showCustomReportModal.value) {
+        console.log('✅ 关闭自定义报告')
+        showCustomReportModal.value = false
+        return
+      } else if (showWeeklyReportModal.value) {
+        console.log('✅ 关闭周报')
+        showWeeklyReportModal.value = false
+        return
+      } else if (showBackupList.value) {
+        console.log('✅ 关闭备份列表')
+        showBackupList.value = false
+        return
+      } else if (showImportPreview.value) {
+        console.log('✅ 关闭导入预览')
+        showImportPreview.value = false
+        return
+      } else if (showChangelog.value) {
+        console.log('✅ 关闭更新日志')
+        showChangelog.value = false
+        return
+      } else if (showClipboardHistory.value) {
+        console.log('✅ 关闭剪贴板历史')
+        showClipboardHistory.value = false
+        return
+      } else if (showSubtaskSuggestion.value) {
+        console.log('✅ 关闭子任务建议')
+        showSubtaskSuggestion.value = false
+        return
       } else if (showAddLogModal.value) {
         console.log('✅ 关闭添加日志')
         showAddLogModal.value = false
@@ -11239,6 +11276,16 @@ onMounted(async () => {
       } else if (showSubtaskPreview.value) {
         console.log('✅ 关闭子任务预览')
         showSubtaskPreview.value = false
+        return
+      } else if (showTaskInputPreview.value) {
+        console.log('✅ 关闭任务输入预览')
+        showTaskInputPreview.value = false
+        previewTaskData.value = null
+        return
+      } else if (showTaskSplitter.value) {
+        console.log('✅ 关闭AI任务拆分')
+        showTaskSplitter.value = false
+        taskToSplit.value = null
         return
       } else if (showFullscreenDesc.value) {
         console.log('✅ 关闭全屏描述编辑')
