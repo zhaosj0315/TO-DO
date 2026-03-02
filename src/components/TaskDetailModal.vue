@@ -119,6 +119,7 @@
           <h3>📝 任务描述</h3>
           <textarea 
             v-model="localTask.description"
+            @input="autoResizeTextarea($event)"
             @blur="saveField('description')"
             class="description-textarea"
             placeholder="输入任务描述..."
@@ -312,6 +313,7 @@
           <div class="summary-content">
             <textarea 
               v-model="localTask.aiSummary.content"
+              @input="autoResizeTextarea($event)"
               @blur="saveAISummary"
               class="summary-textarea"
               placeholder="AI总结内容..."
@@ -560,6 +562,7 @@
     <AITextResultSheet
       :visible="showAISummaryResult"
       :result="aiSummaryContent"
+      :original-text="originalTextForResult"
       action="summary"
       @close="showAISummaryResult = false"
     />
@@ -842,7 +845,7 @@ const handleTextAction = async ({ action, text, tone }) => {
 // 初始化所有textarea的自适应高度
 onMounted(() => {
   nextTick(() => {
-    const textareas = document.querySelectorAll('.log-content-textarea')
+    const textareas = document.querySelectorAll('.description-textarea, .summary-textarea, .log-content-textarea')
     textareas.forEach(textarea => {
       textarea.style.height = 'auto'
       textarea.style.height = textarea.scrollHeight + 'px'
@@ -854,7 +857,7 @@ onMounted(() => {
 watch(() => props.visible, (newVal) => {
   if (newVal) {
     nextTick(() => {
-      const textareas = document.querySelectorAll('.log-content-textarea')
+      const textareas = document.querySelectorAll('.description-textarea, .summary-textarea, .log-content-textarea')
       textareas.forEach(textarea => {
         textarea.style.height = 'auto'
         textarea.style.height = textarea.scrollHeight + 'px'
@@ -1192,6 +1195,9 @@ const handleAISummary = async () => {
 ${logsText || '暂无日志'}
 
 请根据以上信息，生成一份简洁的任务执行总结（100字以内）。`
+    
+    // 保存原文用于显示
+    originalTextForResult.value = summaryText
     
     // 获取默认模型配置
     const models = JSON.parse(localStorage.getItem('ai_models') || '[]')

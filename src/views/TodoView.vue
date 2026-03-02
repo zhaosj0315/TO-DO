@@ -2347,6 +2347,24 @@
       @close="showAIConfig = false"
     />
 
+    <!-- AI生成预览弹窗 -->
+    <AIPreviewModal
+      :visible="showAIPreview"
+      :content="aiPreviewContent"
+      :title="aiPreviewTitle"
+      :loading="aiLoading"
+      @close="showAIPreview = false"
+      @adopt="handleAdoptAIContent"
+      @regenerate="handleRegenerateAI"
+    />
+
+    <!-- 快捷模板选择器 -->
+    <TemplateSelector
+      :visible="showTemplateSelector"
+      @close="showTemplateSelector = false"
+      @select="handleTemplateSelect"
+    />
+
     <!-- 统一加载动画 -->
     <LoadingSpinner
       :visible="aiLoading"
@@ -2453,6 +2471,9 @@
         </button>
         <button class="toolbar-btn" @click="clearDescription">
           🔄 清空
+        </button>
+        <button class="toolbar-btn" @click="scanTextFromCamera" :disabled="aiLoading">
+          📸 拍照
         </button>
         <button class="toolbar-btn" @click="generateAISuggestions" :disabled="aiLoading || !quickTaskInput.trim()">
           {{ aiLoading ? '⏳ 思考中...' : '💡 AI 建议' }}
@@ -3705,6 +3726,8 @@ import TaskDetailModal from '../components/TaskDetailModal.vue'
 import TutorialMode from '../components/TutorialMode.vue'
 import AIChat from '../components/AIChat.vue'
 import AIModelConfig from '../components/AIModelConfig.vue'
+import AIPreviewModal from '../components/AIPreviewModal.vue'
+import TemplateSelector from '../components/TemplateSelector.vue'
 import { CountUp } from 'countup.js'
 import { manualBackup, listBackups, restoreBackup, deleteBackup } from '../utils/autoBackup'
 import { taskToExcelRow, generateTemplateData, excelRowToTask } from '../utils/excelFormat'
@@ -4139,6 +4162,15 @@ const aiLoadingText = ref('AI 思考中...')
 const aiLoadingSubText = ref('')
 const aiSuggestion = ref(null)
 let suggestionTimeout = null
+
+// AI预览相关状态
+const showAIPreview = ref(false)
+const aiPreviewContent = ref('')
+const aiPreviewTitle = ref('✨ AI生成预览')
+const showTemplateSelector = ref(false)
+const currentAITemplate = ref(null)
+const currentAIMode = ref('') // 'suggestion' 或 'continue'
+
 const searchKeyword = ref('')
 const startDate = ref('')
 const endDate = ref('')
@@ -4658,13 +4690,16 @@ const initVersionHistory = () => {
         '🎨 智能提示气泡：检测到2个以上列表项时弹出蓝色渐变提示卡片'
       ],
       improvements: [
+        '📏 自适应高度优化：任务描述、AI总结、日志描述全部支持自适应高度（输入时实时调整+初始渲染自动适配）',
+        '✏️ AI总结可编辑：AI总结内容支持直接编辑，失焦自动保存',
         '🗑️ 代码精简：删除约180行重复代码，优化任务创建流程',
         '📚 文档完善：新增子任务智能识别、任务输入功能审查、实施总结文档',
         '🎯 轻量级设计：不重复造轮子，复用现有AI拆分功能'
       ],
       fixes: [
         '修复全屏编辑工具栏重复的"🤖 AI拆分"按钮',
-        '修复预览模式下父任务和子任务保存不同步的问题'
+        '修复预览模式下父任务和子任务保存不同步的问题',
+        '修复任务详情页面长文本显示不全的问题（textarea自适应高度）'
       ]
     },
     {
@@ -5197,17 +5232,32 @@ const clearDescription = () => {
   }
 }
 
-// 🎤 语音输入
-// 💡 生成 AI 智能建议
+// 💡 生成 AI 智能建议（新版：模板选择 + 预览）
 const generateAISuggestions = async () => {
   if (!quickTaskInput.value.trim()) {
     showNotification('请先输入任务标题', 'error')
     return
   }
   
+  // 显示模板选择器
+  currentAIMode.value = 'suggestion'
+  showTemplateSelector.value = true
+}
+
+// 处理模板选择
+const handleTemplateSelect = async (template) => {
+  showTemplateSelector.value = false
+  
+  if (currentAIMode.value === 'suggestion') {
+    await generateAISuggestionsWithTemplate(template)
+  }
+}
+
+// 使用模板生成建议
+const generateAISuggestionsWithTemplate = async (template) => {
   try {
     aiLoading.value = true
-    aiLoadingText.value = 'AI 正在分析...'
+    aiLoadingText.value = 'AI 正在生成...'
     
     // 获取默认模型配置
     const models = JSON.parse(localStorage.getItem('ai_models') || '[]')
@@ -5220,7 +5270,24 @@ const generateAISuggestions = async () => {
       return
     }
     
-    const prompt = `请根据任务标题"${quickTaskInput.value}"，生成一段详细的任务描述建议。
+    // 构建prompt
+    let prompt
+    if (template) {
+      // 使用模板
+      prompt = `任务标题："${quickTaskInput.value}"
+
+${template.prompt}
+
+要求：
+1. 结合任务标题生成具体内容
+2. 列出3-5个关键要点
+3. 每个要点简洁明了（10-20字）
+4. 按执行顺序排列
+5. 具有可操作性
+6. 只返回要点列表，每行一条，以 "- " 开头`
+    } else {
+      // 自定义生成
+      prompt = `请根据任务标题"${quickTaskInput.value}"，生成一段详细的任务描述建议。
 
 要求：
 1. 描述任务的目标和意义
@@ -5234,16 +5301,13 @@ const generateAISuggestions = async () => {
 - 第一步要做什么
 - 第二步要做什么
 - 第三步要做什么`
+    }
     
     // 确保 URL 使用 OpenAI 兼容接口
     let apiUrl = defaultModel.url
     if (!apiUrl.includes('/v1/chat/completions')) {
-      // 移除可能存在的旧路径，添加标准路径
       apiUrl = apiUrl.replace(/\/api\/.*$/, '').replace(/\/v1.*$/, '').replace(/\/$/, '') + '/v1/chat/completions'
     }
-    
-    console.log('💡 AI建议 - API URL:', apiUrl)
-    console.log('💡 AI建议 - Model:', defaultModel.modelName || defaultModel.model)
     
     const response = await fetch(apiUrl, {
       method: 'POST',
@@ -5255,51 +5319,53 @@ const generateAISuggestions = async () => {
         model: defaultModel.modelName || defaultModel.model,
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.7,
-        max_tokens: 500
+        max_tokens: 1000
       })
     })
     
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('AI 请求失败:', response.status, errorText)
+      console.error('AI API错误:', response.status, errorText)
       throw new Error(`AI 请求失败: ${response.status}`)
     }
     
     const data = await response.json()
-    const content = data.choices[0].message.content
+    console.log('AI返回数据:', JSON.stringify(data, null, 2))
     
-    // 解析建议列表
-    const suggestions = content
-      .split('\n')
-      .filter(line => line.trim().startsWith('-'))
-      .map(line => line.trim().substring(2).trim())
-      .filter(line => line.length > 0)
-    
-    if (suggestions.length > 0) {
-      aiSuggestionsList.value = suggestions
-      showAISuggestions.value = true
-      showNotification('✅ AI 建议已生成', 'success')
-    } else {
-      showNotification('❌ 未能生成建议', 'error')
+    // 兼容多种返回格式
+    let content = ''
+    if (data.choices?.[0]?.message?.content) {
+      content = data.choices[0].message.content
+    } else if (data.choices?.[0]?.message?.reasoning) {
+      // 某些模型把内容放在reasoning字段
+      content = data.choices[0].message.reasoning
+    } else if (data.response) {
+      // Ollama格式
+      content = data.response
     }
+    
+    console.log('AI生成内容:', content)
+    
+    if (!content || content.trim() === '') {
+      throw new Error('AI返回内容为空，请检查模型配置或增加max_tokens')
+    }
+    
+    // 保存当前模板和内容，用于重新生成
+    currentAITemplate.value = template
+    aiPreviewContent.value = content
+    aiPreviewTitle.value = template ? `✨ ${template.name}建议` : '✨ AI建议'
+    showAIPreview.value = true
+    
   } catch (err) {
     console.error('AI 建议生成失败:', err)
+    showNotification(`❌ AI 建议生成失败: ${err.message}`, 'error')
     showNotification('❌ AI 建议生成失败', 'error')
   } finally {
     aiLoading.value = false
-    aiLoadingText.value = ''
   }
 }
 
-// 采纳 AI 建议
-const adoptSuggestions = () => {
-  const suggestionsText = aiSuggestionsList.value.map((s, i) => `${i + 1}. ${s}`).join('\n')
-  newTaskDescription.value = suggestionsText + '\n\n' + newTaskDescription.value
-  showAISuggestions.value = false
-  showNotification('✅ 已采纳建议', 'success')
-}
-
-// AI 续写描述
+// 🤖 AI 续写描述（新版：预览模式）
 const continueDescription = async () => {
   if (!newTaskDescription.value.trim()) {
     showNotification('请先输入一些内容', 'error')
@@ -5311,9 +5377,13 @@ const continueDescription = async () => {
     aiLoadingText.value = 'AI 正在续写...'
     aiLoadingSubText.value = '智能补充任务描述'
     
+    currentAIMode.value = 'continue'
+    
     const result = await AITaskGenerator.continueText(newTaskDescription.value)
     if (result.success) {
-      newTaskDescription.value += result.text
+      aiPreviewContent.value = result.text
+      aiPreviewTitle.value = '🤖 AI续写预览'
+      showAIPreview.value = true
       showNotification('✨ AI 续写完成', 'success')
     } else {
       showNotification(result.error || 'AI 续写失败', 'error')
@@ -5323,6 +5393,31 @@ const continueDescription = async () => {
     showNotification('AI 续写失败', 'error')
   } finally {
     aiLoading.value = false
+  }
+}
+
+// 采纳AI生成的内容
+const handleAdoptAIContent = (content) => {
+  if (currentAIMode.value === 'suggestion') {
+    // AI建议：追加到描述框开头
+    newTaskDescription.value = content + '\n\n' + newTaskDescription.value
+  } else if (currentAIMode.value === 'continue') {
+    // AI续写：追加到描述框末尾
+    newTaskDescription.value += '\n\n' + content
+  }
+  
+  showAIPreview.value = false
+  showNotification('✅ 已采纳内容', 'success')
+}
+
+// 重新生成AI内容
+const handleRegenerateAI = async () => {
+  if (currentAIMode.value === 'suggestion') {
+    // 重新生成建议
+    await generateAISuggestionsWithTemplate(currentAITemplate.value)
+  } else if (currentAIMode.value === 'continue') {
+    // 重新续写
+    await continueDescription()
   }
 }
 
