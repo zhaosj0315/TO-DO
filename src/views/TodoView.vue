@@ -4593,9 +4593,6 @@ const handleCreateSubtasks = async (subtaskList) => {
   // 关闭子任务预览弹窗
   showSubtaskPreview.value = false
   
-  // 关闭原任务详情页
-  showTaskDetail.value = false
-  
   // 显示成功提示
   showNotification(`✅ 已创建 ${subtaskList.length} 个子任务`, 'success')
 }
@@ -4682,7 +4679,7 @@ const initVersionHistory = () => {
   versionHistory.value = [
     {
       version: '0.7.9',
-      date: '2026-03-02',
+      date: '2026-03-03',
       features: [
         '✨ 子任务智能识别：自动检测任务描述中的列表项（支持5种格式：数字、破折号、星号、圆点、圆圈数字）',
         '✨ 任务预览模式：全屏编辑新增"预览"按钮，可查看、编辑、AI拆分后原子性保存',
@@ -4701,7 +4698,8 @@ const initVersionHistory = () => {
         '🎯 轻量级设计：不重复造轮子，复用现有AI拆分功能',
         '🎨 统一Bottom Sheet样式：所有弹窗从底部滑出，左右全屏',
         '🔧 AI兼容性增强：支持多种返回格式（content/reasoning/response字段）',
-        '📝 max_tokens增加到1000：避免AI生成内容截断'
+        '📝 max_tokens增加到1000：避免AI生成内容截断',
+        '🔙 Android返回手势优化：新增3个弹窗支持（AI建议卡片、AI预览、模板选择器）'
       ],
       fixes: [
         '修复全屏编辑工具栏重复的"🤖 AI拆分"按钮',
@@ -4709,7 +4707,9 @@ const initVersionHistory = () => {
         '修复任务详情页面长文本显示不全的问题（textarea自适应高度）',
         '修复AI总结原文显示问题',
         '修复弹窗z-index被遮挡问题',
-        '修复textarea自适应高度初始化问题'
+        '修复textarea自适应高度初始化问题',
+        '修复任务预览返回逻辑：现在返回到全屏编辑而非首页（逐级返回）',
+        '修复AI拆分后跳转问题：创建子任务后保留在父任务详情页'
       ]
     },
     {
