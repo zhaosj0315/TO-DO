@@ -10,6 +10,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
     "electron:dev": "electron .",
     "electron:build": "npm run build && electron-builder",
     "electron:build-win": "npm run build && electron-builder --win",
@@ -106,8 +109,12 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",
+    "@vitest/ui": "^4.0.18",
+    "@vue/test-utils": "^2.4.6",
     "electron": "^40.5.0",
     "electron-builder": "^26.8.1",
-    "vite": "^6.0.3"
+    "happy-dom": "^20.8.3",
+    "vite": "^6.0.3",
+    "vitest": "^4.0.18"
   }
 }

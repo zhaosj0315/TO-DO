@@ -1,69 +1,35 @@
+# 依赖
 node_modules/
+server/node_modules/
+
+# 构建产物
 dist/
-.DS_Store
-*.log
-.vscode
-.idea
-
-# Android构建产物
-android/
-
-# iOS构建产物
-ios/
-*.ipa
-
-# Electron构建产物
-electron/
-
-# 发布产物
 release/
+*.apk
+*.zip
+*.exe
 
-# 构建产物（所有平台）
-*.apk  # 禁止推送 APK（项目根目录）
-*.dmg  # 禁止推送 DMG（太大，使用 GitHub Release）
-TODO-App-*.zip  # 禁止推送旧版本 ZIP（项目根目录）
-TODO-App-*.dmg  # 禁止推送旧版本 DMG
-*.app
-App.app/
-
-# 图标临时文件
-icon-*.png
-
-# 本地环境配置
+# 环境变量
 .env
-.env.local
-.env.*.local
-
-# 编辑器配置
-*.swp
-*.swo
-*~
+server/.env
 
 # 系统文件
-Thumbs.db
+.DS_Store
+docs/.DS_Store
 
-# 历史审计报告（只保留最新版本）
-DOC_AUDIT_REPORT_202*.md
-DOC_AUDIT_REPORT_V1.[0-4]*.md
-DOC_AUDIT_REPORT_V1.5.[0-8]*.md
-AUDIT_QUICK_SUMMARY.md
-AUDIT_QUICK_SUMMARY_V1.5.*.md
-DOC_DELIVERABLES_V1.[0-4]*.md
-DOC_DELIVERABLES_V1.5.*.md
-DOC_DELIVERABLES_202*.md
-DOC_ISSUES_LIST_202*.md
-DOC_ISSUES_LIST_V1.5.*.md
-DOC_MAINTENANCE_SUMMARY_202*.md
-DOC_MAINTENANCE_SUMMARY_V1.5.*.md
-DOC_AUDIT_DELIVERABLES_*.md
-WORK_SUMMARY_*.md
+# 测试覆盖率
+coverage/
+*.lcov
+.vitest/
+**/__snapshots__/
 
-# 临时脚本
-ios-build-guide.sh
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.kotlin/
 
-# 大文件（超过100MB）
-*.dmg
-TODO-App-1.6.*.zip
-TODO-App-1.6.*.apk
-nohup.out
-TODO-App.apk
+# iOS
+ios/App/Pods/
+ios/App/build/

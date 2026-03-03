@@ -1,0 +1,194 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    name: 单元测试
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+      
+    - name: 设置 Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: 安装依赖
+      run: npm ci
+      
+    - name: 运行测试
+      run: npm test
+      
+    - name: 生成覆盖率报告
+      run: npm run test:coverage
+      
+    - name: 上传覆盖率报告
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./coverage/coverage-final.json
+        flags: unittests
+        name: codecov-umbrella
+
+  lint:
+    name: 代码检查
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+      
+    - name: 设置 Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: 安装依赖
+      run: npm ci
+      
+    - name: ESLint 检查
+      run: npm run lint || echo "ESLint not configured yet"
+
+  build-web:
+    name: 构建 Web 版本
+    runs-on: ubuntu-latest
+    needs: [test]
+    
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+      
+    - name: 设置 Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: 安装依赖
+      run: npm ci
+      
+    - name: 构建项目
+      run: npm run build
+      
+    - name: 上传构建产物
+      uses: actions/upload-artifact@v3
+      with:
+        name: dist
+        path: dist/
+        retention-days: 7
+
+  build-android:
+    name: 构建 Android APK
+    runs-on: ubuntu-latest
+    needs: [test]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+      
+    - name: 设置 Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: 设置 Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        
+    - name: 安装依赖
+      run: npm ci
+      
+    - name: 构建 Web
+      run: npm run build
+      
+    - name: 同步到 Android
+      run: npx cap sync android
+      
+    - name: 构建 APK
+      run: |
+        cd android
+        chmod +x gradlew
+        ./gradlew assembleDebug
+        
+    - name: 上传 APK
+      uses: actions/upload-artifact@v3
+      with:
+        name: app-debug
+        path: android/app/build/outputs/apk/debug/app-debug.apk
+        retention-days: 30
+
+  build-windows:
+    name: 构建 Windows 版本
+    runs-on: windows-latest
+    needs: [test]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+      
+    - name: 设置 Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: 安装依赖
+      run: npm ci
+      
+    - name: 构建项目
+      run: npm run build
+      
+    - name: 构建 Electron
+      run: npm run electron:build-win
+      
+    - name: 上传安装包
+      uses: actions/upload-artifact@v3
+      with:
+        name: windows-installer
+        path: release/*.exe
+        retention-days: 30
+
+  build-mac:
+    name: 构建 macOS 版本
+    runs-on: macos-latest
+    needs: [test]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+      
+    - name: 设置 Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: 安装依赖
+      run: npm ci
+      
+    - name: 构建项目
+      run: npm run build
+      
+    - name: 构建 Electron
+      run: npm run electron:build-mac
+      
+    - name: 上传安装包
+      uses: actions/upload-artifact@v3
+      with:
+        name: mac-installer
+        path: release/*.zip
+        retention-days: 30

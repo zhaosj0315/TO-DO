@@ -3,6 +3,45 @@
  * 从自然语言中提取任务信息（时间、优先级、分类）
  */
 
+/**
+ * 检测文本中的列表项
+ * @param {string} text - 输入文本
+ * @returns {Array<string>} 检测到的列表项
+ */
+export function detectListItems(text) {
+  if (!text || typeof text !== 'string') return []
+
+  const items = []
+  const lines = text.split('\n')
+
+  // 支持的列表格式
+  const patterns = [
+    /^\s*(\d+)[.、]\s*(.+)$/,  // 1. 或 1、
+    /^\s*[-*]\s*(.+)$/,        // - 或 *
+    /^\s*[•·]\s*(.+)$/,        // • 或 ·
+    /^\s*[①②③④⑤⑥⑦⑧⑨⑩]\s*(.+)$/  // 圆圈数字
+  ]
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed) continue
+
+    for (const pattern of patterns) {
+      const match = trimmed.match(pattern)
+      if (match) {
+        const content = match[2] || match[1]
+        if (content && content.trim()) {
+          items.push(content.trim())
+        }
+        break
+      }
+    }
+  }
+
+  // 至少需要2个项目才算列表
+  return items.length >= 2 ? items : []
+}
+
 export class SmartTaskParser {
   /**
    * 解析自然语言任务描述
