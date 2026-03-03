@@ -61,6 +61,43 @@
             <div class="period-text">{{ report.period.start }} 至 {{ report.period.end }}</div>
           </div>
 
+          <!-- 智能总结 -->
+          <div v-if="report.summary" class="report-section summary-section">
+            <div class="section-title">📝 智能总结</div>
+            <div class="summary-text">{{ report.summary }}</div>
+          </div>
+
+          <!-- 数据概览 -->
+          <div v-if="report.overview" class="report-section">
+            <div class="section-title">📊 数据概览</div>
+            <div class="overview-grid">
+              <div class="overview-item">
+                <span class="overview-label">完成任务</span>
+                <span class="overview-value">{{ report.overview.totalTasks }}个</span>
+              </div>
+              <div class="overview-item">
+                <span class="overview-label">高优先级</span>
+                <span class="overview-value">{{ report.overview.highPriority }}个</span>
+              </div>
+              <div class="overview-item">
+                <span class="overview-label">番茄钟</span>
+                <span class="overview-value">{{ report.overview.pomodoros }}个</span>
+              </div>
+              <div class="overview-item">
+                <span class="overview-label">💼 工作</span>
+                <span class="overview-value">{{ report.overview.workTasks }}个</span>
+              </div>
+              <div class="overview-item">
+                <span class="overview-label">📚 学习</span>
+                <span class="overview-value">{{ report.overview.studyTasks }}个</span>
+              </div>
+              <div class="overview-item">
+                <span class="overview-label">🏠 生活</span>
+                <span class="overview-value">{{ report.overview.lifeTasks }}个</span>
+              </div>
+            </div>
+          </div>
+
           <!-- 完成情况统计 -->
           <div v-if="report.completionStats" class="report-section">
             <div class="section-title">📊 完成情况</div>
@@ -89,6 +126,65 @@
             </div>
           </div>
 
+          <!-- 完成任务明细 -->
+          <div v-if="report.completedTasks && report.completedTasks.length > 0" class="report-section">
+            <div class="section-title">✅ 完成任务明细</div>
+            <div class="task-cards">
+              <div v-for="task in report.completedTasks" :key="task.id" class="task-card">
+                <div class="task-card-header">
+                  <span :class="['task-category-badge', task.category]">
+                    {{ getCategoryText(task.category) }}
+                  </span>
+                  <span :class="['task-priority-badge', task.priority]">
+                    {{ task.priority === 'high' ? '高' : task.priority === 'medium' ? '中' : '低' }}
+                  </span>
+                </div>
+                <div class="task-card-title">{{ task.text }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 已完成情况（截止上期末） -->
+          <div v-if="report.previousCompleted && report.previousCompleted.length > 0" class="report-section">
+            <div class="section-title">✅ 已完成情况（截止{{ getPeriodLabel('上期末') }}）</div>
+            <ul class="work-list">
+              <li v-for="item in report.previousCompleted" :key="item.id">
+                {{ item.displayText }}
+              </li>
+            </ul>
+          </div>
+
+          <!-- 本期目标 -->
+          <div v-if="report.periodGoals && report.periodGoals.length > 0" class="report-section">
+            <div class="section-title">🎯 {{ getPeriodLabel('本期') }}目标</div>
+            <ul class="work-list">
+              <li v-for="item in report.periodGoals" :key="item.id">
+                {{ item.displayText }}
+              </li>
+            </ul>
+          </div>
+
+          <!-- 本期进展 -->
+          <div v-if="report.periodProgress && report.periodProgress.length > 0" class="report-section">
+            <div class="section-title">📈 {{ getPeriodLabel('本期') }}进展（截止当前）</div>
+            <ul class="work-list">
+              <li v-for="item in report.periodProgress" :key="item.id">
+                {{ item.displayText }}
+              </li>
+            </ul>
+          </div>
+
+          <!-- 本周进展 -->
+          <div v-if="report.weeklyProgress && report.weeklyProgress.length > 0" class="report-section">
+            <div class="section-title">📅 {{ getPeriodLabel('本周') }}进展</div>
+            <ul class="weekly-list">
+              <li v-for="(item, index) in report.weeklyProgress" :key="index" :class="item.type">
+                <span v-if="item.type === 'header'" class="category-header">{{ item.text }}</span>
+                <span v-else class="task-item">• {{ item.text }}</span>
+              </li>
+            </ul>
+          </div>
+
           <!-- 关键工作 -->
           <div v-if="report.keyWorks && report.keyWorks.length > 0" class="report-section">
             <div class="section-title">⭐ 关键工作</div>
@@ -102,12 +198,17 @@
             </ul>
           </div>
 
-          <!-- 问题分析 -->
+          <!-- 风险与问题 -->
           <div v-if="report.issues && report.issues.total > 0" class="report-section">
-            <div class="section-title">⚠️ 问题分析</div>
+            <div class="section-title">⚠️ 风险与问题</div>
             <div class="issue-summary">
               共有 <strong>{{ report.issues.total }}</strong> 个任务逾期
             </div>
+            <ul v-if="report.issues.tasks && report.issues.tasks.length > 0" class="work-list">
+              <li v-for="item in report.issues.tasks" :key="item.id">
+                {{ item.displayText }}
+              </li>
+            </ul>
             <ul v-if="report.issues.suggestions && report.issues.suggestions.length > 0" class="suggestion-list">
               <li v-for="(suggestion, index) in report.issues.suggestions" :key="index">
                 💡 {{ suggestion }}
@@ -115,18 +216,17 @@
             </ul>
           </div>
 
-          <!-- 下周计划 -->
+          <!-- 下期计划 -->
           <div v-if="report.nextPlan" class="report-section">
-            <div class="section-title">🎯 {{ reportType === 'weekly' ? '下周计划' : '下月计划' }}</div>
+            <div class="section-title">🎯 {{ getPeriodLabel('下期') }}计划</div>
             <div class="plan-summary">
               待办任务：<strong>{{ report.nextPlan.total }}</strong> 个
               &nbsp;|&nbsp;
               高优先级：<strong>{{ report.nextPlan.highPriority }}</strong> 个
             </div>
-            <ul v-if="report.nextPlan.tasks?.length > 0" class="plan-list">
+            <ul v-if="report.nextPlan.tasks && report.nextPlan.tasks.length > 0" class="work-list">
               <li v-for="task in report.nextPlan.tasks" :key="task.id">
-                <span class="priority-badge high">高</span>
-                {{ task.text }}
+                {{ task.displayText }}
               </li>
             </ul>
             <div v-if="report.nextPlan.recommendations" class="recommendations">
@@ -168,10 +268,14 @@ const props = defineProps({
   customDateRange: {
     type: Object,
     default: null
+  },
+  template: {
+    type: String,
+    default: 'standard'
   }
 })
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'report-generated'])
 
 const reportType = ref('weekly')
 const report = ref(null)
@@ -191,6 +295,56 @@ const reportTitle = computed(() => {
   return titles[reportType.value] || '📊 报告'
 })
 
+// 获取期间标签（根据报告类型动态显示）
+const getPeriodLabel = (type) => {
+  const labels = {
+    daily: {
+      '上期末': '昨天',
+      '本期': '今日',
+      '本周': '今日',
+      '下期': '明日'
+    },
+    weekly: {
+      '上期末': '上周末',
+      '本期': '本周',
+      '本周': '本周',
+      '下期': '下周'
+    },
+    monthly: {
+      '上期末': '上月末',
+      '本期': '本月',
+      '本周': '本月',
+      '下期': '下月'
+    },
+    quarterly: {
+      '上期末': '上季度末',
+      '本期': '本季度',
+      '本周': '本季度',
+      '下期': '下季度'
+    },
+    halfyearly: {
+      '上期末': '上半年末',
+      '本期': '本半年',
+      '本周': '本半年',
+      '下期': '下半年'
+    },
+    yearly: {
+      '上期末': '去年末',
+      '本期': '今年',
+      '本周': '今年',
+      '下期': '明年'
+    },
+    custom: {
+      '上期末': '上期末',
+      '本期': '本期',
+      '本周': '本期',
+      '下期': '下期'
+    }
+  }
+  
+  return labels[reportType.value]?.[type] || type
+}
+
 // 生成报告
 const generateReport = async () => {
   generating.value = true
@@ -209,16 +363,9 @@ const generateReport = async () => {
       const dayEnd = new Date(now)
       dayEnd.setHours(23, 59, 59, 999)
       
-      // 过滤今日完成的任务
-      const dayCompletedTasks = props.tasks.filter(t => {
-        if (t.status !== 'completed' || !t.completed_at) return false
-        const completedDate = new Date(t.completed_at)
-        return completedDate >= dayStart && completedDate <= dayEnd
-      })
-      
-      report.value = generator.generateWeeklyReport(dayStart, dayEnd, dayCompletedTasks)
+      report.value = generator.generateReport(dayStart, dayEnd, 'daily', props.template)
     } else if (reportType.value === 'weekly') {
-      // 计算本周时间范围
+      // 周报：本周
       const weekStart = new Date(now)
       weekStart.setDate(now.getDate() - now.getDay())
       weekStart.setHours(0, 0, 0, 0)
@@ -226,44 +373,52 @@ const generateReport = async () => {
       weekEnd.setDate(weekStart.getDate() + 6)
       weekEnd.setHours(23, 59, 59, 999)
       
-      // 过滤本周完成的任务
-      const weekCompletedTasks = props.tasks.filter(t => {
-        if (t.status !== 'completed' || !t.completed_at) return false
-        const completedDate = new Date(t.completed_at)
-        return completedDate >= weekStart && completedDate <= weekEnd
-      })
-      
-      report.value = generator.generateWeeklyReport(weekStart, weekEnd, weekCompletedTasks)
+      report.value = generator.generateReport(weekStart, weekEnd, 'weekly', props.template)
     } else if (reportType.value === 'monthly') {
-      report.value = generator.generateMonthlyReport()
+      // 月报：最近30天
+      const monthStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+      monthStart.setHours(0, 0, 0, 0)
+      const monthEnd = new Date(now)
+      monthEnd.setHours(23, 59, 59, 999)
+      
+      report.value = generator.generateReport(monthStart, monthEnd, 'monthly', props.template)
     } else if (reportType.value === 'quarterly') {
       // 季报：最近3个月
       const quarterStart = new Date(now.getFullYear(), now.getMonth() - 2, 1)
       quarterStart.setHours(0, 0, 0, 0)
       const quarterEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
       quarterEnd.setHours(23, 59, 59, 999)
-      report.value = generator.generateReport(quarterStart, quarterEnd, 'quarterly')
+      report.value = generator.generateReport(quarterStart, quarterEnd, 'quarterly', props.template)
     } else if (reportType.value === 'halfyearly') {
       // 半年报：最近6个月
       const halfYearStart = new Date(now.getFullYear(), now.getMonth() - 5, 1)
       halfYearStart.setHours(0, 0, 0, 0)
       const halfYearEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
       halfYearEnd.setHours(23, 59, 59, 999)
-      report.value = generator.generateReport(halfYearStart, halfYearEnd, 'halfyearly')
+      report.value = generator.generateReport(halfYearStart, halfYearEnd, 'halfyearly', props.template)
     } else if (reportType.value === 'yearly') {
       // 年报：今年1月1日到现在
       const yearStart = new Date(now.getFullYear(), 0, 1)
       yearStart.setHours(0, 0, 0, 0)
       const yearEnd = new Date(now)
       yearEnd.setHours(23, 59, 59, 999)
-      report.value = generator.generateReport(yearStart, yearEnd, 'yearly')
+      report.value = generator.generateReport(yearStart, yearEnd, 'yearly', props.template)
     } else if (reportType.value === 'custom' && props.customDateRange) {
       // 自定义日期范围
       const customStart = new Date(props.customDateRange.startDate)
       customStart.setHours(0, 0, 0, 0)
       const customEnd = new Date(props.customDateRange.endDate)
       customEnd.setHours(23, 59, 59, 999)
-      report.value = generator.generateReport(customStart, customEnd, 'custom')
+      report.value = generator.generateReport(customStart, customEnd, 'custom', props.template)
+    }
+    
+    // 触发保存事件
+    if (report.value) {
+      emit('report-generated', {
+        reportType: reportType.value,
+        report: report.value,
+        createdAt: new Date().toISOString()
+      })
     }
   } finally {
     generating.value = false
@@ -526,6 +681,123 @@ watch(() => props.visible, (newVal) => {
   color: #667eea;
 }
 
+.summary-section {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.summary-section .section-title {
+  color: white;
+}
+
+.summary-text {
+  color: white;
+  line-height: 1.8;
+  font-size: 0.95rem;
+}
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.overview-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 8px;
+}
+
+.overview-label {
+  font-size: 0.75rem;
+  color: #999;
+  margin-bottom: 0.25rem;
+}
+
+.overview-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #667eea;
+}
+
+.task-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.75rem;
+}
+
+.task-card {
+  background: white;
+  border-radius: 8px;
+  padding: 0.75rem;
+  border-left: 3px solid #667eea;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.task-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.task-card-header {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.task-category-badge {
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.task-category-badge.work {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.task-category-badge.study {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.task-category-badge.life {
+  background: #e8f5e9;
+  color: #388e3c;
+}
+
+.task-priority-badge {
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.task-priority-badge.high {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.task-priority-badge.medium {
+  background: #fff3e0;
+  color: #ef6c00;
+}
+
+.task-priority-badge.low {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.task-card-title {
+  color: #333;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
 .work-list, .plan-list, .suggestion-list {
   list-style: none;
   padding: 0;
@@ -537,9 +809,41 @@ watch(() => props.visible, (newVal) => {
   background: white;
   border-radius: 8px;
   margin-bottom: 0.5rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  color: #333;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.weekly-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.weekly-list li.header {
+  font-weight: 700;
+  color: #667eea;
+  margin-top: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.weekly-list li.header:first-child {
+  margin-top: 0;
+}
+
+.weekly-list li.item {
+  padding-left: 1rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+}
+
+.category-header {
+  font-weight: 700;
+  color: #667eea;
+}
+
+.task-item {
+  color: #666;
 }
 
 .work-text {

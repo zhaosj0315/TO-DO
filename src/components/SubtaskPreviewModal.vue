@@ -63,6 +63,16 @@
                 <option value="life">🏠 生活</option>
               </select>
 
+              <select v-model="subtask.type" class="attr-select">
+                <option value="today">📅 今天</option>
+                <option value="tomorrow">📆 明天</option>
+                <option value="this_week">📋 本周内</option>
+                <option value="custom_date">🗓️ 指定日期</option>
+                <option value="daily">🔄 每天重复</option>
+                <option value="weekday">💼 工作日重复</option>
+                <option value="weekly">📆 每周重复</option>
+              </select>
+
               <input 
                 v-model.number="subtask.estimatedMinutes" 
                 type="number" 
@@ -71,6 +81,35 @@
                 min="5"
                 max="480"
               />
+            </div>
+
+            <!-- 指定日期时间 -->
+            <div v-if="subtask.type === 'custom_date'" class="subtask-datetime">
+              <input 
+                v-model="subtask.customDate" 
+                type="date" 
+                class="attr-input"
+              />
+              <input 
+                v-model="subtask.customTime" 
+                type="time" 
+                class="attr-input"
+              />
+            </div>
+
+            <!-- 每周重复选择星期 -->
+            <div v-if="subtask.type === 'weekly'" class="subtask-weekdays">
+              <label class="weekday-label">选择星期：</label>
+              <div class="weekday-buttons">
+                <button 
+                  v-for="day in weekdayOptions" 
+                  :key="day.value"
+                  :class="['weekday-btn', { active: subtask.weekdays?.includes(day.value) }]"
+                  @click="toggleWeekday(subtask, day.value)"
+                >
+                  {{ day.label }}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -112,9 +151,37 @@ const emit = defineEmits(['close', 'create'])
 
 const localSubtasks = ref([])
 
+// 星期选项
+const weekdayOptions = [
+  { label: '一', value: 1 },
+  { label: '二', value: 2 },
+  { label: '三', value: 3 },
+  { label: '四', value: 4 },
+  { label: '五', value: 5 },
+  { label: '六', value: 6 },
+  { label: '日', value: 0 }
+]
+
+// 切换星期选择
+const toggleWeekday = (subtask, day) => {
+  if (!subtask.weekdays) {
+    subtask.weekdays = []
+  }
+  const index = subtask.weekdays.indexOf(day)
+  if (index > -1) {
+    subtask.weekdays.splice(index, 1)
+  } else {
+    subtask.weekdays.push(day)
+  }
+}
+
 watch(() => props.subtasks, (newSubtasks) => {
   localSubtasks.value = JSON.parse(JSON.stringify(newSubtasks)).map(task => ({
     ...task,
+    type: task.type || 'today',
+    weekdays: task.weekdays || [],
+    customDate: task.customDate || '',
+    customTime: task.customTime || '',
     estimatedMinutes: task.estimatedHours ? Math.round(task.estimatedHours * 60) : 30
   }))
 }, { immediate: true, deep: true })
@@ -349,6 +416,59 @@ const handleCreate = () => {
   border-radius: 6px;
   padding: 0.4rem;
   font-size: 0.85rem;
+}
+
+/* 日期时间选择 */
+.subtask-datetime {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.subtask-datetime .attr-input {
+  flex: 1;
+}
+
+/* 星期选择 */
+.subtask-weekdays {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.weekday-label {
+  display: block;
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
+.weekday-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.weekday-btn {
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid #ddd;
+  background: white;
+  border-radius: 50%;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.weekday-btn.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-color: #667eea;
+}
+
+.weekday-btn:hover {
+  transform: scale(1.1);
 }
 
 .modal-footer {

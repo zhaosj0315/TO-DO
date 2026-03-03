@@ -9,7 +9,8 @@
               {{ showSidebar ? '◀' : '▶' }}
             </button>
             <button class="btn-new-chat" @click="createNewChat">
-              ➕ 新对话
+              <span class="btn-icon">➕</span>
+              <span class="btn-text">新对话</span>
             </button>
           </div>
           <div class="search-box">
@@ -63,11 +64,24 @@
               class="message-content" 
               v-html="msg.role === 'assistant' ? renderMarkdown(msg.content) : escapeHtml(msg.content)"
             ></div>
-            <div v-if="msg.role === 'assistant'" class="message-actions">
-              <button class="action-btn" @click="copyMessage(msg.content)" title="复制">
-                📋
-              </button>
-              <span v-if="msg.modelName" class="model-name">🤖 {{ msg.modelName }}</span>
+            <div v-if="msg.role === 'assistant'" class="message-meta">
+              <div class="meta-left">
+                <button class="action-btn" @click="copyMessage(msg.content)" title="复制">
+                  📋
+                </button>
+                <button class="action-btn" @click="regenerateMessage(idx)" title="重新生成">
+                  🔄
+                </button>
+                <span v-if="msg.modelName" class="model-name" :title="msg.modelDisplayName">
+                  🤖 {{ msg.modelName }}
+                </span>
+              </div>
+              <div class="meta-right">
+                <span v-if="msg.timestamp" class="timestamp">🕐 {{ formatTimestamp(msg.timestamp) }}</span>
+                <span v-if="msg.tokens && msg.tokens.total > 0" class="tokens">
+                  💬 {{ msg.tokens.input }}↑ / {{ msg.tokens.output }}↓
+                </span>
+              </div>
             </div>
           </div>
         <div v-if="loading" class="message assistant">
@@ -85,6 +99,7 @@
         <div class="quick-questions">
           <div class="quick-label">💡 继续提问：</div>
           <div class="quick-categories-compact">
+            <button @click="generateDailyPlan" class="quick-btn-small quick-btn-primary">📅 今日规划</button>
             <button @click="askQuick('今天完成了什么？')" class="quick-btn-small">今日完成</button>
             <button @click="askQuick('本周情况如何？')" class="quick-btn-small">本周情况</button>
             <button @click="askQuick('分析我的效率')" class="quick-btn-small">效率分析</button>
@@ -117,6 +132,7 @@ import { marked } from 'marked'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/github.css'
 import { AIChatService } from '../services/aiChatService'
+import { AIDailyPlanner } from '../services/aiDailyPlanner'
 
 // 配置 marked 支持 GFM 表格
 marked.setOptions({
@@ -214,6 +230,86 @@ const copyMessage = (content) => {
   })
 }
 
+// 重新生成回复
+const regenerateMessage = async (msgIndex) => {
+  if (loading.value) return
+  
+  // 找到对应的用户消息
+  let userMsgIndex = msgIndex - 1
+  while (userMsgIndex >= 0 && messages.value[userMsgIndex].role !== 'user') {
+    userMsgIndex--
+  }
+  
+  if (userMsgIndex < 0) {
+    alert('无法找到对应的用户消息')
+    return
+  }
+  
+  const userQuestion = messages.value[userMsgIndex].content
+  
+  // 删除当前AI回复
+  messages.value.splice(msgIndex, 1)
+  
+  // 重新发送
+  loading.value = true
+  
+  try {
+    // 创建新的助手消息
+    const assistantMsgIndex = messages.value.length
+    messages.value.push({ 
+      role: 'assistant', 
+      content: '',
+      modelName: currentModel.value?.modelName || currentModel.value?.name,
+      modelDisplayName: currentModel.value?.name,
+      timestamp: new Date().toISOString(),
+      tokens: { input: 0, output: 0, total: 0 }
+    })
+    
+    // 调用AI
+    const analysis = analyzeQuestion(userQuestion)
+    const context = analysis.isSimple ? buildSmartContext(userQuestion) : buildContext()
+    const model = currentModel.value
+    
+    if (model.type === 'openai') {
+      await callOpenAIStream(context, userQuestion, model, assistantMsgIndex)
+    } else {
+      await callOllamaStream(context, userQuestion, model, assistantMsgIndex)
+    }
+    
+    saveCurrentChat()
+    scrollToBottom()
+  } catch (error) {
+    console.error('重新生成失败:', error)
+    messages.value.push({ 
+      role: 'error', 
+      content: `重新生成失败：${error.message}` 
+    })
+  } finally {
+    loading.value = false
+  }
+}
+
+// 格式化时间戳
+const formatTimestamp = (timestamp) => {
+  const date = new Date(timestamp)
+  const now = new Date()
+  const diff = now - date
+  const minutes = Math.floor(diff / 60000)
+  
+  if (minutes < 1) return '刚刚'
+  if (minutes < 60) return `${minutes}分钟前`
+  
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}小时前`
+  
+  return date.toLocaleString('zh-CN', { 
+    month: '2-digit', 
+    day: '2-digit', 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  })
+}
+
 // HTML 转义函数（用户消息）
 const escapeHtml = (text) => {
   const div = document.createElement('div')
@@ -253,6 +349,13 @@ const loadChat = (chatId) => {
       messagesContainer.value?.scrollTo(0, messagesContainer.value.scrollHeight)
     })
   }
+}
+
+// 滚动到底部
+const scrollToBottom = () => {
+  nextTick(() => {
+    messagesContainer.value?.scrollTo(0, messagesContainer.value.scrollHeight)
+  })
 }
 
 // 保存当前对话
@@ -487,6 +590,114 @@ watch(() => props.visible, (val) => {
 const askQuick = (question) => {
   userInput.value = question
   sendMessage()
+}
+
+// 生成今日规划
+const generateDailyPlan = async () => {
+  if (loading.value) return
+  
+  loading.value = true
+  
+  // 添加用户消息
+  messages.value.push({
+    role: 'user',
+    content: '📅 生成今日规划'
+  })
+  
+  try {
+    // 获取待办任务（只要pending状态）
+    const { tasks = [] } = props.tasksData
+    const pendingTasks = tasks.filter(t => t.status === 'pending')
+    
+    if (pendingTasks.length === 0) {
+      messages.value.push({
+        role: 'assistant',
+        content: '## 📅 今日规划\n\n今天没有待办任务，好好休息吧！🎉',
+        modelName: currentModel.value.modelName || currentModel.value.name,
+        modelDisplayName: currentModel.value.name,
+        timestamp: new Date().toISOString()
+      })
+      loading.value = false
+      saveCurrentChat()
+      scrollToBottom()
+      return
+    }
+    
+    // 为任务添加截止时间信息（复用原有逻辑）
+    const tasksWithDeadline = pendingTasks.map(task => ({
+      ...task,
+      deadline: task.customDate && task.customTime 
+        ? `${task.customDate} ${task.customTime}` 
+        : task.deadline || '未设置'
+    }))
+    
+    // 调用今日规划API（传入所有pending任务，让AI决定优先级）
+    const plan = await AIDailyPlanner.generateDailyPlan(tasksWithDeadline)
+    
+    // 格式化为Markdown
+    let markdown = '## 📅 今日规划\n\n'
+    markdown += `### 💡 AI 建议\n${plan.summary}\n\n`
+    
+    if (plan.schedule && plan.schedule.length > 0) {
+      markdown += `### 📋 执行计划（共 ${plan.schedule.length} 项）\n\n`
+      markdown += '| 时间 | 任务 | 安排理由 |\n'
+      markdown += '|------|------|----------|\n'
+      plan.schedule.forEach(item => {
+        markdown += `| ${item.time} | ${item.task} | ${item.reason} |\n`
+      })
+      markdown += '\n'
+    }
+    
+    // 只显示今天和明天需要完成的任务
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000)
+    
+    const urgentTasks = tasksWithDeadline.filter(task => {
+      if (!task.customDate) return false
+      const taskDate = new Date(task.customDate)
+      return taskDate <= tomorrow
+    })
+    
+    if (urgentTasks.length > 0) {
+      markdown += `### 📌 今明两天任务（共 ${urgentTasks.length} 个）\n\n`
+      urgentTasks.slice(0, 15).forEach((task, index) => {
+        const priorityIcon = task.priority === 'high' ? '🔴' : task.priority === 'medium' ? '🟡' : '🔵'
+        markdown += `${index + 1}. ${priorityIcon} **${task.text}**`
+        if (task.description) {
+          markdown += ` - ${task.description.substring(0, 50)}${task.description.length > 50 ? '...' : ''}`
+        }
+        markdown += `\n   ⏰ ${task.customDate} ${task.customTime || ''}\n`
+      })
+      if (urgentTasks.length > 15) {
+        markdown += `\n*还有 ${urgentTasks.length - 15} 个任务未显示*\n`
+      }
+    }
+    
+    markdown += `\n---\n💡 *共有 ${tasksWithDeadline.length} 个待办任务，AI已为你优先安排今明两天的重要事项*`
+    
+    messages.value.push({
+      role: 'assistant',
+      content: markdown,
+      modelName: currentModel.value.modelName || currentModel.value.name,
+      modelDisplayName: currentModel.value.name,
+      timestamp: new Date().toISOString()
+    })
+    
+    saveCurrentChat()
+    scrollToBottom()
+  } catch (error) {
+    console.error('生成今日规划失败:', error)
+    messages.value.push({
+      role: 'assistant',
+      content: `❌ 生成今日规划失败：${error.message}\n\n请检查AI模型配置是否正确。`,
+      modelName: currentModel.value.modelName || currentModel.value.name,
+      modelDisplayName: currentModel.value.name,
+      timestamp: new Date().toISOString()
+    })
+  } finally {
+    loading.value = false
+  }
 }
 
 // 智能上下文分析
@@ -878,7 +1089,9 @@ const handleTaskCreation = async (text) => {
   messages.value.push({ 
     role: 'assistant', 
     content: '🤖 正在分析并提取任务...',
-    modelName: currentModel.value?.name
+    modelName: currentModel.value?.modelName || currentModel.value?.name,
+    modelDisplayName: currentModel.value?.name,
+    timestamp: new Date().toISOString()
   })
   
   try {
@@ -1153,7 +1366,9 @@ const handleNormalChat = async (question) => {
   messages.value.push({ 
     role: 'assistant', 
     content: '',
-    modelName: currentModel.value?.name
+    modelName: currentModel.value?.name,
+    timestamp: new Date().toISOString(),
+    tokens: { input: 0, output: 0, total: 0 }
   })
 
   try {
@@ -1229,6 +1444,15 @@ const callOllamaStream = async (context, question, model, msgIndex) => {
         }
       }
     }
+    
+    // Ollama流式结束后，估算token（Ollama不返回token信息）
+    const inputTokens = Math.ceil((context.length + question.length) / 4)
+    const outputTokens = Math.ceil(messages.value[msgIndex].content.length / 4)
+    messages.value[msgIndex].tokens = {
+      input: inputTokens,
+      output: outputTokens,
+      total: inputTokens + outputTokens
+    }
   } catch (error) {
     if (error.message.includes('Failed to fetch')) {
       throw new Error(`无法连接到 ${model.name}\n请检查：\n1. 模型服务是否运行\n2. 地址是否正确\n3. 网络是否通畅`)
@@ -1303,6 +1527,16 @@ const callOpenAIStream = async (context, question, model, msgIndex) => {
       const content = data.choices[0]?.message?.content || ''
       console.log('📝 提取的内容:', content)
       messages.value[msgIndex].content = content
+      
+      // 提取token信息
+      if (data.usage) {
+        messages.value[msgIndex].tokens = {
+          input: data.usage.prompt_tokens || 0,
+          output: data.usage.completion_tokens || 0,
+          total: data.usage.total_tokens || 0
+        }
+      }
+      
       nextTick(() => {
         messagesContainer.value?.scrollTo(0, messagesContainer.value.scrollHeight)
       })
@@ -1348,9 +1582,29 @@ const callOpenAIStream = async (context, question, model, msgIndex) => {
               messagesContainer.value?.scrollTo(0, messagesContainer.value.scrollHeight)
             })
           }
+          
+          // 提取token信息（流式响应的最后一个chunk可能包含usage）
+          if (parsed.usage) {
+            messages.value[msgIndex].tokens = {
+              input: parsed.usage.prompt_tokens || 0,
+              output: parsed.usage.completion_tokens || 0,
+              total: parsed.usage.total_tokens || 0
+            }
+          }
         } catch (e) {
           // 忽略解析错误，可能是不完整的数据
         }
+      }
+    }
+    
+    // 流式结束后，如果没有token信息，尝试估算
+    if (!messages.value[msgIndex].tokens || messages.value[msgIndex].tokens.total === 0) {
+      const inputTokens = Math.ceil((context.length + question.length) / 4)
+      const outputTokens = Math.ceil(messages.value[msgIndex].content.length / 4)
+      messages.value[msgIndex].tokens = {
+        input: inputTokens,
+        output: outputTokens,
+        total: inputTokens + outputTokens
       }
     }
   } catch (error) {
@@ -1479,7 +1733,9 @@ const getPriorityLabel = (priority) => {
 
 /* 左侧历史记录 */
 .chat-sidebar {
-  width: 260px;
+  width: 20%;
+  min-width: 180px;
+  max-width: 280px;
   background: #f8f9fa;
   border-right: 1px solid #e0e0e0;
   display: flex;
@@ -1513,9 +1769,14 @@ const getPriorityLabel = (priority) => {
   height: 40px;
   padding: 0;
   font-size: 1.2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+}
+
+.chat-sidebar.sidebar-collapsed .btn-new-chat .btn-text {
+  display: none;
+}
+
+.chat-sidebar.sidebar-collapsed .btn-new-chat .btn-icon {
+  display: block;
 }
 
 .sidebar-header {
@@ -1540,17 +1801,6 @@ const getPriorityLabel = (priority) => {
 
 .chat-sidebar.sidebar-collapsed .sidebar-header {
   padding: 0.75rem 0.5rem;
-}
-
-/* 收起状态下，新对话按钮只显示图标 */
-.chat-sidebar.sidebar-collapsed .btn-new-chat {
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  font-size: 1.2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .btn-new-chat {
@@ -2030,14 +2280,30 @@ const getPriorityLabel = (priority) => {
   color: #555;
 }
 
-/* 消息操作栏 */
-.message-actions {
+/* 消息元数据栏 */
+.message-meta {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.75rem;
   margin-top: 0.5rem;
   padding: 0.5rem 0;
   border-top: 1px solid #f0f0f0;
+  flex-wrap: wrap;
+}
+
+.meta-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.meta-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.7rem;
+  color: #999;
 }
 
 .action-btn {
@@ -2064,6 +2330,20 @@ const getPriorityLabel = (priority) => {
 .model-name {
   font-size: 0.7rem;
   color: #999;
+}
+
+.timestamp {
+  font-size: 0.7rem;
+  color: #999;
+}
+
+.tokens {
+  font-size: 0.7rem;
+  color: #667eea;
+  cursor: help;
+  padding: 2px 6px;
+  background: #f0f4ff;
+  border-radius: 4px;
 }
 
 .message.user .message-content {
@@ -2150,6 +2430,20 @@ const getPriorityLabel = (priority) => {
   color: white;
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+/* 今日规划按钮特殊样式 */
+.quick-btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: 600;
+  border: none;
+}
+
+.quick-btn-primary:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
 /* 保留旧样式以防其他地方使用 */

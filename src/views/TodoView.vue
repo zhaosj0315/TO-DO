@@ -1151,22 +1151,10 @@
             <div class="entry-arrow">›</div>
           </div>
 
-          <!-- AI 周报生成入口 -->
+          <!-- AI 报告生成入口 -->
           <div class="pomodoro-entry-group">
             <div class="entry-group-title">📊 智能报告生成</div>
             
-            <!-- 快速生成 -->
-            <div class="pomodoro-entry" @click="generateWeeklyReport">
-              <div class="entry-icon">⚡</div>
-              <div class="entry-content">
-                <div class="entry-title">快速生成周报</div>
-                <div class="entry-summary">
-                  一键生成本周工作总结
-                </div>
-              </div>
-              <div class="entry-arrow">›</div>
-            </div>
-
             <!-- 自定义报告 -->
             <div class="pomodoro-entry" @click="showCustomReportModal = true">
               <div class="entry-icon">🎯</div>
@@ -1179,29 +1167,17 @@
               <div class="entry-arrow">›</div>
             </div>
 
-            <!-- 模板管理 -->
-            <div class="pomodoro-entry" @click="showReportTemplates = true">
-              <div class="entry-icon">📋</div>
+            <!-- 报告历史入口 -->
+            <div class="pomodoro-entry" @click="showReportHistory">
+              <div class="entry-icon">📚</div>
               <div class="entry-content">
-                <div class="entry-title">报告模板</div>
+                <div class="entry-title">报告历史</div>
                 <div class="entry-summary">
-                  管理和自定义报告模板
+                  查看历史报告记录
                 </div>
               </div>
               <div class="entry-arrow">›</div>
             </div>
-          </div>
-
-          <!-- 周报历史入口 -->
-          <div class="pomodoro-entry" @click="showReportHistory">
-            <div class="entry-icon">📚</div>
-            <div class="entry-content">
-              <div class="entry-title">周报历史</div>
-              <div class="entry-summary">
-                查看历史周报记录
-              </div>
-            </div>
-            <div class="entry-arrow">›</div>
           </div>
 
           <!-- AI配置入口 -->
@@ -2307,6 +2283,7 @@
       :initialReportType="customReportConfig.type"
       :customDateRange="customReportConfig.type === 'custom' ? { startDate: customReportConfig.startDate, endDate: customReportConfig.endDate } : null"
       @close="showAIReport = false"
+      @report-generated="handleReportGenerated"
     />
 
     <!-- 智能任务分解 -->
@@ -3169,14 +3146,14 @@
       </div>
     </div>
 
-    <!-- 周报历史弹窗 -->
+    <!-- 报告历史弹窗 -->
     <div v-if="showReportHistoryModal" class="modal-overlay" @click.self="showReportHistoryModal = false">
       <div class="report-bottom-sheet">
         <div class="modal-header">
           <button class="back-btn" @click="showReportHistoryModal = false">
             <span>← 返回</span>
           </button>
-          <h3>📚 周报历史</h3>
+          <h3>📚 报告历史</h3>
           <div style="width: 80px;"></div>
         </div>
         
@@ -3216,7 +3193,7 @@
                     <div class="history-icon">📊</div>
                     <div class="history-info">
                       <div class="history-title-row">
-                        <span class="history-type">{{ report.reportType === 'weekly' ? '周报' : report.reportType === 'monthly' ? '月报' : '报告' }}</span>
+                        <span class="history-type">{{ formatReportType(report.reportType) }}</span>
                         <span class="history-period">{{ report.period }}</span>
                       </div>
                       <div class="history-meta">
@@ -3243,7 +3220,7 @@
                     <div class="history-icon">📊</div>
                     <div class="history-info">
                       <div class="history-title-row">
-                        <span class="history-type">{{ report.reportType === 'weekly' ? '周报' : report.reportType === 'monthly' ? '月报' : '报告' }}</span>
+                        <span class="history-type">{{ formatReportType(report.reportType) }}</span>
                         <span class="history-period">{{ report.period }}</span>
                       </div>
                       <div class="history-meta">
@@ -3270,7 +3247,7 @@
                     <div class="history-icon">📊</div>
                     <div class="history-info">
                       <div class="history-title-row">
-                        <span class="history-type">{{ report.reportType === 'weekly' ? '周报' : report.reportType === 'monthly' ? '月报' : '报告' }}</span>
+                        <span class="history-type">{{ formatReportType(report.reportType) }}</span>
                         <span class="history-period">{{ report.period }}</span>
                       </div>
                       <div class="history-meta">
@@ -3297,7 +3274,7 @@
                     <div class="history-icon">📊</div>
                     <div class="history-info">
                       <div class="history-title-row">
-                        <span class="history-type">{{ report.reportType === 'weekly' ? '周报' : report.reportType === 'monthly' ? '月报' : '报告' }}</span>
+                        <span class="history-type">{{ formatReportType(report.reportType) }}</span>
                         <span class="history-period">{{ report.period }}</span>
                       </div>
                       <div class="history-meta">
@@ -3366,49 +3343,6 @@
             </div>
           </div>
 
-          <!-- 报告模板 -->
-          <div class="form-group">
-            <label class="form-label">📋 报告模板</label>
-            <div class="template-options">
-              <label 
-                v-for="template in reportTemplates" 
-                :key="template.value"
-                class="template-option"
-                :class="{ active: customReportConfig.template === template.value }"
-              >
-                <input 
-                  type="radio" 
-                  v-model="customReportConfig.template" 
-                  :value="template.value"
-                  style="display: none;"
-                />
-                <div class="template-icon">{{ template.icon }}</div>
-                <div class="template-info">
-                  <div class="template-name">{{ template.label }}</div>
-                  <div class="template-desc">{{ template.desc }}</div>
-                </div>
-              </label>
-            </div>
-          </div>
-
-          <!-- 包含内容 -->
-          <div class="form-group">
-            <label class="form-label">✨ 包含内容</label>
-            <div class="checkbox-group">
-              <label class="checkbox-label">
-                <input type="checkbox" v-model="customReportConfig.includeStats" />
-                <span>📊 统计数据</span>
-              </label>
-              <label class="checkbox-label">
-                <input type="checkbox" v-model="customReportConfig.includeCharts" />
-                <span>📈 图表分析</span>
-              </label>
-              <label class="checkbox-label">
-                <input type="checkbox" v-model="customReportConfig.includeAISummary" />
-                <span>🤖 AI智能总结</span>
-              </label>
-            </div>
-          </div>
         </div>
 
         <div class="modal-footer">
@@ -4598,6 +4532,31 @@ const handleCreateSubtasks = async (subtaskList) => {
   
   // 显示成功提示
   showNotification(`✅ 已创建 ${subtaskList.length} 个子任务`, 'success')
+}
+
+// 处理报告生成完成
+const handleReportGenerated = (data) => {
+  const { reportType, report, createdAt } = data
+  
+  // 构造历史记录
+  const historyItem = {
+    id: Date.now(),
+    reportType: reportType,
+    title: `${formatReportType(reportType)} - ${report.period.start} 至 ${report.period.end}`,
+    period: `${report.period.start} 至 ${report.period.end}`,
+    content: '', // 纯文本内容（暂时为空）
+    reportData: report, // 保存完整的结构化数据
+    taskCount: report.completionStats.total,
+    completedCount: report.completionStats.completed,
+    createdAt: createdAt
+  }
+  
+  // 保存到localStorage
+  const history = JSON.parse(localStorage.getItem('weekly_reports') || '[]')
+  history.unshift(historyItem) // 最新的在前面
+  localStorage.setItem('weekly_reports', JSON.stringify(history))
+  
+  console.log('报告已保存到历史', historyItem)
 }
 
 // 显示周报历史
@@ -5915,11 +5874,7 @@ const currentTemplate = ref(null) // 当前查看/编辑的模板
 const customReportConfig = ref({
   type: 'weekly', // daily, weekly, monthly, quarterly, halfyearly, yearly, custom
   startDate: '',
-  endDate: '',
-  includeStats: true,
-  includeCharts: true,
-  includeAISummary: true,
-  template: 'standard' // work, standard, detailed, simple
+  endDate: ''
 })
 
 // 报告类型选项
@@ -9298,6 +9253,20 @@ const formatDate = (dateString) => {
   const hour = String(date.getHours()).padStart(2, '0')
   const minute = String(date.getMinutes()).padStart(2, '0')
   return `${year}/${month}/${day} ${hour}:${minute}`
+}
+
+// 格式化报告类型
+const formatReportType = (type) => {
+  const map = {
+    daily: '日报',
+    weekly: '周报',
+    monthly: '月报',
+    quarterly: '季报',
+    halfYearly: '半年报',
+    yearly: '年报',
+    custom: '自定义报告'
+  }
+  return map[type] || '报告'
 }
 
 // 方法：日志类型图标

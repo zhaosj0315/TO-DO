@@ -72,8 +72,7 @@
       </div>
       
       <div class="summary-footer">
-        <button @click="generateWeeklyReport" class="btn btn-primary">生成周报</button>
-        <button @click="$emit('close')" class="btn btn-secondary">关闭</button>
+        <button @click="$emit('close')" class="btn btn-primary">关闭</button>
       </div>
     </div>
   </div>
@@ -200,12 +199,6 @@ const getPriorityText = (priority) => {
     low: '低'
   }
   return map[priority] || '中'
-}
-
-// 生成周报
-const generateWeeklyReport = () => {
-  emit('generate-report')
-  emit('close')
 }
 
 onMounted(async () => {

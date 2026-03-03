@@ -502,6 +502,13 @@
         >
           🔨 AI拆解任务
         </button>
+        <button
+          v-if="task.status !== 'completed'"
+          class="split-btn split-btn-manual"
+          @click="handleManualAddSubtask"
+        >
+          ➕ 手动添加子任务
+        </button>
         <!-- 🆕 预览模式显示保存按钮 -->
         <button
           v-if="isPreview"
@@ -814,6 +821,21 @@ const isProcessing = ref(false)
 // AI 拆解任务
 const handleSplitTask = () => {
   emit('split', props.task)
+}
+
+// 手动添加子任务
+const handleManualAddSubtask = () => {
+  // 创建一个空的子任务模板
+  const emptySubtask = {
+    text: '',
+    description: '',
+    priority: props.task.priority,
+    estimatedDuration: 60,
+    category: props.task.category
+  }
+  
+  // 触发事件，传递空模板和父任务
+  emit('showManualSubtask', { subtask: emptySubtask, parentTask: props.task })
 }
 
 // 处理 AI 文本操作
@@ -2558,6 +2580,10 @@ section h3 {
 .split-btn {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
+}
+
+.split-btn-manual {
+  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
 }
 
 .complete-btn {
