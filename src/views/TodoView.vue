@@ -2255,6 +2255,7 @@
       @split="handleSplitTask"
       @show-loading="handleShowLoading"
       @hide-loading="handleHideLoading"
+      @notify="handleTaskNotify"
     />
 
     <!-- 🆕 任务输入预览弹窗 -->
@@ -2265,6 +2266,7 @@
       @close="showTaskInputPreview = false; previewTaskData = null"
       @save="saveTaskFromPreview"
       @split="handlePreviewSplit"
+      @notify="handleTaskNotify"
     />
 
     <!-- 子任务预览弹窗 -->
@@ -2314,7 +2316,7 @@
       :task-title="taskToSplit.text"
       :task-description="taskToSplit.description"
       @close="showTaskSplitter = false; taskToSplit = null"
-      @create="showTaskInputPreview ? createSubtasksFromPreview : createSubtasks"
+      @create="handleSubtaskCreate"
     />
 
     <!-- 数据统计 -->
@@ -4196,6 +4198,7 @@ const taskToSplit = ref(null)
 const showDataStats = ref(false)
 const showTaskInputPreview = ref(false)  // 🆕 任务输入预览弹窗
 const previewTaskData = ref(null)  // 🆕 预览的任务数据
+const pendingSubtasks = ref([])  // 🆕 待创建的子任务列表（预览模式中AI拆分后暂存）
 
 // 文本选择菜单（使用新的 composable）
 const todoLayoutRef = ref(null)
@@ -4671,35 +4674,51 @@ const batchDeleteReports = () => {
 const showVersionModal = ref(false) // 版本历史弹窗
 const versionHistory = ref([]) // 版本历史列表
 const hasUnreadVersions = ref(false) // 是否有未读版本
-const CURRENT_VERSION = '0.7.9' // 当前应用版本
+const CURRENT_VERSION = '0.7.10' // 当前应用版本
 const versionModalTitle = ref('🎉 版本更新') // 弹窗标题（动态）
 
 // 版本历史数据
 const initVersionHistory = () => {
   versionHistory.value = [
     {
-      version: '0.7.9',
+      version: '0.7.10',
       date: '2026-03-03',
       features: [
-        '✨ 子任务智能识别：自动检测任务描述中的列表项（支持5种格式：数字、破折号、星号、圆点、圆圈数字）',
-        '✨ 任务预览模式：全屏编辑新增"预览"按钮，可查看、编辑、AI拆分后原子性保存',
-        '🤖 AI拆分优化：默认子任务数量从5个改为3个，预览模式完全集成AI拆分',
-        '🎨 智能提示气泡：检测到2个以上列表项时弹出蓝色渐变提示卡片',
         '💡 AI生成预览框：AI建议/续写生成后先预览，可编辑后再采纳',
         '📋 快捷模板选择器：6个预设模板（周报/月报/会议纪要/学习计划/购物清单/项目计划）',
         '🔄 多轮对话：AI生成支持重新生成，不满意可多次尝试',
         '📷 拍照识别：全屏编辑工具栏新增拍照按钮，复用OCR功能'
       ],
       improvements: [
+        '🔧 AI兼容性增强：支持多种返回格式（content/reasoning/response字段）',
+        '📝 max_tokens增加到1000：避免AI生成内容截断',
+        '🤖 AI助手布局优化：展开/收起按钮移至历史记录区域，参考Gemini设计',
+        '⚠️ 提醒逻辑优化：卡壳任务和里程碑提醒防重复（同一天只提醒一次）',
+        '📦 备份功能增强：添加详细日志和错误处理，修复移动端备份参数问题'
+      ],
+      fixes: [
+        '修复AI助手收起后无法展开的问题：保留展开按钮可见',
+        '修复完整备份writeFile参数错误：添加encoding: utf8参数',
+        '修复子任务创建成功后提示不显示的问题：添加300ms延迟等待弹窗关闭'
+      ]
+    },
+    {
+      version: '0.7.9',
+      date: '2026-03-02',
+      features: [
+        '✨ 子任务智能识别：自动检测任务描述中的列表项（支持5种格式：数字、破折号、星号、圆点、圆圈数字）',
+        '✨ 任务预览模式：全屏编辑新增"预览"按钮，可查看、编辑、AI拆分后原子性保存',
+        '🤖 AI拆分优化：默认子任务数量从5个改为3个，预览模式完全集成AI拆分',
+        '🎨 智能提示气泡：检测到2个以上列表项时弹出蓝色渐变提示卡片'
+      ],
+      improvements: [
         '📏 自适应高度优化：任务描述、AI总结、日志描述全部支持自适应高度（输入时实时调整+初始渲染自动适配）',
         '✏️ AI总结可编辑：AI总结内容支持直接编辑，失焦自动保存',
         '🗑️ 代码精简：删除约180行重复代码，优化任务创建流程',
-        '📚 文档完善：新增子任务智能识别、任务输入功能审查、实施总结、AI建议优化、语音拍照功能文档',
+        '📚 文档完善：新增子任务智能识别、任务输入功能审查、实施总结文档',
         '🎯 轻量级设计：不重复造轮子，复用现有AI拆分功能',
         '🎨 统一Bottom Sheet样式：所有弹窗从底部滑出，左右全屏',
-        '🔧 AI兼容性增强：支持多种返回格式（content/reasoning/response字段）',
-        '📝 max_tokens增加到1000：避免AI生成内容截断',
-        '🔙 Android返回手势优化：新增3个弹窗支持（AI建议卡片、AI预览、模板选择器）'
+        '🔙 Android返回手势全面优化：新增3个弹窗支持（AI建议卡片、AI预览、模板选择器）'
       ],
       fixes: [
         '修复全屏编辑工具栏重复的"🤖 AI拆分"按钮',
@@ -4709,7 +4728,9 @@ const initVersionHistory = () => {
         '修复弹窗z-index被遮挡问题',
         '修复textarea自适应高度初始化问题',
         '修复任务预览返回逻辑：现在返回到全屏编辑而非首页（逐级返回）',
-        '修复AI拆分后跳转问题：创建子任务后保留在父任务详情页'
+        '修复AI拆分后跳转问题：创建子任务后保留在父任务详情页',
+        '修复任务状态更新逻辑：修改任务时间后自动重新评估状态（待办/逾期）',
+        '修复checkOverdueTasks：检查所有类型任务而非仅"今天"类型'
       ]
     },
     {
@@ -5041,88 +5062,81 @@ const previewTask = () => {
 
 // 🆕 从预览保存任务
 const saveTaskFromPreview = async () => {
-  if (!previewTaskData.value) return
-  
-  const task = {
-    text: previewTaskData.value.text,
-    description: previewTaskData.value.description,
-    type: previewTaskData.value.type,
-    category: previewTaskData.value.category,
-    priority: previewTaskData.value.priority,
-    weekdays: previewTaskData.value.weekdays,
-    customDate: previewTaskData.value.customDate,
-    customTime: previewTaskData.value.customTime,
-    enableReminder: previewTaskData.value.enableReminder,
-    reminderTime: previewTaskData.value.reminderTime,
-    forceReminder: previewTaskData.value.forceReminder
-  }
-  
-  const createdTask = await taskStore.addTask(task)
-  
-  // 🆕 如果有子任务，创建子任务
-  if (previewTaskData.value.subtasks && previewTaskData.value.subtasks.length > 0) {
-    const now = new Date()
-    const subtaskIds = []
+  try {
+    console.log('=== 从预览保存任务 ===')
+    console.log('待创建子任务数量:', pendingSubtasks.value.length)
     
-    for (let i = 0; i < previewTaskData.value.subtasks.length; i++) {
-      const subtask = previewTaskData.value.subtasks[i]
-      const newTask = {
-        id: Date.now() + i,
-        text: subtask.title,
-        description: subtask.description || '',
-        type: 'today',
-        category: createdTask.category,
-        priority: subtask.priority || 'medium',
-        status: 'pending',
-        created_at: now.toISOString(),
-        user_id: taskStore.currentUser,
-        parentTaskId: Number(createdTask.id),
-        estimatedHours: subtask.estimatedHours || 1,
-        waitFor: []
-      }
-      
-      await taskStore.addTask(newTask)
-      subtaskIds.push(newTask.id)
+    if (!previewTaskData.value) {
+      console.error('❌ previewTaskData为空')
+      showNotification('❌ 预览数据为空', 'error')
+      return
     }
     
-    // 更新父任务：记录子任务列表
-    createdTask.hasSplitted = true
-    createdTask.subtaskCount = previewTaskData.value.subtasks.length
-    createdTask.subtasks = subtaskIds
-    await taskStore.updateTask(createdTask)
+    // 🆕 如果有待创建的子任务，调用子任务创建逻辑
+    if (pendingSubtasks.value.length > 0) {
+      console.log('检测到子任务，调用 createSubtasksFromPreview')
+      await createSubtasksFromPreview(pendingSubtasks.value)
+      return
+    }
     
-    showNotification(`✅ 成功创建主任务和 ${previewTaskData.value.subtasks.length} 个子任务！`, 'success')
-  } else {
+    // 无子任务，正常创建任务
+    console.log('无子任务，正常创建任务')
+    const task = {
+      text: previewTaskData.value.text,
+      description: previewTaskData.value.description,
+      type: previewTaskData.value.type,
+      category: previewTaskData.value.category,
+      priority: previewTaskData.value.priority,
+      weekdays: previewTaskData.value.weekdays,
+      customDate: previewTaskData.value.customDate,
+      customTime: previewTaskData.value.customTime,
+      enableReminder: previewTaskData.value.enableReminder,
+      reminderTime: previewTaskData.value.reminderTime,
+      forceReminder: previewTaskData.value.forceReminder
+    }
+    
+    console.log('创建任务:', task)
+    const createdTask = await taskStore.addTask(task)
+    console.log('✅ 任务创建成功，ID:', createdTask.id)
+    
     // 如果启用了提醒，调度通知
     if (previewTaskData.value.enableReminder && previewTaskData.value.reminderTime) {
       await scheduleTaskReminder(createdTask)
     }
     
-    showNotification('任务创建成功！', 'success')
+    // 关闭预览
+    showTaskInputPreview.value = false
+    previewTaskData.value = null
+    
+    // 清空输入框
+    quickTaskInput.value = ''
+    tempDescription.value = ''
+    newTaskDescription.value = ''
+    newTaskType.value = 'today'
+    customDateTime.value = ''
+    newTaskCategory.value = 'work'
+    newTaskPriority.value = 'medium'
+    selectedWeekdays.value = []
+    enableReminder.value = false
+    reminderDateTime.value = ''
+    
+    // 清空子任务相关状态
+    showSubtaskSuggestion.value = false
+    detectedSubtasks.value = []
+    
+    // 延迟显示成功提示
+    setTimeout(() => {
+      showNotification('✅ 任务创建成功！', 'success')
+    }, 300)
+    
+    // 更新每日摘要通知
+    await scheduleDailySummaryNotification()
+    
+    console.log('=== 任务保存完成 ===')
+  } catch (error) {
+    console.error('❌ 保存任务失败:', error)
+    showNotification(`❌ 保存失败: ${error.message}`, 'error')
   }
-  
-  // 清空输入框
-  quickTaskInput.value = ''
-  tempDescription.value = ''
-  newTaskDescription.value = ''
-  newTaskType.value = 'today'
-  customDateTime.value = ''
-  newTaskCategory.value = 'work'
-  newTaskPriority.value = 'medium'
-  selectedWeekdays.value = []
-  enableReminder.value = false
-  reminderDateTime.value = ''
-  
-  // 清空子任务相关状态
-  showSubtaskSuggestion.value = false
-  detectedSubtasks.value = []
-  
-  // 关闭预览
-  showTaskInputPreview.value = false
-  previewTaskData.value = null
-  
-  // 更新每日摘要通知
-  await scheduleDailySummaryNotification()
 }
 
 // 🆕 处理预览模式的AI拆分
@@ -5134,16 +5148,134 @@ const handlePreviewSplit = () => {
   showTaskSplitter.value = true
 }
 
-// 🆕 从预览模式创建子任务（不保存父任务，只更新预览数据）
-const createSubtasksFromPreview = (subtasks) => {
-  if (!previewTaskData.value || subtasks.length === 0) return
+// 🆕 从预览模式创建子任务
+// 处理任务详情的通知事件
+const handleTaskNotify = (payload) => {
+  console.log('handleTaskNotify 被调用:', payload)
+  showNotification(payload.message, payload.type)
+}
+
+// 🆕 处理子任务创建事件（根据模式选择不同的处理方式）
+const handleSubtaskCreate = (subtasks) => {
+  console.log('=== handleSubtaskCreate 被调用 ===')
+  console.log('showTaskInputPreview:', showTaskInputPreview.value)
+  console.log('子任务数量:', subtasks.length)
   
-  // 将子任务保存到预览数据中
-  previewTaskData.value.subtasks = subtasks
+  if (showTaskInputPreview.value) {
+    // 预览模式：暂存子任务
+    console.log('调用 storeSubtasksForPreview')
+    storeSubtasksForPreview(subtasks)
+  } else {
+    // 正常模式：立即创建子任务
+    console.log('调用 createSubtasks')
+    createSubtasks(subtasks)
+  }
+}
+
+// 🆕 预览模式中暂存子任务（不立即创建）
+const storeSubtasksForPreview = (subtasks) => {
+  console.log('=== 预览模式暂存子任务 ===')
+  console.log('子任务数量:', subtasks.length)
   
+  // 暂存子任务数据
+  pendingSubtasks.value = subtasks
+  
+  // 关闭AI拆分弹窗
   showTaskSplitter.value = false
   taskToSplit.value = null
-  showNotification(`✅ 已添加 ${subtasks.length} 个子任务到预览`, 'success')
+  
+  // 显示提示
+  showNotification(`✅ 已准备 ${subtasks.length} 个子任务，点击"确认保存"创建`, 'success')
+  
+  console.log('=== 子任务暂存完成，等待用户确认保存 ===')
+}
+
+const createSubtasksFromPreview = async (subtasks) => {
+  console.log('=== 预览模式创建子任务 ===')
+  console.log('子任务数量:', subtasks.length)
+  console.log('子任务数据:', subtasks)
+  
+  if (!previewTaskData.value || subtasks.length === 0) {
+    console.error('❌ previewTaskData为空或子任务为空')
+    return
+  }
+  
+  try {
+    // 1. 先创建父任务
+    console.log('1️⃣ 创建父任务')
+    const parentTask = {
+      text: previewTaskData.value.text,
+      description: previewTaskData.value.description,
+      type: previewTaskData.value.type,
+      category: previewTaskData.value.category,
+      priority: previewTaskData.value.priority,
+      weekdays: previewTaskData.value.weekdays,
+      customDate: previewTaskData.value.customDate,
+      customTime: previewTaskData.value.customTime,
+      enableReminder: previewTaskData.value.enableReminder,
+      reminderTime: previewTaskData.value.reminderTime,
+      forceReminder: previewTaskData.value.forceReminder
+    }
+    
+    const createdParent = await taskStore.addTask(parentTask)
+    console.log('✅ 父任务创建成功，ID:', createdParent.id)
+    
+    // 2. 创建所有子任务
+    console.log('2️⃣ 创建子任务')
+    const now = new Date()
+    const subtaskIds = []
+    
+    for (let i = 0; i < subtasks.length; i++) {
+      const subtask = subtasks[i]
+      const newTask = {
+        id: Date.now() + i,
+        text: subtask.title,
+        description: subtask.description || '',
+        type: 'today',
+        category: createdParent.category,
+        priority: subtask.priority || 'medium',
+        status: 'pending',
+        created_at: now.toISOString(),
+        user_id: taskStore.currentUser,
+        parentTaskId: Number(createdParent.id),
+        estimatedHours: subtask.estimatedHours || 1,
+        waitFor: []
+      }
+      
+      await taskStore.addTask(newTask)
+      subtaskIds.push(newTask.id)
+      console.log(`✅ 子任务 ${i + 1} 创建成功`)
+    }
+    
+    // 3. 更新父任务
+    console.log('3️⃣ 更新父任务')
+    createdParent.hasSplitted = true
+    createdParent.subtaskCount = subtasks.length
+    createdParent.subtasks = subtaskIds
+    await taskStore.updateTask(createdParent)
+    console.log('✅ 父任务更新成功')
+    
+    // 4. 关闭所有弹窗
+    showTaskSplitter.value = false
+    taskToSplit.value = null
+    showTaskInputPreview.value = false
+    previewTaskData.value = null
+    
+    // 5. 清空输入框和子任务状态
+    quickTaskInput.value = ''
+    tempDescription.value = ''
+    newTaskDescription.value = ''
+    pendingSubtasks.value = []  // 🆕 清空待创建子任务列表
+    
+    // 6. 延迟显示成功提示（等待弹窗关闭动画完成）
+    setTimeout(() => {
+      showNotification(`✅ 成功创建主任务和 ${subtasks.length} 个子任务！`, 'success')
+      console.log('=== 子任务创建完成 ===')
+    }, 300)
+  } catch (error) {
+    console.error('❌ 创建子任务失败:', error)
+    showNotification(`❌ 创建失败: ${error.message}`, 'error')
+  }
 }
 
 // 📋 粘贴剪贴板内容
@@ -7170,18 +7302,40 @@ const toggleTaskCompletion = async (taskId) => {
     return
   }
   
+  // 记录当前状态
+  const wasCompleted = task.status === 'completed'
+  
   await taskStore.toggleTaskCompletion(taskId)
+  
   // 完成任务时清除提醒记录和通知
   notifiedTasks.delete(`urgent_${taskId}`)
   notifiedTasks.delete(`overdue_${taskId}`)
   await cancelTaskReminder(taskId)
+  
   // 更新每日摘要通知
   await scheduleDailySummaryNotification()
+  
+  // 显示提示
+  if (wasCompleted) {
+    showNotification('🔄 任务已重新打开', 'success')
+  } else {
+    showNotification('✅ 任务已完成！', 'success')
+  }
 }
 
 // 方法：置顶/取消置顶任务
 const togglePin = async (taskId) => {
+  const task = taskStore.tasks.find(t => t.id === taskId)
+  const wasPinned = task?.pinned
+  
   await taskStore.togglePin(taskId)
+  
+  // 显示提示
+  if (wasPinned) {
+    showNotification('📌 已取消置顶', 'success')
+  } else {
+    showNotification('📌 已置顶任务', 'success')
+  }
 }
 
 // 番茄钟相关方法
@@ -7299,11 +7453,18 @@ const onPomodoroComplete = async () => {
 // 方法：删除任务
 // 切换任务完成状态
 const toggleTaskStatus = async (taskId) => {
+  console.log('toggleTaskStatus 被调用, taskId:', taskId)
   const task = taskStore.tasks.find(t => t.id === taskId)
-  if (!task) return
+  if (!task) {
+    console.log('任务未找到')
+    return
+  }
+  
+  console.log('当前任务状态:', task.status)
   
   if (task.status === 'completed') {
     // 取消完成
+    console.log('取消完成任务')
     task.status = 'pending'
     task.completed_at = null
     
@@ -7312,8 +7473,16 @@ const toggleTaskStatus = async (taskId) => {
     if (deadline && new Date() > deadline) {
       task.status = 'overdue'
     }
+    
+    await taskStore.updateTask(task)
+    await scheduleDailySummaryNotification()
+    
+    // 显示提示
+    console.log('准备显示提示: 🔄 任务已重新打开')
+    showNotification('🔄 任务已重新打开', 'success')
   } else {
     // 标记为完成
+    console.log('标记任务为完成')
     task.status = 'completed'
     task.completed_at = new Date().toISOString()
     
@@ -7321,10 +7490,14 @@ const toggleTaskStatus = async (taskId) => {
     notifiedTasks.delete(`urgent_${taskId}`)
     notifiedTasks.delete(`overdue_${taskId}`)
     await cancelTaskReminder(taskId)
+    
+    await taskStore.updateTask(task)
+    await scheduleDailySummaryNotification()
+    
+    // 显示提示
+    console.log('准备显示提示: ✅ 任务已完成！')
+    showNotification('✅ 任务已完成！', 'success')
   }
-  
-  await taskStore.updateTask(task)
-  await scheduleDailySummaryNotification()
 }
 
 const deleteTask = async (taskId) => {
@@ -7377,14 +7550,14 @@ const undoDelete = async () => {
 // 方法：恢复任务
 const restoreTask = async (taskId) => {
   await taskStore.restoreTask(taskId)
-  showNotification('任务已恢复！', 'success')
+  showNotification('✅ 任务已恢复！', 'success')
 }
 
 // 方法：彻底删除
 const permanentDelete = async (taskId) => {
   if (confirm('确定要永久删除此任务吗？此操作不可撤销。')) {
     await taskStore.permanentDeleteTask(taskId)
-    showNotification('任务已永久删除！', 'error')
+    showNotification('🗑️ 任务已永久删除！', 'error')
   }
 }
 
@@ -7573,7 +7746,7 @@ const saveTaskEdit = async () => {
   })
   
   editingTask.value = null
-  showNotification('任务已更新！', 'success')
+  showNotification('💾 任务已保存！', 'success')
 }
 
 // 方法：退出登录
@@ -10504,7 +10677,9 @@ const calculateDeadline = (task) => {
 // 方法：显示通知
 const emit = defineEmits(['notify'])
 const showNotification = (message, type = 'info') => {
+  console.log('showNotification 被调用:', message, type)
   emit('notify', { message, type })
+  console.log('emit notify 事件已触发')
 }
 
 // 语言切换方法
@@ -10609,6 +10784,7 @@ const handleRefresh = async () => {
 
   setTimeout(() => {
     isRefreshing.value = false
+    showNotification('🔄 已刷新并重置筛选条件', 'success')
   }, 800)
 }
 

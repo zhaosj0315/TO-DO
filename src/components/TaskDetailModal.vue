@@ -605,7 +605,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['close', 'edit', 'refresh', 'split', 'show-loading', 'hide-loading', 'save'])  // 🆕 添加save事件
+const emit = defineEmits(['close', 'edit', 'refresh', 'split', 'show-loading', 'hide-loading', 'save', 'notify'])  // 🆕 添加notify事件
 
 const taskStore = useOfflineTaskStore()
 const showAddLogModal = ref(false)
@@ -683,6 +683,13 @@ const handleSetWaitFor = async (waitForTaskIds) => {
   await taskStore.setWaitFor(props.task.id, waitForTaskIds)
   showWaitForSelector.value = false
   emit('refresh')
+  
+  // 显示提示
+  if (waitForTaskIds.length > 0) {
+    emit('notify', { message: `✅ 已设置 ${waitForTaskIds.length} 个前置任务`, type: 'success' })
+  } else {
+    emit('notify', { message: '✅ 已清除前置任务', type: 'success' })
+  }
 }
 
 const openTaskDetail = (taskId) => {
@@ -1137,6 +1144,9 @@ const handleAddLog = async (logData) => {
   await taskStore.addTaskLog(props.task.id, logData)
   showAddLogModal.value = false
   emit('refresh')
+  
+  // 发送成功提示
+  emit('notify', { message: '✅ 日志已添加', type: 'success' })
 }
 
 // 完成任务
@@ -1152,13 +1162,28 @@ const handleComplete = async () => {
     return
   }
   
-  if (confirm('确定要标记任务为已完成吗？')) {
+  console.log('准备弹出确认对话框')
+  const confirmed = confirm('确定要标记任务为已完成吗？')
+  console.log('用户确认结果:', confirmed)
+  
+  if (confirmed) {
+    console.log('开始更新任务状态')
     await taskStore.updateTask(props.task.id, { 
       status: 'completed',
       completed_at: new Date().toISOString()
     })
-    emit('close')
-    emit('refresh')
+    console.log('任务状态更新完成')
+    
+    // 先发送通知事件（在关闭弹窗之前）
+    console.log('发送 notify 事件: ✅ 任务已完成！')
+    emit('notify', { message: '✅ 任务已完成！', type: 'success' })
+    
+    // 延迟关闭弹窗，确保通知事件被处理
+    setTimeout(() => {
+      console.log('关闭弹窗')
+      emit('close')
+      emit('refresh')
+    }, 100)
   }
 }
 
@@ -1167,9 +1192,16 @@ const handleDelete = async () => {
   console.log('handleDelete called')
   if (confirm('确定要删除这个任务吗？')) {
     const taskId = props.task.id
-    emit('close') // 先关闭弹窗
-    await taskStore.deleteTask(taskId) // 再删除任务
-    emit('refresh')
+    
+    // 先发送通知事件
+    emit('notify', { message: '🗑️ 任务已移至回收站', type: 'success' })
+    
+    // 延迟关闭弹窗和删除任务
+    setTimeout(async () => {
+      emit('close')
+      await taskStore.deleteTask(taskId)
+      emit('refresh')
+    }, 100)
   }
 }
 

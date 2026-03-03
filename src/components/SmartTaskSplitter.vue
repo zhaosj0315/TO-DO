@@ -230,11 +230,19 @@ const getPriorityText = (priority) => {
 
 // 创建子任务
 const createSubtasks = () => {
-  if (subtasks.value.length === 0) return
+  console.log('SmartTaskSplitter - createSubtasks 被调用')
+  console.log('子任务数量:', subtasks.value.length)
   
+  if (subtasks.value.length === 0) {
+    console.log('子任务为空，返回')
+    return
+  }
+  
+  console.log('触发 create 事件，子任务数据:', subtasks.value)
   emit('create', subtasks.value)
   emit('confirm', subtasks.value)
   emit('close')
+  console.log('SmartTaskSplitter - 事件已触发')
 }
 
 // 重置状态

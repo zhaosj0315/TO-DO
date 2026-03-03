@@ -279,53 +279,80 @@ export async function manualBackup() {
       };
     } else {
       // 移动端环境：使用 Filesystem API
-      // 1. 保存JSON格式
-      const jsonContent = JSON.stringify(data, null, 2);
-      const jsonFileName = `TODO-App_backup_${today}_${timestamp}.json`;
-      await Filesystem.writeFile({
-        path: `TODO-App-backups/${jsonFileName}`,
-        data: jsonContent,
-        directory: Directory.Documents,
-        recursive: true
-      });
+      console.log('📱 移动端备份开始...');
       
-      // 2. 生成Excel格式
-      const { value: usersStr } = await Preferences.get({ key: 'users' });
-      const excelData = [];
-      
-      if (usersStr) {
-        const users = JSON.parse(usersStr);
-        for (const username in users) {
-          const { value: tasksStr } = await Preferences.get({ key: `tasks_${username}` });
-          if (tasksStr) {
-            const tasks = JSON.parse(tasksStr);
-            tasks.forEach(task => {
-              excelData.push(taskToExcelRow({ ...task, user_id: username }, true));
-            });
+      try {
+        // 1. 保存JSON格式
+        console.log('1️⃣ 准备保存JSON...');
+        const jsonContent = JSON.stringify(data, null, 2);
+        const jsonFileName = `TODO-App_backup_${today}_${timestamp}.json`;
+        
+        console.log(`JSON文件名: ${jsonFileName}`);
+        console.log(`JSON大小: ${(jsonContent.length / 1024).toFixed(2)} KB`);
+        
+        await Filesystem.writeFile({
+          path: `TODO-App-backups/${jsonFileName}`,
+          data: jsonContent,
+          directory: Directory.Documents,
+          encoding: 'utf8',
+          recursive: true
+        });
+        
+        console.log('✅ JSON保存成功');
+        
+        // 2. 生成Excel格式
+        console.log('2️⃣ 准备生成Excel...');
+        const { value: usersStr } = await Preferences.get({ key: 'users' });
+        const excelData = [];
+        
+        if (usersStr) {
+          const users = JSON.parse(usersStr);
+          for (const username in users) {
+            const { value: tasksStr } = await Preferences.get({ key: `tasks_${username}` });
+            if (tasksStr) {
+              const tasks = JSON.parse(tasksStr);
+              tasks.forEach(task => {
+                excelData.push(taskToExcelRow({ ...task, user_id: username }, true));
+              });
+            }
           }
         }
+        
+        console.log(`Excel任务数量: ${excelData.length}`);
+        
+        const ws = XLSX.utils.json_to_sheet(excelData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, '任务数据');
+        
+        const excelBuffer = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
+        const excelFileName = `TODO-App_backup_${today}_${timestamp}.xlsx`;
+        
+        console.log(`Excel文件名: ${excelFileName}`);
+        
+        await Filesystem.writeFile({
+          path: `TODO-App-backups/${excelFileName}`,
+          data: excelBuffer,
+          directory: Directory.Documents,
+          recursive: true
+        });
+        
+        console.log('✅ Excel保存成功');
+        
+        return { 
+          success: true, 
+          jsonFile: jsonFileName, 
+          excelFile: excelFileName,
+          taskCount: excelData.length
+        };
+      } catch (mobileError) {
+        console.error('❌ 移动端备份失败:', mobileError);
+        console.error('错误详情:', {
+          message: mobileError.message,
+          code: mobileError.code,
+          stack: mobileError.stack
+        });
+        throw mobileError;
       }
-      
-      const ws = XLSX.utils.json_to_sheet(excelData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, '任务数据');
-      
-      const excelBuffer = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
-      const excelFileName = `TODO-App_backup_${today}_${timestamp}.xlsx`;
-      
-      await Filesystem.writeFile({
-        path: `TODO-App-backups/${excelFileName}`,
-        data: excelBuffer,
-        directory: Directory.Documents,
-        recursive: true
-      });
-      
-      return { 
-        success: true, 
-        jsonFile: jsonFileName, 
-        excelFile: excelFileName,
-        taskCount: excelData.length
-      };
     }
   } catch (error) {
     console.error('手动备份失败:', error);

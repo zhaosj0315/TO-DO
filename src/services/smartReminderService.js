@@ -168,13 +168,24 @@ export class SmartReminderService {
   }
 
   /**
-   * 发送卡壳任务提醒
+   * 发送卡壳任务提醒（防重复）
    */
   static async notifyStuckTasks(stuckTasks) {
     if (stuckTasks.length === 0) return
 
     const task = stuckTasks[0] // 只提醒第一个
     
+    // 🔧 防重复提醒：检查今天是否已经提醒过这个任务
+    const today = new Date().toISOString().split('T')[0] // 格式: 2026-03-03
+    const lastNotifyKey = `stuck_task_notify_${task.id}`
+    const lastNotifyDate = localStorage.getItem(lastNotifyKey)
+    
+    if (lastNotifyDate === today) {
+      console.log(`任务 "${task.text}" 今天已提醒过，跳过`)
+      return
+    }
+    
+    // 发送通知
     await LocalNotifications.schedule({
       notifications: [{
         id: 2000 + Math.floor(Math.random() * 1000),
@@ -186,6 +197,9 @@ export class SmartReminderService {
         }
       }]
     })
+    
+    // 记录今天已提醒
+    localStorage.setItem(lastNotifyKey, today)
   }
 
   /**
@@ -229,12 +243,21 @@ export class SmartReminderService {
   }
 
   /**
-   * 发送习惯养成鼓励
+   * 发送习惯养成鼓励（防重复）
    */
   static async notifyStreakMilestone(streak) {
     const milestones = [7, 30, 100, 365]
     
     if (!milestones.includes(streak)) return
+
+    // 🔧 防重复提醒：检查这个里程碑是否已经提醒过
+    const milestoneKey = `streak_milestone_${streak}`
+    const hasNotified = localStorage.getItem(milestoneKey)
+    
+    if (hasNotified === 'true') {
+      console.log(`连续${streak}天里程碑已提醒过，跳过`)
+      return
+    }
 
     const messages = {
       7: '🎉 连续完成7天！习惯正在养成！',
@@ -254,6 +277,9 @@ export class SmartReminderService {
         }
       }]
     })
+    
+    // 记录已提醒
+    localStorage.setItem(milestoneKey, 'true')
   }
 
   /**

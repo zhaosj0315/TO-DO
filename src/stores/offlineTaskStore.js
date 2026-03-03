@@ -232,6 +232,25 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         const oldReminder = { enableReminder: task.enableReminder, reminderTime: task.reminderTime }
         Object.assign(task, updates)
         
+        // 🔧 如果修改了任务类型、日期或时间，重新评估任务状态
+        if (updates.type || updates.customDate || updates.customTime || updates.weekdays) {
+          // 只有待办和逾期状态的任务需要重新评估（已完成的不变）
+          if (task.status === 'pending' || task.status === 'overdue') {
+            const deadline = this.calculateDeadline(task)
+            const now = new Date()
+            
+            if (deadline) {
+              // 如果截止时间还没到，改为待办
+              if (now <= deadline) {
+                task.status = 'pending'
+              } else {
+                // 如果截止时间已过，改为逾期
+                task.status = 'overdue'
+              }
+            }
+          }
+        }
+        
         // 如果提醒设置有变化，重新安排
         if (oldReminder.enableReminder !== task.enableReminder || oldReminder.reminderTime !== task.reminderTime) {
           await this.cancelTaskReminder(taskId)
@@ -440,13 +459,21 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       let hasChanges = false
       
       this.tasks.forEach(task => {
-        // 处理"今天"类型任务的逾期
-        if (task.type === 'today' && task.status !== 'completed') {
-          const created = new Date(task.created_at)
-          const endOfDay = new Date(created.getFullYear(), created.getMonth(), created.getDate(), 23, 59, 59)
-          if (now > endOfDay && task.status !== 'overdue') {
-            task.status = 'overdue'
-            hasChanges = true
+        // 🔧 检查所有未完成任务是否逾期（不仅仅是"今天"类型）
+        if (task.status !== 'completed') {
+          const deadline = this.calculateDeadline(task)
+          
+          if (deadline) {
+            // 如果截止时间已过，标记为逾期
+            if (now > deadline && task.status !== 'overdue') {
+              task.status = 'overdue'
+              hasChanges = true
+            }
+            // 如果截止时间还没到，但状态是逾期，改为待办
+            else if (now <= deadline && task.status === 'overdue') {
+              task.status = 'pending'
+              hasChanges = true
+            }
           }
         }
         

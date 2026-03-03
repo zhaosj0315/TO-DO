@@ -4,9 +4,14 @@
       <!-- 左侧历史记录 -->
       <div class="chat-sidebar" :class="{ 'sidebar-collapsed': !showSidebar }">
         <div class="sidebar-header">
-          <button class="btn-new-chat" @click="createNewChat">
-            ➕ 新对话
-          </button>
+          <div class="sidebar-header-top">
+            <button class="toggle-sidebar-btn" @click="showSidebar = !showSidebar" title="展开/收起历史记录">
+              {{ showSidebar ? '◀' : '▶' }}
+            </button>
+            <button class="btn-new-chat" @click="createNewChat">
+              ➕ 新对话
+            </button>
+          </div>
           <div class="search-box">
             <input 
               v-model="searchQuery" 
@@ -43,9 +48,6 @@
       <!-- 右侧对话区域 -->
       <div class="chat-main">
         <div class="ai-chat-header">
-          <button class="toggle-sidebar-btn" @click="showSidebar = !showSidebar">
-            {{ showSidebar ? '◀' : '▶' }}
-          </button>
           <button class="back-btn" @click="$emit('close')">
             <span>← 返回</span>
           </button>
@@ -1486,8 +1488,34 @@ const getPriorityLabel = (priority) => {
 }
 
 .chat-sidebar.sidebar-collapsed {
-  width: 0;
-  overflow: hidden;
+  width: 60px;
+  min-width: 60px;
+}
+
+.chat-sidebar.sidebar-collapsed .search-box,
+.chat-sidebar.sidebar-collapsed .sidebar-list {
+  display: none;
+}
+
+/* 收起状态下，按钮垂直排列 */
+.chat-sidebar.sidebar-collapsed .sidebar-header-top {
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.chat-sidebar.sidebar-collapsed .sidebar-header {
+  padding: 1rem 0.5rem;
+}
+
+/* 收起状态下，新对话按钮只显示图标 */
+.chat-sidebar.sidebar-collapsed .btn-new-chat {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .sidebar-header {
@@ -1495,8 +1523,38 @@ const getPriorityLabel = (priority) => {
   border-bottom: 1px solid #e0e0e0;
 }
 
+.sidebar-header-top {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+/* 收起状态下，按钮居中显示 */
+.chat-sidebar.sidebar-collapsed .sidebar-header-top {
+  justify-content: center;
+  margin-bottom: 0;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.chat-sidebar.sidebar-collapsed .sidebar-header {
+  padding: 0.75rem 0.5rem;
+}
+
+/* 收起状态下，新对话按钮只显示图标 */
+.chat-sidebar.sidebar-collapsed .btn-new-chat {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .btn-new-chat {
-  width: 100%;
+  flex: 1;
   padding: 0.75rem;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
@@ -1506,7 +1564,6 @@ const getPriorityLabel = (priority) => {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
-  margin-bottom: 0.75rem;
 }
 
 .btn-new-chat:hover {
@@ -1652,19 +1709,21 @@ const getPriorityLabel = (priority) => {
 }
 
 .toggle-sidebar-btn {
-  width: 36px;
-  height: 36px;
-  background: rgba(255, 255, 255, 0.2);
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
   border-radius: 8px;
   color: white;
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 
 .toggle-sidebar-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .ai-chat-header {
