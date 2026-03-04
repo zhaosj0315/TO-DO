@@ -11174,6 +11174,14 @@ const autoGenerateReports = async () => {
   try {
     const { AIReportGenerator } = await import('../services/aiReportGenerator')
     const now = new Date()
+    const todayStr = now.toISOString().split('T')[0]
+    
+    // ========== 检查今天是否已经提醒过 ==========
+    const lastNotifyDate = localStorage.getItem('last_report_notify_date')
+    if (lastNotifyDate === todayStr) {
+      console.log('今天已经提醒过报告，跳过')
+      return
+    }
     
     // ========== 昨天的日期 ==========
     const yesterday = new Date(now)
@@ -11412,6 +11420,10 @@ const autoGenerateReports = async () => {
     
     // 保存更新后的历史
     localStorage.setItem('weekly_reports', JSON.stringify(history))
+    
+    // 记录今天已经提醒过
+    localStorage.setItem('last_report_notify_date', todayStr)
+    console.log('✅ 报告生成完成，已记录提醒日期:', todayStr)
   } catch (error) {
     console.error('❌ 自动生成报告失败:', error)
   }

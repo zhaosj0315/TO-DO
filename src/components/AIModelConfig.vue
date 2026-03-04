@@ -85,8 +85,8 @@
             
             <!-- 加载/错误/测试结果 -->
             <div v-if="fetchingModels" class="status-hint loading">🔄 正在获取可用模型...</div>
-            <div v-if="fetchError" class="status-hint error">⚠️ {{ fetchError }}</div>
-            <div v-if="testResult" :class="['status-hint', testResult.success ? 'success' : 'error']">
+            <div v-if="fetchError && !fetchingModels" class="status-hint error">⚠️ {{ fetchError }}</div>
+            <div v-if="testResult && !testing && !fetchingModels" :class="['status-hint', testResult.success ? 'success' : 'error']">
               {{ testResult.message }}
             </div>
             
@@ -558,13 +558,21 @@ const testAllModels = async () => {
 // 测试模型连接（通用方法）
 const testModelConnection = async (model) => {
   try {
-    let apiUrl = model.url
+    // 从厂商配置获取完整信息
+    const providerConfig = providerConfigs.value.find(p => p.id === model.providerId)
+    
+    let apiUrl = providerConfig?.url || model.url
+    const apiKey = providerConfig?.apiKey || model.apiKey
     const modelName = model.modelName || model.name
+    
+    console.log('测试模型:', modelName, '原始URL:', apiUrl, '类型:', model.type, 'API Key:', apiKey ? '已配置' : '未配置')
     
     if (model.type === 'local') {
       if (!apiUrl.includes('/api/generate')) {
         apiUrl = apiUrl.replace(/\/$/, '') + '/api/generate'
       }
+      
+      console.log('最终URL (Ollama):', apiUrl)
       
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -576,25 +584,26 @@ const testModelConnection = async (model) => {
         })
       })
       
+      console.log('测试结果:', response.ok, response.status)
       return { success: response.ok }
     } else {
-      // 先规范化URL：移除末尾斜杠和已有的API路径
+      // OpenAI 兼容 API
+      // 确保 URL 是基础 URL（不包含 /v1/ 或其他路径）
       let baseUrl = apiUrl
       
-      // 如果包含 /v1/，提取基础URL
-      if (baseUrl.includes('/v1/')) {
-        baseUrl = baseUrl.split('/v1/')[0]
-      }
-      
-      // 移除末尾斜杠
-      baseUrl = baseUrl.replace(/\/$/, '')
+      // 移除所有可能的 API 路径后缀
+      baseUrl = baseUrl.replace(/\/v1\/.*$/, '')  // 移除 /v1/xxx
+      baseUrl = baseUrl.replace(/\/v1\/?$/, '')   // 移除 /v1 或 /v1/
+      baseUrl = baseUrl.replace(/\/$/, '')        // 移除末尾斜杠
       
       // 构造完整URL
       apiUrl = baseUrl + '/v1/chat/completions'
       
+      console.log('最终URL (OpenAI):', apiUrl)
+      
       const headers = { 'Content-Type': 'application/json' }
-      if (model.apiKey) {
-        headers['Authorization'] = `Bearer ${model.apiKey}`
+      if (apiKey) {
+        headers['Authorization'] = `Bearer ${apiKey}`
       }
       
       const response = await fetch(apiUrl, {
@@ -607,9 +616,12 @@ const testModelConnection = async (model) => {
         })
       })
       
+      console.log('测试结果:', response.ok, response.status)
+      
       return { success: response.ok }
     }
   } catch (error) {
+    console.error('测试失败:', error)
     return { success: false, error: error.message }
   }
 }
@@ -696,6 +708,7 @@ const testConnection = async () => {
       
       if (response.ok) {
         const data = await response.json()
+        console.log('✅ 测试成功:', data)
         testResult.value = { success: true, message: '✅ 连接成功！模型响应正常' }
       } else {
         throw new Error(`HTTP ${response.status}`)
@@ -737,6 +750,7 @@ const testConnection = async () => {
       
       if (response.ok) {
         const data = await response.json()
+        console.log('✅ 测试成功:', data)
         testResult.value = { success: true, message: '✅ 连接成功！模型响应正常' }
       } else {
         const errorData = await response.json().catch(() => ({}))
@@ -744,10 +758,11 @@ const testConnection = async () => {
       }
     }
   } catch (error) {
-    console.error('测试连接失败:', error)
+    console.error('❌ 测试连接失败:', error)
     testResult.value = { success: false, message: `❌ 连接失败: ${error.message}` }
   } finally {
     testing.value = false
+    console.log('测试结果:', testResult.value)
   }
 }
 
@@ -1439,21 +1454,39 @@ const deleteModel = (index) => {
   border-radius: 8px;
   font-size: 0.9rem;
   text-align: center;
+  margin: 0.5rem 0;
+  font-weight: 500;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .status-hint.loading {
   background: #e3f2fd;
   color: #1976d2;
+  border: 1px solid #90caf9;
 }
 
 .status-hint.error {
   background: #ffebee;
   color: #d32f2f;
+  border: 1px solid #ef5350;
 }
 
 .status-hint.success {
   background: #e8f5e9;
   color: #2e7d32;
+  border: 2px solid #4caf50;
+  font-weight: 600;
 }
 
 .action-buttons {
