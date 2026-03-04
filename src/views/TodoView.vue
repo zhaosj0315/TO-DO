@@ -4706,23 +4706,42 @@ const batchDeleteReports = () => {
 const showVersionModal = ref(false) // 版本历史弹窗
 const versionHistory = ref([]) // 版本历史列表
 const hasUnreadVersions = ref(false) // 是否有未读版本
-const CURRENT_VERSION = '0.7.10' // 当前应用版本
+const CURRENT_VERSION = '0.7.11' // 当前应用版本
 const versionModalTitle = ref('🎉 版本更新') // 弹窗标题（动态）
 
 // 版本历史数据
 const initVersionHistory = () => {
   versionHistory.value = [
     {
+      version: '0.7.11',
+      date: '2026-03-04',
+      features: [
+        '🤖 自动报告生成系统：每天自动生成昨天的日报，无需手动操作',
+        '📅 智能周期报告：每周一生成上周周报，每月1号生成上月月报',
+        '📊 完整报告体系：自动生成季报（每季度首日）、半年报（1/1和7/1）、年报（1/1）',
+        '🔔 报告生成通知：每次生成报告后自动通知用户，显示具体日期范围'
+      ],
+      improvements: [
+        '📝 报告周期优化：上半年（1-6月）、下半年（7-12月）逻辑修正',
+        '🎯 智能去重：检查历史记录，避免重复生成同一时段的报告',
+        '💾 自动保存：所有自动生成的报告完整保存到报告历史',
+        '📈 数据完整性：包含结构化数据和纯文本内容，支持查看和导出'
+      ],
+      fixes: []
+    },
+    {
       version: '0.7.10',
-      date: '2026-03-03',
+      date: '2026-03-04',
       features: [
         '📊 报告系统全面优化：恢复完整11章节结构（智能总结、数据概览、完成任务明细等）',
         '📅 动态章节标题：根据报告类型自动调整（日报→今日/周报→本周/月报→本月等）',
         '💾 报告自动保存：生成后自动保存到历史，包含完整结构化数据',
-        '📈 支持7种报告类型：日报/周报/月报/季报/半年报/年报/自定义报告'
+        '📈 支持7种报告类型：日报/周报/月报/季报/半年报/年报/区间报告'
       ],
       improvements: [
         '🔄 今日规划融入AI助手：删除右上角独立按钮，统一通过AI助手（🤖）→"📅 今日规划"使用',
+        '📝 命名优化："自定义报告"改为"区间报告"（更准确表达功能）',
+        '🎓 演示模式更新：适配最新功能调整（AI助手、报告系统、命名优化）',
         '🗑️ 删除冗余功能：删除"快速生成周报"入口、模板选择系统、无效配置项',
         '🔧 "周报历史"改名为"报告历史"',
         '⏰ 时间节点计算修复：根据报告类型动态计算',
@@ -4730,6 +4749,10 @@ const initVersionHistory = () => {
         '🧹 代码清理：删除 DailyPlanModal 组件及相关变量、函数、样式'
       ],
       fixes: [
+        '修复报告历史内容为空：保存时格式化为纯文本',
+        '修复查看历史报告显示空白：使用reportData结构化数据',
+        '修复报告显示格式：显示displayText而不是原始对象',
+        '修复本周进展显示：支持header/item结构',
         '修复日报/周报模板无效（生效率从71.4%提升到100%）',
         '修复月报显示"本周进展"（现在正确显示"本月进展"）',
         '修复时间节点计算错误（所有类型都错误使用"月"概念）',
@@ -11146,6 +11169,326 @@ watch(enableReminder, (newVal) => {
   }
 })
 
+// 自动生成日报和周报
+const autoGenerateReports = async () => {
+  try {
+    const { AIReportGenerator } = await import('../services/aiReportGenerator')
+    const now = new Date()
+    
+    // ========== 昨天的日期 ==========
+    const yesterday = new Date(now)
+    yesterday.setDate(now.getDate() - 1)
+    const yesterdayStr = yesterday.toISOString().split('T')[0]
+    
+    // ========== 上周的日期范围（上周一到上周日）==========
+    const lastWeekEnd = new Date(now)
+    lastWeekEnd.setDate(now.getDate() - now.getDay())
+    if (now.getDay() !== 0) {
+      lastWeekEnd.setDate(lastWeekEnd.getDate() - 7)
+    }
+    lastWeekEnd.setDate(lastWeekEnd.getDate() - 1)
+    
+    const lastWeekStart = new Date(lastWeekEnd)
+    lastWeekStart.setDate(lastWeekEnd.getDate() - 6)
+    const lastWeekStartStr = lastWeekStart.toISOString().split('T')[0]
+    
+    // ========== 上个月的日期范围 ==========
+    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0) // 上月最后一天
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1) // 上月第一天
+    const lastMonthStartStr = lastMonthStart.toISOString().split('T')[0]
+    
+    // ========== 上个季度的日期范围 ==========
+    const currentQuarter = Math.floor(now.getMonth() / 3) // 0,1,2,3
+    const lastQuarterEndMonth = currentQuarter * 3 - 1 // 上季度最后一个月
+    const lastQuarterStartMonth = lastQuarterEndMonth - 2 // 上季度第一个月
+    
+    const lastQuarterStart = new Date(now.getFullYear(), lastQuarterStartMonth, 1)
+    const lastQuarterEnd = new Date(now.getFullYear(), lastQuarterEndMonth + 1, 0)
+    
+    // 如果上季度在去年
+    if (lastQuarterStartMonth < 0) {
+      lastQuarterStart.setFullYear(now.getFullYear() - 1)
+      lastQuarterStart.setMonth(lastQuarterStartMonth + 12)
+      lastQuarterEnd.setFullYear(now.getFullYear() - 1)
+      lastQuarterEnd.setMonth(lastQuarterEndMonth + 13, 0)
+    }
+    const lastQuarterStartStr = lastQuarterStart.toISOString().split('T')[0]
+    
+    // ========== 上半年的日期范围 ==========
+    const currentHalf = now.getMonth() < 6 ? 0 : 1 // 0=上半年, 1=下半年
+    const lastHalfStart = currentHalf === 0 
+      ? new Date(now.getFullYear() - 1, 6, 1)   // 去年7月1日（下半年）
+      : new Date(now.getFullYear(), 0, 1)       // 今年1月1日（上半年）
+    const lastHalfEnd = currentHalf === 0
+      ? new Date(now.getFullYear() - 1, 11, 31) // 去年12月31日（下半年）
+      : new Date(now.getFullYear(), 5, 30)      // 今年6月30日（上半年）
+    const lastHalfStartStr = lastHalfStart.toISOString().split('T')[0]
+    
+    // ========== 去年的日期范围 ==========
+    const lastYearStart = new Date(now.getFullYear() - 1, 0, 1)
+    const lastYearEnd = new Date(now.getFullYear() - 1, 11, 31)
+    const lastYearStartStr = lastYearStart.toISOString().split('T')[0]
+    
+    // 获取历史报告
+    const history = JSON.parse(localStorage.getItem('weekly_reports') || '[]')
+    
+    // 检查是否已生成各类报告
+    const hasYesterdayDaily = history.some(r => 
+      r.reportType === 'daily' && r.period.includes(yesterdayStr)
+    )
+    const hasLastWeekly = history.some(r => 
+      r.reportType === 'weekly' && r.period.includes(lastWeekStartStr)
+    )
+    const hasLastMonthly = history.some(r => 
+      r.reportType === 'monthly' && r.period.includes(lastMonthStartStr)
+    )
+    const hasLastQuarterly = history.some(r => 
+      r.reportType === 'quarterly' && r.period.includes(lastQuarterStartStr)
+    )
+    const hasLastHalfyearly = history.some(r => 
+      r.reportType === 'halfyearly' && r.period.includes(lastHalfStartStr)
+    )
+    const hasLastYearly = history.some(r => 
+      r.reportType === 'yearly' && r.period.includes(lastYearStartStr)
+    )
+    
+    const generator = new AIReportGenerator(taskStore.tasks)
+    
+    // ========== 每天生成昨天的日报 ==========
+    if (!hasYesterdayDaily) {
+      const dayStart = new Date(yesterday)
+      dayStart.setHours(0, 0, 0, 0)
+      const dayEnd = new Date(yesterday)
+      dayEnd.setHours(23, 59, 59, 999)
+      
+      const dailyReport = generator.generateReport(dayStart, dayEnd, 'daily', 'work')
+      
+      history.unshift({
+        id: Date.now(),
+        reportType: 'daily',
+        title: `日报 - ${dailyReport.period.start} 至 ${dailyReport.period.end}`,
+        period: `${dailyReport.period.start} 至 ${dailyReport.period.end}`,
+        content: formatReportAsText(dailyReport, 'daily'),
+        reportData: dailyReport,
+        taskCount: dailyReport.completionStats.total,
+        completedCount: dailyReport.completionStats.completed,
+        createdAt: now.toISOString()
+      })
+      console.log('✅ 自动生成昨天的日报')
+      
+      // 通知用户
+      showNotification(`📝 已为您生成昨天的日报（${dailyReport.period.start}）`, 'success')
+    }
+    
+    // ========== 每周一生成上周的周报 ==========
+    if (!hasLastWeekly && now.getDay() === 1) {
+      const weekStart = new Date(lastWeekStart)
+      weekStart.setHours(0, 0, 0, 0)
+      const weekEnd = new Date(lastWeekEnd)
+      weekEnd.setHours(23, 59, 59, 999)
+      
+      const weeklyReport = generator.generateReport(weekStart, weekEnd, 'weekly', 'work')
+      
+      history.unshift({
+        id: Date.now() + 1,
+        reportType: 'weekly',
+        title: `周报 - ${weeklyReport.period.start} 至 ${weeklyReport.period.end}`,
+        period: `${weeklyReport.period.start} 至 ${weeklyReport.period.end}`,
+        content: formatReportAsText(weeklyReport, 'weekly'),
+        reportData: weeklyReport,
+        taskCount: weeklyReport.completionStats.total,
+        completedCount: weeklyReport.completionStats.completed,
+        createdAt: now.toISOString()
+      })
+      console.log('✅ 自动生成上周的周报')
+      
+      // 通知用户
+      showNotification(`📅 已为您生成上周的周报（${weeklyReport.period.start} 至 ${weeklyReport.period.end}）`, 'success')
+    }
+    
+    // ========== 每月1号生成上个月的月报 ==========
+    if (!hasLastMonthly && now.getDate() === 1) {
+      const monthStart = new Date(lastMonthStart)
+      monthStart.setHours(0, 0, 0, 0)
+      const monthEnd = new Date(lastMonthEnd)
+      monthEnd.setHours(23, 59, 59, 999)
+      
+      const monthlyReport = generator.generateReport(monthStart, monthEnd, 'monthly', 'work')
+      
+      history.unshift({
+        id: Date.now() + 2,
+        reportType: 'monthly',
+        title: `月报 - ${monthlyReport.period.start} 至 ${monthlyReport.period.end}`,
+        period: `${monthlyReport.period.start} 至 ${monthlyReport.period.end}`,
+        content: formatReportAsText(monthlyReport, 'monthly'),
+        reportData: monthlyReport,
+        taskCount: monthlyReport.completionStats.total,
+        completedCount: monthlyReport.completionStats.completed,
+        createdAt: now.toISOString()
+      })
+      console.log('✅ 自动生成上个月的月报')
+      
+      // 通知用户
+      showNotification(`📊 已为您生成上月的月报（${monthlyReport.period.start} 至 ${monthlyReport.period.end}）`, 'success')
+    }
+    
+    // ========== 每季度第一天生成上季度的季报 ==========
+    if (!hasLastQuarterly && now.getDate() === 1 && now.getMonth() % 3 === 0) {
+      const quarterStart = new Date(lastQuarterStart)
+      quarterStart.setHours(0, 0, 0, 0)
+      const quarterEnd = new Date(lastQuarterEnd)
+      quarterEnd.setHours(23, 59, 59, 999)
+      
+      const quarterlyReport = generator.generateReport(quarterStart, quarterEnd, 'quarterly', 'work')
+      
+      history.unshift({
+        id: Date.now() + 3,
+        reportType: 'quarterly',
+        title: `季报 - ${quarterlyReport.period.start} 至 ${quarterlyReport.period.end}`,
+        period: `${quarterlyReport.period.start} 至 ${quarterlyReport.period.end}`,
+        content: formatReportAsText(quarterlyReport, 'quarterly'),
+        reportData: quarterlyReport,
+        taskCount: quarterlyReport.completionStats.total,
+        completedCount: quarterlyReport.completionStats.completed,
+        createdAt: now.toISOString()
+      })
+      console.log('✅ 自动生成上季度的季报')
+      
+      // 通知用户
+      showNotification(`📈 已为您生成上季度的季报（${quarterlyReport.period.start} 至 ${quarterlyReport.period.end}）`, 'success')
+    }
+    
+    // ========== 每半年第一天生成上半年的半年报 ==========
+    if (!hasLastHalfyearly && now.getDate() === 1 && (now.getMonth() === 0 || now.getMonth() === 6)) {
+      const halfStart = new Date(lastHalfStart)
+      halfStart.setHours(0, 0, 0, 0)
+      const halfEnd = new Date(lastHalfEnd)
+      halfEnd.setHours(23, 59, 59, 999)
+      
+      const halfyearlyReport = generator.generateReport(halfStart, halfEnd, 'halfyearly', 'work')
+      
+      history.unshift({
+        id: Date.now() + 4,
+        reportType: 'halfyearly',
+        title: `半年报 - ${halfyearlyReport.period.start} 至 ${halfyearlyReport.period.end}`,
+        period: `${halfyearlyReport.period.start} 至 ${halfyearlyReport.period.end}`,
+        content: formatReportAsText(halfyearlyReport, 'halfyearly'),
+        reportData: halfyearlyReport,
+        taskCount: halfyearlyReport.completionStats.total,
+        completedCount: halfyearlyReport.completionStats.completed,
+        createdAt: now.toISOString()
+      })
+      console.log('✅ 自动生成上半年的半年报')
+      
+      // 通知用户
+      showNotification(`📆 已为您生成上半年的半年报（${halfyearlyReport.period.start} 至 ${halfyearlyReport.period.end}）`, 'success')
+    }
+    
+    // ========== 每年1月1日生成去年的年报 ==========
+    if (!hasLastYearly && now.getMonth() === 0 && now.getDate() === 1) {
+      const yearStart = new Date(lastYearStart)
+      yearStart.setHours(0, 0, 0, 0)
+      const yearEnd = new Date(lastYearEnd)
+      yearEnd.setHours(23, 59, 59, 999)
+      
+      const yearlyReport = generator.generateReport(yearStart, yearEnd, 'yearly', 'work')
+      
+      history.unshift({
+        id: Date.now() + 5,
+        reportType: 'yearly',
+        title: `年报 - ${yearlyReport.period.start} 至 ${yearlyReport.period.end}`,
+        period: `${yearlyReport.period.start} 至 ${yearlyReport.period.end}`,
+        content: formatReportAsText(yearlyReport, 'yearly'),
+        reportData: yearlyReport,
+        taskCount: yearlyReport.completionStats.total,
+        completedCount: yearlyReport.completionStats.completed,
+        createdAt: now.toISOString()
+      })
+      console.log('✅ 自动生成去年的年报')
+      
+      // 通知用户
+      showNotification(`🎯 已为您生成去年的年报（${yearlyReport.period.start} 至 ${yearlyReport.period.end}）`, 'success')
+    }
+    
+    // 保存更新后的历史
+    localStorage.setItem('weekly_reports', JSON.stringify(history))
+  } catch (error) {
+    console.error('❌ 自动生成报告失败:', error)
+  }
+}
+
+// 格式化报告为纯文本（复用handleReportGenerated中的逻辑）
+const formatReportAsText = (report, type) => {
+  const typeMap = {
+    daily: '日报',
+    weekly: '周报',
+    monthly: '月报',
+    quarterly: '季报',
+    halfyearly: '半年报',
+    yearly: '年报',
+    custom: '区间报告'
+  }
+  
+  let text = `📝 ${typeMap[type] || '报告'} - ${report.period.start} 至 ${report.period.end}\n\n`
+  
+  if (report.summary) {
+    text += `📝 智能总结\n${report.summary}\n\n`
+  }
+  
+  if (report.overview) {
+    text += `📊 数据概览\n`
+    text += `完成任务：${report.overview.totalTasks}个\n`
+    text += `高优先级：${report.overview.highPriority}个\n`
+    text += `番茄钟：${report.overview.pomodoros}个\n`
+    text += `💼 工作：${report.overview.workTasks}个\n`
+    text += `📚 学习：${report.overview.studyTasks}个\n`
+    text += `🏠 生活：${report.overview.lifeTasks}个\n\n`
+  }
+  
+  if (report.completedTasks && report.completedTasks.length > 0) {
+    text += `✅ 完成任务明细\n`
+    report.completedTasks.forEach((task, index) => {
+      text += `${index + 1}. ${task.text}`
+      if (task.priority === 'high') text += ' ⭐'
+      if (task.category) text += ` [${task.category}]`
+      text += '\n'
+    })
+    text += '\n'
+  }
+  
+  if (report.keyWorks && report.keyWorks.length > 0) {
+    text += `🎯 关键工作\n`
+    report.keyWorks.forEach((work, index) => {
+      text += `${index + 1}. ${work.text}\n`
+    })
+    text += '\n'
+  }
+  
+  if (report.issues && report.issues.total > 0) {
+    text += `⚠️ 风险与问题\n`
+    text += `逾期任务：${report.issues.total} 个\n`
+    if (report.issues.suggestions) {
+      report.issues.suggestions.forEach(s => {
+        text += `💡 ${s}\n`
+      })
+    }
+    text += '\n'
+  }
+  
+  if (report.nextPlan) {
+    text += `📅 下期计划\n`
+    text += `待办任务：${report.nextPlan.total} 个\n`
+    text += `高优先级：${report.nextPlan.highPriority} 个\n`
+    if (report.nextPlan.recommendations) {
+      report.nextPlan.recommendations.forEach(r => {
+        text += `💡 ${r}\n`
+      })
+    }
+  }
+  
+  return text
+}
+
 onMounted(async () => {
   await userStore.checkLogin()
   await loadUserInfo()
@@ -11179,6 +11522,9 @@ onMounted(async () => {
   
   // 每日检查（卡壳任务、连续完成天数）
   await SmartReminderService.dailyCheck(taskStore.tasks)
+  
+  // 自动生成日报和周报
+  await autoGenerateReports()
   
   // 检查精确闹钟权限（首次使用）
   const { value: hasCheckedAlarm } = await Preferences.get({ key: 'hasCheckedAlarmPermission' })
