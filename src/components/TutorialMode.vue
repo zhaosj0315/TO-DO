@@ -410,13 +410,14 @@ const steps = [
     position: 'center',
     category: 'intro'
   },
-  // 22. AI智能问答
+  // 22. AI智能助手
   {
-    target: '.btn-ai-chat',
+    target: '.btn-ai',
     icon: '🤖',
-    title: 'AI智能问答助手',
+    title: 'AI智能助手（统一入口）',
     description: `
-      <strong>功能</strong>：用自然语言询问任务相关问题<br>
+      <strong>AI问答</strong>：用自然语言询问任务相关问题<br>
+      <strong>今日规划</strong>：点击"📅 今日规划"按钮生成智能规划<br>
       <strong>快捷问题</strong>：<br>
       • 今天完成了哪些任务？<br>
       • 本周工作情况如何？<br>
@@ -427,17 +428,17 @@ const steps = [
     position: 'bottom-left',
     category: 'advanced'
   },
-  // 23. AI主动式助手
+  // 23. AI报告生成
   {
     target: '.btn-avatar',
-    icon: '🌅',
-    title: 'AI主动式助手',
+    icon: '📊',
+    title: 'AI报告生成器',
     description: `
-      <strong>智能提醒卡片</strong>：自动检测逾期和待办任务<br>
-      <strong>每日智能总结</strong>：每日工作总结+AI建议<br>
-      <strong>报告生成器</strong>：周报/月报/季报/年报<br>
+      <strong>7种报告类型</strong>：日报/周报/月报/季报/半年报/年报/区间报告<br>
+      <strong>完整11章节</strong>：智能总结、数据概览、完成任务明细、关键工作等<br>
+      <strong>报告历史</strong>：自动保存所有生成的报告<br>
       <br>
-      💡 点击个人中心 → 今日规划，查看AI助手
+      💡 点击个人中心 → 区间报告/报告历史
     `,
     position: 'bottom-left',
     category: 'advanced'
@@ -521,15 +522,16 @@ const steps = [
     title: '数据报告功能（全面整合）',
     description: `
       <strong>7种报告类型</strong>：<br>
-      • 日报、周报、月报、季报、半年报、年报、自定义<br>
+      • 日报、周报、月报、季报、半年报、年报、区间报告<br>
       <br>
-      <strong>4种报告模板</strong>：<br>
-      • 工作报告：智能总结+关键工作+风险问题<br>
-      • 标准模板：统计数据+AI总结+任务列表<br>
-      • 详细模板：完整统计+图表分析<br>
-      • 简洁模板：核心数据+完成任务<br>
+      <strong>完整11章节结构</strong>：<br>
+      • 智能总结、数据概览、完成任务明细<br>
+      • 已完成情况、本期目标、本期进展<br>
+      • 本周进展、关键工作、风险与问题、下期计划<br>
       <br>
-      💡 28种组合，灵活选择
+      <strong>报告历史</strong>：自动保存所有生成的报告<br>
+      <br>
+      💡 点击个人中心 → 区间报告/报告历史
     `,
     position: 'bottom-left',
     category: 'advanced'
@@ -564,9 +566,9 @@ const steps = [
       ✅ 任务管理：创建、编辑、完成、删除<br>
       ✅ 执行日志：6种日志类型，完整记录执行过程<br>
       ✅ 番茄钟：25分钟专注计时<br>
-      ✅ AI助手：智能问答、主动提醒、报告生成<br>
+      ✅ AI助手：智能问答、今日规划、报告生成<br>
       ✅ 高级筛选：快捷场景、快捷日期、时间维度<br>
-      ✅ 数据报告：7种类型、4种模板、28种组合<br>
+      ✅ 数据报告：7种类型、11章节结构、报告历史<br>
       <br>
       💡 随时点击右上角 💡 按钮重新查看教程
     `,

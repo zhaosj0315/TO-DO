@@ -1151,11 +1151,11 @@
           <div class="pomodoro-entry-group">
             <div class="entry-group-title">📊 智能报告生成</div>
             
-            <!-- 自定义报告 -->
+            <!-- 区间报告 -->
             <div class="pomodoro-entry" @click="showCustomReportModal = true">
               <div class="entry-icon">🎯</div>
               <div class="entry-content">
-                <div class="entry-title">自定义报告</div>
+                <div class="entry-title">区间报告</div>
                 <div class="entry-summary">
                   选择时间范围和报告类型
                 </div>
@@ -3293,14 +3293,14 @@
       </div>
     </div>
 
-    <!-- 自定义报告弹窗 -->
+    <!-- 区间报告弹窗 -->
     <div v-if="showCustomReportModal" class="modal-overlay" @click.self="showCustomReportModal = false">
       <div class="report-bottom-sheet">
         <div class="modal-header">
           <button class="back-btn" @click="showCustomReportModal = false">
             <span>← 返回</span>
           </button>
-          <h3>🎯 自定义报告</h3>
+          <h3>🎯 区间报告</h3>
           <div style="width: 80px;"></div>
         </div>
         
@@ -9299,7 +9299,7 @@ const formatReportType = (type) => {
     quarterly: '季报',
     halfYearly: '半年报',
     yearly: '年报',
-    custom: '自定义报告'
+    custom: '区间报告'
   }
   return map[type] || '报告'
 }

@@ -290,7 +290,7 @@ const reportTitle = computed(() => {
     quarterly: '📈 季报',
     halfyearly: '📆 半年报',
     yearly: '🎯 年报',
-    custom: '⚙️ 自定义报告'
+    custom: '🔍 区间报告'
   }
   return titles[reportType.value] || '📊 报告'
 })
