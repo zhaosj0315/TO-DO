@@ -1,6 +1,6 @@
 # TO-DO App | 跨平台离线待办事项管理应用
 
-**当前版本**: v0.7.11  
+**当前版本**: v0.7.12  
 **更新日期**: 2026-03-04  
 **支持平台**: Android / Windows / iOS / Mac
 
@@ -14,6 +14,12 @@
 This is an **offline Android To-Do management application** built with **Vue 3** and **Capacitor**. All data is stored locally on the device using Capacitor Preferences API, requiring **no internet connection or backend server**.
 
 ### 🌟 Key Features
+- **Voice Input** 🎤 (v0.7.12):
+  - **Speech Recognition**: Tap microphone button to speak task content
+  - **Real-time Display**: See recognized text as you speak
+  - **Chinese Optimized**: Specialized for Chinese speech recognition (zh-CN)
+  - **Visual Feedback**: Pulsing animation while recording
+  - **Auto Permission**: Automatically requests microphone permission on first use
 - **Quick Subtask Creation** 🌳 (v0.7.9):
   - **Auto List Detection**: Automatically detects list items in task description (5 formats supported)
   - **Smart Suggestion Bubble**: Preview detected subtasks before creation
@@ -186,6 +192,12 @@ This is an **offline Android To-Do management application** built with **Vue 3**
 这是一个基于 **Vue 3** 和 **Capacitor** 构建的 **Android离线待办事项管理应用**。所有数据使用 Capacitor Preferences API 存储在设备本地，**无需网络连接或后端服务器**。
 
 ### 🌟 核心功能
+- **语音输入** 🎤 (v0.7.12 新增):
+  - **语音识别**：点击麦克风按钮说出任务内容
+  - **实时显示**：边说边显示识别的文字
+  - **中文优化**：专门针对中文语音识别优化（zh-CN）
+  - **视觉反馈**：录音时按钮脉动动画
+  - **自动权限**：首次使用自动请求麦克风权限
 - **子任务智能识别** 🌳 (v0.7.9 新增):
   - **自动列表识别**：自动检测任务描述中的列表项（支持5种格式）
   - **智能建议气泡**：创建前预览检测到的子任务
@@ -479,6 +491,26 @@ userInfo[username] = {
 - ✅ 通知提示
 
 ## 📝 版本历史 | Version History
+
+### v0.7.12 (2026-03-04)
+- ✨ **语音输入功能** 🎤:
+  - **语音识别**：点击麦克风按钮说出任务内容
+  - **实时显示**：边说边显示识别的文字
+  - **中文优化**：专门针对中文语音识别优化（zh-CN）
+  - **视觉反馈**：录音时按钮脉动动画效果
+  - **自动权限**：首次使用自动请求麦克风权限
+  - **智能检测**：自动检测设备是否支持语音识别
+  - **平台支持**：仅支持 Android/iOS 原生应用
+- 🔧 **技术实现**:
+  - 集成 `@capacitor-community/speech-recognition` 插件
+  - 添加 `RECORD_AUDIO` 权限
+  - 实时监听识别结果（partialResults）
+  - 监听状态变化（listeningState）
+- 📱 **用户体验优化**:
+  - 按钮状态切换（🎤 录音 / ⏹️ 停止）
+  - 录音时紫红色渐变 + 脉动动画
+  - 提示信息友好（"🎤 请说话..." / "✓ 语音输入完成"）
+  - 错误处理完善（权限拒绝、设备不支持等）
 
 ### v0.7.11 (2026-03-04)
 - ✨ **智能报告中心**:
