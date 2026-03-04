@@ -1120,13 +1120,13 @@
             <div class="entry-arrow">›</div>
           </div>
 
-          <!-- 数据报告入口 -->
-          <div class="pomodoro-entry" @click="showReportModal = true">
+          <!-- 智能报告中心入口（整合数据报告和区间报告） -->
+          <div class="pomodoro-entry" @click="showUnifiedReport = true">
             <div class="entry-icon">📊</div>
             <div class="entry-content">
-              <div class="entry-title">{{ t('dataReport') }}</div>
+              <div class="entry-title">智能报告中心</div>
               <div class="entry-summary">
-                {{ t('dataReportDesc') }}
+                可视化数据看板 + AI结构化报告
               </div>
             </div>
             <div class="entry-arrow">›</div>
@@ -1147,33 +1147,16 @@
             <div class="entry-arrow">›</div>
           </div>
 
-          <!-- AI 报告生成入口 -->
-          <div class="pomodoro-entry-group">
-            <div class="entry-group-title">📊 智能报告生成</div>
-            
-            <!-- 区间报告 -->
-            <div class="pomodoro-entry" @click="showCustomReportModal = true">
-              <div class="entry-icon">🎯</div>
-              <div class="entry-content">
-                <div class="entry-title">区间报告</div>
-                <div class="entry-summary">
-                  选择时间范围和报告类型
-                </div>
+          <!-- 报告历史入口 -->
+          <div class="pomodoro-entry" @click="showReportHistory">
+            <div class="entry-icon">📚</div>
+            <div class="entry-content">
+              <div class="entry-title">报告历史</div>
+              <div class="entry-summary">
+                查看历史报告记录
               </div>
-              <div class="entry-arrow">›</div>
             </div>
-
-            <!-- 报告历史入口 -->
-            <div class="pomodoro-entry" @click="showReportHistory">
-              <div class="entry-icon">📚</div>
-              <div class="entry-content">
-                <div class="entry-title">报告历史</div>
-                <div class="entry-summary">
-                  查看历史报告记录
-                </div>
-              </div>
-              <div class="entry-arrow">›</div>
-            </div>
+            <div class="entry-arrow">›</div>
           </div>
 
           <!-- AI配置入口 -->
@@ -3612,6 +3595,17 @@
       @close="showTaskPreview = false"
       @create="handleCreateTasks"
     />
+
+    <!-- 统一报告中心 -->
+    <UnifiedReportModal
+      :visible="showUnifiedReport"
+      :tasks="taskStore.tasks"
+      :currentUsername="currentUsername"
+      :historyReport="historyReportData"
+      @close="closeUnifiedReport"
+      @show-history="showReportHistory"
+      @report-saved="handleReportSaved"
+    />
   </div>
 </template>
 
@@ -3658,6 +3652,7 @@ import html2canvas from 'html2canvas'
 import EChart from '../components/EChart.vue'
 import AddLogModal from '../components/AddLogModal.vue'
 import TaskDetailModal from '../components/TaskDetailModal.vue'
+import UnifiedReportModal from '../components/UnifiedReportModal.vue'
 import TutorialMode from '../components/TutorialMode.vue'
 import AIChat from '../components/AIChat.vue'
 import AIModelConfig from '../components/AIModelConfig.vue'
@@ -4631,9 +4626,46 @@ const handleReportGenerated = (data) => {
   console.log('报告已保存到历史', historyItem)
 }
 
+// 处理统一报告保存
+const handleReportSaved = (report) => {
+  // 保存到localStorage
+  const savedReports = JSON.parse(localStorage.getItem('unified_reports') || '[]')
+  savedReports.unshift(report)
+  
+  // 只保留最近50个报告
+  if (savedReports.length > 50) {
+    savedReports.splice(50)
+  }
+  
+  localStorage.setItem('unified_reports', JSON.stringify(savedReports))
+  console.log('统一报告已保存', report)
+}
+
 // 显示周报历史
 const showReportHistory = () => {
-  reportHistoryList.value = JSON.parse(localStorage.getItem('weekly_reports') || '[]')
+  // 读取旧的周报数据
+  const oldReports = JSON.parse(localStorage.getItem('weekly_reports') || '[]')
+  
+  // 读取新的统一报告数据
+  const unifiedReports = JSON.parse(localStorage.getItem('unified_reports') || '[]')
+  
+  // 转换统一报告格式为历史列表格式
+  const convertedReports = unifiedReports.map(report => ({
+    id: report.id,
+    reportType: report.type,
+    period: `${report.period.start} - ${report.period.end}`,
+    createdAt: report.createdAt,
+    taskCount: report.visualData.totalTasks || 0,
+    completedCount: report.visualData.completedTasks || 0,
+    content: report.textData,
+    visualData: report.visualData,
+    isUnified: true // 标记为统一报告
+  }))
+  
+  // 合并并按时间排序
+  reportHistoryList.value = [...convertedReports, ...oldReports]
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  
   setTimeout(() => {
     showReportHistoryModal.value = true
   }, 0)
@@ -4674,33 +4706,60 @@ const groupedReportHistory = computed(() => {
 
 // 查看历史周报
 const viewHistoryReport = (report) => {
-  // 使用结构化数据而不是纯文本
-  weeklyReportContent.value = report.reportData || {}
-  weeklyReportTitle.value = report.title
-  showReportHistoryModal.value = false
-  showWeeklyReportModal.value = true
+  // 判断是否为统一报告
+  if (report.isUnified) {
+    // 设置历史报告数据
+    historyReportData.value = {
+      type: report.reportType,
+      period: report.period,
+      visualData: report.visualData,
+      textData: report.content,
+      createdAt: report.createdAt
+    }
+    
+    // 关闭历史列表，打开统一报告
+    showReportHistoryModal.value = false
+    showUnifiedReport.value = true
+  } else {
+    // 旧的周报格式
+    weeklyReportContent.value = report.reportData || {}
+    weeklyReportTitle.value = report.title
+    showReportHistoryModal.value = false
+    showWeeklyReportModal.value = true
+  }
 }
 
 // 删除历史周报
 const deleteHistoryReport = (reportId) => {
-  if (!confirm('确定要删除这条周报吗？')) return
+  if (!confirm('确定要删除这条报告吗？')) return
   
-  const history = JSON.parse(localStorage.getItem('weekly_reports') || '[]')
-  const filtered = history.filter(r => r.id !== reportId)
-  localStorage.setItem('weekly_reports', JSON.stringify(filtered))
-  reportHistoryList.value = filtered
+  // 从旧周报中删除
+  const oldReports = JSON.parse(localStorage.getItem('weekly_reports') || '[]')
+  const filteredOld = oldReports.filter(r => r.id !== reportId)
+  localStorage.setItem('weekly_reports', JSON.stringify(filteredOld))
   
-  showNotification('周报已删除', 'success')
+  // 从统一报告中删除
+  const unifiedReports = JSON.parse(localStorage.getItem('unified_reports') || '[]')
+  const filteredUnified = unifiedReports.filter(r => r.id !== reportId)
+  localStorage.setItem('unified_reports', JSON.stringify(filteredUnified))
+  
+  // 重新加载列表
+  showReportHistory()
+  
+  showNotification('报告已删除', 'success')
 }
 
 // 批量删除周报
 const batchDeleteReports = () => {
-  if (!confirm('确定要删除所有周报吗？此操作不可恢复！')) return
+  if (!confirm('确定要删除所有报告吗？此操作不可恢复！')) return
   
-  localStorage.setItem('weekly_reports', '[]')
+  localStorage.removeItem('weekly_reports')
+  localStorage.removeItem('unified_reports')
   reportHistoryList.value = []
-  showNotification('已清空所有周报', 'success')
+  
+  showNotification('所有报告已清空', 'success')
 }
+
 
 // 版本历史相关变量（必须在 initVersionHistory 之前声明）
 const showVersionModal = ref(false) // 版本历史弹窗
@@ -4716,22 +4775,31 @@ const initVersionHistory = () => {
       version: '0.7.11',
       date: '2026-03-04',
       features: [
-        '🤖 自动报告生成系统：每天自动生成昨天的日报，无需手动操作',
-        '📅 智能周期报告：每周一生成上周周报，每月1号生成上月月报',
-        '📊 完整报告体系：自动生成季报（每季度首日）、半年报（1/1和7/1）、年报（1/1）',
-        '🔔 报告生成通知：每次生成报告后自动通知用户，显示具体日期范围'
+        '📊 智能报告中心：整合"数据报告"和"区间报告"为统一入口，双视图切换（可视化+文本）',
+        '🎯 完整报告结构：6个核心章节（报告周期、智能总结、数据概览、本期目标、重点任务、风险与问题、下期计划）',
+        '📅 PDCA逻辑顺序：目标→完成→问题→计划，符合工作汇报习惯',
+        '📚 报告历史整合：统一管理新旧报告，支持查看、删除、搜索',
+        '🎨 统一UI布局：底部滑出、左右全屏、紫色渐变头部、顶部小横条'
       ],
       improvements: [
-        '📝 报告周期优化：上半年（1-6月）、下半年（7-12月）逻辑修正',
-        '🎯 智能去重：检查历史记录，避免重复生成同一时段的报告',
-        '💾 自动保存：所有自动生成的报告完整保存到报告历史',
-        '📈 数据完整性：包含结构化数据和纯文本内容，支持查看和导出'
+        '📆 日期计算修复：月报（本月1号-月底）、季报（本季度完整周期）、半年报（本半年完整周期）、年报（今年1月1号-12月31号）',
+        '🔄 数据源统一：避免重复代码，减少约300行',
+        '💾 自动保存：报告保存到localStorage（unified_reports），最多保留50个',
+        '🔍 智能搜索：报告历史支持按类型、日期搜索',
+        '📝 文本导出增强：包含所有6个章节，格式化输出'
       ],
-      fixes: []
+      fixes: [
+        '修复月报使用"最近30天"而非"本月1号-月底"',
+        '修复季报跨年计算错误',
+        '修复半年报跨年计算错误',
+        '修复年报只统计到今天而非完整年度',
+        '修复报告历史查看功能：点击历史报告可正常打开',
+        '修复删除报告功能：同时从两个存储中删除'
+      ]
     },
     {
       version: '0.7.10',
-      date: '2026-03-04',
+      date: '2026-03-03',
       features: [
         '📊 报告系统全面优化：恢复完整11章节结构（智能总结、数据概览、完成任务明细等）',
         '📅 动态章节标题：根据报告类型自动调整（日报→今日/周报→本周/月报→本月等）',
@@ -5920,13 +5988,21 @@ const showPasswordModal = ref(false)
 const showPhoneModal = ref(false)
 const showWeeklyModal = ref(false)
 const showCustomDateModal = ref(false)
-const showReportModal = ref(false) // 数据报告弹窗
+const showReportModal = ref(false) // 数据报告弹窗（已废弃，保留兼容）
 const showBackupList = ref(false) // 备份列表弹窗
-const showCustomReportModal = ref(false) // 自定义报告弹窗
+const showCustomReportModal = ref(false) // 自定义报告弹窗（已废弃，保留兼容）
 const showReportTemplates = ref(false) // 报告模板弹窗
 const showTemplateDetail = ref(false) // 模板详情弹窗
 const showTemplateEditor = ref(false) // 模板编辑弹窗
 const currentTemplate = ref(null) // 当前查看/编辑的模板
+const showUnifiedReport = ref(false) // 统一报告弹窗（新）
+const historyReportData = ref(null) // 历史报告数据
+
+// 关闭统一报告
+const closeUnifiedReport = () => {
+  showUnifiedReport.value = false
+  historyReportData.value = null // 清空历史数据
+}
 
 // 自定义报告配置
 const customReportConfig = ref({
@@ -9316,15 +9392,16 @@ const formatDate = (dateString) => {
 // 格式化报告类型
 const formatReportType = (type) => {
   const map = {
-    daily: '日报',
-    weekly: '周报',
-    monthly: '月报',
-    quarterly: '季报',
-    halfYearly: '半年报',
-    yearly: '年报',
-    custom: '区间报告'
+    daily: '📝 日报',
+    weekly: '📅 周报',
+    monthly: '📊 月报',
+    quarterly: '📈 季报',
+    halfyearly: '📆 半年报',
+    halfYearly: '📆 半年报',
+    yearly: '🎯 年报',
+    custom: '🔍 自定义报告'
   }
-  return map[type] || '报告'
+  return map[type] || '📊 报告'
 }
 
 // 方法：日志类型图标

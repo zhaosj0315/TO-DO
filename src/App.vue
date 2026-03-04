@@ -11,6 +11,9 @@
       {{ notification.message }}
     </div>
 
+    <!-- 全局Bottom Sheet通知 -->
+    <NotificationSheet />
+
     <router-view v-slot="{ Component }">
       <transition name="fade" mode="out-in">
         <component :is="Component" @notify="showNotify" />
@@ -21,6 +24,7 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
+import NotificationSheet from './components/NotificationSheet.vue'
 
 const notification = reactive({
   show: false,

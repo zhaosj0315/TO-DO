@@ -216,6 +216,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import LoadingSpinner from './LoadingSpinner.vue'
+import { showSuccess, showError, showConfirm, showInfo, showWarning } from '@/services/notificationService'
 
 const props = defineProps({
   visible: Boolean
@@ -277,7 +278,7 @@ const deleteProviderConfig = (index) => {
   }
   
   providerConfigs.value.splice(index, 1)
-  alert('✅ 配置已删除')
+  showSuccess('配置已删除')
 }
 
 // 加载厂商配置
@@ -377,7 +378,7 @@ const getUrlPlaceholder = () => {
 // 获取可用模型列表
 const fetchAvailableModels = async () => {
   if (!newModel.value.url) {
-    alert('请先输入厂商地址')
+    showError('请先输入厂商地址')
     return
   }
   
@@ -538,21 +539,75 @@ const testSingleModel = async (index) => {
     }
     model.stats.successRate = Math.round((model.stats.successes / model.stats.calls) * 100)
     
+    // 显示测试结果
+    console.log('🔍 准备显示测试结果:', result.success)
+    if (result.success) {
+      console.log('🔍 调用 showSuccess')
+      showSuccess(`${model.name} 连接成功！`, '模型响应正常，可以正常使用。')
+    } else {
+      console.log('🔍 调用 showError')
+      showError(`${model.name} 连接失败`, `错误信息：${result.message}\n\n请检查：\n1. URL地址是否正确\n2. 模型服务是否启动\n3. 网络连接是否正常`)
+    }
+    
   } catch (error) {
     model.status = 'offline'
+    showError(`${model.name} 连接失败`, `错误信息：${error.message}`)
   }
 }
 
 // 测试所有模型
 const testAllModels = async () => {
+  if (models.value.length === 0) {
+    showInfo('暂无模型配置', '请先添加至少一个模型')
+    return
+  }
+  
   testingAll.value = true
+  const results = []
   
   for (let i = 0; i < models.value.length; i++) {
-    await testSingleModel(i)
+    const model = models.value[i]
+    model.status = 'testing'
+    
+    try {
+      const result = await testModelConnection(model)
+      model.status = result.success ? 'online' : 'offline'
+      
+      // 更新统计
+      if (!model.stats) {
+        model.stats = { calls: 0, successRate: 0, successes: 0 }
+      }
+      model.stats.calls++
+      if (result.success) {
+        model.stats.successes++
+      }
+      model.stats.successRate = Math.round((model.stats.successes / model.stats.calls) * 100)
+      
+      results.push({
+        name: model.name,
+        success: result.success,
+        message: result.message
+      })
+    } catch (error) {
+      model.status = 'offline'
+      results.push({
+        name: model.name,
+        success: false,
+        message: error.message
+      })
+    }
   }
   
   testingAll.value = false
-  alert('✅ 所有模型测试完成')
+  
+  // 显示汇总结果
+  const successCount = results.filter(r => r.success).length
+  const failCount = results.length - successCount
+  
+  let message = `✅ 成功：${successCount} 个\n❌ 失败：${failCount} 个`
+  let details = `详细结果：\n` + results.map(r => `${r.success ? '✅' : '❌'} ${r.name}`).join('\n')
+  
+  showInfo('测试完成', `${message}\n\n${details}`)
 }
 
 // 测试模型连接（通用方法）
@@ -661,12 +716,12 @@ const importConfig = () => {
         if (config.defaultModelId) {
           defaultModelId.value = config.defaultModelId
         }
-        alert('✅ 配置导入成功')
+        showSuccess('配置导入成功', '所有模型配置已成功导入')
       } else {
-        alert('❌ 配置文件格式错误')
+        showError('配置文件格式错误', '请确保导入的是正确的配置文件')
       }
     } catch (error) {
-      alert('❌ 导入失败: ' + error.message)
+      showError('导入失败', error.message)
     }
   }
   input.click()
@@ -674,7 +729,7 @@ const importConfig = () => {
 
 const testConnection = async () => {
   if (!newModel.value.url || !newModel.value.modelName) {
-    alert('请先填写地址并选择模型')
+    showWarning('信息不完整', '请先填写地址并选择模型')
     return
   }
   
@@ -752,6 +807,8 @@ const testConnection = async () => {
         const data = await response.json()
         console.log('✅ 测试成功:', data)
         testResult.value = { success: true, message: '✅ 连接成功！模型响应正常' }
+        // 显示成功通知
+        showSuccess('连接成功！', '模型响应正常，可以正常使用。')
       } else {
         const errorData = await response.json().catch(() => ({}))
         throw new Error(errorData.error?.message || `HTTP ${response.status}`)
@@ -760,6 +817,8 @@ const testConnection = async () => {
   } catch (error) {
     console.error('❌ 测试连接失败:', error)
     testResult.value = { success: false, message: `❌ 连接失败: ${error.message}` }
+    // 显示失败通知
+    showError('连接失败', `错误信息：${error.message}\n\n请检查：\n1. URL地址是否正确\n2. 模型服务是否启动\n3. 网络连接是否正常`)
   } finally {
     testing.value = false
     console.log('测试结果:', testResult.value)
@@ -768,7 +827,7 @@ const testConnection = async () => {
 
 const addModel = () => {
   if (!newModel.value.name || !newModel.value.url || !newModel.value.modelName) {
-    alert('请填写完整信息并选择模型')
+    showWarning('信息不完整', '请填写完整信息并选择模型')
     return
   }
 
@@ -833,7 +892,7 @@ const addModel = () => {
   }
   // 不清空 availableModels，允许继续选择
   
-  alert('✅ 模型添加成功！可继续选择其他模型')
+  showSuccess('模型添加成功！', '可继续选择其他模型')
 }
 
 // 清空表单

@@ -171,6 +171,7 @@ const testConnection = async () => {
       })
       if (response.ok) {
         testResult.value = { success: true, message: '✅ 连接成功' }
+        alert('✅ 连接成功！\n\n模型响应正常，可以正常使用。')
       } else {
         throw new Error('连接失败')
       }
@@ -189,12 +190,14 @@ const testConnection = async () => {
       })
       if (response.ok) {
         testResult.value = { success: true, message: '✅ 连接成功' }
+        alert('✅ 连接成功！\n\n模型响应正常，可以正常使用。')
       } else {
         throw new Error('连接失败')
       }
     }
   } catch (error) {
     testResult.value = { success: false, message: '❌ ' + error.message }
+    alert(`❌ 连接失败\n\n错误信息：${error.message}\n\n请检查：\n1. URL地址是否正确\n2. 模型服务是否启动\n3. 网络连接是否正常\n4. API Key是否有效（如使用云端服务）`)
   } finally {
     testing.value = false
   }
