@@ -539,26 +539,23 @@ const testSingleModel = async (index) => {
     }
     model.stats.successRate = Math.round((model.stats.successes / model.stats.calls) * 100)
     
-    // 显示测试结果
-    console.log('🔍 准备显示测试结果:', result.success)
+    // 显示测试结果（Toast提示）
     if (result.success) {
-      console.log('🔍 调用 showSuccess')
-      showSuccess(`${model.name} 连接成功！`, '模型响应正常，可以正常使用。')
+      showSuccess(`✅ ${model.name} 连接成功`)
     } else {
-      console.log('🔍 调用 showError')
-      showError(`${model.name} 连接失败`, `错误信息：${result.message}\n\n请检查：\n1. URL地址是否正确\n2. 模型服务是否启动\n3. 网络连接是否正常`)
+      showError(`❌ ${model.name} 连接失败`)
     }
     
   } catch (error) {
     model.status = 'offline'
-    showError(`${model.name} 连接失败`, `错误信息：${error.message}`)
+    showError(`❌ ${model.name} 连接失败`)
   }
 }
 
 // 测试所有模型
 const testAllModels = async () => {
   if (models.value.length === 0) {
-    showInfo('暂无模型配置', '请先添加至少一个模型')
+    showInfo('暂无模型配置')
     return
   }
   
@@ -585,29 +582,30 @@ const testAllModels = async () => {
       
       results.push({
         name: model.name,
-        success: result.success,
-        message: result.message
+        success: result.success
       })
     } catch (error) {
       model.status = 'offline'
       results.push({
         name: model.name,
-        success: false,
-        message: error.message
+        success: false
       })
     }
   }
   
   testingAll.value = false
   
-  // 显示汇总结果
+  // 显示汇总结果（Toast提示）
   const successCount = results.filter(r => r.success).length
   const failCount = results.length - successCount
   
-  let message = `✅ 成功：${successCount} 个\n❌ 失败：${failCount} 个`
-  let details = `详细结果：\n` + results.map(r => `${r.success ? '✅' : '❌'} ${r.name}`).join('\n')
-  
-  showInfo('测试完成', `${message}\n\n${details}`)
+  if (failCount === 0) {
+    showSuccess(`✅ 全部成功 (${successCount}/${results.length})`)
+  } else if (successCount === 0) {
+    showError(`❌ 全部失败 (0/${results.length})`)
+  } else {
+    showWarning(`⚠️ 部分成功 (${successCount}/${results.length})`)
+  }
 }
 
 // 测试模型连接（通用方法）
@@ -729,7 +727,7 @@ const importConfig = () => {
 
 const testConnection = async () => {
   if (!newModel.value.url || !newModel.value.modelName) {
-    showWarning('信息不完整', '请先填写地址并选择模型')
+    showWarning('请先填写地址并选择模型')
     return
   }
   
@@ -740,16 +738,11 @@ const testConnection = async () => {
     let apiUrl = newModel.value.url
     const modelName = newModel.value.modelName
     
-    console.log('原始URL:', apiUrl)
-    console.log('模型类型:', newModel.value.type)
-    
     if (newModel.value.type === 'local') {
       // Ollama 测试
       if (!apiUrl.includes('/api/generate')) {
         apiUrl = apiUrl.replace(/\/$/, '') + '/api/generate'
       }
-      
-      console.log('最终URL (Ollama):', apiUrl)
       
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -762,29 +755,21 @@ const testConnection = async () => {
       })
       
       if (response.ok) {
-        const data = await response.json()
-        console.log('✅ 测试成功:', data)
         testResult.value = { success: true, message: '✅ 连接成功！模型响应正常' }
+        showSuccess('✅ 连接成功')
       } else {
         throw new Error(`HTTP ${response.status}`)
       }
     } else {
       // OpenAI 兼容 API 测试
-      // 先规范化URL：移除末尾斜杠和已有的API路径
       let baseUrl = apiUrl
       
-      // 如果包含 /v1/，提取基础URL
       if (baseUrl.includes('/v1/')) {
         baseUrl = baseUrl.split('/v1/')[0]
       }
       
-      // 移除末尾斜杠
       baseUrl = baseUrl.replace(/\/$/, '')
-      
-      // 构造完整URL
       apiUrl = baseUrl + '/v1/chat/completions'
-      
-      console.log('最终URL (OpenAI):', apiUrl)
       
       const headers = {
         'Content-Type': 'application/json'
@@ -804,24 +789,18 @@ const testConnection = async () => {
       })
       
       if (response.ok) {
-        const data = await response.json()
-        console.log('✅ 测试成功:', data)
         testResult.value = { success: true, message: '✅ 连接成功！模型响应正常' }
-        // 显示成功通知
-        showSuccess('连接成功！', '模型响应正常，可以正常使用。')
+        showSuccess('✅ 连接成功')
       } else {
         const errorData = await response.json().catch(() => ({}))
         throw new Error(errorData.error?.message || `HTTP ${response.status}`)
       }
     }
   } catch (error) {
-    console.error('❌ 测试连接失败:', error)
     testResult.value = { success: false, message: `❌ 连接失败: ${error.message}` }
-    // 显示失败通知
-    showError('连接失败', `错误信息：${error.message}\n\n请检查：\n1. URL地址是否正确\n2. 模型服务是否启动\n3. 网络连接是否正常`)
+    showError(`❌ 连接失败: ${error.message}`)
   } finally {
     testing.value = false
-    console.log('测试结果:', testResult.value)
   }
 }
 
