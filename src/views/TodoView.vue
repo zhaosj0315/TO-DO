@@ -17,10 +17,6 @@
             🗑️
             <span v-if="taskStore.deletedTasks.length > 0" class="badge-count">{{ taskStore.deletedTasks.length }}</span>
           </button>
-          <!-- 数据统计按钮 - 查看数据 -->
-          <button class="btn-icon-circle btn-stats" @click="showDataStats = true" title="数据统计">
-            📊
-          </button>
           <!-- AI问答按钮 - AI功能 -->
           <button class="btn-icon-circle btn-ai" @click="showAIChat = true" :title="t('aiChat')">
             🤖
@@ -1108,13 +1104,13 @@
             </div>
           </div>
 
-          <!-- 番茄统计入口 -->
-          <div class="pomodoro-entry" @click="showPomodoroStats = true">
-            <div class="entry-icon">🍅</div>
+          <!-- 统计中心入口 -->
+          <div class="pomodoro-entry" @click="showEnhancedStats = true">
+            <div class="entry-icon">📊</div>
             <div class="entry-content">
-              <div class="entry-title">{{ t('pomodoroStats') }}</div>
+              <div class="entry-title">统计中心</div>
               <div class="entry-summary">
-                {{ t('earnedPomodoros') }} {{ earnedPomodoros }} {{ currentLanguage === 'zh' ? '个' : '' }} | {{ t('netPomodoros') }} {{ totalPomodoros }} {{ currentLanguage === 'zh' ? '个' : '' }}
+                番茄钟统计 + 数据可视化分析
               </div>
             </div>
             <div class="entry-arrow">›</div>
@@ -1132,6 +1128,18 @@
             <div class="entry-arrow">›</div>
           </div>
 
+          <!-- 报告历史入口 -->
+          <div class="pomodoro-entry" @click="showReportHistory">
+            <div class="entry-icon">📚</div>
+            <div class="entry-content">
+              <div class="entry-title">报告历史</div>
+              <div class="entry-summary">
+                查看历史报告记录
+              </div>
+            </div>
+            <div class="entry-arrow">›</div>
+          </div>
+
           <!-- 版本更新入口 -->
           <div class="pomodoro-entry" @click="showVersionHistory">
             <div class="entry-icon">🎉</div>
@@ -1142,18 +1150,6 @@
               </div>
               <div class="entry-summary">
                 查看版本更新日志
-              </div>
-            </div>
-            <div class="entry-arrow">›</div>
-          </div>
-
-          <!-- 报告历史入口 -->
-          <div class="pomodoro-entry" @click="showReportHistory">
-            <div class="entry-icon">📚</div>
-            <div class="entry-content">
-              <div class="entry-title">报告历史</div>
-              <div class="entry-summary">
-                查看历史报告记录
               </div>
             </div>
             <div class="entry-arrow">›</div>
@@ -1723,236 +1719,12 @@
     </div>
 
     <!-- 番茄统计详情弹窗 -->
-    <!-- 番茄钟统计 (Bottom Sheet) -->
-    <div v-if="showPomodoroStats" class="modal-overlay" @click.self="showPomodoroStats = false">
-      <div class="stats-bottom-sheet">
-        <div class="modal-header">
-          <button class="back-btn" @click="showPomodoroStats = false">
-            <span>← 返回</span>
-          </button>
-          <h3>🍅 {{ t('pomodoroOverview') }}</h3>
-          <div style="width: 80px;"></div>
-        </div>
-        <div class="modal-body">
-          <!-- 今日专注统计 -->
-          <div class="today-focus-stats">
-            <div class="focus-stat-card">
-              <div class="focus-icon">⏱️</div>
-              <div class="focus-data">
-                <div class="focus-value">{{ getTodayFocusMinutes() }}</div>
-                <div class="focus-label">今日专注（分钟）</div>
-              </div>
-            </div>
-            <div class="focus-stat-card">
-              <div class="focus-icon">🍅</div>
-              <div class="focus-data">
-                <div class="focus-value">{{ getTodayCompletedPomodoros() }}</div>
-                <div class="focus-label">今日完成（个）</div>
-              </div>
-            </div>
-            <div class="focus-stat-card">
-              <div class="focus-icon">📊</div>
-              <div class="focus-data">
-                <div class="focus-value">{{ getWeekCompletedPomodoros() }}</div>
-                <div class="focus-label">本周完成（个）</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 总览 -->
-          <div class="pomodoro-overview">
-            <div class="overview-item earned">
-              <div class="overview-icon">✅</div>
-              <div class="overview-value">{{ earnedPomodoros }}</div>
-              <div class="overview-label">{{ t('earned') }}</div>
-            </div>
-            <div class="overview-item pending">
-              <div class="overview-icon">⏳</div>
-              <div class="overview-value">{{ pendingPomodoros }}</div>
-              <div class="overview-label">{{ t('pendingEarn') }}</div>
-            </div>
-            <div class="overview-item lost">
-              <div class="overview-icon">❌</div>
-              <div class="overview-value">{{ lostPomodoros }}</div>
-              <div class="overview-label">{{ t('overdueDeduct') }}</div>
-            </div>
-            <div class="overview-item total">
-              <div class="overview-icon">🏆</div>
-              <div class="overview-value">{{ totalPomodoros }}</div>
-              <div class="overview-label">{{ t('netEarned') }}</div>
-            </div>
-          </div>
-
-          <!-- 等级徽章 -->
-          <div class="level-badge">
-            <div class="level-badge-icon">{{ getLevelBadge().icon }}</div>
-            <div class="badge-info">
-              <div class="badge-title">{{ getLevelBadge().title }}</div>
-              <div class="badge-desc">{{ t('accumulatedEarned') }} {{ earnedPomodoros }} {{ t('pomodoros') }}</div>
-            </div>
-          </div>
-
-          <!-- 近7天趋势 -->
-          <div class="stats-section">
-            <h4 class="section-title">📈 {{ t('last7DaysTrend') }}</h4>
-            <div class="trend-chart">
-              <div v-for="(day, index) in getLast7DaysTrend()" :key="index" class="trend-bar-wrapper">
-                <div class="trend-bar" :style="{ height: (day.count / getMaxDailyInWeek() * 100) + '%' }">
-                  <span class="trend-value">{{ day.count }}</span>
-                </div>
-                <div class="trend-label">{{ day.label }}</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 时间维度统计 -->
-          <div class="stats-section">
-            <h4 class="section-title">📅 {{ t('timeStats') }}</h4>
-            <div class="detail-stats-grid">
-              <div class="stats-card time-today">
-                <div class="stats-icon">☀️</div>
-                <div class="stats-info">
-                  <div class="stats-value">{{ getPomodorosByTime('today') }}</div>
-                  <div class="stats-label">{{ t('today') }}</div>
-                </div>
-              </div>
-              <div class="stats-card time-week">
-                <div class="stats-icon">📊</div>
-                <div class="stats-info">
-                  <div class="stats-value">{{ getPomodorosByTime('week') }}</div>
-                  <div class="stats-label">{{ t('thisWeek') }}</div>
-                </div>
-              </div>
-              <div class="stats-card time-month">
-                <div class="stats-icon">📈</div>
-                <div class="stats-info">
-                  <div class="stats-value">{{ getPomodorosByTime('month') }}</div>
-                  <div class="stats-label">{{ t('thisMonth') }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 分类占比 -->
-          <div class="stats-section">
-            <h4 class="section-title">📊 {{ t('categoryDistribution') }}</h4>
-            <div class="category-bars">
-              <div class="category-bar-item">
-                <div class="category-bar-header">
-                  <span>💼 {{ t('work') }}</span>
-                  <span class="category-bar-value">{{ getPomodorosByCategory('work') }} ({{ getCategoryPercent('work') }}%)</span>
-                </div>
-                <div class="category-bar-bg">
-                  <div class="category-bar-fill work" :style="{ width: getCategoryPercent('work') + '%' }"></div>
-                </div>
-              </div>
-              <div class="category-bar-item">
-                <div class="category-bar-header">
-                  <span>📚 {{ t('study') }}</span>
-                  <span class="category-bar-value">{{ getPomodorosByCategory('study') }} ({{ getCategoryPercent('study') }}%)</span>
-                </div>
-                <div class="category-bar-bg">
-                  <div class="category-bar-fill study" :style="{ width: getCategoryPercent('study') + '%' }"></div>
-                </div>
-              </div>
-              <div class="category-bar-item">
-                <div class="category-bar-header">
-                  <span>🏠 {{ t('life') }}</span>
-                  <span class="category-bar-value">{{ getPomodorosByCategory('life') }} ({{ getCategoryPercent('life') }}%)</span>
-                </div>
-                <div class="category-bar-bg">
-                  <div class="category-bar-fill life" :style="{ width: getCategoryPercent('life') + '%' }"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 按分类统计 -->
-          <div class="stats-section">
-            <h4 class="section-title">🏷️ {{ t('categoryDetails') }}</h4>
-            <div class="detail-stats-grid">
-              <div class="stats-card">
-                <div class="stats-icon">💼</div>
-                <div class="stats-info">
-                  <div class="stats-value">{{ getPomodorosByCategory('work') }}</div>
-                  <div class="stats-label">{{ t('work') }}</div>
-                </div>
-              </div>
-              <div class="stats-card">
-                <div class="stats-icon">📚</div>
-                <div class="stats-info">
-                  <div class="stats-value">{{ getPomodorosByCategory('study') }}</div>
-                  <div class="stats-label">{{ t('study') }}</div>
-                </div>
-              </div>
-              <div class="stats-card">
-                <div class="stats-icon">🏠</div>
-                <div class="stats-info">
-                  <div class="stats-value">{{ getPomodorosByCategory('life') }}</div>
-                  <div class="stats-label">{{ t('life') }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 按优先级统计 -->
-          <div class="stats-section">
-            <h4 class="section-title">⚡ {{ t('priorityStats') }}</h4>
-            <div class="detail-stats-grid">
-              <div class="stats-card priority-high">
-                <div class="stats-icon">🔴</div>
-                <div class="stats-info">
-                  <div class="stats-value">{{ getPomodorosByPriority('high') }}</div>
-                  <div class="stats-label">{{ t('highPriority') }}</div>
-                </div>
-              </div>
-              <div class="stats-card priority-medium">
-                <div class="stats-icon">🟠</div>
-                <div class="stats-info">
-                  <div class="stats-value">{{ getPomodorosByPriority('medium') }}</div>
-                  <div class="stats-label">{{ t('mediumPriority') }}</div>
-                </div>
-              </div>
-              <div class="stats-card priority-low">
-                <div class="stats-icon">🔵</div>
-                <div class="stats-info">
-                  <div class="stats-value">{{ getPomodorosByPriority('low') }}</div>
-                  <div class="stats-label">{{ t('lowPriority') }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 成就统计 -->
-          <div class="stats-section">
-            <h4 class="section-title">🎯 {{ t('achievementStats') }}</h4>
-            <div class="achievement-grid">
-              <div class="achievement-card">
-                <div class="achievement-icon">🔥</div>
-                <div class="achievement-info">
-                  <div class="achievement-value">{{ getConsecutiveDays() }}</div>
-                  <div class="achievement-label">{{ t('consecutiveDays') }}</div>
-                </div>
-              </div>
-              <div class="achievement-card">
-                <div class="achievement-icon">⭐</div>
-                <div class="achievement-info">
-                  <div class="achievement-value">{{ getMaxDailyPomodoros() }}</div>
-                  <div class="achievement-label">{{ t('maxDaily') }}</div>
-                </div>
-              </div>
-              <div class="achievement-card">
-                <div class="achievement-icon">📊</div>
-                <div class="achievement-info">
-                  <div class="achievement-value">{{ getCompletionRate() }}%</div>
-                  <div class="achievement-label">{{ t('completionRateLabel') }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- 统计中心（番茄钟 + 数据统计） -->
+    <EnhancedPomodoroStats
+      :visible="showEnhancedStats"
+      :tasks="taskStore.tasks"
+      @close="showEnhancedStats = false"
+    />
 
     <!-- 星期选择模态框 - 每周重复 -->
     <div v-if="showWeeklyModal" class="modal-overlay" @click.self="showWeeklyModal = false" style="z-index: 10001;">
@@ -2267,11 +2039,6 @@
       @create="handleSubtaskCreate"
     />
 
-    <!-- 数据统计 -->
-    <DataStatsModal
-      :visible="showDataStats"
-      @close="showDataStats = false"
-    />
 
     <!-- AI问答 -->
     <AIChat
@@ -3638,7 +3405,7 @@ import AISuggestionCard from '../components/AISuggestionCard.vue'
 import DailySummaryModal from '../components/DailySummaryModal.vue'
 import AIReportModal from '../components/AIReportModal.vue'
 import SmartTaskSplitter from '../components/SmartTaskSplitter.vue'
-import DataStatsModal from '../components/DataStatsModal.vue'
+import EnhancedPomodoroStats from '../components/EnhancedPomodoroStats.vue'
 import { Filesystem, Directory } from '@capacitor/filesystem'
 import { LocalNotifications } from '@capacitor/local-notifications'
 import { Capacitor } from '@capacitor/core'
@@ -4109,7 +3876,7 @@ const activeScene = ref('') // 当前激活的快捷场景
 const countdownInterval = ref(null)
 const showTrash = ref(false)
 const showProfile = ref(false)
-const showPomodoroStats = ref(false)
+const showEnhancedStats = ref(false)  // 🆕 统一的统计中心
 const showSupport = ref(false)
 const showAIConfig = ref(false)
 const showAIChat = ref(false)
@@ -4123,7 +3890,6 @@ const showDailySummary = ref(false)
 const showAIReport = ref(false)
 const showTaskSplitter = ref(false)
 const taskToSplit = ref(null)
-const showDataStats = ref(false)
 const showTaskInputPreview = ref(false)  // 🆕 任务输入预览弹窗
 const previewTaskData = ref(null)  // 🆕 预览的任务数据
 const pendingSubtasks = ref([])  // 🆕 待创建的子任务列表（预览模式中AI拆分后暂存）
@@ -4775,56 +4541,53 @@ const initVersionHistory = () => {
       version: '0.7.11',
       date: '2026-03-04',
       features: [
-        '📊 智能报告中心：整合"数据报告"和"区间报告"为统一入口，双视图切换（可视化+文本）',
-        '🎯 完整报告结构：6个核心章节（报告周期、智能总结、数据概览、本期目标、重点任务、风险与问题、下期计划）',
-        '📅 PDCA逻辑顺序：目标→完成→问题→计划，符合工作汇报习惯',
+        '📊 智能报告中心：整合"数据报告"和"区间报告"为统一入口，双视图切换（📈可视化 + 📝文本）',
+        '📋 完整报告结构：6个核心章节（报告周期、智能总结、数据概览、本期目标、重点任务、风险与问题、下期计划）',
+        '🎯 PDCA逻辑顺序：目标→完成→问题→计划，符合工作汇报习惯',
         '📚 报告历史整合：统一管理新旧报告，支持查看、删除、搜索',
-        '🎨 统一UI布局：底部滑出、左右全屏、紫色渐变头部、顶部小横条'
+        '🍅 番茄钟历史记录：按日期分组显示所有专注记录，支持展开/折叠，点击跳转任务详情'
       ],
       improvements: [
-        '📆 日期计算修复：月报（本月1号-月底）、季报（本季度完整周期）、半年报（本半年完整周期）、年报（今年1月1号-12月31号）',
+        '📅 日期计算修复：月报（本月1号-月底）、季报（本季度）、半年报（本半年）、年报（全年）',
         '🔄 数据源统一：避免重复代码，减少约300行',
         '💾 自动保存：报告保存到localStorage（unified_reports），最多保留50个',
-        '🔍 智能搜索：报告历史支持按类型、日期搜索',
-        '📝 文本导出增强：包含所有6个章节，格式化输出'
+        '🎨 统一UI布局：底部滑出、左右全屏、紫色渐变头部',
+        '🗑️ 删除右上角"📊 统计中心"按钮：统一通过个人主页访问',
+        '📑 个人中心逻辑优化：数据查看 → 系统功能 → 账号设置'
       ],
       fixes: [
-        '修复月报使用"最近30天"而非"本月1号-月底"',
-        '修复季报跨年计算错误',
-        '修复半年报跨年计算错误',
-        '修复年报只统计到今天而非完整年度',
-        '修复报告历史查看功能：点击历史报告可正常打开',
-        '修复删除报告功能：同时从两个存储中删除'
+        '修复月报/季报/半年报/年报日期计算错误',
+        '修复报告历史查看功能',
+        '修复删除报告功能（同时从两个存储中删除）',
+        '修复番茄钟历史记录显示为空（新增历史记录列表）'
       ]
     },
     {
       version: '0.7.10',
       date: '2026-03-03',
       features: [
-        '📊 报告系统全面优化：恢复完整11章节结构（智能总结、数据概览、完成任务明细等）',
-        '📅 动态章节标题：根据报告类型自动调整（日报→今日/周报→本周/月报→本月等）',
+        '📊 报告系统全面优化：恢复完整11章节结构（智能总结、数据概览、完成任务明细、已完成情况、本期目标、本期进展、本周进展、关键工作、风险与问题、下期计划）',
+        '📅 动态章节标题：根据报告类型自动调整（日报→今日/周报→本周/月报→本月/季报→本季度/半年报→本半年/年报→今年）',
         '💾 报告自动保存：生成后自动保存到历史，包含完整结构化数据',
-        '📈 支持7种报告类型：日报/周报/月报/季报/半年报/年报/区间报告'
+        '📈 支持7种报告类型：日报/周报/月报/季报/半年报/年报/自定义报告'
       ],
       improvements: [
-        '🔄 今日规划融入AI助手：删除右上角独立按钮，统一通过AI助手（🤖）→"📅 今日规划"使用',
-        '📝 命名优化："自定义报告"改为"区间报告"（更准确表达功能）',
-        '🎓 演示模式更新：适配最新功能调整（AI助手、报告系统、命名优化）',
-        '🗑️ 删除冗余功能：删除"快速生成周报"入口、模板选择系统、无效配置项',
+        '🔄 今日规划融入AI助手：删除右上角独立的"🌅 今日规划"按钮，统一通过AI助手（🤖）→"📅 今日规划"使用',
+        '🗑️ 删除冗余功能：删除"快速生成周报"入口、模板选择系统、无效的"包含内容"配置项',
         '🔧 "周报历史"改名为"报告历史"',
         '⏰ 时间节点计算修复：根据报告类型动态计算',
         '📝 报告生成统一：所有类型使用同一套丰富结构',
-        '🧹 代码清理：删除 DailyPlanModal 组件及相关变量、函数、样式'
+        '🧹 代码清理：删除 DailyPlanModal 组件及相关变量、函数、样式（删除约150行重复代码，添加约240行丰富报告生成逻辑）'
       ],
       fixes: [
-        '修复报告历史内容为空：保存时格式化为纯文本',
-        '修复查看历史报告显示空白：使用reportData结构化数据',
-        '修复报告显示格式：显示displayText而不是原始对象',
-        '修复本周进展显示：支持header/item结构',
         '修复日报/周报模板无效（生效率从71.4%提升到100%）',
         '修复月报显示"本周进展"（现在正确显示"本月进展"）',
         '修复时间节点计算错误（所有类型都错误使用"月"概念）',
-        '修复模板定义与实现不一致'
+        '修复模板定义与实现不一致',
+        '修复报告历史内容为空：保存时格式化为纯文本',
+        '修复查看历史报告显示空白：使用reportData结构化数据',
+        '修复报告显示格式：显示displayText而不是原始对象',
+        '修复本周进展显示：支持header/item结构'
       ]
     },
     {
@@ -12079,6 +11842,13 @@ onMounted(async () => {
       } else if (showPomodoroTimer.value) {
         console.log('✅ 关闭番茄钟计时器')
         showPomodoroTimer.value = false
+      } else if (showUnifiedReport.value) {
+        console.log('✅ 关闭统一报告中心')
+        showUnifiedReport.value = false
+        historyReportData.value = null
+      } else if (showReportHistoryModal.value) {
+        console.log('✅ 关闭报告历史')
+        showReportHistoryModal.value = false
       } else if (showTaskDetail.value) {
         console.log('✅ 关闭任务详情')
         // 检查 TaskDetailModal 内部是否有打开的子弹窗

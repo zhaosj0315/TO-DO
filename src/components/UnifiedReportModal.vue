@@ -81,7 +81,9 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { App } from '@capacitor/app'
+import { Capacitor } from '@capacitor/core'
 import LoadingSpinner from './LoadingSpinner.vue'
 import VisualReportView from './VisualReportView.vue'
 import TextReportView from './TextReportView.vue'
@@ -536,6 +538,41 @@ watch(() => props.visible, (newVal) => {
     }
   }
 })
+
+// Android 返回手势支持
+let backButtonListener = null
+
+onMounted(() => {
+  if (Capacitor.getPlatform() === 'android') {
+    backButtonListener = App.addListener('backButton', () => {
+      if (props.visible) {
+        console.log('🔙 UnifiedReportModal 返回手势触发')
+        handleBackButton()
+      }
+    })
+  }
+})
+
+onUnmounted(() => {
+  if (backButtonListener) {
+    backButtonListener.remove()
+  }
+})
+
+const handleBackButton = () => {
+  // 层层返回逻辑
+  if (reportGenerated.value) {
+    // 如果已生成报告，返回到报告类型选择
+    console.log('✅ 返回到报告类型选择')
+    reportGenerated.value = false
+    visualData.value = null
+    textData.value = null
+  } else {
+    // 如果在报告类型选择页，关闭整个弹窗
+    console.log('✅ 关闭统一报告中心')
+    emit('close')
+  }
+}
 </script>
 
 <style scoped>

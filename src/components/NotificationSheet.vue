@@ -79,7 +79,7 @@ const handleCancel = () => {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  z-index: 3000;
+  z-index: 99999;
   animation: fadeIn 0.2s ease-out;
 }
 
