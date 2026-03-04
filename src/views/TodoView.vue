@@ -21,10 +21,6 @@
           <button class="btn-icon-circle btn-stats" @click="showDataStats = true" title="数据统计">
             📊
           </button>
-          <!-- 今日规划按钮 - AI规划 -->
-          <button class="btn-icon-circle btn-daily-plan" @click="generateDailyPlan" title="今日规划">
-            🌅
-          </button>
           <!-- AI问答按钮 - AI功能 -->
           <button class="btn-icon-circle btn-ai" @click="showAIChat = true" :title="t('aiChat')">
             🤖
@@ -2254,14 +2250,6 @@
       @create="handleCreateSubtasks"
     />
 
-    <!-- 每日规划弹窗 -->
-    <DailyPlanModal
-      :visible="showDailyPlan"
-      :plan="dailyPlan"
-      :tasks="dailyPlanTasks"
-      @close="showDailyPlan = false"
-    />
-
     <!-- 演示模式 -->
     <TutorialMode
       :active="showTutorial"
@@ -3050,7 +3038,7 @@
               <div class="highlights-list">
                 <div v-for="(item, index) in weeklyReportContent.previousCompleted" :key="index" class="highlight-item">
                   <span class="highlight-number">{{ index + 1 }}</span>
-                  <span class="highlight-text">{{ item }}</span>
+                  <span class="highlight-text">{{ typeof item === 'string' ? item : item.displayText }}</span>
                 </div>
               </div>
             </div>
@@ -3061,7 +3049,7 @@
               <div class="highlights-list">
                 <div v-for="(item, index) in weeklyReportContent.monthlyGoals" :key="index" class="highlight-item highlight-special">
                   <span class="highlight-number">{{ index + 1 }}</span>
-                  <span class="highlight-text">{{ item }}</span>
+                  <span class="highlight-text">{{ typeof item === 'string' ? item : item.displayText }}</span>
                 </div>
               </div>
             </div>
@@ -3072,7 +3060,7 @@
               <div class="highlights-list">
                 <div v-for="(item, index) in weeklyReportContent.monthlyProgress" :key="index" class="highlight-item">
                   <span class="highlight-number">{{ index + 1 }}</span>
-                  <span class="highlight-text">{{ item }}</span>
+                  <span class="highlight-text">{{ typeof item === 'string' ? item : item.displayText }}</span>
                 </div>
               </div>
             </div>
@@ -3081,10 +3069,22 @@
             <div v-if="weeklyReportContent.weeklyProgress && weeklyReportContent.weeklyProgress.length > 0" class="report-section">
               <div class="section-title">📅 本周进展</div>
               <div class="highlights-list">
-                <div v-for="(item, index) in weeklyReportContent.weeklyProgress" :key="index" class="highlight-item">
-                  <span class="highlight-number">{{ index + 1 }}</span>
-                  <span class="highlight-text">{{ item }}</span>
-                </div>
+                <template v-for="(item, index) in weeklyReportContent.weeklyProgress" :key="index">
+                  <!-- 分类标题 -->
+                  <div v-if="item.type === 'header'" class="category-header">
+                    {{ item.text }}
+                  </div>
+                  <!-- 任务项 -->
+                  <div v-else-if="item.type === 'item'" class="highlight-item">
+                    <span class="highlight-number">•</span>
+                    <span class="highlight-text">{{ item.text }}</span>
+                  </div>
+                  <!-- 兼容旧格式 -->
+                  <div v-else class="highlight-item">
+                    <span class="highlight-number">{{ index + 1 }}</span>
+                    <span class="highlight-text">{{ typeof item === 'string' ? item : (item.displayText || item.text) }}</span>
+                  </div>
+                </template>
               </div>
             </div>
 
@@ -3094,7 +3094,7 @@
               <div class="highlights-list">
                 <div v-for="(item, index) in weeklyReportContent.nextWeekPlan" :key="index" class="highlight-item">
                   <span class="highlight-number">{{ index + 1 }}</span>
-                  <span class="highlight-text">{{ item }}</span>
+                  <span class="highlight-text">{{ typeof item === 'string' ? item : item.displayText }}</span>
                 </div>
               </div>
             </div>
@@ -3105,7 +3105,7 @@
               <div class="highlights-list">
                 <div v-for="(item, index) in weeklyReportContent.risks" :key="index" class="highlight-item risk-item">
                   <span class="highlight-number">{{ index + 1 }}</span>
-                  <span class="highlight-text">{{ item }}</span>
+                  <span class="highlight-text">{{ typeof item === 'string' ? item : item.displayText }}</span>
                 </div>
               </div>
             </div>
@@ -3639,7 +3639,6 @@ import { AITextEnhancer } from '../services/aiTextEnhancer'
 import AIConfigModal from '../components/AIConfigModal.vue'
 import TaskPreviewModal from '../components/TaskPreviewModal.vue'
 import SubtaskPreviewModal from '../components/SubtaskPreviewModal.vue'
-import DailyPlanModal from '../components/DailyPlanModal.vue'
 import TrashModal from '../components/TrashModal.vue'
 import AISuggestionCard from '../components/AISuggestionCard.vue'
 import DailySummaryModal from '../components/DailySummaryModal.vue'
@@ -4292,11 +4291,6 @@ const createSubtasks = async (subtasks) => {
   showNotification(`✅ 成功创建 ${subtasks.length} 个子任务！`, 'success')
 }
 
-// 每日规划
-const showDailyPlan = ref(false)
-const dailyPlan = ref({})
-const dailyPlanTasks = ref([])
-
 // 处理 AI 文本操作
 const handleTextAction = async ({ action, text, tone }) => {
   console.log('TodoView handleTextAction called:', { action, text, tone })
@@ -4538,13 +4532,91 @@ const handleCreateSubtasks = async (subtaskList) => {
 const handleReportGenerated = (data) => {
   const { reportType, report, createdAt } = data
   
+  // 格式化报告为纯文本
+  const formatReportAsText = (report, type) => {
+    const typeMap = {
+      daily: '日报',
+      weekly: '周报',
+      monthly: '月报',
+      quarterly: '季报',
+      halfyearly: '半年报',
+      yearly: '年报',
+      custom: '自定义报告'
+    }
+    
+    let text = `📝 ${typeMap[type] || '报告'} - ${report.period.start} 至 ${report.period.end}\n\n`
+    
+    // 智能总结
+    if (report.summary) {
+      text += `📝 智能总结\n${report.summary}\n\n`
+    }
+    
+    // 数据概览
+    if (report.overview) {
+      text += `📊 数据概览\n`
+      text += `完成任务：${report.overview.totalTasks}个\n`
+      text += `高优先级：${report.overview.highPriority}个\n`
+      text += `番茄钟：${report.overview.pomodoros}个\n`
+      text += `💼 工作：${report.overview.workTasks}个\n`
+      text += `📚 学习：${report.overview.studyTasks}个\n`
+      text += `🏠 生活：${report.overview.lifeTasks}个\n\n`
+    }
+    
+    // 完成任务明细
+    if (report.completedTasks && report.completedTasks.length > 0) {
+      text += `✅ 完成任务明细\n`
+      report.completedTasks.forEach((task, index) => {
+        text += `${index + 1}. ${task.text}`
+        if (task.priority === 'high') text += ' ⭐'
+        if (task.category) text += ` [${task.category}]`
+        text += '\n'
+      })
+      text += '\n'
+    }
+    
+    // 关键工作
+    if (report.keyWorks && report.keyWorks.length > 0) {
+      text += `🎯 关键工作\n`
+      report.keyWorks.forEach((work, index) => {
+        text += `${index + 1}. ${work.text}\n`
+      })
+      text += '\n'
+    }
+    
+    // 风险与问题
+    if (report.issues && report.issues.total > 0) {
+      text += `⚠️ 风险与问题\n`
+      text += `逾期任务：${report.issues.total} 个\n`
+      if (report.issues.suggestions) {
+        report.issues.suggestions.forEach(s => {
+          text += `💡 ${s}\n`
+        })
+      }
+      text += '\n'
+    }
+    
+    // 下期计划
+    if (report.nextPlan) {
+      text += `📅 下期计划\n`
+      text += `待办任务：${report.nextPlan.total} 个\n`
+      text += `高优先级：${report.nextPlan.highPriority} 个\n`
+      if (report.nextPlan.recommendations) {
+        report.nextPlan.recommendations.forEach(r => {
+          text += `💡 ${r}\n`
+        })
+      }
+    }
+    
+    return text
+  }
+  
   // 构造历史记录
   const historyItem = {
     id: Date.now(),
     reportType: reportType,
     title: `${formatReportType(reportType)} - ${report.period.start} 至 ${report.period.end}`,
     period: `${report.period.start} 至 ${report.period.end}`,
-    content: '', // 纯文本内容（暂时为空）
+    content: formatReportAsText(report, reportType), // 保存完整的纯文本内容
     reportData: report, // 保存完整的结构化数据
     taskCount: report.completionStats.total,
     completedCount: report.completionStats.completed,
@@ -4602,7 +4674,8 @@ const groupedReportHistory = computed(() => {
 
 // 查看历史周报
 const viewHistoryReport = (report) => {
-  weeklyReportContent.value = report.content
+  // 使用结构化数据而不是纯文本
+  weeklyReportContent.value = report.reportData || {}
   weeklyReportTitle.value = report.title
   showReportHistoryModal.value = false
   showWeeklyReportModal.value = true
@@ -4643,24 +4716,24 @@ const initVersionHistory = () => {
       version: '0.7.10',
       date: '2026-03-03',
       features: [
-        '💡 AI生成预览框：AI建议/续写生成后先预览，可编辑后再采纳',
-        '📋 快捷模板选择器：6个预设模板（周报/月报/会议纪要/学习计划/购物清单/项目计划）',
-        '🔄 多轮对话：AI生成支持重新生成，不满意可多次尝试',
-        '📷 拍照识别：全屏编辑工具栏新增拍照按钮，复用OCR功能',
-        '✅ 操作反馈提示：所有状态更新操作都有即时成功提示（12种操作场景）'
+        '📊 报告系统全面优化：恢复完整11章节结构（智能总结、数据概览、完成任务明细等）',
+        '📅 动态章节标题：根据报告类型自动调整（日报→今日/周报→本周/月报→本月等）',
+        '💾 报告自动保存：生成后自动保存到历史，包含完整结构化数据',
+        '📈 支持7种报告类型：日报/周报/月报/季报/半年报/年报/自定义报告'
       ],
       improvements: [
-        '🔧 AI兼容性增强：支持多种返回格式（content/reasoning/response字段）',
-        '📝 max_tokens增加到1000：避免AI生成内容截断',
-        '🤖 AI助手布局优化：展开/收起按钮移至历史记录区域，参考Gemini设计',
-        '⚠️ 提醒逻辑优化：卡壳任务和里程碑提醒防重复（同一天只提醒一次）',
-        '📦 备份功能增强：添加详细日志和错误处理，修复移动端备份参数问题',
-        '💬 用户体验优化：任务完成/删除/编辑/置顶/恢复等12种操作都有绿色成功提示'
+        '🔄 今日规划融入AI助手：删除右上角独立按钮，统一通过AI助手（🤖）→"📅 今日规划"使用',
+        '🗑️ 删除冗余功能：删除"快速生成周报"入口、模板选择系统、无效配置项',
+        '🔧 "周报历史"改名为"报告历史"',
+        '⏰ 时间节点计算修复：根据报告类型动态计算',
+        '📝 报告生成统一：所有类型使用同一套丰富结构',
+        '🧹 代码清理：删除 DailyPlanModal 组件及相关变量、函数、样式'
       ],
       fixes: [
-        '修复AI助手收起后无法展开的问题：保留展开按钮可见',
-        '修复完整备份writeFile参数错误：添加encoding: utf8参数',
-        '修复子任务创建成功后提示不显示的问题：添加300ms延迟等待弹窗关闭'
+        '修复日报/周报模板无效（生效率从71.4%提升到100%）',
+        '修复月报显示"本周进展"（现在正确显示"本月进展"）',
+        '修复时间节点计算错误（所有类型都错误使用"月"概念）',
+        '修复模板定义与实现不一致'
       ]
     },
     {
@@ -5651,44 +5724,6 @@ const handleConfirmAITasks = (tasks) => {
   })
   
   showNotification(`✅ 成功创建 ${tasks.length} 个任务`)
-}
-
-// AI 每日规划
-const generateDailyPlan = async () => {
-  // 获取所有待办任务
-  const pendingTasks = taskStore.tasks.filter(task => task.status === 'pending')
-  
-  if (pendingTasks.length === 0) {
-    alert('没有待办任务，无法生成规划')
-    return
-  }
-  
-  try {
-    aiLoading.value = true
-    aiLoadingText.value = 'AI 正在生成今日规划...'
-    aiLoadingSubText.value = `分析 ${pendingTasks.length} 个待办任务`
-    
-    // 为任务添加截止时间信息
-    const tasksWithDeadline = pendingTasks.map(task => ({
-      ...task,
-      deadline: task.customDate && task.customTime 
-        ? `${task.customDate} ${task.customTime}` 
-        : null
-    }))
-    
-    const plan = await AIDailyPlanner.generateDailyPlan(tasksWithDeadline)
-    
-    dailyPlan.value = plan
-    dailyPlanTasks.value = tasksWithDeadline
-    showDailyPlan.value = true
-    
-    showNotification('✨ AI 已生成今日规划', 'success')
-  } catch (error) {
-    console.error('AI生成规划失败:', error)
-    alert(`AI生成规划失败：${error.message}`)
-  } finally {
-    aiLoading.value = false
-  }
 }
 
 // AI 写作助手 - 智能提取任务信息
@@ -10730,7 +10765,6 @@ const handleRefresh = async () => {
   showTextResult.value = false
   showTaskPreview.value = false
   showSubtaskPreview.value = false
-  showDailyPlan.value = false
   showVersionModal.value = false
   showFullscreenDesc.value = false
   showPrivacyPolicy.value = false
@@ -11640,9 +11674,6 @@ onMounted(async () => {
       } else if (showDataStats.value) {
         console.log('✅ 关闭数据统计')
         showDataStats.value = false
-      } else if (showDailyPlan.value) {
-        console.log('✅ 关闭今日规划')
-        showDailyPlan.value = false
       } else if (showDailySummary.value) {
         console.log('✅ 关闭今日总结')
         showDailySummary.value = false
@@ -13340,18 +13371,6 @@ watch(() => reportData.value, (newData) => {
 .btn-ai-chat:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(240, 147, 251, 0.4);
-}
-
-/* AI 今日规划按钮 */
-.btn-daily-plan {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-  color: white !important;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-}
-
-.btn-daily-plan:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
 }
 
 /* 演示模式按钮 */
@@ -20180,6 +20199,17 @@ watch(() => reportData.value, (newData) => {
   padding: 0.75rem;
   background: #f8f9fa;
   border-radius: 8px;
+}
+
+.category-header {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #667eea;
+  padding: 0.5rem 0.75rem;
+  margin-top: 0.5rem;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  border-radius: 6px;
+  border-left: 3px solid #667eea;
 }
 
 .highlight-number {
