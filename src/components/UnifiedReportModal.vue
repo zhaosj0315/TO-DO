@@ -10,12 +10,18 @@
       </div>
 
       <div class="modal-body">
+        <!-- 历史报告提示条 -->
+        <div v-if="isHistoryMode" class="history-notice">
+          📜 这是 {{ formatHistoryDate(props.historyReport.createdAt) }} 生成的历史报告（只读）
+        </div>
+
         <!-- 报告类型选择 -->
         <div class="report-type-selector">
           <button 
             v-for="type in reportTypes" 
             :key="type.value"
             :class="['type-btn', { active: selectedType === type.value }]"
+            :disabled="isHistoryMode"
             @click="selectType(type.value)"
           >
             {{ type.icon }} {{ type.label }}
@@ -70,10 +76,11 @@
 
       <!-- 操作按钮 -->
       <div v-if="reportGenerated && !generating" class="modal-footer">
-        <button class="btn btn-secondary" @click="saveToHistory">💾 保存</button>
+        <button v-if="!isHistoryMode" class="btn btn-secondary" @click="saveToHistory">💾 保存</button>
+        <button v-if="isHistoryMode" class="btn btn-secondary" @click="saveAsNew">📋 另存为</button>
         <button class="btn btn-secondary" @click="exportHTML">📄 导出</button>
         <button class="btn btn-secondary" @click="copyText">📋 复制</button>
-        <button class="btn btn-secondary" @click="showHistory">📚 历史</button>
+        <button v-if="!isHistoryMode" class="btn btn-secondary" @click="showHistory">📚 历史</button>
         <button class="btn btn-primary" @click="$emit('close')">关闭</button>
       </div>
     </div>
@@ -122,6 +129,9 @@ const generating = ref(false)
 const reportGenerated = ref(false)
 const visualData = ref(null)
 const textData = ref(null)
+
+// 是否为历史报告模式（只读）
+const isHistoryMode = computed(() => !!props.historyReport)
 
 // 暴露内部状态和方法给父组件（必须在变量定义之后）
 defineExpose({
@@ -437,6 +447,27 @@ const saveToHistory = () => {
   alert('报告已保存到历史')
 }
 
+// 另存为新报告（历史模式）
+const saveAsNew = () => {
+  const report = {
+    id: Date.now(),
+    type: selectedType.value,
+    period: visualData.value.period,
+    visualData: visualData.value,
+    textData: textData.value,
+    createdAt: new Date().toISOString()
+  }
+  
+  emit('report-saved', report)
+  alert('已另存为新报告')
+}
+
+// 格式化历史日期
+const formatHistoryDate = (isoString) => {
+  const date = new Date(isoString)
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+}
+
 // 导出HTML
 const exportHTML = () => {
   // 复用原有的导出逻辑
@@ -652,6 +683,18 @@ watch(() => props.visible, (newVal) => {
   padding: 1rem 1.5rem;
 }
 
+/* 历史报告提示条 */
+.history-notice {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-left: 4px solid #f59e0b;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #92400e;
+  font-weight: 500;
+}
+
 /* 报告类型选择器 */
 .report-type-selector {
   display: flex;
@@ -672,9 +715,14 @@ watch(() => props.visible, (newVal) => {
   font-size: 0.9rem;
 }
 
-.type-btn:hover {
+.type-btn:hover:not(:disabled) {
   border-color: #667eea;
   transform: translateY(-2px);
+}
+
+.type-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .type-btn.active {
