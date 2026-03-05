@@ -14233,9 +14233,11 @@ watch(() => reportData.value, (newData) => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 1rem;
+  height: 42px;
+  width: 63px;
+  padding: 0 0.5rem;
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  border-radius: 20px;
+  border-radius: 21px;
   cursor: pointer;
   transition: all 0.3s;
   border: 2px solid rgba(255, 255, 255, 0.8);
@@ -14248,7 +14250,7 @@ watch(() => reportData.value, (newData) => {
 }
 
 .tree-icon {
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   animation: treeGrow 2s ease-in-out infinite;
 }
 
@@ -14258,17 +14260,17 @@ watch(() => reportData.value, (newData) => {
 }
 
 .tree-progress {
-  width: 60px;
-  height: 6px;
+  width: 20px;
+  height: 4px;
   background: rgba(255, 255, 255, 0.3);
-  border-radius: 3px;
+  border-radius: 2px;
   overflow: hidden;
 }
 
 .tree-progress .progress-bar {
   height: 100%;
   background: white;
-  border-radius: 3px;
+  border-radius: 2px;
   transition: width 0.5s ease;
 }
 
