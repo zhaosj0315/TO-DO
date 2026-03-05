@@ -3346,7 +3346,7 @@
 
     <!-- 任务树成长详情弹窗 -->
     <div v-if="showGrowthDetail" class="modal-overlay" @click.self="showGrowthDetail = false">
-      <div class="growth-detail-modal">
+      <div class="report-bottom-sheet">
         <div class="modal-header">
           <button class="back-btn" @click="showGrowthDetail = false">
             <span>← 返回</span>
@@ -3382,52 +3382,52 @@
             <div class="level-item" :class="{ active: treeLevel >= 1 }">
               <span class="level-icon">🌱</span>
               <span class="level-name">种子</span>
-              <span class="level-score">0-7分</span>
+              <span class="level-score">0-79分</span>
             </div>
             <div class="level-item" :class="{ active: treeLevel >= 2 }">
               <span class="level-icon">🌿</span>
               <span class="level-name">幼苗</span>
-              <span class="level-score">8-19分</span>
+              <span class="level-score">80-199分</span>
             </div>
             <div class="level-item" :class="{ active: treeLevel >= 3 }">
               <span class="level-icon">🪴</span>
               <span class="level-name">树苗</span>
-              <span class="level-score">20-39分</span>
+              <span class="level-score">200-399分</span>
             </div>
             <div class="level-item" :class="{ active: treeLevel >= 4 }">
               <span class="level-icon">🌳</span>
               <span class="level-name">小树</span>
-              <span class="level-score">40-69分</span>
+              <span class="level-score">400-699分</span>
             </div>
             <div class="level-item" :class="{ active: treeLevel >= 5 }">
               <span class="level-icon">🌲</span>
               <span class="level-name">大树</span>
-              <span class="level-score">70-119分</span>
+              <span class="level-score">700-1199分</span>
             </div>
             <div class="level-item" :class="{ active: treeLevel >= 6 }">
               <span class="level-icon">🌸</span>
               <span class="level-name">开花结果</span>
-              <span class="level-score">120-199分</span>
+              <span class="level-score">1200-1999分</span>
             </div>
             <div class="level-item" :class="{ active: treeLevel >= 7 }">
               <span class="level-icon">🌺</span>
               <span class="level-name">繁茂之树</span>
-              <span class="level-score">200-299分</span>
+              <span class="level-score">2000-2999分</span>
             </div>
             <div class="level-item" :class="{ active: treeLevel >= 8 }">
               <span class="level-icon">🌻</span>
               <span class="level-name">茂盛大树</span>
-              <span class="level-score">300-499分</span>
+              <span class="level-score">3000-4999分</span>
             </div>
             <div class="level-item" :class="{ active: treeLevel >= 9 }">
               <span class="level-icon">🏵️</span>
               <span class="level-name">参天大树</span>
-              <span class="level-score">500-999分</span>
+              <span class="level-score">5000-9999分</span>
             </div>
             <div class="level-item" :class="{ active: treeLevel >= 10 }">
               <span class="level-icon">🎋</span>
               <span class="level-name">神树</span>
-              <span class="level-score">1000+分</span>
+              <span class="level-score">10000+分</span>
             </div>
           </div>
           
@@ -6858,15 +6858,15 @@ const growthScore = computed(() => {
 // 树的等级 (1-10)
 const treeLevel = computed(() => {
   const score = growthScore.value
-  if (score >= 1000) return 10  // 神树
-  if (score >= 500) return 9    // 参天大树
-  if (score >= 300) return 8    // 茂盛大树
-  if (score >= 200) return 7    // 繁茂之树
-  if (score >= 120) return 6    // 开花结果
-  if (score >= 70) return 5     // 大树
-  if (score >= 40) return 4     // 小树
-  if (score >= 20) return 3     // 树苗
-  if (score >= 8) return 2      // 幼苗
+  if (score >= 10000) return 10  // 神树
+  if (score >= 5000) return 9    // 参天大树
+  if (score >= 3000) return 8    // 茂盛大树
+  if (score >= 2000) return 7    // 繁茂之树
+  if (score >= 1200) return 6    // 开花结果
+  if (score >= 700) return 5     // 大树
+  if (score >= 400) return 4     // 小树
+  if (score >= 200) return 3     // 树苗
+  if (score >= 80) return 2      // 幼苗
   return 1                       // 种子
 })
 
@@ -6879,7 +6879,7 @@ const treeIcon = computed(() => {
 // 当前等级进度 (0-100)
 const treeProgress = computed(() => {
   const score = growthScore.value
-  const thresholds = [0, 8, 20, 40, 70, 120, 200, 300, 500, 1000, 999999]
+  const thresholds = [0, 80, 200, 400, 700, 1200, 2000, 3000, 5000, 10000, 999999]
   const current = thresholds[treeLevel.value - 1]
   const next = thresholds[treeLevel.value]
   
@@ -6890,7 +6890,7 @@ const treeProgress = computed(() => {
 
 // 获取下一等级所需分数
 const getNextLevelScore = () => {
-  const thresholds = [8, 20, 40, 70, 120, 200, 300, 500, 1000, 999999]
+  const thresholds = [80, 200, 400, 700, 1200, 2000, 3000, 5000, 10000, 999999]
   return thresholds[treeLevel.value - 1]
 }
 
@@ -21862,19 +21862,7 @@ watch(() => reportData.value, (newData) => {
 }
 
 /* 版本历史样式 */
-/* 任务树成长详情弹窗 */
-.growth-detail-modal {
-  background: white;
-  border-radius: 16px;
-  width: 90%;
-  max-width: 500px;
-  max-height: 85vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-}
-
+/* 任务树成长详情弹窗 - 复用 report-bottom-sheet 样式 */
 .growth-current {
   display: flex;
   align-items: center;
