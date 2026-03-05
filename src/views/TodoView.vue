@@ -12712,13 +12712,10 @@ onMounted(async () => {
         console.log('✅ 恢复筛选状态')
         setFilter('all')
       } 
-      // 第一层：路由返回或退出
-      else if (canGoBack) {
-        console.log('✅ 路由返回')
-        window.history.back()
-      } else {
-        console.log('✅ 退出应用')
-        App.exitApp() // 退出应用
+      // 首页状态：退出应用到后台
+      else {
+        console.log('✅ 首页返回 → 退出应用到后台')
+        App.exitApp()
       }
     })
   }
