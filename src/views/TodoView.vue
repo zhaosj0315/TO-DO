@@ -403,7 +403,7 @@
         <footer class="app-footer">
           <div class="footer-content">
             <p class="footer-main">
-              <span class="footer-version">TO-DO App v0.7.8</span>
+              <span class="footer-version">TO-DO App v0.8.0</span>
               <span class="footer-divider">·</span>
               <span class="footer-text">
                 {{ currentLanguage === 'zh' ? '完全离线 · 本地存储' : 'Offline · Local Storage' }}
@@ -4531,14 +4531,14 @@ const batchDeleteReports = () => {
 const showVersionModal = ref(false) // 版本历史弹窗
 const versionHistory = ref([]) // 版本历史列表
 const hasUnreadVersions = ref(false) // 是否有未读版本
-const CURRENT_VERSION = '0.7.11' // 当前应用版本
+const CURRENT_VERSION = '0.8.0' // 当前应用版本
 const versionModalTitle = ref('🎉 版本更新') // 弹窗标题（动态）
 
 // 版本历史数据
 const initVersionHistory = () => {
   versionHistory.value = [
     {
-      version: '0.7.11',
+      version: '0.8.0',
       date: '2026-03-04',
       features: [
         '📊 智能报告中心：整合"数据报告"和"区间报告"为统一入口，双视图切换（📈可视化 + 📝文本）',
