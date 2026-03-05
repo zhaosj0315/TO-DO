@@ -103,21 +103,6 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'show-history', 'report-saved'])
 
-// 暴露内部状态和方法给父组件
-defineExpose({
-  reportGenerated,
-  handleBackButton: () => {
-    if (reportGenerated.value) {
-      // 返回到报告类型选择
-      reportGenerated.value = false
-      visualData.value = null
-      textData.value = null
-      return true // 表示已处理
-    }
-    return false // 表示应该关闭弹窗
-  }
-})
-
 // 报告类型
 const reportTypes = [
   { value: 'daily', label: '日报', icon: '📝' },
@@ -137,6 +122,21 @@ const generating = ref(false)
 const reportGenerated = ref(false)
 const visualData = ref(null)
 const textData = ref(null)
+
+// 暴露内部状态和方法给父组件（必须在变量定义之后）
+defineExpose({
+  reportGenerated,
+  handleBackButton: () => {
+    if (reportGenerated.value) {
+      // 返回到报告类型选择
+      reportGenerated.value = false
+      visualData.value = null
+      textData.value = null
+      return true // 表示已处理
+    }
+    return false // 表示应该关闭弹窗
+  }
+})
 
 // 选择报告类型
 const selectType = (type) => {
