@@ -1,0 +1,496 @@
+{
+  "audit_date": "2026-03-06T00:27:00.890181",
+  "project_version": "v0.8.1",
+  "summary": {
+    "total_issues": 1,
+    "cleanup_candidates": 28,
+    "dead_code_found": 39
+  },
+  "issues": [
+    "⚠️  README缺少任务树成长系统的说明"
+  ],
+  "cleanup_candidates": [
+    {
+      "file": "RELEASE_NOTES_v0.8.1.md",
+      "reason": "过时的版本文档（已有v0.8.1）",
+      "type": "version_doc",
+      "safe_to_delete": true
+    },
+    {
+      "file": "ANDROID_BACK_GESTURE_FIX_v0.8.0.md",
+      "reason": "过时的版本文档（已有v0.8.1）",
+      "type": "version_doc",
+      "safe_to_delete": true
+    },
+    {
+      "file": "DEAD_CODE_CLEANUP_GUIDE_v0.7.12.md",
+      "reason": "过时的版本文档（已有v0.8.1）",
+      "type": "version_doc",
+      "safe_to_delete": true
+    },
+    {
+      "file": "MAINTENANCE_SUMMARY_v0.7.12.md",
+      "reason": "过时的版本文档（已有v0.8.1）",
+      "type": "version_doc",
+      "safe_to_delete": true
+    },
+    {
+      "file": "DOC_AUDIT_REPORT_v0.7.12.md",
+      "reason": "过时的版本文档（已有v0.8.1）",
+      "type": "version_doc",
+      "safe_to_delete": true
+    },
+    {
+      "file": "DOCUMENTATION_INDEX_v0.7.12.md",
+      "reason": "过时的版本文档（已有v0.8.1）",
+      "type": "version_doc",
+      "safe_to_delete": true
+    },
+    {
+      "file": "PHASE_2_4_COMPLETE_v0.7.12.md",
+      "reason": "过时的版本文档（已有v0.8.1）",
+      "type": "version_doc",
+      "safe_to_delete": true
+    },
+    {
+      "file": "AUDIT_REPORT_v0.7.12.json",
+      "reason": "过时的版本文档（已有v0.8.1）",
+      "type": "version_doc",
+      "safe_to_delete": true
+    },
+    {
+      "file": "GIT_COMMIT_GUIDE_v0.7.12.md",
+      "reason": "过时的版本文档（已有v0.8.1）",
+      "type": "version_doc",
+      "safe_to_delete": true
+    },
+    {
+      "file": "FINAL_DELIVERABLES_v0.7.12.md",
+      "reason": "过时的版本文档（已有v0.8.1）",
+      "type": "version_doc",
+      "safe_to_delete": true
+    },
+    {
+      "file": "MAINTENANCE_COMPLETE_v0.7.12.md",
+      "reason": "过时的版本文档（已有v0.8.1）",
+      "type": "version_doc",
+      "safe_to_delete": true
+    },
+    {
+      "file": "RELEASE_v0.7.10.md",
+      "reason": "过时的版本文档（已有v0.8.1）",
+      "type": "version_doc",
+      "safe_to_delete": true
+    },
+    {
+      "file": "audit-and-cleanup.py",
+      "reason": "过程性脚本（已完成任务）",
+      "type": "process_script",
+      "safe_to_delete": true
+    },
+    {
+      "file": "cleanup-phase1.sh",
+      "reason": "过程性脚本（已完成任务）",
+      "type": "process_script",
+      "safe_to_delete": true
+    },
+    {
+      "file": "execute-phase2-4.sh",
+      "reason": "过程性脚本（已完成任务）",
+      "type": "process_script",
+      "safe_to_delete": true
+    },
+    {
+      "file": "docs_backup",
+      "reason": "旧版本备份目录（已归档）",
+      "type": "backup_dir",
+      "safe_to_delete": true
+    },
+    {
+      "file": "docs_backup_20260303_170852",
+      "reason": "旧版本备份目录（已归档）",
+      "type": "backup_dir",
+      "safe_to_delete": true
+    },
+    {
+      "file": ".DS_Store",
+      "reason": "macOS系统文件",
+      "type": "system_file",
+      "safe_to_delete": true
+    },
+    {
+      "file": "docs_backup_20260303_170852/.DS_Store",
+      "reason": "macOS系统文件",
+      "type": "system_file",
+      "safe_to_delete": true
+    },
+    {
+      "file": "node_modules/.DS_Store",
+      "reason": "macOS系统文件",
+      "type": "system_file",
+      "safe_to_delete": true
+    },
+    {
+      "file": "release/.DS_Store",
+      "reason": "macOS系统文件",
+      "type": "system_file",
+      "safe_to_delete": true
+    },
+    {
+      "file": "docs/.DS_Store",
+      "reason": "macOS系统文件",
+      "type": "system_file",
+      "safe_to_delete": true
+    },
+    {
+      "file": "ios/.DS_Store",
+      "reason": "macOS系统文件",
+      "type": "system_file",
+      "safe_to_delete": true
+    },
+    {
+      "file": "android/.DS_Store",
+      "reason": "macOS系统文件",
+      "type": "system_file",
+      "safe_to_delete": true
+    },
+    {
+      "file": "scripts/.DS_Store",
+      "reason": "macOS系统文件",
+      "type": "system_file",
+      "safe_to_delete": true
+    },
+    {
+      "file": ".git/.DS_Store",
+      "reason": "macOS系统文件",
+      "type": "system_file",
+      "safe_to_delete": true
+    },
+    {
+      "file": "src/.DS_Store",
+      "reason": "macOS系统文件",
+      "type": "system_file",
+      "safe_to_delete": true
+    },
+    {
+      "file": "android/app/.DS_Store",
+      "reason": "macOS系统文件",
+      "type": "system_file",
+      "safe_to_delete": true
+    }
+  ],
+  "dead_code": [
+    {
+      "function": "handleClearWaitFor",
+      "defined_in": [
+        "src/components/TaskDetailModal.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "formatDateShort",
+      "defined_in": [
+        "src/components/TaskDetailModal.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "formatDeadlineShort",
+      "defined_in": [
+        "src/components/TaskDetailModal.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "loadChatHistory",
+      "defined_in": [
+        "src/components/AIChat.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "clearChatHistory",
+      "defined_in": [
+        "src/components/AIChat.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "callOllama",
+      "defined_in": [
+        "src/components/AIChat.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "callOpenAI",
+      "defined_in": [
+        "src/components/AIChat.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "setDefault",
+      "defined_in": [
+        "src/components/AIModelConfig.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "openTaskSplitter",
+      "defined_in": [
+        "src/views/TodoView.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "openTaskSplitterForNew",
+      "defined_in": [
+        "src/views/TodoView.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "getPlaceholder",
+      "defined_in": [
+        "src/views/TodoView.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "triggerAIAssist",
+      "defined_in": [
+        "src/views/TodoView.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "handleTaskInputBlur",
+      "defined_in": [
+        "src/views/TodoView.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "getPomodorosByPriority",
+      "defined_in": [
+        "src/views/TodoView.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "getPomodorosByTime",
+      "defined_in": [
+        "src/views/TodoView.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "getConsecutiveDays",
+      "defined_in": [
+        "src/views/TodoView.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "getMaxDailyPomodoros",
+      "defined_in": [
+        "src/views/TodoView.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "getCompletionRate",
+      "defined_in": [
+        "src/views/TodoView.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "getLevelBadge",
+      "defined_in": [
+        "src/views/TodoView.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "getTotalFocusMinutes",
+      "defined_in": [
+        "src/views/TodoView.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "formatPomodoroTime",
+      "defined_in": [
+        "src/views/TodoView.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "formatPomodoroDate",
+      "defined_in": [
+        "src/views/TodoView.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "getPomodoroMinutes",
+      "defined_in": [
+        "src/views/TodoView.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "filterTasks",
+      "defined_in": [
+        "src/views/TodoView.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "addTaskAndClose",
+      "defined_in": [
+        "src/views/TodoView.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "openEditModal",
+      "defined_in": [
+        "src/views/TodoView.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "exportPoster",
+      "defined_in": [
+        "src/views/TodoView.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "formatLogTimeMini",
+      "defined_in": [
+        "src/views/TodoView.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "getTaskTypeText",
+      "defined_in": [
+        "src/views/TodoView.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "parseCategoryText",
+      "defined_in": [
+        "src/views/TodoView.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "parsePriorityText",
+      "defined_in": [
+        "src/views/TodoView.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "parseTypeText",
+      "defined_in": [
+        "src/views/TodoView.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "parseStatusText",
+      "defined_in": [
+        "src/views/TodoView.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "parseWeekdays",
+      "defined_in": [
+        "src/views/TodoView.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "parseDateTime",
+      "defined_in": [
+        "src/views/TodoView.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "getPlannedDeadlineText",
+      "defined_in": [
+        "src/views/TodoView.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "getDeadlineText",
+      "defined_in": [
+        "src/views/TodoView.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "testNotification",
+      "defined_in": [
+        "src/views/TodoView.vue"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    },
+    {
+      "function": "hideNotification",
+      "defined_in": [
+        "src/services/notificationService.js"
+      ],
+      "references": 0,
+      "safe_to_delete": false
+    }
+  ]
+}
