@@ -400,7 +400,7 @@
         <footer class="app-footer">
           <div class="footer-content">
             <p class="footer-main">
-              <span class="footer-version">TO-DO App v0.8.1</span>
+              <span class="footer-version">TO-DO App v0.8.2</span>
               <span class="footer-divider">·</span>
               <span class="footer-text">
                 {{ currentLanguage === 'zh' ? '完全离线 · 本地存储' : 'Offline · Local Storage' }}
@@ -4797,7 +4797,7 @@ const batchDeleteReports = () => {
 const showVersionModal = ref(false) // 版本历史弹窗
 const versionHistory = ref([]) // 版本历史列表
 const hasUnreadVersions = ref(false) // 是否有未读版本
-const CURRENT_VERSION = '0.8.1' // 当前应用版本
+const CURRENT_VERSION = '0.8.2' // 当前应用版本
 const versionModalTitle = ref('🎉 版本更新') // 弹窗标题（动态）
 
 // 版本历史数据
@@ -4806,6 +4806,23 @@ const showAllVersions = ref(false) // 是否展开全部历史
 const initVersionHistory = () => {
   // 完整版本历史
   const allVersions = [
+    {
+      version: '0.8.2',
+      date: '2026-03-06',
+      features: [
+        '🌳 任务树连续生长：图标、尺寸、颜色随成长值平滑变化，30个细分状态',
+        '📊 10阶段×3状态：每个等级内部3个过渡状态，避免突兀跳跃',
+        '🎨 尺寸渐变：1.35rem → 1.8rem 随成长值线性增长',
+        '🌈 颜色渐变：浅绿 → 深绿 → 金色（0-10000分连续变化）'
+      ],
+      improvements: [
+        '✨ 平滑过渡：0.5秒缓动动画，每完成任务都能看到变化',
+        '💡 激励增强：微小进步也有视觉反馈，持续的成长感',
+        '🎯 细节丰富：从10个固定状态扩展到30个细分状态',
+        '🌱 示例：0-26分🌱（小）→ 27-53分🌱（中）→ 54-80分🌿（大）'
+      ],
+      fixes: []
+    },
     {
       version: '0.8.1',
       date: '2026-03-05',
