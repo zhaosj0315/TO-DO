@@ -4,9 +4,6 @@
     <main class="main-content glass-card" ref="mainContent">
       <!-- 顶部标题栏 -->
       <header class="header">
-        <div class="user-info">
-          <h1>{{ currentUsername }}{{ t('tasksSuffix') }}</h1>
-        </div>
         <div class="header-actions">
           <!-- 刷新按钮 - 最常用，放最左 -->
           <button class="btn-icon-circle btn-refresh-icon" @click="handleRefresh" :title="t('refresh')">
@@ -27,7 +24,7 @@
           </button>
           <!-- 个人头像 - 最右侧 -->
           <button class="btn-avatar" @click="showProfile = true" :title="t('profile')">
-            <div class="avatar-mini">{{ currentUsername ? currentUsername.charAt(0).toUpperCase() : 'U' }}</div>
+            <span class="username-text">{{ currentUsername }}</span>
           </button>
         </div>
       </header>
@@ -99,9 +96,6 @@
               @keyup.enter="addTask"
             />
             <div class="quick-buttons">
-              <button class="btn-ai" @click="triggerAIAssist" :title="t('aiAssist')" :disabled="aiLoading">
-                {{ aiLoading ? '⏳' : '🤖' }}
-              </button>
               <button class="btn-camera" @click="scanTextFromCamera" :title="t('scanText')">
                 📷
               </button>
@@ -4701,7 +4695,8 @@ const initVersionHistory = () => {
         '补全弹窗支持：showManualSubtaskModal、showEnhancedStats、showAIMenu、showAITaskPreview',
         '修复层级关系：统计中心作为个人主页的子弹窗，返回时先回到个人主页再回到首页',
         '删除重复判断：showReportHistoryModal在第二层的重复判断',
-        '统一监听器管理：删除UnifiedReportModal的独立监听器，由TodoView统一管理'
+        '统一监听器管理：删除UnifiedReportModal的独立监听器，由TodoView统一管理',
+        '🗑️ 删除任务输入框的AI优化标题按钮（🤖）：标题字数少，无需AI优化，界面更简洁'
       ],
       fixes: [
         '修复showPomodoroStats变量未定义导致返回手势崩溃',
@@ -13942,20 +13937,13 @@ watch(() => reportData.value, (newData) => {
 
 .header-actions {
   display: flex;
-  gap: 0.5rem;
+  gap: 1rem;
   align-items: center;
-  /* 胶囊化封装 - iOS风格 */
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  padding: 0.4rem 0.6rem;
-  border-radius: 25px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   padding: 1rem 0.1rem;
   margin-bottom: 0.5rem;
@@ -13964,7 +13952,7 @@ watch(() => reportData.value, (newData) => {
 }
 
 .user-info h1 {
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   font-weight: 700;
   margin: 0;
   line-height: 1.2;
@@ -13972,20 +13960,30 @@ watch(() => reportData.value, (newData) => {
 
 /* 统一的圆形图标按钮 */
 .btn-icon-circle {
-  width: 28px;
-  height: 28px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
-  border: none;
-  background: rgba(255, 255, 255, 0.25);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  font-size: 0.9rem;
+  font-size: 1.35rem;
   cursor: pointer;
   transition: all 0.3s;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.btn-icon-circle:hover {
+  border-color: rgba(255, 255, 255, 1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-icon-circle:active {
+  transform: scale(0.95);
 }
 
 .btn-icon-circle:hover {
@@ -14009,16 +14007,17 @@ watch(() => reportData.value, (newData) => {
   to { transform: rotate(360deg); }
 }
 
-/* 刷新按钮特殊尺寸和样式 */
+/* 刷新按钮 */
 .btn-refresh-icon {
-  background: rgba(102, 126, 234, 0.25) !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
   color: white !important;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .btn-refresh-icon:hover {
-  background: rgba(102, 126, 234, 0.4) !important;
-  color: white !important;
+  border-color: rgba(255, 255, 255, 1) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
 /* AI问答按钮 */
@@ -14029,48 +14028,35 @@ watch(() => reportData.value, (newData) => {
 }
 
 .btn-ai:hover {
+  border-color: rgba(255, 255, 255, 1) !important;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
-/* AI 对话创建按钮 */
-.btn-ai-chat {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
-  color: white !important;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-}
-
-.btn-ai-chat:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(240, 147, 251, 0.4);
-}
-
 /* 演示模式按钮 */
 .btn-tutorial {
-  background: rgba(255, 193, 7, 0.25) !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
   color: white !important;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  animation: glow 2s ease-in-out infinite;
 }
 
 .btn-tutorial:hover {
-  background: rgba(255, 193, 7, 0.4) !important;
-  color: white !important;
-  animation: none;
-}
-
-@keyframes glow {
-  0%, 100% {
-    box-shadow: 0 0 5px rgba(255, 193, 7, 0.5);
-  }
-  50% {
-    box-shadow: 0 0 15px rgba(255, 193, 7, 0.8);
-  }
+  border-color: rgba(255, 255, 255, 1) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
 /* 回收站按钮 */
 .btn-trash {
-  /* 使用默认样式 */
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.btn-trash:hover {
+  border-color: rgba(255, 255, 255, 1) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
 /* 数据统计按钮 */
@@ -14099,37 +14085,34 @@ watch(() => reportData.value, (newData) => {
 }
 
 .btn-avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.9);
-  background: white;
+  height: 42px;
+  padding: 0 1.2rem;
+  border-radius: 21px;
+  border: 2px solid rgba(255, 255, 255, 0.8) !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   cursor: pointer;
   transition: all 0.3s;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
-  box-shadow: 0 0 0 rgba(0, 0, 0, 0);
-  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 
 .btn-avatar:hover {
+  border-color: rgba(255, 255, 255, 1) !important;
   transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
-.avatar-mini {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+.btn-avatar:active {
+  transform: scale(0.95);
+}
+
+.username-text {
   color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.8rem;
-  font-weight: 800;
+  font-size: 1rem;
+  font-weight: 600;
+  white-space: nowrap;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
