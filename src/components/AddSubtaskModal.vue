@@ -8,7 +8,7 @@
 
       <div class="modal-body">
         <!-- 父任务信息 -->
-        <div class="parent-task-info">
+        <div v-if="parentTask?.text" class="parent-task-info">
           <span class="info-label">父任务：</span>
           <span class="info-value">{{ parentTask.text }}</span>
         </div>
@@ -108,7 +108,11 @@ const props = defineProps({
   visible: Boolean,
   parentTask: {
     type: Object,
-    required: true
+    default: () => ({ category: 'work' })
+  },
+  initialData: {
+    type: Object,
+    default: null
   }
 })
 
@@ -128,13 +132,14 @@ const formData = ref({
 watch(() => props.visible, (newVal) => {
   if (newVal) {
     formData.value = {
-      text: '',
-      description: '',
-      priority: 'medium',
-      category: props.parentTask.category || 'work',
+      text: props.initialData?.text || '',
+      description: props.initialData?.description || '',
+      priority: props.initialData?.priority || 'medium',
+      category: props.initialData?.category || props.parentTask?.category || 'work',
       type: 'today',
       customDate: '',
-      customTime: ''
+      customTime: '',
+      estimatedDuration: props.initialData?.estimatedDuration || 60
     }
   }
 })
@@ -156,20 +161,24 @@ const handleSubmit = () => {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  z-index: 2000;
-  animation: fadeIn 0.2s;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease;
 }
 
-.bottom-sheet {
-  width: 96%;
-  max-width: 600px;
-  max-height: 85vh;
+.modal-content {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: white;
-  border-radius: 16px 16px 0 0;
-  animation: slideUp 0.3s;
+  width: 100%;
+  max-height: 90vh;
+  border-radius: 20px 20px 0 0;
   display: flex;
   flex-direction: column;
-  margin-bottom: 0;
+  animation: slideUp 0.3s ease;
+  overflow: hidden;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
 }
 
 @keyframes fadeIn {
@@ -183,35 +192,52 @@ const handleSubmit = () => {
 }
 
 .modal-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1.5rem 1rem 1rem;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 1.25rem;
-  border-bottom: 1px solid #e5e7eb;
+  justify-content: space-between;
+  position: relative;
   flex-shrink: 0;
+}
+
+.modal-header::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 2px;
 }
 
 .modal-header h3 {
   margin: 0;
-  font-size: 1.1rem;
-  color: #333;
+  font-size: 1.2rem;
+  flex: 1;
+  text-align: center;
 }
 
 .btn-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
   width: 32px;
   height: 32px;
-  border: none;
-  background: rgba(0, 0, 0, 0.05);
   border-radius: 50%;
   cursor: pointer;
   font-size: 1.2rem;
-  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.2s;
 }
 
 .btn-close:hover {
-  background: rgba(0, 0, 0, 0.1);
-  transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .modal-body {

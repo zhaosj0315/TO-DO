@@ -612,7 +612,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['close', 'edit', 'refresh', 'split', 'show-loading', 'hide-loading', 'save', 'notify'])  // 🆕 添加notify事件
+const emit = defineEmits(['close', 'edit', 'refresh', 'split', 'show-loading', 'hide-loading', 'save', 'notify', 'showManualSubtask'])
 
 const taskStore = useOfflineTaskStore()
 const showAddLogModal = ref(false)

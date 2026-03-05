@@ -1983,6 +1983,7 @@
       @show-loading="handleShowLoading"
       @hide-loading="handleHideLoading"
       @notify="handleTaskNotify"
+      @showManualSubtask="handleShowManualSubtask"
     />
 
     <!-- 🆕 任务输入预览弹窗 -->
@@ -1994,6 +1995,7 @@
       @save="saveTaskFromPreview"
       @split="handlePreviewSplit"
       @notify="handleTaskNotify"
+      @showManualSubtask="handleShowManualSubtask"
     />
 
     <!-- 子任务预览弹窗 -->
@@ -2003,6 +2005,16 @@
       :subtasks="subtasks"
       @close="showSubtaskPreview = false"
       @create="handleCreateSubtasks"
+    />
+
+    <!-- 手动添加子任务弹窗 -->
+    <AddSubtaskModal
+      v-if="manualSubtaskParent"
+      :visible="showManualSubtaskModal"
+      :parent-task="manualSubtaskParent"
+      :initial-data="manualSubtaskData"
+      @close="showManualSubtaskModal = false; manualSubtaskParent = null; manualSubtaskData = null"
+      @submit="handleManualSubtaskSubmit"
     />
 
     <!-- 演示模式 -->
@@ -2163,6 +2175,71 @@
           </div>
         </div>
         
+        <!-- AI 功能菜单 -->
+        <div v-if="showAIMenu" class="ai-menu-sheet">
+          <div class="menu-header">
+            <span>🤖 AI 助手</span>
+            <button @click="showAIMenu = false" class="btn-close-menu">✕</button>
+          </div>
+          <div class="menu-list">
+            <button 
+              class="menu-item" 
+              @click="handleAIAction('suggestion')"
+              :disabled="!quickTaskInput.trim()"
+            >
+              <span class="menu-icon">✨</span>
+              <div class="menu-content">
+                <div class="menu-title">智能建议</div>
+                <div class="menu-desc">基于标题生成任务描述</div>
+              </div>
+            </button>
+            <button 
+              class="menu-item" 
+              @click="handleAIAction('continue')"
+              :disabled="!newTaskDescription.trim()"
+            >
+              <span class="menu-icon">📝</span>
+              <div class="menu-content">
+                <div class="menu-title">续写内容</div>
+                <div class="menu-desc">智能补充当前描述</div>
+              </div>
+            </button>
+            <button 
+              class="menu-item" 
+              @click="handleAIAction('polish')"
+              :disabled="!newTaskDescription.trim()"
+            >
+              <span class="menu-icon">🎯</span>
+              <div class="menu-content">
+                <div class="menu-title">优化润色</div>
+                <div class="menu-desc">改善表达和结构</div>
+              </div>
+            </button>
+            <button 
+              class="menu-item" 
+              @click="handleAIAction('extract')"
+              :disabled="!newTaskDescription.trim() || newTaskDescription.length < 50"
+            >
+              <span class="menu-icon">📋</span>
+              <div class="menu-content">
+                <div class="menu-title">提取要点</div>
+                <div class="menu-desc">从长文本提取关键步骤</div>
+              </div>
+            </button>
+            <button 
+              class="menu-item" 
+              @click="handleAIAction('rewrite')"
+              :disabled="!newTaskDescription.trim()"
+            >
+              <span class="menu-icon">🔄</span>
+              <div class="menu-content">
+                <div class="menu-title">改写风格</div>
+                <div class="menu-desc">正式/口语/简洁风格切换</div>
+              </div>
+            </button>
+          </div>
+        </div>
+        
         <!-- 悬浮提示标签 -->
         <div v-if="newTaskDescription.length < 50" class="floating-hint">
           {{ getWordCountHint() }}
@@ -2192,11 +2269,14 @@
         <button class="toolbar-btn" @click="scanTextFromCamera" :disabled="aiLoading">
           📸 拍照
         </button>
-        <button class="toolbar-btn" @click="generateAISuggestions" :disabled="aiLoading || !quickTaskInput.trim()">
-          {{ aiLoading ? '⏳ 思考中...' : '💡 AI 建议' }}
-        </button>
-        <button class="toolbar-btn" @click="continueDescription" :disabled="aiLoading">
-          {{ aiLoading ? '⏳ 思考中...' : '🤖 AI 续写' }}
+        <button 
+          class="toolbar-btn" 
+          @click="toggleAIMenu" 
+          @touchstart="handleAITouchStart"
+          @touchend="handleAITouchEnd"
+          :disabled="aiLoading"
+        >
+          {{ aiLoading ? '⏳ 思考中...' : '🤖 AI 助手' }}
         </button>
       </div>
     </div>
@@ -3400,6 +3480,7 @@ import { AITextEnhancer } from '../services/aiTextEnhancer'
 import AIConfigModal from '../components/AIConfigModal.vue'
 import TaskPreviewModal from '../components/TaskPreviewModal.vue'
 import SubtaskPreviewModal from '../components/SubtaskPreviewModal.vue'
+import AddSubtaskModal from '../components/AddSubtaskModal.vue'
 import TrashModal from '../components/TrashModal.vue'
 import AISuggestionCard from '../components/AISuggestionCard.vue'
 import DailySummaryModal from '../components/DailySummaryModal.vue'
@@ -3913,6 +3994,11 @@ const showSubtaskPreview = ref(false)
 const subtasks = ref([])
 const currentSplittingTask = ref(null)
 
+// 手动添加子任务
+const showManualSubtaskModal = ref(false)
+const manualSubtaskParent = ref(null)
+const manualSubtaskData = ref(null)
+
 // 检查是否显示 AI 建议
 const checkAISuggestion = () => {
   // 检查是否在稍后提醒期间（1小时内）
@@ -4287,6 +4373,70 @@ const handleCreateSubtasks = async (subtaskList) => {
   
   // 显示成功提示
   showNotification(`✅ 已创建 ${subtaskList.length} 个子任务`, 'success')
+}
+
+// 显示手动添加子任务弹窗
+const handleShowManualSubtask = ({ subtask, parentTask }) => {
+  manualSubtaskParent.value = parentTask
+  manualSubtaskData.value = subtask
+  showManualSubtaskModal.value = true
+}
+
+// 提交手动添加的子任务
+const handleManualSubtaskSubmit = async (subtaskData) => {
+  const parentTask = manualSubtaskParent.value
+  if (!parentTask) {
+    showNotification('父任务不存在', 'error')
+    return
+  }
+  
+  const newTask = {
+    id: Date.now(),
+    text: subtaskData.text,
+    description: subtaskData.description || '',
+    type: 'today',
+    category: subtaskData.category || parentTask.category || 'work',
+    priority: subtaskData.priority || 'medium',
+    status: 'pending',
+    created_at: new Date().toISOString(),
+    completed_at: null,
+    completedPomodoros: 0,
+    estimatedPomodoros: Math.ceil((subtaskData.estimatedDuration || 60) / 25),
+    pomodoroHistory: [],
+    logs: [],
+    stats: {
+      sessionCount: 0,
+      totalDuration: 0,
+      avgDuration: 0,
+      blockCount: 0,
+      resolvedBlockCount: 0,
+      latestProgress: 0
+    },
+    parentTaskId: Number(parentTask.id),
+    waitFor: []
+  }
+  
+  await taskStore.addTask(newTask)
+  
+  // 更新父任务的子任务列表
+  if (!parentTask.subtasks) {
+    parentTask.subtasks = []
+  }
+  parentTask.subtasks.push(newTask.id)
+  parentTask.hasSplitted = true
+  parentTask.subtaskCount = (parentTask.subtaskCount || 0) + 1
+  await taskStore.updateTask(parentTask)
+  
+  showManualSubtaskModal.value = false
+  manualSubtaskParent.value = null
+  manualSubtaskData.value = null
+  
+  showNotification('✅ 子任务添加成功', 'success')
+  
+  // 刷新任务详情
+  if (selectedTask.value && selectedTask.value.id === parentTask.id) {
+    selectedTask.value = { ...parentTask }
+  }
 }
 
 // 处理报告生成完成
@@ -4769,6 +4919,8 @@ const showAISuggestions = ref(false)
 const aiSuggestionsList = ref([])
 const showClipboardHistory = ref(false)
 const clipboardHistory = ref([])
+const showAIMenu = ref(false)
+let aiTouchTimer = null
 
 // 当前日期时间（年月日时分秒）
 const currentDateTime = computed(() => currentDateTimeValue.value)
@@ -5434,10 +5586,271 @@ const handleAdoptAIContent = (content) => {
   } else if (currentAIMode.value === 'continue') {
     // AI续写：追加到描述框末尾
     newTaskDescription.value += '\n\n' + content
+  } else if (currentAIMode.value === 'polish' || currentAIMode.value === 'rewrite') {
+    // 优化润色/改写风格：替换原内容
+    newTaskDescription.value = content
+  } else if (currentAIMode.value === 'extract') {
+    // 提取要点：替换原内容
+    newTaskDescription.value = content
   }
   
   showAIPreview.value = false
   showNotification('✅ 已采纳内容', 'success')
+}
+
+// 🤖 AI助手菜单控制
+const toggleAIMenu = () => {
+  showAIMenu.value = !showAIMenu.value
+}
+
+const handleAITouchStart = () => {
+  aiTouchTimer = setTimeout(() => {
+    // 长按快速执行智能建议
+    if (quickTaskInput.value.trim()) {
+      showAIMenu.value = false
+      generateAISuggestions()
+    }
+  }, 500)
+}
+
+const handleAITouchEnd = () => {
+  if (aiTouchTimer) {
+    clearTimeout(aiTouchTimer)
+    aiTouchTimer = null
+  }
+}
+
+// 处理AI功能选择
+const handleAIAction = async (action) => {
+  showAIMenu.value = false
+  
+  switch (action) {
+    case 'suggestion':
+      await generateAISuggestions()
+      break
+    case 'continue':
+      await continueDescription()
+      break
+    case 'polish':
+      await polishDescription()
+      break
+    case 'extract':
+      await extractKeyPoints()
+      break
+    case 'rewrite':
+      await rewriteStyle()
+      break
+  }
+}
+
+// 🎯 优化润色
+const polishDescription = async () => {
+  if (!newTaskDescription.value.trim()) {
+    showNotification('请先输入内容', 'error')
+    return
+  }
+  
+  try {
+    aiLoading.value = true
+    aiLoadingText.value = 'AI 正在优化...'
+    
+    const models = JSON.parse(localStorage.getItem('ai_models') || '[]')
+    const defaultModelId = localStorage.getItem('ai_default_model')
+    const defaultModel = models.find(m => m.id === defaultModelId) || models[0]
+    
+    if (!defaultModel) {
+      showNotification('请先配置 AI 模型', 'error')
+      return
+    }
+    
+    const prompt = `请优化以下任务描述，使其更清晰、专业、易读：
+
+${newTaskDescription.value}
+
+要求：
+1. 保持原意不变
+2. 改善表达和结构
+3. 使用更准确的词汇
+4. 保持简洁明了
+5. 直接返回优化后的内容，不要额外说明`
+    
+    let apiUrl = defaultModel.url
+    if (!apiUrl.includes('/v1/chat/completions')) {
+      apiUrl = apiUrl.replace(/\/api\/.*$/, '').replace(/\/v1.*$/, '').replace(/\/$/, '') + '/v1/chat/completions'
+    }
+    
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${defaultModel.apiKey || 'dummy'}`
+      },
+      body: JSON.stringify({
+        model: defaultModel.modelName || defaultModel.model,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7,
+        max_tokens: 1000
+      })
+    })
+    
+    if (!response.ok) throw new Error('AI 请求失败')
+    
+    const data = await response.json()
+    const content = data.choices?.[0]?.message?.content || data.response || ''
+    
+    if (content) {
+      currentAIMode.value = 'polish'
+      aiPreviewContent.value = content
+      aiPreviewTitle.value = '🎯 优化润色预览'
+      showAIPreview.value = true
+      showNotification('✨ 优化完成', 'success')
+    }
+  } catch (error) {
+    console.error('优化失败:', error)
+    showNotification('优化失败', 'error')
+  } finally {
+    aiLoading.value = false
+  }
+}
+
+// 📋 提取要点
+const extractKeyPoints = async () => {
+  if (!newTaskDescription.value.trim() || newTaskDescription.value.length < 50) {
+    showNotification('内容太短，无需提取', 'error')
+    return
+  }
+  
+  try {
+    aiLoading.value = true
+    aiLoadingText.value = 'AI 正在提取...'
+    
+    const models = JSON.parse(localStorage.getItem('ai_models') || '[]')
+    const defaultModelId = localStorage.getItem('ai_default_model')
+    const defaultModel = models.find(m => m.id === defaultModelId) || models[0]
+    
+    if (!defaultModel) {
+      showNotification('请先配置 AI 模型', 'error')
+      return
+    }
+    
+    const prompt = `请从以下任务描述中提取关键要点和执行步骤：
+
+${newTaskDescription.value}
+
+要求：
+1. 提取3-5个核心要点
+2. 每个要点简洁明了（10-20字）
+3. 按执行顺序排列
+4. 以 "- " 开头，每行一条
+5. 只返回要点列表，不要额外说明`
+    
+    let apiUrl = defaultModel.url
+    if (!apiUrl.includes('/v1/chat/completions')) {
+      apiUrl = apiUrl.replace(/\/api\/.*$/, '').replace(/\/v1.*$/, '').replace(/\/$/, '') + '/v1/chat/completions'
+    }
+    
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${defaultModel.apiKey || 'dummy'}`
+      },
+      body: JSON.stringify({
+        model: defaultModel.modelName || defaultModel.model,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7,
+        max_tokens: 1000
+      })
+    })
+    
+    if (!response.ok) throw new Error('AI 请求失败')
+    
+    const data = await response.json()
+    const content = data.choices?.[0]?.message?.content || data.response || ''
+    
+    if (content) {
+      currentAIMode.value = 'extract'
+      aiPreviewContent.value = content
+      aiPreviewTitle.value = '📋 关键要点'
+      showAIPreview.value = true
+      showNotification('✨ 提取完成', 'success')
+    }
+  } catch (error) {
+    console.error('提取失败:', error)
+    showNotification('提取失败', 'error')
+  } finally {
+    aiLoading.value = false
+  }
+}
+
+// 🔄 改写风格
+const rewriteStyle = async () => {
+  if (!newTaskDescription.value.trim()) {
+    showNotification('请先输入内容', 'error')
+    return
+  }
+  
+  try {
+    aiLoading.value = true
+    aiLoadingText.value = 'AI 正在改写...'
+    
+    const models = JSON.parse(localStorage.getItem('ai_models') || '[]')
+    const defaultModelId = localStorage.getItem('ai_default_model')
+    const defaultModel = models.find(m => m.id === defaultModelId) || models[0]
+    
+    if (!defaultModel) {
+      showNotification('请先配置 AI 模型', 'error')
+      return
+    }
+    
+    const prompt = `请用更简洁、口语化的方式改写以下任务描述：
+
+${newTaskDescription.value}
+
+要求：
+1. 保持原意不变
+2. 使用简单易懂的表达
+3. 去除冗余内容
+4. 更加口语化、自然
+5. 直接返回改写后的内容，不要额外说明`
+    
+    let apiUrl = defaultModel.url
+    if (!apiUrl.includes('/v1/chat/completions')) {
+      apiUrl = apiUrl.replace(/\/api\/.*$/, '').replace(/\/v1.*$/, '').replace(/\/$/, '') + '/v1/chat/completions'
+    }
+    
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${defaultModel.apiKey || 'dummy'}`
+      },
+      body: JSON.stringify({
+        model: defaultModel.modelName || defaultModel.model,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7,
+        max_tokens: 1000
+      })
+    })
+    
+    if (!response.ok) throw new Error('AI 请求失败')
+    
+    const data = await response.json()
+    const content = data.choices?.[0]?.message?.content || data.response || ''
+    
+    if (content) {
+      currentAIMode.value = 'rewrite'
+      aiPreviewContent.value = content
+      aiPreviewTitle.value = '🔄 风格改写预览'
+      showAIPreview.value = true
+      showNotification('✨ 改写完成', 'success')
+    }
+  } catch (error) {
+    console.error('改写失败:', error)
+    showNotification('改写失败', 'error')
+  } finally {
+    aiLoading.value = false
+  }
 }
 
 // 重新生成AI内容
@@ -17581,6 +17994,113 @@ watch(() => reportData.value, (newData) => {
   display: flex;
   flex-direction: column;
   animation: slideUp 0.3s ease;
+}
+
+/* AI 功能菜单 */
+.ai-menu-sheet {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-height: 70%;
+  background: white;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease;
+}
+
+.menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #e8e8e8;
+  font-weight: 600;
+  font-size: 15px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 16px 16px 0 0;
+}
+
+.btn-close-menu {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  background: #f8f8f8;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+  text-align: left;
+}
+
+.menu-item:active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  transform: scale(0.98);
+}
+
+.menu-item:active .menu-icon,
+.menu-item:active .menu-title,
+.menu-item:active .menu-desc {
+  color: white;
+}
+
+.menu-item:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.menu-item:disabled:active {
+  background: #f8f8f8;
+  transform: none;
+}
+
+.menu-icon {
+  font-size: 24px;
+  margin-right: 1rem;
+  flex-shrink: 0;
+}
+
+.menu-content {
+  flex: 1;
+}
+
+.menu-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.menu-desc {
+  font-size: 12px;
+  color: #999;
+  line-height: 1.3;
 }
 
 @keyframes slideUp {
