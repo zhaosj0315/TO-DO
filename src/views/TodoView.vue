@@ -12213,6 +12213,14 @@ onMounted(async () => {
         console.log('✅ 关闭AI预览')
         showAIPreview.value = false
         return
+      } else if (showAIMenu.value) {
+        console.log('✅ 关闭AI菜单')
+        showAIMenu.value = false
+        return
+      } else if (showAITaskPreview.value) {
+        console.log('✅ 关闭AI任务预览')
+        showAITaskPreview.value = false
+        return
       } else if (showTemplateSelector.value) {
         console.log('✅ 关闭模板选择器')
         showTemplateSelector.value = false
@@ -12304,6 +12312,9 @@ onMounted(async () => {
       } else if (showTrash.value) {
         console.log('✅ 关闭回收站')
         showTrash.value = false
+      } else if (showEnhancedStats.value) {
+        console.log('✅ 关闭统计中心')
+        showEnhancedStats.value = false
       } else if (showDataStats.value) {
         console.log('✅ 关闭数据统计')
         showDataStats.value = false
