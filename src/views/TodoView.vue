@@ -6,7 +6,7 @@
       <header class="header">
         <!-- 左侧：任务树成长 -->
         <div class="growth-tree" @click="showGrowthDetail = true" :title="`成长等级 ${treeLevel} - 点击查看详情`">
-          <div class="tree-icon">{{ treeIcon }}</div>
+          <div class="tree-icon" :style="treeStyle">{{ treeIcon }}</div>
         </div>
 
         <!-- 右侧功能按钮 -->
@@ -3355,7 +3355,7 @@
         <div class="modal-body">
           <!-- 当前等级 -->
           <div class="growth-current">
-            <div class="tree-icon-large">{{ treeIcon }}</div>
+            <div class="tree-icon-large" :style="{ ...treeStyle, fontSize: '3rem' }">{{ treeIcon }}</div>
             <div class="growth-info">
               <div class="level-text">等级 {{ treeLevel }}</div>
               <div class="score-text">成长值：{{ growthScore }}</div>
@@ -6860,10 +6860,62 @@ const treeLevel = computed(() => {
   return 1                       // 种子
 })
 
-// 树的图标
+// 树的图标（连续生长版本）
 const treeIcon = computed(() => {
-  const icons = ['🌱', '🌿', '🪴', '🌳', '🌲', '🌸', '🌺', '🌻', '🏵️', '🎋']
-  return icons[treeLevel.value - 1]
+  const score = growthScore.value
+  const stages = [
+    { min: 0, max: 80, icons: ['🌱', '🌱', '🌿'] },      // 种子→幼苗
+    { min: 80, max: 200, icons: ['🌿', '🌿', '🪴'] },    // 幼苗→树苗
+    { min: 200, max: 400, icons: ['🪴', '🪴', '🌳'] },   // 树苗→小树
+    { min: 400, max: 700, icons: ['🌳', '🌳', '🌲'] },   // 小树→大树
+    { min: 700, max: 1200, icons: ['🌲', '🌲', '🌸'] },  // 大树→开花
+    { min: 1200, max: 2000, icons: ['🌸', '🌸', '🌺'] }, // 开花→繁茂
+    { min: 2000, max: 3000, icons: ['🌺', '🌺', '🌻'] }, // 繁茂→茂盛
+    { min: 3000, max: 5000, icons: ['🌻', '🌻', '🏵️'] }, // 茂盛→参天
+    { min: 5000, max: 10000, icons: ['🏵️', '🏵️', '🎋'] }, // 参天→神树
+    { min: 10000, max: 999999, icons: ['🎋', '🎋', '🎋'] } // 神树满级
+  ]
+  
+  for (let stage of stages) {
+    if (score >= stage.min && score < stage.max) {
+      const progress = (score - stage.min) / (stage.max - stage.min)
+      const index = Math.floor(progress * stage.icons.length)
+      return stage.icons[Math.min(index, stage.icons.length - 1)]
+    }
+  }
+  
+  return '🎋' // 满级
+})
+
+// 树的动态样式（尺寸和颜色随成长值变化）
+const treeStyle = computed(() => {
+  const score = growthScore.value
+  const maxScore = 10000
+  
+  // 尺寸：1.35rem → 1.8rem（渐变增长）
+  const minSize = 1.35
+  const maxSize = 1.8
+  const size = minSize + (maxSize - minSize) * Math.min(score / maxScore, 1)
+  
+  // 颜色：浅绿 → 深绿 → 金色（渐变）
+  let filter = ''
+  if (score < 3000) {
+    // 0-3000: 浅绿 → 深绿
+    const greenProgress = score / 3000
+    const brightness = 1 + greenProgress * 0.2 // 1.0 → 1.2
+    filter = `brightness(${brightness})`
+  } else {
+    // 3000-10000: 深绿 → 金色
+    const goldProgress = (score - 3000) / 7000
+    const hue = 120 - goldProgress * 70 // 120(绿) → 50(金)
+    filter = `hue-rotate(${-70 * goldProgress}deg) brightness(1.2)`
+  }
+  
+  return {
+    fontSize: `${size}rem`,
+    filter: filter,
+    transition: 'all 0.5s ease-out'
+  }
 })
 
 // 当前等级进度 (0-100)
