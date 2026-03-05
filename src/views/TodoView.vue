@@ -12305,6 +12305,14 @@ onMounted(async () => {
         showAIChat.value = false
       } else if (showProfile.value) {
         console.log('✅ 关闭个人主页')
+        // 检查个人主页内部是否有打开的子弹窗
+        if (showEnhancedStats.value) {
+          // 先关闭统计中心
+          console.log('  → 先关闭统计中心')
+          showEnhancedStats.value = false
+          return
+        }
+        // 没有子弹窗，关闭个人主页本身
         showProfile.value = false
       } else if (showFilterModal.value) {
         console.log('✅ 关闭高级筛选')
@@ -12312,9 +12320,6 @@ onMounted(async () => {
       } else if (showTrash.value) {
         console.log('✅ 关闭回收站')
         showTrash.value = false
-      } else if (showEnhancedStats.value) {
-        console.log('✅ 关闭统计中心')
-        showEnhancedStats.value = false
       } else if (showDataStats.value) {
         console.log('✅ 关闭数据统计')
         showDataStats.value = false
