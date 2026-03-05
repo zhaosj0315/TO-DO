@@ -3445,6 +3445,7 @@
 
     <!-- 统一报告中心 -->
     <UnifiedReportModal
+      ref="unifiedReportModalRef"
       :visible="showUnifiedReport"
       :tasks="taskStore.tasks"
       :currentUsername="currentUsername"
@@ -9749,6 +9750,7 @@ const showAllLogs = ref(false)
 const showAddLogModal = ref(false)
 const showTaskDetail = ref(false)
 const taskDetailModalRef = ref(null) // TaskDetailModal 组件引用
+const unifiedReportModalRef = ref(null) // UnifiedReportModal 组件引用
 const selectedTask = ref(null)
 const currentLogTask = ref(null)
 
@@ -12257,6 +12259,15 @@ onMounted(async () => {
         showPomodoroTimer.value = false
       } else if (showUnifiedReport.value) {
         console.log('✅ 关闭统一报告中心')
+        // 检查是否有内部状态需要处理
+        if (unifiedReportModalRef.value && unifiedReportModalRef.value.handleBackButton) {
+          const handled = unifiedReportModalRef.value.handleBackButton()
+          if (handled) {
+            // 内部已处理（返回到选择页）
+            return
+          }
+        }
+        // 关闭整个弹窗
         showUnifiedReport.value = false
         historyReportData.value = null
       } else if (showTaskDetail.value) {

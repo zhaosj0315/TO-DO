@@ -103,6 +103,21 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'show-history', 'report-saved'])
 
+// 暴露内部状态和方法给父组件
+defineExpose({
+  reportGenerated,
+  handleBackButton: () => {
+    if (reportGenerated.value) {
+      // 返回到报告类型选择
+      reportGenerated.value = false
+      visualData.value = null
+      textData.value = null
+      return true // 表示已处理
+    }
+    return false // 表示应该关闭弹窗
+  }
+})
+
 // 报告类型
 const reportTypes = [
   { value: 'daily', label: '日报', icon: '📝' },
@@ -538,9 +553,6 @@ watch(() => props.visible, (newVal) => {
     }
   }
 })
-
-// Android 返回手势支持已由父组件TodoView统一管理
-// 删除此处的独立监听器以避免冲突
 </script>
 
 <style scoped>
