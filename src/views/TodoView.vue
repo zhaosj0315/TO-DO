@@ -403,7 +403,7 @@
         <footer class="app-footer">
           <div class="footer-content">
             <p class="footer-main">
-              <span class="footer-version">TO-DO App v0.8.0</span>
+              <span class="footer-version">TO-DO App v0.8.1</span>
               <span class="footer-divider">·</span>
               <span class="footer-text">
                 {{ currentLanguage === 'zh' ? '完全离线 · 本地存储' : 'Offline · Local Storage' }}
@@ -4682,12 +4682,35 @@ const batchDeleteReports = () => {
 const showVersionModal = ref(false) // 版本历史弹窗
 const versionHistory = ref([]) // 版本历史列表
 const hasUnreadVersions = ref(false) // 是否有未读版本
-const CURRENT_VERSION = '0.8.0' // 当前应用版本
+const CURRENT_VERSION = '0.8.1' // 当前应用版本
 const versionModalTitle = ref('🎉 版本更新') // 弹窗标题（动态）
 
 // 版本历史数据
 const initVersionHistory = () => {
   versionHistory.value = [
+    {
+      version: '0.8.1',
+      date: '2026-03-05',
+      features: [
+        '🔙 Android返回手势全面修复：支持手势导航（一加13等设备左右边缘滑动）和按钮导航',
+        '✅ 47个弹窗全部支持返回手势，按正确层级关闭',
+        '📊 返回层级优化：三层弹窗结构（最上层30+个→中层10+个→表单状态清空）',
+        '🔗 子弹窗处理：任务详情内的添加日志、个人主页内的统计中心等'
+      ],
+      improvements: [
+        '补全弹窗支持：showManualSubtaskModal、showEnhancedStats、showAIMenu、showAITaskPreview',
+        '修复层级关系：统计中心作为个人主页的子弹窗，返回时先回到个人主页再回到首页',
+        '删除重复判断：showReportHistoryModal在第二层的重复判断',
+        '统一监听器管理：删除UnifiedReportModal的独立监听器，由TodoView统一管理'
+      ],
+      fixes: [
+        '修复showPomodoroStats变量未定义导致返回手势崩溃',
+        '修复返回手势在手势导航设备上不工作的问题',
+        '修复统计中心返回时跳过个人主页直接回到首页的问题',
+        '修复UnifiedReportModal初始化错误（defineExpose在变量定义前）导致页面崩溃',
+        '修复UnifiedReportModal内部状态处理（通过defineExpose暴露，支持两层返回）'
+      ]
+    },
     {
       version: '0.8.0',
       date: '2026-03-04',
