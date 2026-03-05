@@ -4808,7 +4808,7 @@ const initVersionHistory = () => {
   const allVersions = [
     {
       version: '0.8.1',
-      date: '2026-03-05~06',
+      date: '2026-03-05',
       features: [
         '🌳 任务树成长系统：蚂蚁森林式激励机制，10级成长体系（种子→神树）',
         '📜 报告历史只读模式：查看历史报告时自动进入只读状态，防止误修改',
