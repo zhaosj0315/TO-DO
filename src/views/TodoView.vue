@@ -12259,9 +12259,6 @@ onMounted(async () => {
         console.log('✅ 关闭统一报告中心')
         showUnifiedReport.value = false
         historyReportData.value = null
-      } else if (showReportHistoryModal.value) {
-        console.log('✅ 关闭报告历史')
-        showReportHistoryModal.value = false
       } else if (showTaskDetail.value) {
         console.log('✅ 关闭任务详情')
         // 检查 TaskDetailModal 内部是否有打开的子弹窗
