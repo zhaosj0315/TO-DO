@@ -3390,6 +3390,14 @@
         </div>
         
         <div class="modal-footer">
+          <button 
+            v-if="versionHistory.length >= 3" 
+            class="btn btn-secondary" 
+            @click="toggleAllVersions"
+            style="margin-right: 10px;"
+          >
+            {{ showAllVersions ? '收起历史版本' : '展开全部历史' }}
+          </button>
           <button class="btn btn-primary" @click="markAllVersionsRead">
             全部标记为已读
           </button>
@@ -4678,8 +4686,11 @@ const CURRENT_VERSION = '0.8.1' // 当前应用版本
 const versionModalTitle = ref('🎉 版本更新') // 弹窗标题（动态）
 
 // 版本历史数据
+const showAllVersions = ref(false) // 是否展开全部历史
+
 const initVersionHistory = () => {
-  versionHistory.value = [
+  // 完整版本历史
+  const allVersions = [
     {
       version: '0.8.1',
       date: '2026-03-05',
@@ -4857,6 +4868,55 @@ const initVersionHistory = () => {
       ]
     },
     {
+      version: '0.7.12',
+      date: '2026-03-04',
+      features: ['语音输入功能（中文优化+实时显示+脉动动画）'],
+      improvements: ['集成语音识别插件', '自动权限请求', '视觉反馈优化'],
+      fixes: []
+    },
+    {
+      version: '0.7.9',
+      date: '2026-03-02',
+      features: ['子任务智能识别（5种列表格式）', '任务预览模式（AI拆分集成）'],
+      improvements: ['自适应高度优化', 'AI总结可编辑', 'Android返回手势优化'],
+      fixes: ['修复任务状态更新逻辑', '修复预览返回逻辑']
+    },
+    {
+      version: '0.7.0',
+      date: '2026-02-25',
+      features: ['任务执行日志系统（6种日志类型）', '执行统计自动计算', '进度追踪+标签系统+心情追踪'],
+      improvements: ['任务详情页面重构', '日志列表时间倒序', '操作按钮优化'],
+      fixes: []
+    },
+    {
+      version: '0.6.12',
+      date: '2026-02-25',
+      features: ['番茄钟计时器（25分钟专注+自动休息）', '番茄钟历史记录', '今日专注统计'],
+      improvements: ['任务详情页面全面优化', '编辑弹窗改为Bottom Sheet', '任务描述交互增强'],
+      fixes: ['修复任务详情完成按钮无效']
+    },
+    {
+      version: '0.5.0',
+      date: '2026-02-19',
+      features: ['极简状态栏（两行布局）', '高级筛选弹窗', '顶部刷新按钮'],
+      improvements: ['空间优化（筛选区域高度减少72%）', '任务列表可见行数增加75%'],
+      fixes: []
+    },
+    {
+      version: '0.3.0',
+      date: '2026-02-19',
+      features: ['任务批量导入功能', '官方导入模板（100条示例）'],
+      improvements: ['智能解析Excel数据', '导入结果统计'],
+      fixes: ['修复待办统计逻辑']
+    },
+    {
+      version: '0.1.0',
+      date: '2026-02-17',
+      features: ['统计数据交互式筛选', '胶囊按钮样式', '内联表单设计'],
+      improvements: ['统计和筛选区域融合', '空间优化（节省约130px）'],
+      fixes: []
+    },
+    {
       version: '0.0.0',
       date: '2026-02-17',
       features: [
@@ -4883,12 +4943,21 @@ const initVersionHistory = () => {
     }
   ]
   
+  // 默认只显示最近3个版本
+  versionHistory.value = showAllVersions.value ? allVersions : allVersions.slice(0, 3)
+  
   // 检查是否有未读版本
   const readVersions = JSON.parse(localStorage.getItem('read_versions') || '[]')
   versionHistory.value.forEach(v => {
     v.read = readVersions.includes(v.version)
   })
   hasUnreadVersions.value = versionHistory.value.some(v => !v.read)
+}
+
+// 切换显示全部版本
+const toggleAllVersions = () => {
+  showAllVersions.value = !showAllVersions.value
+  initVersionHistory()
 }
 
 // 检查版本更新（首次打开或版本升级时自动弹出）
