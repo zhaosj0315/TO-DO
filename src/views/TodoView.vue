@@ -4,6 +4,7 @@
     <main class="main-content glass-card" ref="mainContent">
       <!-- 顶部标题栏 -->
       <header class="header">
+        <!-- 右侧功能按钮 -->
         <div class="header-actions">
           <!-- 刷新按钮 - 最常用，放最左 -->
           <button class="btn-icon-circle btn-refresh-icon" @click="handleRefresh" :title="t('refresh')">
@@ -43,26 +44,26 @@
         <div class="stats-grid">
           <!-- 全部 -->
           <div class="stat-card stat-card-all clickable" @click="setFilter('all')" :class="{ active: currentFilter === 'all' }">
-            <span class="stat-label">{{ t('all') }}</span>
             <span class="stat-value">{{ baseFilteredTasks.length }}</span>
+            <span class="stat-label">{{ t('all') }}</span>
           </div>
 
           <!-- 已完成 -->
           <div class="stat-card stat-card-completed clickable" @click="setFilter('completed')" :class="{ active: currentFilter === 'completed' }">
-            <span class="stat-label">{{ t('completed') }}</span>
             <span class="stat-value success">{{ completedCount }}</span>
+            <span class="stat-label">{{ t('completed') }}</span>
           </div>
 
           <!-- 待办 -->
           <div class="stat-card stat-card-pending clickable" @click="setFilter('pending')" :class="{ active: currentFilter === 'pending' }">
-            <span class="stat-label">{{ t('pending') }}</span>
             <span class="stat-value">{{ pendingCount }}</span>
+            <span class="stat-label">{{ t('pending') }}</span>
           </div>
 
           <!-- 已逾期 -->
           <div class="stat-card stat-card-overdue clickable" @click="setFilter('overdue')" :class="{ active: currentFilter === 'overdue' }">
-            <span class="stat-label">{{ t('overdue') }}</span>
             <span class="stat-value danger">{{ overdueCount }}</span>
+            <span class="stat-label">{{ t('overdue') }}</span>
           </div>
 
           <!-- 筛选按钮 - 移到统计栏 -->
@@ -3517,9 +3518,9 @@ const i18n = {
     tasksSuffix: '的任务',
     // 统计
     all: '全部',
-    completed: '已完成',
+    completed: '完成',
     pending: '待办',
-    overdue: '已逾期',
+    overdue: '逾期',
     filter: '筛选',
     expand: '展开',
     collapse: '收起',
@@ -4698,10 +4699,14 @@ const initVersionHistory = () => {
         '删除重复判断：showReportHistoryModal在第二层的重复判断',
         '统一监听器管理：删除UnifiedReportModal的独立监听器，由TodoView统一管理',
         '🗑️ 删除任务输入框的AI优化标题按钮（🤖）：标题字数少，无需AI优化，界面更简洁',
-        '📱 图标间距优化：调整为1rem，避免误触',
-        '👤 个人头像改版：改为长方形胶囊按钮，显示完整用户名',
+        '📱 右上角图标间距优化：从1rem缩小到0.5rem，更紧凑',
+        '👤 个人中心按钮：显示用户名，紫色渐变背景+白色边框',
         '🎨 视觉统一：所有按钮统一为紫色渐变背景+白色边框',
-        '✨ 交互统一：所有按钮悬停和点击效果完全一致（边框变亮+上浮+缩小）'
+        '✨ 交互统一：所有按钮悬停和点击效果完全一致（边框变亮+上浮+缩小）',
+        '📊 统计卡片优化：文字统一为两个字（完成、逾期），padding增加，字体放大',
+        '🎯 统计卡片布局：数字在上（0.8rem），文字在下（1rem），底部对齐',
+        '📝 任务卡片布局优化：描述和属性行左对齐到复选框，充分利用左右空间',
+        '🔘 任务操作按钮间距：从0.25rem增加到0.8rem，避免误触'
       ],
       fixes: [
         '修复showPomodoroStats变量未定义导致返回手势崩溃',
@@ -4710,7 +4715,8 @@ const initVersionHistory = () => {
         '修复UnifiedReportModal初始化错误（defineExpose在变量定义前）导致页面崩溃',
         '修复UnifiedReportModal内部状态处理（通过defineExpose暴露，支持两层返回）',
         '修复5个功能图标悬停效果不一致的问题',
-        '修复个人头像按钮白色边框被紫色阴影覆盖的问题'
+        '修复个人头像按钮白色边框被紫色阴影覆盖的问题',
+        '修复CSS语法错误：补全.action-bar选择器'
       ]
     },
     {
@@ -12578,18 +12584,19 @@ watch(() => reportData.value, (newData) => {
 
 .stat-card {
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 0.2rem 0.1rem;
+  justify-content: flex-end;
+  padding: 0.5rem 0.8rem;
   background: rgba(255, 255, 255, 0.95);
   border: 1px solid rgba(0, 0, 0, 0.05);
   border-radius: 8px;
   transition: all 0.3s ease;
-  height: 44px;
+  height: 50px;
   box-sizing: border-box;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
   overflow: hidden;
+  gap: 0.2rem;
 }
 
 /* 核心指标突出 - 全部和已逾期 */
@@ -12674,12 +12681,12 @@ watch(() => reportData.value, (newData) => {
 }
 
 .icon-small {
-  font-size: 0.9rem;
+  font-size: 1.1rem;
   line-height: 1;
 }
 
 .label-small {
-  font-size: 0.65rem;
+  font-size: 0.9rem;
   line-height: 1;
   color: #666;
   font-weight: 500;
@@ -12746,17 +12753,18 @@ watch(() => reportData.value, (newData) => {
 }
 
 .stat-card .stat-label {
-  font-size: 0.6rem; /* 极小标签 */
-  color: #888;
-  margin-top: 1px;
+  font-size: 1rem;
+  color: #333;
+  margin: 0;
   font-weight: 600;
-  white-space: nowrap; /* 强制不换行 */
+  white-space: nowrap;
+  line-height: 1.2;
 }
 
 .stat-card .stat-value {
-  font-size: 0.9rem; /* 适中数字 */
-  font-weight: 800;
-  color: #222;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #666;
   line-height: 1;
 }
 
@@ -12773,7 +12781,19 @@ watch(() => reportData.value, (newData) => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 0.4rem; /* 减少底部边距 */
+  margin-bottom: 0.5rem;
+}
+
+.label-small {
+  font-size: 1rem;
+  line-height: 1.2;
+  color: #333;
+  font-weight: 600;
+}
+
+.icon-small {
+  font-size: 0.8rem;
+  line-height: 1;
 }
 
 .search-container {
@@ -13508,7 +13528,7 @@ watch(() => reportData.value, (newData) => {
 /* 任务操作按钮组 */
 .task-actions {
   display: flex;
-  gap: 0.25rem;
+  gap: 0.8rem;
   flex-shrink: 0;
   align-items: center;
 }
@@ -13607,8 +13627,9 @@ watch(() => reportData.value, (newData) => {
   font-size: 0.75rem; /* 12px */
   color: #999; /* 更浅的灰色 */
   margin-top: 0.4rem;
+  margin-left: calc(-14px - 6px); /* 向左延伸到复选框位置 */
   line-height: 1.6; /* 增加行高 */
-  max-width: 100%;
+  max-width: calc(100% + 14px + 6px); /* 补偿左边距 */
   word-wrap: break-word;
   white-space: pre-wrap; /* 保留换行和空格 */
   padding: 0.5rem 0.75rem; /* 添加内边距 */
@@ -13650,6 +13671,8 @@ watch(() => reportData.value, (newData) => {
   gap: 0.3rem;
   align-items: center;
   margin-top: 0.35rem;
+  margin-left: calc(-14px - 6px); /* 向左延伸到复选框位置 */
+  max-width: calc(100% + 14px + 6px); /* 补偿左边距 */
   line-height: 1;
 }
 
@@ -13944,7 +13967,7 @@ watch(() => reportData.value, (newData) => {
 
 .header-actions {
   display: flex;
-  gap: 1rem;
+  gap: 0.5rem;
   align-items: center;
 }
 
