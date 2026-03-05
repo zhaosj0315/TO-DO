@@ -4,6 +4,14 @@
     <main class="main-content glass-card" ref="mainContent">
       <!-- 顶部标题栏 -->
       <header class="header">
+        <!-- 左侧：任务树成长 -->
+        <div class="growth-tree" @click="showGrowthDetail = true" :title="`成长等级 ${treeLevel} - 点击查看详情`">
+          <div class="tree-icon">{{ treeIcon }}</div>
+          <div class="tree-progress">
+            <div class="progress-bar" :style="{ width: treeProgress + '%' }"></div>
+          </div>
+        </div>
+
         <!-- 右侧功能按钮 -->
         <div class="header-actions">
           <!-- 刷新按钮 - 最常用，放最左 -->
@@ -3332,6 +3340,91 @@
         <div class="modal-footer">
           <button class="btn btn-secondary" @click="showTemplateEditor = false">取消</button>
           <button class="btn btn-primary" @click="saveTemplateEdit">💾 保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 任务树成长详情弹窗 -->
+    <div v-if="showGrowthDetail" class="modal-overlay" @click.self="showGrowthDetail = false">
+      <div class="growth-detail-modal">
+        <div class="modal-header">
+          <button class="back-btn" @click="showGrowthDetail = false">
+            <span>← 返回</span>
+          </button>
+          <h3>🌳 任务树成长</h3>
+          <div style="width: 80px;"></div>
+        </div>
+        
+        <div class="modal-body">
+          <!-- 当前等级 -->
+          <div class="growth-current">
+            <div class="tree-icon-large">{{ treeIcon }}</div>
+            <div class="growth-info">
+              <div class="level-text">等级 {{ treeLevel }}</div>
+              <div class="score-text">成长值：{{ growthScore }}</div>
+            </div>
+          </div>
+          
+          <!-- 进度条 -->
+          <div class="growth-progress-section">
+            <div class="progress-label">
+              <span>{{ treeLevel === 5 ? '已达最高等级' : `距离下一级还需 ${getNextLevelScore() - growthScore} 分` }}</span>
+            </div>
+            <div class="progress-bar-large">
+              <div class="progress-fill" :style="{ width: treeProgress + '%' }"></div>
+            </div>
+            <div class="progress-percent">{{ treeProgress }}%</div>
+          </div>
+          
+          <!-- 等级说明 -->
+          <div class="growth-levels">
+            <h4>🎯 成长等级</h4>
+            <div class="level-item" :class="{ active: treeLevel >= 1 }">
+              <span class="level-icon">🌱</span>
+              <span class="level-name">种子</span>
+              <span class="level-score">0-9分</span>
+            </div>
+            <div class="level-item" :class="{ active: treeLevel >= 2 }">
+              <span class="level-icon">🌿</span>
+              <span class="level-name">幼苗</span>
+              <span class="level-score">10-29分</span>
+            </div>
+            <div class="level-item" :class="{ active: treeLevel >= 3 }">
+              <span class="level-icon">🌳</span>
+              <span class="level-name">小树</span>
+              <span class="level-score">30-59分</span>
+            </div>
+            <div class="level-item" :class="{ active: treeLevel >= 4 }">
+              <span class="level-icon">🌲</span>
+              <span class="level-name">大树</span>
+              <span class="level-score">60-99分</span>
+            </div>
+            <div class="level-item" :class="{ active: treeLevel >= 5 }">
+              <span class="level-icon">🌸</span>
+              <span class="level-name">开花</span>
+              <span class="level-score">100+分</span>
+            </div>
+          </div>
+          
+          <!-- 获取分数规则 -->
+          <div class="growth-rules">
+            <h4>📊 获取成长值</h4>
+            <div class="rule-item">
+              <span class="rule-icon">✅</span>
+              <span class="rule-text">完成任务</span>
+              <span class="rule-score">+1分</span>
+            </div>
+            <div class="rule-item">
+              <span class="rule-icon">⚡</span>
+              <span class="rule-text">完成高优先级任务</span>
+              <span class="rule-score">+2分</span>
+            </div>
+            <div class="rule-item">
+              <span class="rule-icon">🍅</span>
+              <span class="rule-text">完成番茄钟</span>
+              <span class="rule-score">+0.5分</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -6712,6 +6805,64 @@ let bindTimer = null
 
 // 获取当前用户名
 const currentUsername = computed(() => userStore.currentUser)
+
+// 任务树成长系统
+const showGrowthDetail = ref(false)
+
+// 计算成长分数
+const growthScore = computed(() => {
+  const tasks = taskStore.tasks.filter(t => t.status === 'completed')
+  let score = 0
+  
+  tasks.forEach(task => {
+    // 完成任务基础分
+    score += 1
+    
+    // 高优先级额外分
+    if (task.priority === 'high') score += 1
+    
+    // 番茄钟分数
+    if (task.completedPomodoros) {
+      score += task.completedPomodoros * 0.5
+    }
+  })
+  
+  return Math.floor(score)
+})
+
+// 树的等级 (1-5)
+const treeLevel = computed(() => {
+  const score = growthScore.value
+  if (score >= 100) return 5
+  if (score >= 60) return 4
+  if (score >= 30) return 3
+  if (score >= 10) return 2
+  return 1
+})
+
+// 树的图标
+const treeIcon = computed(() => {
+  const icons = ['🌱', '🌿', '🌳', '🌲', '🌸']
+  return icons[treeLevel.value - 1]
+})
+
+// 当前等级进度 (0-100)
+const treeProgress = computed(() => {
+  const score = growthScore.value
+  const thresholds = [0, 10, 30, 60, 100, 999999]
+  const current = thresholds[treeLevel.value - 1]
+  const next = thresholds[treeLevel.value]
+  
+  if (treeLevel.value === 5) return 100
+  
+  return Math.floor(((score - current) / (next - current)) * 100)
+})
+
+// 获取下一等级所需分数
+const getNextLevelScore = () => {
+  const thresholds = [10, 30, 60, 100, 999999]
+  return thresholds[treeLevel.value - 1]
+}
 
 // 筛选选项
 const filters = [
@@ -14039,12 +14190,56 @@ watch(() => reportData.value, (newData) => {
 
 .header {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
   padding: 1rem 0.1rem;
   margin-bottom: 0.5rem;
   border-bottom: 1px solid var(--glass-border);
   width: 100%;
+}
+
+/* 任务树成长 */
+.growth-tree {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+}
+
+.growth-tree:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  border-color: rgba(255, 255, 255, 1);
+}
+
+.tree-icon {
+  font-size: 1.5rem;
+  animation: treeGrow 2s ease-in-out infinite;
+}
+
+@keyframes treeGrow {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.tree-progress {
+  width: 60px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.tree-progress .progress-bar {
+  height: 100%;
+  background: white;
+  border-radius: 3px;
+  transition: width 0.5s ease;
 }
 
 .user-info h1 {
@@ -21637,6 +21832,152 @@ watch(() => reportData.value, (newData) => {
 }
 
 /* 版本历史样式 */
+/* 任务树成长详情弹窗 */
+.growth-detail-modal {
+  background: white;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 85vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.growth-current {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.tree-icon-large {
+  font-size: 4rem;
+  animation: treeGrow 2s ease-in-out infinite;
+}
+
+.growth-info {
+  color: white;
+}
+
+.level-text {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.score-text {
+  font-size: 1rem;
+  opacity: 0.9;
+}
+
+.growth-progress-section {
+  margin-bottom: 1.5rem;
+}
+
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.progress-bar-large {
+  height: 12px;
+  background: #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+  border-radius: 6px;
+  transition: width 0.5s ease;
+}
+
+.progress-percent {
+  text-align: right;
+  font-size: 0.85rem;
+  color: #10b981;
+  font-weight: 600;
+}
+
+.growth-levels,
+.growth-rules {
+  margin-bottom: 1.5rem;
+}
+
+.growth-levels h4,
+.growth-rules h4 {
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+  color: #333;
+}
+
+.level-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  background: #f9fafb;
+  opacity: 0.5;
+  transition: all 0.3s;
+}
+
+.level-item.active {
+  opacity: 1;
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  border: 2px solid #10b981;
+}
+
+.level-icon {
+  font-size: 1.5rem;
+}
+
+.level-name {
+  flex: 1;
+  font-weight: 600;
+  color: #333;
+}
+
+.level-score {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.rule-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  background: #f9fafb;
+}
+
+.rule-icon {
+  font-size: 1.25rem;
+}
+
+.rule-text {
+  flex: 1;
+  color: #333;
+}
+
+.rule-score {
+  font-weight: 600;
+  color: #10b981;
+}
+
 .version-list {
   display: flex;
   flex-direction: column;
