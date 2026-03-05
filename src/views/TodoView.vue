@@ -6157,6 +6157,7 @@ const showPrivacyPolicy = ref(false)
 const showDataInfo = ref(false)
 const showUserGuide = ref(false) // 使用指南弹窗
 const showPomodoroRules = ref(false) // 番茄规则弹窗
+const showPomodoroStats = ref(false) // 番茄钟统计弹窗
 const showWelcome = ref(false) // 首次登录欢迎弹窗
 const showBackupReminder = ref(false) // 定期备份提醒弹窗
 const showNotificationGuide = ref(false) // 通知设置指南弹窗
@@ -12219,6 +12220,12 @@ onMounted(async () => {
       } else if (showSubtaskSuggestion.value) {
         console.log('✅ 关闭子任务建议')
         showSubtaskSuggestion.value = false
+        return
+      } else if (showManualSubtaskModal.value) {
+        console.log('✅ 关闭手动添加子任务')
+        showManualSubtaskModal.value = false
+        manualSubtaskParent.value = null
+        manualSubtaskData.value = null
         return
       } else if (showAddLogModal.value) {
         console.log('✅ 关闭添加日志')
