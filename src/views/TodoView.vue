@@ -7,9 +7,6 @@
         <!-- 左侧：任务树成长 -->
         <div class="growth-tree" @click="showGrowthDetail = true" :title="`成长等级 ${treeLevel} - 点击查看详情`">
           <div class="tree-icon">{{ treeIcon }}</div>
-          <div class="tree-progress">
-            <div class="progress-bar" :style="{ width: treeProgress + '%' }"></div>
-          </div>
         </div>
 
         <!-- 右侧功能按钮 -->
@@ -12383,7 +12380,11 @@ onMounted(async () => {
       }
       
       // 第三层弹窗（最上层，优先关闭）
-      if (showPasswordModal.value) {
+      if (showGrowthDetail.value) {
+        console.log('✅ 关闭任务树成长详情')
+        showGrowthDetail.value = false
+        return
+      } else if (showPasswordModal.value) {
         console.log('✅ 关闭密码弹窗')
         showPasswordModal.value = false
         return
@@ -14214,7 +14215,7 @@ watch(() => reportData.value, (newData) => {
 
 .header-actions {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.25rem;
   align-items: center;
 }
 
@@ -14230,17 +14231,16 @@ watch(() => reportData.value, (newData) => {
 
 /* 任务树成长 */
 .growth-tree {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  width: 42px;
   height: 42px;
-  width: 63px;
-  padding: 0 0.5rem;
+  border-radius: 50%;
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  border-radius: 21px;
+  border: 2px solid rgba(255, 255, 255, 0.8);
   cursor: pointer;
   transition: all 0.3s;
-  border: 2px solid rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .growth-tree:hover {
@@ -14250,28 +14250,13 @@ watch(() => reportData.value, (newData) => {
 }
 
 .tree-icon {
-  font-size: 1.2rem;
+  font-size: 1.35rem;
   animation: treeGrow 2s ease-in-out infinite;
 }
 
 @keyframes treeGrow {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.1); }
-}
-
-.tree-progress {
-  width: 20px;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.tree-progress .progress-bar {
-  height: 100%;
-  background: white;
-  border-radius: 2px;
-  transition: width 0.5s ease;
 }
 
 .user-info h1 {
