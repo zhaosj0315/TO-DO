@@ -335,9 +335,6 @@
                 <!-- 核心标签 -->
                 <span class="badge badge-icon" :class="`priority-${task.priority}`">⚡{{ getPriorityText(task.priority) }}</span>
                 <span class="badge badge-icon" :class="`category-${task.category}`">🏷️{{ getCategoryText(task.category) }}</span>
-                <span class="badge badge-pomodoro" :class="`pomodoro-${task.priority}`">
-                  🍅×{{ getPomodoroCount(task) }}
-                </span>
               </div>
             </div>
           </li>

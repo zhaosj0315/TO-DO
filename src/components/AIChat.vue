@@ -5,9 +5,6 @@
       <div class="chat-sidebar" :class="{ 'sidebar-collapsed': !showSidebar }">
         <div class="sidebar-header">
           <div class="sidebar-header-top">
-            <button class="toggle-sidebar-btn" @click="showSidebar = !showSidebar" title="展开/收起历史记录">
-              {{ showSidebar ? '◀' : '▶' }}
-            </button>
             <button class="btn-new-chat" @click="createNewChat">
               <span class="btn-icon">➕</span>
               <span class="btn-text">新对话</span>
@@ -49,8 +46,8 @@
       <!-- 右侧对话区域 -->
       <div class="chat-main">
         <div class="ai-chat-header">
-          <button class="back-btn" @click="$emit('close')">
-            <span>← 返回</span>
+          <button class="toggle-sidebar-btn-main" @click="showSidebar = !showSidebar" :title="showSidebar ? '收起历史记录' : '展开历史记录'">
+            {{ showSidebar ? '◀' : '▶' }}
           </button>
           <h3>🤖 AI 任务助手</h3>
           <button class="clear-btn" @click="clearCurrentChat" title="清空当前对话">
@@ -1744,12 +1741,15 @@ const getPriorityLabel = (priority) => {
 }
 
 .chat-sidebar.sidebar-collapsed {
-  width: 60px;
-  min-width: 60px;
+  width: 0;
+  min-width: 0;
+  border-right: none;
+  overflow: hidden;
 }
 
 .chat-sidebar.sidebar-collapsed .search-box,
-.chat-sidebar.sidebar-collapsed .sidebar-list {
+.chat-sidebar.sidebar-collapsed .sidebar-list,
+.chat-sidebar.sidebar-collapsed .sidebar-header {
   display: none;
 }
 
@@ -1974,6 +1974,25 @@ const getPriorityLabel = (priority) => {
 .toggle-sidebar-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* 对话区域的展开/收起按钮 */
+.toggle-sidebar-btn-main {
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.toggle-sidebar-btn-main:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
 }
 
 .ai-chat-header {
