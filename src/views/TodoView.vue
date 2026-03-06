@@ -38,6 +38,14 @@
               <span class="item-label">刷新</span>
             </div>
             
+            <!-- AI助手 -->
+            <div class="header-item">
+              <button class="btn-icon-circle btn-ai" @click="showAIChat = true" :title="t('aiChat')">
+                🤖
+              </button>
+              <span class="item-label">AI助手</span>
+            </div>
+            
             <!-- 回收站 -->
             <div class="header-item">
               <button class="btn-icon-circle btn-trash" @click="showTrash = true" :title="t('trash')">
@@ -45,14 +53,6 @@
                 <span v-if="taskStore.deletedTasks.length > 0" class="badge-count">{{ taskStore.deletedTasks.length }}</span>
               </button>
               <span class="item-label">回收站</span>
-            </div>
-            
-            <!-- AI助手 -->
-            <div class="header-item">
-              <button class="btn-icon-circle btn-ai" @click="showAIChat = true" :title="t('aiChat')">
-                🤖
-              </button>
-              <span class="item-label">AI助手</span>
             </div>
             
             <!-- 教程 -->
@@ -149,47 +149,55 @@
           @view-details="handleViewSuggestion"
         />
         
-        <!-- 第一行：统计数据（Grid均匀分布） -->
-        <div class="stats-grid">
-          <!-- 全部 -->
-          <div class="stat-card stat-card-all clickable" @click="setFilter('all')" :class="{ active: currentFilter === 'all' }">
-            <span class="stat-value">{{ baseFilteredTasks.length }}</span>
-            <span class="stat-label">{{ t('all') }}</span>
-          </div>
-
+        <!-- 统计筛选栏（全部左对齐） -->
+        <div class="stats-quick-bar">
           <!-- 已完成 -->
-          <div class="stat-card stat-card-completed clickable" @click="setFilter('completed')" :class="{ active: currentFilter === 'completed' }">
-            <span class="stat-value success">{{ completedCount }}</span>
-            <span class="stat-label">{{ t('completed') }}</span>
-          </div>
-
-          <!-- 待办 -->
-          <div class="stat-card stat-card-pending clickable" @click="setFilter('pending')" :class="{ active: currentFilter === 'pending' }">
-            <span class="stat-value">{{ pendingCount }}</span>
-            <span class="stat-label">{{ t('pending') }}</span>
-          </div>
-
-          <!-- 已逾期 -->
-          <div class="stat-card stat-card-overdue clickable" @click="setFilter('overdue')" :class="{ active: currentFilter === 'overdue' }">
-            <span class="stat-value danger">{{ overdueCount }}</span>
-            <span class="stat-label">{{ t('overdue') }}</span>
-          </div>
-
-          <!-- 筛选按钮 - 移到统计栏 -->
-          <button class="stat-card filter-card" @click="showFilterModal = true" :title="t('filter')">
-            <div class="icon-with-label">
-              <span class="icon-small">🎛️</span>
-              <span class="label-small">{{ t('filter') }}</span>
-            </div>
+          <button 
+            class="stats-chip"
+            :class="{ active: currentFilter === 'completed' }"
+            @click="setFilter('completed')"
+          >
+            <span class="chip-name">{{ t('completed') }}</span>
+            <span class="chip-count">{{ completedCount }}</span>
           </button>
 
-          <!-- 添加/收起按钮 - 融入统计栏 -->
-          <div class="stat-card add-toggle-card" @click="showAddForm = !showAddForm" :class="{ active: showAddForm }">
-            <div class="icon-with-label">
-              <span class="icon-small arrow-icon" :class="{ rotated: showAddForm }">↓</span>
-              <span class="label-small">{{ showAddForm ? t('collapse') : t('expand') }}</span>
-            </div>
-          </div>
+          <!-- 待办 -->
+          <button 
+            class="stats-chip"
+            :class="{ active: currentFilter === 'pending' }"
+            @click="setFilter('pending')"
+          >
+            <span class="chip-name">{{ t('pending') }}</span>
+            <span class="chip-count">{{ pendingCount }}</span>
+          </button>
+
+          <!-- 已逾期 -->
+          <button 
+            class="stats-chip chip-overdue"
+            :class="{ active: currentFilter === 'overdue' }"
+            @click="setFilter('overdue')"
+          >
+            <span class="chip-name">{{ t('overdue') }}</span>
+            <span class="chip-count">{{ overdueCount }}</span>
+          </button>
+
+          <!-- 筛选 -->
+          <button 
+            class="stats-chip chip-filter"
+            @click="showFilterModal = true"
+            :title="t('filter')"
+          >
+            <span class="chip-name">{{ t('filter') }} 🎛️</span>
+          </button>
+
+          <!-- 收起/展开 -->
+          <button 
+            class="stats-chip chip-toggle"
+            :class="{ active: showAddForm }"
+            @click="showAddForm = !showAddForm"
+          >
+            <span class="chip-name">{{ showAddForm ? t('collapse') + ' ↑' : t('expand') + ' ↓' }}</span>
+          </button>
         </div>
 
         <!-- 添加任务表单 - 统一输入框 -->
@@ -523,7 +531,7 @@
         <footer class="app-footer">
           <div class="footer-content">
             <p class="footer-main">
-              <span class="footer-version">TO-DO App v0.8.2</span>
+              <span class="footer-version">TO-DO App v0.8.3</span>
               <span class="footer-divider">·</span>
               <span class="footer-text">
                 {{ currentLanguage === 'zh' ? '完全离线 · 本地存储' : 'Offline · Local Storage' }}
@@ -5074,7 +5082,7 @@ const batchDeleteReports = () => {
 const showVersionModal = ref(false) // 版本历史弹窗
 const versionHistory = ref([]) // 版本历史列表
 const hasUnreadVersions = ref(false) // 是否有未读版本
-const CURRENT_VERSION = '0.8.2' // 当前应用版本
+const CURRENT_VERSION = '0.8.3' // 当前应用版本
 const versionModalTitle = ref('🎉 版本更新') // 弹窗标题（动态）
 
 // 版本历史数据
@@ -5083,6 +5091,29 @@ const showAllVersions = ref(false) // 是否展开全部历史
 const initVersionHistory = () => {
   // 完整版本历史
   const allVersions = [
+    {
+      version: '0.8.3',
+      date: '2026-03-07',
+      features: [
+        '🎨 UI布局全面优化：统计栏重构，删除"全部"按钮，避免功能重复',
+        '💊 胶囊按钮统一：笔记本和统计栏改为横向胶囊布局，视觉一致',
+        '📏 间距极致紧凑：所有行间距统一为2px，按钮内边距4px 8px',
+        '📐 等宽布局：5个统计按钮等宽平分空间，左右边缘对齐',
+        '🎨 成长树配色统一：从绿色渐变改为紫色渐变，与其他按钮一致'
+      ],
+      improvements: [
+        '🔤 图标文字优化：筛选和收起按钮的图标移到文字后方',
+        '📏 高度统一：第2/3/4行所有按钮和输入框统一为36px高度',
+        '🗺️ 面包屑优化：上下内边距从8px缩减至0px，完全贴近header',
+        '🔘 按钮间距精简：笔记本和统计按钮间距从10px缩减至1px',
+        '🔧 Header图标重排：刷新→AI助手→回收站→教程→我的主页',
+        '📊 按使用频率排序：高频功能前置，个人设置后置',
+        '📐 空间利用率提升：内边距从12px缩减至8px（缩减33%）',
+        '⬆️ 上下间距统一：面包屑4px，其他行2px，整体更紧凑',
+        '📝 输入框优化：高度从44px缩减至36px，与按钮对齐'
+      ],
+      fixes: []
+    },
     {
       version: '0.8.2',
       date: '2026-03-06',
@@ -15138,8 +15169,8 @@ watch(() => reportData.value, (newData) => {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 8px 0;
-  margin-bottom: 8px;
+  padding: 0;
+  margin-bottom: 4px;
   overflow-x: auto;
   scrollbar-width: none;
   font-size: 0.9rem;
@@ -15194,9 +15225,9 @@ watch(() => reportData.value, (newData) => {
 .collection-quick-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 0;
-  margin-bottom: 16px;
+  gap: 1px;
+  padding: 0 0 2px 0;
+  margin-bottom: 2px;
   overflow-x: auto;
   scrollbar-width: none; /* Firefox */
 }
@@ -15204,6 +15235,82 @@ watch(() => reportData.value, (newData) => {
 .collection-quick-bar::-webkit-scrollbar {
   display: none; /* Chrome, Safari */
 }
+
+/* 🆕 统计筛选栏（全部左对齐） */
+.stats-quick-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0;
+  padding: 2px 0;
+  margin-bottom: 2px;
+}
+
+.stats-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 4px 8px;
+  border-radius: 10px;
+  border: 2px solid #e0e0e0;
+  background: white;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex: 1;
+  min-height: 36px;
+}
+
+.stats-chip:hover {
+  border-color: #8b5cf6;
+  background: #f3f0ff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
+}
+
+.stats-chip.active {
+  border-color: #8b5cf6;
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  color: white;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+}
+
+.stats-chip .chip-name {
+  font-weight: 500;
+}
+
+.stats-chip .chip-count {
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.stats-chip.chip-overdue .chip-count {
+  color: #ef4444;
+}
+
+.stats-chip.chip-overdue.active .chip-count {
+  color: white;
+}
+
+.stats-chip.chip-filter,
+.stats-chip.chip-toggle {
+  background: #f0f0f0;
+  border-color: #d0d0d0;
+}
+
+.stats-chip.chip-filter:hover,
+.stats-chip.chip-toggle:hover {
+  background: #e0e0e0;
+}
+
+.stats-chip.chip-toggle.active {
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  color: white;
+  border-color: #8b5cf6;
+}
+
 
 /* 🆕 文件夹图标按钮 */
 .quick-bar-icon-btn {
@@ -15258,8 +15365,8 @@ watch(() => reportData.value, (newData) => {
 .collection-chip {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 8px 12px;
+  gap: 3px;
+  padding: 4px 8px;
   border-radius: 10px;
   border: 2px solid #e0e0e0;
   background: white;
@@ -15555,7 +15662,7 @@ watch(() => reportData.value, (newData) => {
   width: 36px; /* 42px → 36px */
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: 2px solid rgba(255, 255, 255, 0.8);
   cursor: pointer;
   transition: all 0.3s;
@@ -15566,7 +15673,7 @@ watch(() => reportData.value, (newData) => {
 
 .growth-tree:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
   border-color: rgba(255, 255, 255, 1);
 }
 
@@ -19085,8 +19192,8 @@ watch(() => reportData.value, (newData) => {
 
 /* 🆕 统一输入框样式 */
 .add-form-unified {
-  margin-top: 0;
-  margin-bottom: 0.2rem !important;
+  margin-top: 2px;
+  margin-bottom: 2px !important;
   padding: 0;
   background: transparent;
   border-radius: 0;
@@ -19097,13 +19204,13 @@ watch(() => reportData.value, (newData) => {
   display: flex;
   gap: 0.5rem;
   align-items: center;
-  margin-bottom: 0.5rem;
+  margin-bottom: 2px;
 }
 
 .quick-task-input {
   flex: 1;
-  height: 44px;
-  padding: 0 12px;
+  height: 36px;
+  padding: 0 10px;
   border: 1px solid #ddd;
   border-radius: 8px;
   font-size: 0.95rem;
