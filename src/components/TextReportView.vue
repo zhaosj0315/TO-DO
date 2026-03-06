@@ -64,45 +64,81 @@
       </div>
     </div>
 
-    <!-- 重点任务 -->
-    <div v-if="report.keyTasks && report.keyTasks.length > 0" class="report-section">
-      <div class="section-title">✅ 重点任务 (Top 10)</div>
-      <div class="key-tasks">
-        <div v-for="(task, index) in report.keyTasks" :key="task.id" class="task-item">
-          <div class="task-number">{{ index + 1 }}</div>
-          <div class="task-content">
-            <div class="task-title">✅ {{ task.text }}</div>
-            <div class="task-meta">
-              <span>{{ task.categoryIcon }} {{ task.categoryText }}</span>
-              <span>⚡ {{ task.priorityText }}</span>
-              <span>🍅 {{ task.pomodoros }}</span>
-              <span>📅 {{ task.time }}</span>
-            </div>
+    <!-- 重点任务（按分类分组） -->
+    <div v-if="report.keyWorks" class="report-section">
+      <div class="section-title">✅ 重点任务</div>
+      
+      <!-- 工作 -->
+      <div v-if="report.keyWorks.work && report.keyWorks.work.length > 0" class="category-group">
+        <div class="category-header">💼 工作 ({{ report.keyWorks.work.length }}个)</div>
+        <div class="key-tasks">
+          <div v-for="(task, index) in report.keyWorks.work" :key="task.id" class="task-item">
+            {{ index + 1 }}. {{ task.text }} (⚡{{ getPriorityText(task.priority) }}, 🍅{{ getPomodoros(task) }})
+            <div v-if="task.description" class="task-desc">{{ task.description }}</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 学习 -->
+      <div v-if="report.keyWorks.study && report.keyWorks.study.length > 0" class="category-group">
+        <div class="category-header">📚 学习 ({{ report.keyWorks.study.length }}个)</div>
+        <div class="key-tasks">
+          <div v-for="(task, index) in report.keyWorks.study" :key="task.id" class="task-item">
+            {{ index + 1 }}. {{ task.text }} (⚡{{ getPriorityText(task.priority) }}, 🍅{{ getPomodoros(task) }})
+            <div v-if="task.description" class="task-desc">{{ task.description }}</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 生活 -->
+      <div v-if="report.keyWorks.life && report.keyWorks.life.length > 0" class="category-group">
+        <div class="category-header">🏠 生活 ({{ report.keyWorks.life.length }}个)</div>
+        <div class="key-tasks">
+          <div v-for="(task, index) in report.keyWorks.life" :key="task.id" class="task-item">
+            {{ index + 1 }}. {{ task.text }} (⚡{{ getPriorityText(task.priority) }}, 🍅{{ getPomodoros(task) }})
             <div v-if="task.description" class="task-desc">{{ task.description }}</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 风险与问题 -->
+    <!-- 风险与问题（按分类分组） -->
     <div v-if="report.issues && report.issues.total > 0" class="report-section issues-section">
       <div class="section-title">⚠️ 风险与问题</div>
       <div class="issues-summary">
         共有 <strong>{{ report.issues.total }}</strong> 个任务逾期
       </div>
-      <div v-if="report.issues.tasks && report.issues.tasks.length > 0" class="key-tasks">
-        <div v-for="(task, index) in report.issues.tasks" :key="task.id" class="task-item issue-item">
-          <div class="task-number issue-number">{{ index + 1 }}</div>
-          <div class="task-content">
-            <div class="task-title">⚠️ {{ task.text }}</div>
-            <div class="task-meta">
-              <span>{{ task.categoryIcon }} {{ task.categoryText }}</span>
-              <span>⚡ {{ task.priorityText }}</span>
-            </div>
-            <div v-if="task.description" class="task-desc">{{ task.description }}</div>
+      
+      <!-- 工作 -->
+      <div v-if="report.issues.byCategory.work && report.issues.byCategory.work.length > 0" class="category-group">
+        <div class="category-header">💼 工作 ({{ report.issues.byCategory.work.length }}个逾期)</div>
+        <div class="key-tasks">
+          <div v-for="(task, index) in report.issues.byCategory.work" :key="task.id" class="task-item issue-item">
+            {{ index + 1 }}. {{ task.text }} (⚡{{ getPriorityText(task.priority) }})
           </div>
         </div>
       </div>
+      
+      <!-- 学习 -->
+      <div v-if="report.issues.byCategory.study && report.issues.byCategory.study.length > 0" class="category-group">
+        <div class="category-header">📚 学习 ({{ report.issues.byCategory.study.length }}个逾期)</div>
+        <div class="key-tasks">
+          <div v-for="(task, index) in report.issues.byCategory.study" :key="task.id" class="task-item issue-item">
+            {{ index + 1 }}. {{ task.text }} (⚡{{ getPriorityText(task.priority) }})
+          </div>
+        </div>
+      </div>
+      
+      <!-- 生活 -->
+      <div v-if="report.issues.byCategory.life && report.issues.byCategory.life.length > 0" class="category-group">
+        <div class="category-header">🏠 生活 ({{ report.issues.byCategory.life.length }}个逾期)</div>
+        <div class="key-tasks">
+          <div v-for="(task, index) in report.issues.byCategory.life" :key="task.id" class="task-item issue-item">
+            {{ index + 1 }}. {{ task.text }} (⚡{{ getPriorityText(task.priority) }})
+          </div>
+        </div>
+      </div>
+      
       <div v-if="report.issues.suggestions && report.issues.suggestions.length > 0" class="suggestions">
         <div class="suggestions-title">💡 建议</div>
         <ul>
@@ -113,7 +149,7 @@
       </div>
     </div>
 
-    <!-- 下期计划 -->
+    <!-- 下期计划（按分类分组） -->
     <div v-if="report.nextPlan && report.nextPlan.total > 0" class="report-section">
       <div class="section-title">📅 下期计划</div>
       <div class="plan-summary">
@@ -121,17 +157,33 @@
         &nbsp;|&nbsp;
         高优先级：<strong>{{ report.nextPlan.highPriority }}</strong> 个
       </div>
-      <div v-if="report.nextPlan.tasks && report.nextPlan.tasks.length > 0" class="key-tasks">
-        <div v-for="(task, index) in report.nextPlan.tasks" :key="task.id" class="task-item">
-          <div class="task-number">{{ index + 1 }}</div>
-          <div class="task-content">
-            <div class="task-title">📌 {{ task.text }}</div>
-            <div class="task-meta">
-              <span>{{ task.categoryIcon }} {{ task.categoryText }}</span>
-              <span>⚡ {{ task.priorityText }}</span>
-              <span>🍅 {{ task.pomodoros }}</span>
-            </div>
-            <div v-if="task.description" class="task-desc">{{ task.description }}</div>
+      
+      <!-- 工作 -->
+      <div v-if="report.nextPlan.byCategory.work && report.nextPlan.byCategory.work.length > 0" class="category-group">
+        <div class="category-header">💼 工作 (待办{{ report.nextPlan.byCategory.work.length }}个)</div>
+        <div class="key-tasks">
+          <div v-for="(task, index) in report.nextPlan.byCategory.work" :key="task.id" class="task-item">
+            {{ index + 1 }}. {{ task.text }} (⚡{{ getPriorityText(task.priority) }}, 🍅{{ getPomodoros(task) }})
+          </div>
+        </div>
+      </div>
+      
+      <!-- 学习 -->
+      <div v-if="report.nextPlan.byCategory.study && report.nextPlan.byCategory.study.length > 0" class="category-group">
+        <div class="category-header">📚 学习 (待办{{ report.nextPlan.byCategory.study.length }}个)</div>
+        <div class="key-tasks">
+          <div v-for="(task, index) in report.nextPlan.byCategory.study" :key="task.id" class="task-item">
+            {{ index + 1 }}. {{ task.text }} (⚡{{ getPriorityText(task.priority) }}, 🍅{{ getPomodoros(task) }})
+          </div>
+        </div>
+      </div>
+      
+      <!-- 生活 -->
+      <div v-if="report.nextPlan.byCategory.life && report.nextPlan.byCategory.life.length > 0" class="category-group">
+        <div class="category-header">🏠 生活 (待办{{ report.nextPlan.byCategory.life.length }}个)</div>
+        <div class="key-tasks">
+          <div v-for="(task, index) in report.nextPlan.byCategory.life" :key="task.id" class="task-item">
+            {{ index + 1 }}. {{ task.text }} (⚡{{ getPriorityText(task.priority) }}, 🍅{{ getPomodoros(task) }})
           </div>
         </div>
       </div>
@@ -147,6 +199,18 @@ const props = defineProps({
   },
   reportType: String
 })
+
+// 辅助函数
+const getPriorityText = (priority) => {
+  const map = { high: '高', medium: '中', low: '低' }
+  return map[priority] || '中'
+}
+
+const getPomodoros = (task) => {
+  if (task.estimatedPomodoros) return task.estimatedPomodoros
+  const map = { high: 4, medium: 2, low: 1 }
+  return map[task.priority] || 2
+}
 </script>
 
 <style scoped>
@@ -378,5 +442,31 @@ const props = defineProps({
   left: -1rem;
   color: #f59e0b;
   font-weight: 700;
+}
+
+/* 分类分组样式 */
+.category-group {
+  margin-bottom: 1.5rem;
+}
+
+.category-header {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  border-left: 4px solid #667eea;
+}
+
+.category-group .key-tasks {
+  padding-left: 0.5rem;
+}
+
+.category-group .task-item {
+  font-size: 0.9rem;
+  padding: 0.75rem 1rem;
+  line-height: 1.6;
 }
 </style>

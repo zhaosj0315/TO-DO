@@ -200,53 +200,37 @@ export class AIReportGenerator {
       })
     }
     
-    // 5. 下周计划 - 按优先级分组 + 截止时间提示
-    const nextPlanTasks = this.tasks
-      .filter(t => t.status === 'pending')
-      .sort((a, b) => {
+    // 5. 下周计划 - 按分类分组
+    const pendingTasks = this.tasks.filter(t => t.status === 'pending')
+    const nextPlanByCategory = {
+      work: pendingTasks.filter(t => t.category === 'work').sort((a, b) => {
         const priorityOrder = { high: 0, medium: 1, low: 2 }
         return priorityOrder[a.priority] - priorityOrder[b.priority]
-      })
-      .slice(0, 10)
-      .map(t => {
-        const priorityIcon = t.priority === 'high' ? '⚡' : t.priority === 'medium' ? '🔸' : '🔹'
-        let deadlineText = ''
-        
-        if (t.customDate) {
-          const deadline = new Date(t.customDate)
-          const daysLeft = Math.ceil((deadline - now) / (1000 * 60 * 60 * 24))
-          if (daysLeft <= 3 && daysLeft >= 0) {
-            deadlineText = ` [${daysLeft}天后]`
-          }
-        }
-        
-        return {
-          id: t.id,
-          text: t.text,
-          category: t.category,
-          priority: t.priority,
-          displayText: `${this.getCategoryIcon(t.category)} ${priorityIcon} ${t.text}${deadlineText}`
-        }
-      })
+      }).slice(0, 10),
+      study: pendingTasks.filter(t => t.category === 'study').sort((a, b) => {
+        const priorityOrder = { high: 0, medium: 1, low: 2 }
+        return priorityOrder[a.priority] - priorityOrder[b.priority]
+      }).slice(0, 10),
+      life: pendingTasks.filter(t => t.category === 'life').sort((a, b) => {
+        const priorityOrder = { high: 0, medium: 1, low: 2 }
+        return priorityOrder[a.priority] - priorityOrder[b.priority]
+      }).slice(0, 10)
+    }
     
-    // 6. 风险与问题 - 逾期任务 + 逾期天数
-    const risks = this.tasks
-      .filter(t => t.status === 'overdue')
-      .slice(0, 8)
-      .map(t => {
-        let overdueText = '已逾期'
-        if (t.customDate) {
-          const deadline = new Date(t.customDate)
-          const daysOverdue = Math.ceil((now - deadline) / (1000 * 60 * 60 * 24))
-          overdueText = `逾期${daysOverdue}天`
-        }
-        return {
-          id: t.id,
-          text: t.text,
-          category: t.category,
-          displayText: `${this.getCategoryIcon(t.category)} ${t.text} - ${overdueText}`
-        }
-      })
+    // 6. 风险与问题 - 按分类分组
+    const overdueTasks = this.tasks.filter(t => t.status === 'overdue')
+    const risksByCategory = {
+      work: overdueTasks.filter(t => t.category === 'work').slice(0, 10),
+      study: overdueTasks.filter(t => t.category === 'study').slice(0, 10),
+      life: overdueTasks.filter(t => t.category === 'life').slice(0, 10)
+    }
+    
+    // 7. 重点任务 - 按分类分组（高优先级已完成）
+    const keyTasksByCategory = {
+      work: periodCompletedTasks.filter(t => t.category === 'work' && t.priority === 'high').slice(0, 10),
+      study: periodCompletedTasks.filter(t => t.category === 'study' && t.priority === 'high').slice(0, 10),
+      life: periodCompletedTasks.filter(t => t.category === 'life' && t.priority === 'high').slice(0, 10)
+    }
     
     // 返回丰富结构的报告
     return {
@@ -263,7 +247,7 @@ export class AIReportGenerator {
       // 数据概览
       overview: {
         totalTasks: periodCompletedTasks.length,
-        completionRate: '100%',
+        completionRate: '100',
         highPriority,
         pomodoros: totalPomodoros,
         workTasks,
@@ -302,19 +286,14 @@ export class AIReportGenerator {
       // 本周进展
       weeklyProgress,
       
-      // 关键工作（高优先级已完成）
-      keyWorks: periodCompletedTasks.filter(t => t.priority === 'high').slice(0, 10).map(t => ({
-        id: t.id,
-        text: t.text,
-        category: t.category,
-        completedAt: t.completed_at
-      })),
+      // 关键工作（按分类分组）
+      keyWorks: keyTasksByCategory,
       
-      // 下周计划
+      // 下周计划（按分类分组）
       nextPlan: {
-        total: this.tasks.filter(t => t.status === 'pending').length,
-        highPriority: this.tasks.filter(t => t.status === 'pending' && t.priority === 'high').length,
-        tasks: nextPlanTasks,
+        total: pendingTasks.length,
+        highPriority: pendingTasks.filter(t => t.priority === 'high').length,
+        byCategory: nextPlanByCategory,
         recommendations: [
           '优先处理高优先级任务',
           '合理安排工作与生活平衡',
@@ -322,11 +301,11 @@ export class AIReportGenerator {
         ]
       },
       
-      // 风险与问题
+      // 风险与问题（按分类分组）
       issues: {
-        total: risks.length,
-        tasks: risks,
-        suggestions: risks.length > 5 ? ['逾期任务较多，建议优化时间管理'] : []
+        total: overdueTasks.length,
+        byCategory: risksByCategory,
+        suggestions: overdueTasks.length > 5 ? ['逾期任务较多，建议优化时间管理'] : []
       }
     }
   }

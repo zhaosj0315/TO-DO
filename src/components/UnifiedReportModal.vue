@@ -1,4 +1,5 @@
 <template>
+  <!-- 主报告弹窗 -->
   <div v-if="visible" class="modal-overlay" @click.self="$emit('close')">
     <div class="unified-report-sheet">
       <div class="modal-header">
@@ -76,12 +77,45 @@
 
       <!-- 操作按钮 -->
       <div v-if="reportGenerated && !generating" class="modal-footer">
+        <button class="btn btn-ai" @click="generateAIReport">🤖 AI汇报</button>
         <button v-if="!isHistoryMode" class="btn btn-secondary" @click="saveToHistory">💾 保存</button>
         <button v-if="isHistoryMode" class="btn btn-secondary" @click="saveAsNew">📋 另存为</button>
         <button class="btn btn-secondary" @click="exportHTML">📄 导出</button>
         <button class="btn btn-secondary" @click="copyText">📋 复制</button>
         <button v-if="!isHistoryMode" class="btn btn-secondary" @click="showHistory">📚 历史</button>
         <button class="btn btn-primary" @click="$emit('close')">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI工作汇报弹窗 -->
+  <div v-if="showAIReportModal" class="modal-overlay ai-overlay" @click.self="showAIReportModal = false">
+    <div class="ai-report-modal">
+      <div class="modal-header">
+        <button class="back-btn" @click="showAIReportModal = false">
+          <span>← 返回</span>
+        </button>
+        <h3>🤖 AI工作汇报</h3>
+        <div style="width: 80px;"></div>
+      </div>
+
+      <div class="modal-body">
+        <LoadingSpinner
+          v-if="generatingAIReport"
+          :visible="generatingAIReport"
+          text="AI正在生成汇报..."
+          subText="请稍候"
+        />
+
+        <div v-else class="ai-report-content">
+          <pre class="report-text">{{ aiReportText }}</pre>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" @click="copyAIReport">📋 复制</button>
+        <button class="btn btn-secondary" @click="exportAIReport">📄 导出</button>
+        <button class="btn btn-primary" @click="showAIReportModal = false">关闭</button>
       </div>
     </div>
   </div>
@@ -94,6 +128,8 @@ import { Capacitor } from '@capacitor/core'
 import LoadingSpinner from './LoadingSpinner.vue'
 import VisualReportView from './VisualReportView.vue'
 import TextReportView from './TextReportView.vue'
+import { AIReportGenerator } from '../services/aiReportGenerator.js'
+import { AIWorkReportGenerator } from '../services/aiWorkReportGenerator.js'
 
 const props = defineProps({
   visible: Boolean,
@@ -130,21 +166,32 @@ const reportGenerated = ref(false)
 const visualData = ref(null)
 const textData = ref(null)
 
+// AI工作汇报相关
+const showAIReportModal = ref(false)
+const generatingAIReport = ref(false)
+const aiReportText = ref('')
+
 // 是否为历史报告模式（只读）
 const isHistoryMode = computed(() => !!props.historyReport)
 
 // 暴露内部状态和方法给父组件（必须在变量定义之后）
 defineExpose({
   reportGenerated,
+  showAIReportModal,
   handleBackButton: () => {
+    // 第一层：AI汇报弹窗
+    if (showAIReportModal.value) {
+      showAIReportModal.value = false
+      return true
+    }
+    // 第二层：报告详情
     if (reportGenerated.value) {
-      // 返回到报告类型选择
       reportGenerated.value = false
       visualData.value = null
       textData.value = null
-      return true // 表示已处理
+      return true
     }
-    return false // 表示应该关闭弹窗
+    return false // 关闭整个弹窗
   }
 })
 
@@ -262,174 +309,212 @@ const calculateDateRange = () => {
 
 // 生成统一报告数据
 const generateUnifiedReport = async (startDate, endDate) => {
-  // 筛选时间范围内的任务
+  // 使用 AIReportGenerator 生成完整报告
+  const generator = new AIReportGenerator(props.tasks)
+  const textData = generator.generateReport(startDate, endDate, selectedType.value)
+  
+  // 生成可视化数据
   const filteredTasks = props.tasks.filter(task => {
     const completedAt = task.completed_at ? new Date(task.completed_at) : null
     return completedAt && completedAt >= startDate && completedAt <= endDate
   })
-
-  // 生成基础数据
-  const baseData = calculateBaseData(filteredTasks, startDate, endDate)
   
-  // 生成可视化数据
-  const visualData = generateVisualData(baseData, filteredTasks)
+  const completed = filteredTasks.filter(t => t.status === 'completed')
+  const totalPomodoros = completed.reduce((sum, t) => {
+    if (t.pomodoroHistory) {
+      return sum + t.pomodoroHistory.filter(p => p.completed).length
+    }
+    return sum
+  }, 0)
   
-  // 生成文本数据
-  const textData = generateTextData(baseData, filteredTasks, startDate, endDate)
+  const visualData = {
+    period: textData.period,
+    totalPomodoros,
+    completedTasks: textData.overview.totalTasks,
+    completionRate: textData.overview.completionRate,
+    executiveSummary: textData.summary,
+    categories: [
+      {
+        name: '工作',
+        icon: '💼',
+        total: props.tasks.filter(t => t.category === 'work').length,
+        completed: textData.overview.workTasks,
+        rate: props.tasks.filter(t => t.category === 'work').length > 0 
+          ? Math.round((textData.overview.workTasks / props.tasks.filter(t => t.category === 'work').length) * 100) 
+          : 0,
+        pomodoros: textData.overview.workTasks,
+        color: '#667eea'
+      },
+      {
+        name: '学习',
+        icon: '📚',
+        total: props.tasks.filter(t => t.category === 'study').length,
+        completed: textData.overview.studyTasks,
+        rate: props.tasks.filter(t => t.category === 'study').length > 0 
+          ? Math.round((textData.overview.studyTasks / props.tasks.filter(t => t.category === 'study').length) * 100) 
+          : 0,
+        pomodoros: textData.overview.studyTasks,
+        color: '#f093fb'
+      },
+      {
+        name: '生活',
+        icon: '🏠',
+        total: props.tasks.filter(t => t.category === 'life').length,
+        completed: textData.overview.lifeTasks,
+        rate: props.tasks.filter(t => t.category === 'life').length > 0 
+          ? Math.round((textData.overview.lifeTasks / props.tasks.filter(t => t.category === 'life').length) * 100) 
+          : 0,
+        pomodoros: textData.overview.lifeTasks,
+        color: '#4facfe'
+      }
+    ],
+    priorities: [
+      {
+        name: '高优先级',
+        total: props.tasks.filter(t => t.priority === 'high').length,
+        percentage: props.tasks.length > 0 
+          ? Math.round((props.tasks.filter(t => t.priority === 'high').length / props.tasks.length) * 100) 
+          : 0,
+        color: '#ef4444'
+      },
+      {
+        name: '中优先级',
+        total: props.tasks.filter(t => t.priority === 'medium').length,
+        percentage: props.tasks.length > 0 
+          ? Math.round((props.tasks.filter(t => t.priority === 'medium').length / props.tasks.length) * 100) 
+          : 0,
+        color: '#f59e0b'
+      },
+      {
+        name: '低优先级',
+        total: props.tasks.filter(t => t.priority === 'low').length,
+        percentage: props.tasks.length > 0 
+          ? Math.round((props.tasks.filter(t => t.priority === 'low').length / props.tasks.length) * 100) 
+          : 0,
+        color: '#3b82f6'
+      }
+    ]
+  }
 
   return { visualData, textData }
 }
 
-// 计算基础数据
-const calculateBaseData = (tasks, startDate, endDate) => {
-  const completed = tasks.filter(t => t.status === 'completed')
-  const totalPomodoros = completed.reduce((sum, t) => sum + (t.estimatedPomodoros || 0), 0)
-  
-  return {
-    totalTasks: tasks.length,
-    completedTasks: completed.length,
-    completionRate: tasks.length > 0 ? Math.round((completed.length / tasks.length) * 100) : 0,
-    totalPomodoros,
-    period: {
-      start: startDate.toLocaleDateString('zh-CN'),
-      end: endDate.toLocaleDateString('zh-CN')
-    }
+// 生成AI工作汇报
+const generateAIReport = async () => {
+  showAIReportModal.value = true
+  generatingAIReport.value = true
+  aiReportText.value = ''
+
+  try {
+    // 计算日期范围
+    const { startDate, endDate } = calculateDateRange()
+    
+    // 获取AI配置
+    const aiConfig = await getAIConfig()
+    console.log('🔍 AI配置:', aiConfig)
+    console.log('🔍 是否启用AI:', aiConfig.enabled)
+    
+    // 生成工作汇报
+    const generator = new AIWorkReportGenerator(props.tasks, aiConfig)
+    const report = await generator.generateWorkReport(startDate, endDate, selectedType.value)
+    
+    aiReportText.value = report
+  } catch (error) {
+    console.error('生成AI汇报失败:', error)
+    aiReportText.value = '生成失败，请重试'
+  } finally {
+    generatingAIReport.value = false
   }
 }
 
-// 生成可视化数据
-const generateVisualData = (baseData, tasks) => {
-  // 分类统计
-  const categories = ['work', 'study', 'life'].map(cat => {
-    const catTasks = tasks.filter(t => t.category === cat)
-    const completed = catTasks.filter(t => t.status === 'completed')
-    return {
-      name: cat === 'work' ? '工作' : cat === 'study' ? '学习' : '生活',
-      icon: cat === 'work' ? '💼' : cat === 'study' ? '📚' : '🏠',
-      total: catTasks.length,
-      completed: completed.length,
-      rate: catTasks.length > 0 ? Math.round((completed.length / catTasks.length) * 100) : 0,
-      pomodoros: completed.reduce((sum, t) => sum + (t.estimatedPomodoros || 0), 0),
-      color: cat === 'work' ? '#667eea' : cat === 'study' ? '#f093fb' : '#4facfe'
+// 获取AI配置
+const getAIConfig = async () => {
+  try {
+    // 尝试新格式（ai_models）
+    const modelsStr = localStorage.getItem('ai_models')
+    const defaultModelId = localStorage.getItem('ai_default_model')
+    
+    console.log('📦 ai_models:', modelsStr)
+    console.log('📦 ai_default_model:', defaultModelId)
+    
+    if (modelsStr && defaultModelId) {
+      const models = JSON.parse(modelsStr)
+      const defaultModel = models.find(m => m.id === defaultModelId)
+      
+      console.log('📦 找到的默认模型:', defaultModel)
+      
+      if (defaultModel) {
+        let baseURL
+        
+        // Ollama特殊处理
+        if (defaultModel.type === 'local' && defaultModel.url.includes('11434')) {
+          baseURL = defaultModel.url.replace('/api/generate', '/v1/chat/completions')
+        } else {
+          // OpenAI格式
+          baseURL = defaultModel.url.includes('/chat/completions') 
+            ? defaultModel.url 
+            : `${defaultModel.url}/chat/completions`
+        }
+        
+        console.log('📦 最终URL:', baseURL)
+        
+        return {
+          enabled: true,
+          baseURL: baseURL,
+          apiKey: defaultModel.apiKey,
+          model: defaultModel.modelName || defaultModel.name
+        }
+      }
     }
-  })
-
-  // 优先级统计
-  const priorities = ['high', 'medium', 'low'].map(pri => {
-    const priTasks = tasks.filter(t => t.priority === pri)
-    return {
-      name: pri === 'high' ? '高优先级' : pri === 'medium' ? '中优先级' : '低优先级',
-      total: priTasks.length,
-      percentage: tasks.length > 0 ? Math.round((priTasks.length / tasks.length) * 100) : 0,
-      color: pri === 'high' ? '#ef4444' : pri === 'medium' ? '#f59e0b' : '#3b82f6'
+    
+    // 兼容旧格式（ai_model_config）
+    const configStr = localStorage.getItem('ai_model_config')
+    console.log('📦 ai_model_config (旧格式):', configStr)
+    
+    if (!configStr) {
+      console.warn('⚠️ 未找到任何AI配置')
+      return { enabled: false }
     }
-  })
-
-  return {
-    ...baseData,
-    categories,
-    priorities,
-    executiveSummary: `本期共完成 ${baseData.completedTasks} 个任务，完成率 ${baseData.completionRate}%，累计获得 ${baseData.totalPomodoros} 个番茄钟。`
+    
+    const config = JSON.parse(configStr)
+    const defaultModel = config.models?.find(m => m.isDefault)
+    
+    if (!defaultModel) {
+      console.warn('⚠️ 未找到默认模型')
+      return { enabled: false }
+    }
+    
+    return {
+      enabled: true,
+      baseURL: defaultModel.baseURL,
+      apiKey: defaultModel.apiKey,
+      model: defaultModel.modelName || defaultModel.model
+    }
+  } catch (error) {
+    console.error('❌ 获取AI配置失败:', error)
+    return { enabled: false }
   }
 }
 
-// 生成文本数据
-const generateTextData = (baseData, tasks, startDate, endDate) => {
-  const completed = tasks.filter(t => t.status === 'completed')
-  const now = new Date()
-  
-  // 重点任务（按番茄钟数排序，Top 10）
-  const keyTasks = completed
-    .sort((a, b) => (b.estimatedPomodoros || 0) - (a.estimatedPomodoros || 0))
-    .slice(0, 10)
-    .map(task => ({
-      id: task.id,
-      text: task.text,
-      categoryIcon: task.category === 'work' ? '💼' : task.category === 'study' ? '📚' : '🏠',
-      categoryText: task.category === 'work' ? '工作' : task.category === 'study' ? '学习' : '生活',
-      priorityText: task.priority === 'high' ? '高' : task.priority === 'medium' ? '中' : '低',
-      pomodoros: task.estimatedPomodoros || 0,
-      time: task.completed_at ? new Date(task.completed_at).toLocaleDateString('zh-CN') : '',
-      description: task.description || ''
-    }))
+// 复制AI汇报
+const copyAIReport = () => {
+  navigator.clipboard.writeText(aiReportText.value).then(() => {
+    alert('已复制到剪贴板')
+  }).catch(err => {
+    console.error('复制失败:', err)
+    alert('复制失败')
+  })
+}
 
-  // 获取下期计划（待办任务）
-  const pendingTasks = props.tasks.filter(t => t.status === 'pending')
-  const nextPlanTasks = pendingTasks
-    .sort((a, b) => {
-      // 优先级排序：高 > 中 > 低
-      const priorityOrder = { high: 0, medium: 1, low: 2 }
-      return priorityOrder[a.priority] - priorityOrder[b.priority]
-    })
-    .slice(0, 10)
-    .map(task => ({
-      id: task.id,
-      text: task.text,
-      categoryIcon: task.category === 'work' ? '💼' : task.category === 'study' ? '📚' : '🏠',
-      categoryText: task.category === 'work' ? '工作' : task.category === 'study' ? '学习' : '生活',
-      priorityText: task.priority === 'high' ? '高' : task.priority === 'medium' ? '中' : '低',
-      pomodoros: task.estimatedPomodoros || 0,
-      description: task.description || ''
-    }))
-
-  // 风险与问题（逾期任务）
-  const overdueTasks = props.tasks.filter(t => t.status === 'overdue')
-  const issues = overdueTasks
-    .slice(0, 10)
-    .map(task => ({
-      id: task.id,
-      text: task.text,
-      categoryIcon: task.category === 'work' ? '💼' : task.category === 'study' ? '📚' : '🏠',
-      categoryText: task.category === 'work' ? '工作' : task.category === 'study' ? '学习' : '生活',
-      priorityText: task.priority === 'high' ? '高' : task.priority === 'medium' ? '中' : '低',
-      description: task.description || ''
-    }))
-
-  // 本期目标（高优先级任务）
-  const highPriorityCompleted = completed.filter(t => t.priority === 'high')
-  const goals = highPriorityCompleted
-    .slice(0, 5)
-    .map(task => ({
-      id: task.id,
-      text: task.text,
-      categoryIcon: task.category === 'work' ? '💼' : task.category === 'study' ? '📚' : '🏠',
-      categoryText: task.category === 'work' ? '工作' : task.category === 'study' ? '学习' : '生活',
-      pomodoros: task.estimatedPomodoros || 0,
-      description: task.description || ''
-    }))
-
-  return {
-    period: baseData.period,
-    summary: baseData.executiveSummary || `本期共完成 ${baseData.completedTasks} 个任务，完成率 ${baseData.completionRate}%。`,
-    overview: {
-      totalTasks: baseData.completedTasks,
-      highPriority: completed.filter(t => t.priority === 'high').length,
-      pomodoros: baseData.totalPomodoros,
-      workTasks: completed.filter(t => t.category === 'work').length,
-      studyTasks: completed.filter(t => t.category === 'study').length,
-      lifeTasks: completed.filter(t => t.category === 'life').length
-    },
-    keyTasks,
-    // 新增章节
-    goals: {
-      total: highPriorityCompleted.length,
-      tasks: goals
-    },
-    nextPlan: {
-      total: pendingTasks.length,
-      highPriority: pendingTasks.filter(t => t.priority === 'high').length,
-      tasks: nextPlanTasks
-    },
-    issues: {
-      total: overdueTasks.length,
-      tasks: issues,
-      suggestions: overdueTasks.length > 0 ? [
-        '建议优先处理逾期任务，避免影响整体进度',
-        '可以考虑将大任务拆分为小任务，提高完成率',
-        '合理安排时间，避免任务堆积'
-      ] : []
-    }
-  }
+// 导出AI汇报
+const exportAIReport = () => {
+  const blob = new Blob([aiReportText.value], { type: 'text/plain;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `工作汇报_${selectedType.value}_${new Date().toLocaleDateString('zh-CN')}.txt`
+  a.click()
+  URL.revokeObjectURL(url)
 }
 
 // 保存到历史
@@ -598,9 +683,14 @@ watch(() => props.visible, (newVal) => {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  z-index: 2000;
+  z-index: 10008; /* 提升到高层级 */
   animation: fadeIn 0.2s ease-out;
   padding: 0;
+}
+
+/* AI弹窗层级更高 */
+.ai-overlay {
+  z-index: 100001 !important;
 }
 
 @keyframes fadeIn {
@@ -844,5 +934,50 @@ watch(() => props.visible, (newVal) => {
 .btn-primary:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-ai {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+  font-weight: 600;
+}
+
+.btn-ai:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(240, 147, 251, 0.4);
+}
+
+/* AI工作汇报弹窗 */
+.ai-report-modal {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-height: 90vh;
+  background: white;
+  border-radius: 20px 20px 0 0;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease-out;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.ai-report-content {
+  padding: 1rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.report-text {
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  line-height: 1.8;
+  color: #1f2937;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  background: #f9fafb;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
 }
 </style>
