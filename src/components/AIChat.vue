@@ -21,21 +21,27 @@
         </div>
         <div class="sidebar-list">
           <template v-for="(group, groupName) in filteredGroupedChats" :key="groupName">
-            <div class="chat-group-title">{{ groupName }}</div>
-            <div 
-              v-for="chat in group" 
-              :key="chat.id"
-              :class="['chat-item', { active: chat.id === currentChatId }]"
-              @click="switchChat(chat.id)"
-            >
-              <div class="chat-item-content">
-                <div class="chat-item-title" v-html="highlightText(chat.title)"></div>
-                <div class="chat-item-time">{{ formatChatTime(chat.updatedAt) }}</div>
-              </div>
-              <button class="btn-delete-chat" @click.stop="deleteChat(chat.id)" title="删除">
-                🗑️
-              </button>
+            <div class="chat-group-title" @click="toggleGroup(groupName)">
+              <span>{{ expandedGroups.has(groupName) ? '▼' : '▶' }}</span>
+              {{ groupName }}
+              <span class="group-count">({{ group.length }})</span>
             </div>
+            <template v-if="expandedGroups.has(groupName)">
+              <div 
+                v-for="chat in group" 
+                :key="chat.id"
+                :class="['chat-item', { active: chat.id === currentChatId }]"
+                @click="switchChat(chat.id)"
+              >
+                <div class="chat-item-content">
+                  <div class="chat-item-title" v-html="highlightText(chat.title)"></div>
+                  <div class="chat-item-time">{{ formatChatTime(chat.updatedAt) }}</div>
+                </div>
+                <button class="btn-delete-chat" @click.stop="deleteChat(chat.id)" title="删除">
+                  🗑️
+                </button>
+              </div>
+            </template>
           </template>
           <div v-if="Object.keys(filteredGroupedChats).length === 0" class="no-results">
             😕 未找到匹配的对话
@@ -190,6 +196,18 @@ const showSidebar = ref(true)
 const chatHistoryList = ref([])
 const currentChatId = ref(null)
 const searchQuery = ref('')
+
+// 分组展开状态（默认全部收起）
+const expandedGroups = ref(new Set())
+
+// 切换分组展开/收起
+const toggleGroup = (groupName) => {
+  if (expandedGroups.value.has(groupName)) {
+    expandedGroups.value.delete(groupName)
+  } else {
+    expandedGroups.value.add(groupName)
+  }
+}
 
 // 搜索处理（防抖）
 let searchTimeout = null
@@ -1872,6 +1890,27 @@ const getPriorityLabel = (priority) => {
   letter-spacing: 0.5px;
   padding: 0.75rem 0.5rem 0.5rem;
   margin-top: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: color 0.2s;
+}
+
+.chat-group-title:hover {
+  color: #667eea;
+}
+
+.chat-group-title span:first-child {
+  font-size: 0.6rem;
+  transition: transform 0.2s;
+}
+
+.chat-group-title .group-count {
+  font-size: 0.65rem;
+  color: #bbb;
+  font-weight: 400;
 }
 
 .chat-group-title:first-child {
