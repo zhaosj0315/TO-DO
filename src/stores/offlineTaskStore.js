@@ -8,8 +8,21 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
   state: () => ({
     tasks: [],
     deletedTasks: [],
+    collections: [],      // 🆕 文件夹/合集数组
     currentUser: null
   }),
+
+  getters: {
+    // 🆕 获取未分类任务
+    uncategorizedTasks: (state) => {
+      return state.tasks.filter(t => !t.collectionId)
+    },
+    
+    // 🆕 获取所有文件夹（按order排序）
+    sortedCollections: (state) => {
+      return [...state.collections].sort((a, b) => a.order - b.order)
+    }
+  },
 
   actions: {
     // 根据优先级获取预估番茄钟数
@@ -29,7 +42,7 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       const { value } = await Preferences.get({ key: `tasks_${this.currentUser}` })
       if (value) {
         this.tasks = JSON.parse(value)
-        // 数据迁移：为旧任务添加 logs、stats 和 waitFor 字段
+        // 数据迁移：为旧任务添加 logs、stats、waitFor 和 collectionId 字段
         this.tasks = this.tasks.map(task => {
           let waitFor = task.waitFor
           // 兼容旧数据：null → []，单个ID → [ID]
@@ -43,7 +56,8 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
             ...task,
             logs: task.logs || [],
             stats: task.stats || this.calculateTaskStats([]),
-            waitFor
+            waitFor,
+            collectionId: task.collectionId !== undefined ? task.collectionId : null  // 🆕 文件夹ID
           }
         })
       } else {
@@ -53,7 +67,7 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       const { value: deleted } = await Preferences.get({ key: `deletedTasks_${this.currentUser}` })
       if (deleted) {
         this.deletedTasks = JSON.parse(deleted)
-        // 数据迁移：为旧任务添加 logs、stats 和 waitFor 字段
+        // 数据迁移：为旧任务添加 logs、stats、waitFor 和 collectionId 字段
         this.deletedTasks = this.deletedTasks.map(task => {
           let waitFor = task.waitFor
           if (waitFor === null || waitFor === undefined) {
@@ -66,12 +80,16 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
             ...task,
             logs: task.logs || [],
             stats: task.stats || this.calculateTaskStats([]),
-            waitFor
+            waitFor,
+            collectionId: task.collectionId !== undefined ? task.collectionId : null  // 🆕 文件夹ID
           }
         })
       } else {
         this.deletedTasks = []
       }
+      
+      // 🆕 加载文件夹
+      await this.loadCollections()
     },
 
     async saveTasks() {
@@ -110,7 +128,8 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         stats: taskData.stats || this.calculateTaskStats([]), // 统计数据
         waitFor: taskData.waitFor || [], // 等待的任务ID数组
         parentTaskId: taskData.parentTaskId || null, // 父任务ID（AI拆分）
-        aiSummary: taskData.aiSummary || null // AI生成的任务总结
+        aiSummary: taskData.aiSummary || null, // AI生成的任务总结
+        collectionId: taskData.collectionId !== undefined ? taskData.collectionId : null  // 🆕 所属文件夹ID
       }
       this.tasks.push(task)
       await this.saveTasks()
@@ -979,6 +998,149 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       if (!task || !task.logs) return []
 
       return task.logs.filter(log => log.type === 'block' && !log.resolved)
+    },
+
+    // ========== 🆕 文件夹/合集管理方法 ==========
+    
+    // 加载文件夹
+    async loadCollections() {
+      if (!this.currentUser) return
+      const { value } = await Preferences.get({ 
+        key: `collections_${this.currentUser}` 
+      })
+      this.collections = value ? JSON.parse(value) : []
+    },
+
+    // 保存文件夹
+    async saveCollections() {
+      if (!this.currentUser) return
+      await Preferences.set({ 
+        key: `collections_${this.currentUser}`, 
+        value: JSON.stringify(this.collections) 
+      })
+    },
+
+    // 创建文件夹
+    async createCollection({ name, description = '', color = '#8b5cf6', icon = '📁', isPrivate = false, password = '' }) {
+      const collection = {
+        id: Date.now(),
+        name,
+        description,
+        color,
+        icon,
+        isPrivate,
+        password: isPrivate ? btoa(password) : '', // Base64简单加密
+        order: this.collections.length,
+        created_at: new Date().toISOString(),
+        user_id: this.currentUser
+      }
+      this.collections.push(collection)
+      await this.saveCollections()
+      return collection
+    },
+
+    // 更新文件夹
+    async updateCollection(id, updates) {
+      const collection = this.collections.find(c => c.id === id)
+      if (collection) {
+        Object.assign(collection, updates)
+        await this.saveCollections()
+      }
+    },
+
+    // 验证文件夹密码
+    verifyCollectionPassword(id, password) {
+      const collection = this.collections.find(c => c.id === id)
+      if (!collection || !collection.isPrivate) return true
+      return collection.password === btoa(password)
+    },
+
+    // 修改文件夹密码
+    async changeCollectionPassword(id, oldPassword, newPassword) {
+      const collection = this.collections.find(c => c.id === id)
+      if (!collection || !collection.isPrivate) return false
+      
+      if (collection.password !== btoa(oldPassword)) {
+        return false // 旧密码错误
+      }
+      
+      collection.password = btoa(newPassword)
+      await this.saveCollections()
+      return true
+    },
+
+    // 删除文件夹
+    async deleteCollection(id, action = 'uncategorize') {
+      // action: 'delete' | 'uncategorize' | { moveTo: collectionId }
+      const tasksInCollection = this.tasks.filter(t => t.collectionId === id)
+      
+      if (action === 'delete') {
+        // 删除所有任务
+        tasksInCollection.forEach(task => {
+          this.deletedTasks.push(task)
+        })
+        this.tasks = this.tasks.filter(t => t.collectionId !== id)
+      } else if (action === 'uncategorize') {
+        // 移到未分类
+        tasksInCollection.forEach(task => {
+          task.collectionId = null
+        })
+      } else if (action.moveTo) {
+        // 移到其他文件夹
+        tasksInCollection.forEach(task => {
+          task.collectionId = action.moveTo
+        })
+      }
+      
+      // 删除文件夹
+      this.collections = this.collections.filter(c => c.id !== id)
+      
+      await this.saveTasks()
+      await this.saveCollections()
+    },
+
+    // 文件夹排序
+    async reorderCollections(newOrder) {
+      // newOrder: [id1, id2, id3, ...]
+      newOrder.forEach((id, index) => {
+        const collection = this.collections.find(c => c.id === id)
+        if (collection) collection.order = index
+      })
+      await this.saveCollections()
+    },
+
+    // 任务设置文件夹
+    async setTaskCollection(taskId, collectionId) {
+      const task = this.tasks.find(t => t.id === taskId)
+      if (task) {
+        task.collectionId = collectionId  // null = 未分类
+        await this.saveTasks()
+      }
+    },
+
+    // 批量设置任务文件夹
+    async batchSetTaskCollection(taskIds, collectionId) {
+      taskIds.forEach(id => {
+        const task = this.tasks.find(t => t.id === id)
+        if (task) task.collectionId = collectionId
+      })
+      await this.saveTasks()
+    },
+
+    // 获取文件夹内的任务
+    getCollectionTasks(collectionId) {
+      return this.tasks.filter(t => t.collectionId === collectionId)
+    },
+
+    // 获取文件夹统计
+    getCollectionStats(collectionId) {
+      const tasks = this.getCollectionTasks(collectionId)
+      return {
+        total: tasks.length,
+        completed: tasks.filter(t => t.status === 'completed').length,
+        pending: tasks.filter(t => t.status === 'pending').length,
+        overdue: tasks.filter(t => t.status === 'overdue').length
+      }
     }
   }
 })

@@ -4,36 +4,99 @@
     <main class="main-content glass-card" ref="mainContent">
       <!-- 顶部标题栏 -->
       <header class="header">
-        <!-- 左侧：任务树成长 -->
-        <div class="growth-tree" @click="showGrowthDetail = true" :title="`成长等级 ${treeLevel} - 点击查看详情`">
-          <div class="tree-icon" :style="treeStyle">{{ treeIcon }}</div>
-        </div>
-
-        <!-- 右侧功能按钮 -->
         <div class="header-actions">
-          <!-- 刷新按钮 - 最常用，放最左 -->
-          <button class="btn-icon-circle btn-refresh-icon" @click="handleRefresh" :title="t('refresh')">
-            <span :class="{ spinning: isRefreshing }">⟳</span>
-          </button>
-          <!-- 回收站按钮（带数字气泡）- 常用功能 -->
-          <button class="btn-icon-circle btn-trash" @click="showTrash = true" :title="t('trash')">
-            🗑️
-            <span v-if="taskStore.deletedTasks.length > 0" class="badge-count">{{ taskStore.deletedTasks.length }}</span>
-          </button>
-          <!-- AI问答按钮 - AI功能 -->
-          <button class="btn-icon-circle btn-ai" @click="showAIChat = true" :title="t('aiChat')">
-            🤖
-          </button>
-          <!-- 演示模式按钮 - 辅助功能 -->
-          <button class="btn-icon-circle btn-tutorial" @click="startTutorial" :title="t('tutorial')">
-            💡
-          </button>
-          <!-- 个人头像 - 最右侧 -->
-          <button class="btn-avatar" @click="showProfile = true" :title="t('profile')">
-            <span class="username-text">{{ currentUsername }}</span>
-          </button>
+          <!-- 左侧按钮组（只保留2个）-->
+          <div class="left-actions">
+            <!-- 📁 文件夹管理按钮 -->
+            <button 
+              class="btn-icon-circle btn-manage" 
+              @click="showCollectionManage = true" 
+              title="管理文件夹"
+            >
+              📁
+            </button>
+            
+            <!-- 任务树成长 -->
+            <div class="growth-tree" @click="showGrowthDetail = true" :title="`成长等级 ${treeLevel} - 点击查看详情`">
+              <div class="tree-icon" :style="treeStyle">{{ treeIcon }}</div>
+            </div>
+          </div>
+          
+          <!-- 右侧按钮组 -->
+          <div class="right-actions">
+            <!-- 刷新按钮 -->
+            <button class="btn-icon-circle btn-refresh-icon" @click="handleRefresh" :title="t('refresh')">
+              <span :class="{ spinning: isRefreshing }">⟳</span>
+            </button>
+            <!-- 回收站按钮（带数字气泡）-->
+            <button class="btn-icon-circle btn-trash" @click="showTrash = true" :title="t('trash')">
+              🗑️
+              <span v-if="taskStore.deletedTasks.length > 0" class="badge-count">{{ taskStore.deletedTasks.length }}</span>
+            </button>
+            <!-- AI问答按钮 -->
+            <button class="btn-icon-circle btn-ai" @click="showAIChat = true" :title="t('aiChat')">
+              🤖
+            </button>
+            <!-- 演示模式按钮 -->
+            <button class="btn-icon-circle btn-tutorial" @click="startTutorial" :title="t('tutorial')">
+              💡
+            </button>
+            <!-- 个人头像 -->
+            <button class="btn-avatar" @click="showProfile = true" :title="t('profile')">
+              <span class="username-text">{{ currentUsername }}</span>
+            </button>
+          </div>
         </div>
       </header>
+
+      <!-- 🆕 文件夹快捷栏（成长树下方，独立一行） -->
+      <div class="collection-quick-bar">
+        <!-- 📓 我的笔记本 -->
+        <button 
+          class="collection-chip"
+          :class="{ active: selectedCollectionId === null }"
+          @click="selectCollection(null)"
+          title="查看全部任务"
+        >
+          <span class="chip-name">我的笔记本</span>
+          <span class="chip-count">({{ taskStore.tasks.length }})</span>
+        </button>
+        
+        <!-- 前3个文件夹 -->
+        <button 
+          v-for="collection in quickCollections" 
+          :key="collection.id"
+          class="collection-chip"
+          :class="{ active: selectedCollectionId === collection.id }"
+          @click="selectCollection(collection.id)"
+          :title="collection.description || '点击查看该文件夹的任务'"
+        >
+          <span v-if="collection.isPrivate" class="lock-icon">🔒</span>
+          <span class="chip-name">{{ collection.name }}</span>
+          <span class="chip-count">({{ getCollectionTaskCount(collection.id) }})</span>
+        </button>
+        
+        <!-- 未分类 -->
+        <button 
+          class="collection-chip"
+          :class="{ active: selectedCollectionId === 'uncategorized' }"
+          @click="selectCollection('uncategorized')"
+          title="未分类任务"
+        >
+          <span class="chip-name">未分类</span>
+          <span class="chip-count">({{ uncategorizedTaskCount }})</span>
+        </button>
+        
+        <!-- 更多按钮 -->
+        <button 
+          v-if="sortedCollections.length > 3"
+          class="collection-chip chip-more"
+          @click="showMoreCollections = true"
+          title="查看更多文件夹"
+        >
+          <span>+{{ sortedCollections.length - 3 }}▼</span>
+        </button>
+      </div>
 
       <!-- 统计+筛选+添加 - 两行布局 v1.5.2 -->
       <section class="dashboard-area">
@@ -168,6 +231,16 @@
 
               <input ref="hiddenCustomDateTime" type="datetime-local" style="display:none" :min="getTodayDateTime()" @change="handleCustomDateTimeChange">
 
+              <!-- 🆕 文件夹选择（显示当前选中的文件夹） -->
+              <div class="attr-group" v-if="sortedCollections.length > 0">
+                <select v-model="newTaskCollectionId" class="attr-select attr-select-collection">
+                  <option :value="null">📂 未分类</option>
+                  <option v-for="c in sortedCollections" :key="c.id" :value="c.id">
+                    {{ c.icon }} {{ c.name }}
+                  </option>
+                </select>
+              </div>
+
               <!-- 分类 -->
               <div class="attr-group">
                 <select v-model="newTaskCategory" class="attr-select attr-select-short">
@@ -265,6 +338,15 @@
                     :title="`开始专注 (${task.completedPomodoros || 0}/${task.estimatedPomodoros || getPomodoroCount(task)})`"
                   >
                     🍅
+                  </button>
+                  <!-- 🆕 移动到文件夹按钮 -->
+                  <button 
+                    v-if="sortedCollections.length > 0"
+                    class="btn-move-inline" 
+                    @click.stop="openMoveToCollection(task)" 
+                    title="移动到文件夹"
+                  >
+                    📁
                   </button>
                   <button 
                     class="btn-pin-inline" 
@@ -3569,6 +3651,103 @@
       @show-history="showReportHistory"
       @report-saved="handleReportSaved"
     />
+
+    <!-- 🆕 创建文件夹弹窗 -->
+    <CreateCollectionModal
+      v-if="showCreateCollectionModal"
+      @close="showCreateCollectionModal = false"
+      @created="handleCollectionCreated"
+    />
+
+    <!-- 🆕 删除文件夹弹窗 -->
+    <DeleteCollectionModal
+      v-if="showDeleteCollectionModal"
+      :collection="collectionToDelete"
+      @close="showDeleteCollectionModal = false"
+      @confirm="handleCollectionDeleted"
+    />
+
+    <!-- 🆕 移动任务到文件夹弹窗 -->
+    <MoveToCollectionModal
+      v-if="showMoveToCollectionModal && taskToMove"
+      :task="taskToMove"
+      :collections="sortedCollections"
+      @close="showMoveToCollectionModal = false"
+      @moved="handleTaskMoved"
+    />
+
+    <!-- 🆕 批量迁入任务弹窗 -->
+    <BatchAddTasksModal
+      v-if="showBatchAddModal"
+      :collection-id="selectedCollectionId"
+      :collection-name="getSelectedCollectionName()"
+      :all-tasks="taskStore.tasks"
+      :all-collections="sortedCollections"
+      @close="showBatchAddModal = false"
+      @added="handleBatchAdded"
+    />
+
+    <!-- 🆕 批量迁出任务弹窗 -->
+    <BatchMoveOutModal
+      v-if="showBatchMoveOutModal"
+      :collection-id="selectedCollectionId"
+      :collection-name="getSelectedCollectionName()"
+      :tasks="taskStore.getCollectionTasks(selectedCollectionId)"
+      :all-collections="sortedCollections"
+      @close="showBatchMoveOutModal = false"
+      @moved="handleBatchMovedOut"
+    />
+
+    <!-- 🆕 密码验证弹窗 -->
+    <VerifyPasswordModal
+      v-if="showVerifyPasswordModal"
+      :collection-id="pendingCollectionId"
+      :collection-name="taskStore.collections.find(c => c.id === pendingCollectionId)?.name || ''"
+      @close="showVerifyPasswordModal = false"
+      @verified="handlePasswordVerified"
+    />
+
+    <!-- 🆕 修改密码弹窗 -->
+    <ChangePasswordModal
+      v-if="showChangePasswordModal"
+      :collection-id="selectedCollectionId"
+      :collection-name="getSelectedCollectionName()"
+      @close="showChangePasswordModal = false"
+      @changed="handlePasswordChanged"
+    />
+
+    <!-- 🆕 文件夹管理页面 -->
+    <CollectionManageModal
+      v-if="showCollectionManage"
+      :collections="sortedCollections"
+      :get-task-count="getCollectionTaskCount"
+      @close="showCollectionManage = false"
+      @create="() => { fromCollectionManage = true; showCreateCollectionModal = true; showCollectionManage = false }"
+      @rename="(c) => { fromCollectionManage = true; startEditCollectionName(c); showCollectionManage = false }"
+      @changePassword="(c) => { fromCollectionManage = true; openChangePassword(c.id); showCollectionManage = false }"
+      @moveIn="(c) => { openBatchMoveIn(c.id, true); showCollectionManage = false }"
+      @moveOut="(c) => { openBatchMoveOut(c.id, true); showCollectionManage = false }"
+      @delete="(c) => { fromCollectionManage = true; openDeleteCollection(c.id); showCollectionManage = false }"
+    />
+
+    <!-- 🆕 重命名文件夹弹窗 -->
+    <RenameCollectionModal
+      v-if="showRenameCollectionModal"
+      :collection-id="renamingCollection?.id"
+      :collection-name="renamingCollection?.name"
+      @close="showRenameCollectionModal = false; renamingCollection = null"
+      @renamed="handleRenameCollection"
+    />
+
+    <!-- 🆕 更多文件夹选择弹窗 -->
+    <MoreCollectionsModal
+      v-if="showMoreCollections"
+      :collections="moreCollections"
+      :get-task-count="getCollectionTaskCount"
+      :selected-collection-id="selectedCollectionId"
+      @close="showMoreCollections = false"
+      @select="selectCollection"
+    />
   </div>
 </template>
 
@@ -3622,6 +3801,16 @@ import AIChat from '../components/AIChat.vue'
 import AIModelConfig from '../components/AIModelConfig.vue'
 import AIPreviewModal from '../components/AIPreviewModal.vue'
 import TemplateSelector from '../components/TemplateSelector.vue'
+import CreateCollectionModal from '../components/CreateCollectionModal.vue'  // 🆕
+import DeleteCollectionModal from '../components/DeleteCollectionModal.vue'  // 🆕
+import MoveToCollectionModal from '../components/MoveToCollectionModal.vue'  // 🆕
+import BatchAddTasksModal from '../components/BatchAddTasksModal.vue'  // 🆕
+import BatchMoveOutModal from '../components/BatchMoveOutModal.vue'  // 🆕
+import VerifyPasswordModal from '../components/VerifyPasswordModal.vue'  // 🆕
+import ChangePasswordModal from '../components/ChangePasswordModal.vue'  // 🆕
+import RenameCollectionModal from '../components/RenameCollectionModal.vue'  // 🆕
+import CollectionManageModal from '../components/CollectionManageModal.vue'  // 🆕
+import MoreCollectionsModal from '../components/MoreCollectionsModal.vue'  // 🆕
 import { CountUp } from 'countup.js'
 import { manualBackup, listBackups, restoreBackup, deleteBackup } from '../utils/autoBackup'
 import { taskToExcelRow, generateTemplateData, excelRowToTask } from '../utils/excelFormat'
@@ -4041,6 +4230,7 @@ const newTaskType = ref('today')
 const customDateTime = ref('')
 const newTaskCategory = ref('work')
 const newTaskPriority = ref('medium')
+const newTaskCollectionId = ref(null)  // 🆕 文件夹ID
 const selectedWeekdays = ref([])
 const enableReminder = ref(false)
 const forceReminder = ref(true) // 启用提醒默认就是强制提醒
@@ -4077,6 +4267,29 @@ const showEnhancedStats = ref(false)  // 🆕 统一的统计中心
 const showSupport = ref(false)
 const showAIConfig = ref(false)
 const showAIChat = ref(false)
+
+// 🆕 文件夹相关状态
+const showCollectionList = ref(false)  // 是否展开文件夹列表（已废弃）
+const showCollectionManage = ref(false)  // 🆕 文件夹管理页面
+const showMoreCollections = ref(false)  // 🆕 更多文件夹选择弹窗
+const showRenameCollectionModal = ref(false)  // 🆕 重命名文件夹弹窗
+const renamingCollection = ref(null)  // 🆕 正在重命名的文件夹
+const fromCollectionManage = ref(false)  // 🆕 标记是否从文件夹管理打开的弹窗
+const selectedCollectionId = ref(null)  // 选中的文件夹ID（null=全部，'uncategorized'=未分类）
+const showCreateCollectionModal = ref(false)  // 创建文件夹弹窗
+const showDeleteCollectionModal = ref(false)  // 删除文件夹弹窗
+const collectionToDelete = ref(null)  // 待删除的文件夹
+const showMoveToCollectionModal = ref(false)  // 🆕 移动任务到文件夹弹窗
+const taskToMove = ref(null)  // 🆕 待移动的任务
+const editingCollectionId = ref(null)  // 🆕 正在编辑名称的文件夹ID
+const editingCollectionName = ref('')  // 🆕 编辑中的文件夹名称
+const showBatchAddModal = ref(false)  // 🆕 批量添加任务弹窗
+const showBatchMoveOutModal = ref(false)  // 🆕 批量迁出任务弹窗
+const showVerifyPasswordModal = ref(false)  // 🆕 密码验证弹窗
+const showChangePasswordModal = ref(false)  // 🆕 修改密码弹窗
+const pendingCollectionId = ref(null)  // 🆕 待验证的文件夹ID
+const verifiedCollections = ref(new Set())  // 🆕 已验证的文件夹（会话内有效）
+
 const aiExtractedTasks = ref([])
 const showAITaskPreview = ref(false)
 const showAIResult = ref(false)
@@ -4811,8 +5024,9 @@ const initVersionHistory = () => {
       date: '2026-03-06',
       features: [
         '🌳 任务树连续生长：图标、尺寸、颜色随成长值平滑变化，30个细分状态',
+        '📚 更多文件夹选择：点击"+N▼"查看更多文件夹，快速进入查看任务',
         '🔙 首页返回手势：首页滑动返回退出应用到后台，重新进入保持状态',
-        '📚 演示功能优化：从30步精简为24步（6-8分钟），突出核心功能'
+        '📖 演示功能优化：从30步精简为24步（6-8分钟），突出核心功能'
       ],
       improvements: [
         '✨ 平滑过渡：0.5秒缓动动画，每完成任务都能看到树的变化',
@@ -4821,12 +5035,16 @@ const initVersionHistory = () => {
         '🌱 连续生长：0-26分🌱（小）→ 27-53分🌱（中）→ 54-80分🌿（大）',
         '🎨 尺寸渐变：1.35rem → 1.8rem 随成长值线性增长',
         '🌈 颜色渐变：浅绿 → 深绿 → 金色（0-10000分连续变化）',
+        '📁 功能区分：管理按钮（创建/编辑/删除）vs 更多按钮（只读选择）',
+        '📂 更多文件夹弹窗：底部滑出，显示第4个及以后的文件夹',
+        '🔒 私密标识：更多文件夹列表中显示🔒图标',
         '📱 返回逻辑：有弹窗→关闭弹窗 | 有表单→清空内容 | 首页→退到后台',
         '📖 教程优化：保留重要功能细节，删除冗余步骤，平衡精简与完整性'
       ],
       fixes: [
         '修复首页返回手势无响应问题（删除canGoBack判断）',
-        '修复演示功能步骤过多导致用户疲劳（30→24步）'
+        '修复演示功能步骤过多导致用户疲劳（30→24步）',
+        '修复"更多"按钮功能混淆（从管理页面改为只读选择）'
       ]
     },
     {
@@ -6982,11 +7200,43 @@ const notifiedTasks = new Set() // 存储已提醒的任务ID
 
 // 计算属性：按分类和时间筛选的任务（不按状态筛选，用于统计）
 const baseFilteredTasks = computed(() => {
-  return taskStore.getFilteredTasks('all', currentCategoryFilter.value, {
+  let tasks = taskStore.getFilteredTasks('all', currentCategoryFilter.value, {
     start: startDate.value,
     end: endDate.value
   })
+  
+  // 🆕 根据选中的文件夹筛选
+  if (selectedCollectionId.value !== null) {
+    if (selectedCollectionId.value === 'uncategorized') {
+      tasks = tasks.filter(t => !t.collectionId)
+    } else {
+      tasks = tasks.filter(t => t.collectionId === selectedCollectionId.value)
+    }
+  }
+  
+  return tasks
 })
+
+// 🆕 文件夹相关计算属性
+const sortedCollections = computed(() => taskStore.sortedCollections)
+
+// 🆕 快捷栏显示的前3个文件夹
+const quickCollections = computed(() => {
+  return sortedCollections.value.slice(0, 3)
+})
+
+// 🆕 更多文件夹（第4个及以后）
+const moreCollections = computed(() => {
+  return sortedCollections.value.slice(3)
+})
+
+const uncategorizedTaskCount = computed(() => {
+  return taskStore.tasks.filter(t => !t.collectionId).length
+})
+
+const getCollectionTaskCount = (collectionId) => {
+  return taskStore.getCollectionTasks(collectionId).length
+}
 
 // 计算属性：完全筛选后的任务（包括状态筛选，用于显示）
 const filteredTasks = computed(() => {
@@ -6995,6 +7245,17 @@ const filteredTasks = computed(() => {
     end: endDate.value,
     dimension: timeDimension.value
   })
+  
+  // 🆕 文件夹筛选
+  if (selectedCollectionId.value !== null) {
+    if (selectedCollectionId.value === 'uncategorized') {
+      // 只显示未分类任务
+      tasks = tasks.filter(t => !t.collectionId)
+    } else {
+      // 只显示选中文件夹的任务
+      tasks = tasks.filter(t => t.collectionId === selectedCollectionId.value)
+    }
+  }
   
   // 优先级筛选
   if (currentPriorityFilter.value !== 'all') {
@@ -7812,12 +8073,19 @@ const addTask = async () => {
     customTime = `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`
   }
   
+  // 🆕 确定文件夹ID：如果选中了具体文件夹，就用该文件夹；否则用null（未分类）
+  let collectionId = null
+  if (selectedCollectionId.value && selectedCollectionId.value !== 'uncategorized' && selectedCollectionId.value !== null) {
+    collectionId = selectedCollectionId.value
+  }
+  
   const task = {
     text: title,  // 🆕 使用统一输入框的标题
     description: description,  // 🆕 使用临时保存的描述
     type: newTaskType.value,
     category: newTaskCategory.value,
     priority: newTaskPriority.value,
+    collectionId: collectionId,  // 🆕 文件夹ID
     weekdays: newTaskType.value === 'weekly' ? selectedWeekdays.value : null,
     customDate: customDate,
     customTime: customTime,
@@ -7825,6 +8093,12 @@ const addTask = async () => {
     reminderTime: enableReminder.value && reminderDateTime.value ? new Date(reminderDateTime.value).toISOString() : null,
     forceReminder: enableReminder.value // 启用提醒就是强制提醒
   }
+  
+  console.log('📝 创建任务:', { 
+    title, 
+    selectedCollectionId: selectedCollectionId.value, 
+    collectionId: task.collectionId 
+  })
   
   const createdTask = await taskStore.addTask(task)
   
@@ -11383,7 +11657,7 @@ const handleRefresh = async () => {
   showDailySummary.value = false
   showAIReport.value = false
   showTaskSplitter.value = false
-  showDataStats.value = false
+  showEnhancedStats.value = false
   showTextResult.value = false
   showTaskPreview.value = false
   showSubtaskPreview.value = false
@@ -11404,6 +11678,10 @@ const handleRefresh = async () => {
   currentLogTask.value = null
   taskToSplit.value = null
   
+  // 🆕 重置文件夹选择
+  selectedCollectionId.value = null
+  showCollectionList.value = false
+  
   // 6. 重新加载数据
   await taskStore.setCurrentUser(userStore.currentUser)
   await loadUserInfo()
@@ -11413,6 +11691,163 @@ const handleRefresh = async () => {
     isRefreshing.value = false
     showNotification('🔄 已刷新并重置筛选条件', 'success')
   }, 800)
+}
+
+// 🆕 文件夹相关方法（已废弃，保留兼容性）
+const toggleCollectionList = () => {
+  // 不再使用，点击"管理"按钮直接打开管理页面
+  showCollectionManage.value = true
+}
+
+const selectCollection = (collectionId) => {
+  // 如果正在编辑，先保存
+  if (editingCollectionId.value) {
+    saveCollectionName()
+  }
+  
+  // 🆕 私密文件夹验证
+  const collection = taskStore.collections.find(c => c.id === collectionId)
+  if (collection?.isPrivate && !verifiedCollections.value.has(collectionId)) {
+    pendingCollectionId.value = collectionId
+    showVerifyPasswordModal.value = true
+    return
+  }
+  
+  selectedCollectionId.value = collectionId
+  
+  console.log('📁 选择文件夹:', { 
+    collectionId, 
+    collectionName: collection?.name || (collectionId === 'uncategorized' ? '未分类' : '全部任务')
+  })
+  
+  // 可选：选择后自动收起列表
+  // showCollectionList.value = false
+}
+
+// 🆕 开始编辑文件夹名称
+const startEditCollectionName = (collection) => {
+  renamingCollection.value = collection
+  showRenameCollectionModal.value = true
+}
+
+// 🆕 处理重命名
+const handleRenameCollection = async (newName) => {
+  if (renamingCollection.value && newName.trim()) {
+    await taskStore.updateCollection(renamingCollection.value.id, { 
+      name: newName.trim() 
+    })
+    showNotification('✅ 文件夹已重命名', 'success')
+  }
+  showRenameCollectionModal.value = false
+  renamingCollection.value = null
+}
+
+// 🆕 保存文件夹名称（废弃，保留兼容性）
+const saveCollectionName = async () => {
+  if (editingCollectionId.value && editingCollectionName.value.trim()) {
+    await taskStore.updateCollection(editingCollectionId.value, { 
+      name: editingCollectionName.value.trim() 
+    })
+    showNotification('✅ 文件夹已重命名', 'success')
+  }
+  editingCollectionId.value = null
+  editingCollectionName.value = ''
+}
+
+// 🆕 取消编辑
+const cancelEditCollectionName = () => {
+  editingCollectionId.value = null
+  editingCollectionName.value = ''
+}
+
+// 🆕 获取选中文件夹的名称
+const getSelectedCollectionName = () => {
+  if (!selectedCollectionId.value) return '全部任务'
+  if (selectedCollectionId.value === 'uncategorized') return '未分类'
+  const collection = taskStore.collections.find(c => c.id === selectedCollectionId.value)
+  return collection ? collection.name : '未知文件夹'
+}
+
+// 🆕 打开指定文件夹的批量添加弹窗
+const openBatchAddForCollection = (collectionId) => {
+  selectedCollectionId.value = collectionId
+  showBatchAddModal.value = true
+}
+
+// 🆕 打开迁入弹窗
+const openBatchMoveIn = (collectionId, fromManage = false) => {
+  selectedCollectionId.value = collectionId
+  fromCollectionManage.value = fromManage
+  showBatchAddModal.value = true
+}
+
+// 🆕 打开迁出弹窗
+const openBatchMoveOut = (collectionId, fromManage = false) => {
+  selectedCollectionId.value = collectionId
+  fromCollectionManage.value = fromManage
+  showBatchMoveOutModal.value = true
+}
+
+// 🆕 批量添加任务完成
+const handleBatchAdded = (count) => {
+  showNotification(`✅ 已迁入 ${count} 个任务到"${getSelectedCollectionName()}"`, 'success')
+}
+
+// 🆕 批量迁出任务完成
+const handleBatchMovedOut = (count) => {
+  showNotification(`✅ 已迁出 ${count} 个任务`, 'success')
+}
+
+// 🆕 密码验证成功
+const handlePasswordVerified = (password) => {
+  const isValid = taskStore.verifyCollectionPassword(pendingCollectionId.value, password)
+  
+  if (isValid) {
+    verifiedCollections.value.add(pendingCollectionId.value)
+    showVerifyPasswordModal.value = false
+    selectCollection(pendingCollectionId.value)
+  } else {
+    showNotification('❌ 密码错误', 'error')
+  }
+}
+
+// 🆕 打开修改密码弹窗
+const openChangePassword = (collectionId) => {
+  selectedCollectionId.value = collectionId
+  showChangePasswordModal.value = true
+}
+
+// 🆕 修改密码成功
+const handlePasswordChanged = () => {
+  showNotification('✅ 密码修改成功', 'success')
+}
+
+const showCollectionMenu = (collection) => {
+  collectionToDelete.value = collection
+  showDeleteCollectionModal.value = true
+}
+
+const handleCollectionCreated = (collection) => {
+  showNotification(`✅ 文件夹"${collection.name}"创建成功`, 'success')
+}
+
+const handleCollectionDeleted = () => {
+  showNotification('✅ 文件夹已删除', 'success')
+  collectionToDelete.value = null
+}
+
+// 🆕 移动任务到文件夹
+const openMoveToCollection = (task) => {
+  taskToMove.value = task
+  showMoveToCollectionModal.value = true
+}
+
+const handleTaskMoved = (collectionId) => {
+  const collectionName = collectionId === null 
+    ? '未分类' 
+    : taskStore.collections.find(c => c.id === collectionId)?.name || '未知文件夹'
+  showNotification(`✅ 任务已移动到"${collectionName}"`, 'success')
+  taskToMove.value = null
 }
 
 // 方法：跳转到首页
@@ -12611,7 +13046,90 @@ onMounted(async () => {
         console.log('✅ 关闭全屏描述编辑')
         showFullscreenDesc.value = false
         return
-      } 
+      } else if (showRenameCollectionModal.value) {
+        console.log('✅ 关闭重命名文件夹')
+        showRenameCollectionModal.value = false
+        renamingCollection.value = null
+        // 🆕 如果是从文件夹管理打开的，返回到文件夹管理
+        if (fromCollectionManage.value) {
+          showCollectionManage.value = true
+          fromCollectionManage.value = false
+        }
+        return
+      } else if (showVerifyPasswordModal.value) {
+        console.log('✅ 关闭密码验证')
+        showVerifyPasswordModal.value = false
+        pendingCollectionId.value = null
+        return
+      } else if (showChangePasswordModal.value) {
+        console.log('✅ 关闭修改密码')
+        showChangePasswordModal.value = false
+        // 🆕 如果是从文件夹管理打开的，返回到文件夹管理
+        if (fromCollectionManage.value) {
+          showCollectionManage.value = true
+          fromCollectionManage.value = false
+        }
+        return
+      } else if (showCreateCollectionModal.value) {
+        console.log('✅ 关闭创建文件夹')
+        showCreateCollectionModal.value = false
+        // 🆕 如果是从文件夹管理打开的，返回到文件夹管理
+        if (fromCollectionManage.value) {
+          showCollectionManage.value = true
+          fromCollectionManage.value = false
+        }
+        return
+      } else if (showDeleteCollectionModal.value) {
+        console.log('✅ 关闭删除文件夹')
+        showDeleteCollectionModal.value = false
+        // 🆕 如果是从文件夹管理打开的，返回到文件夹管理
+        if (fromCollectionManage.value) {
+          showCollectionManage.value = true
+          fromCollectionManage.value = false
+        }
+        return
+      } else if (showMoveToCollectionModal.value) {
+        console.log('✅ 关闭移动到文件夹')
+        showMoveToCollectionModal.value = false
+        taskToMove.value = null
+        return
+      } else if (showBatchAddModal.value) {
+        console.log('✅ 关闭批量迁入')
+        showBatchAddModal.value = false
+        // 🆕 如果是从文件夹管理打开的，返回到文件夹管理
+        if (fromCollectionManage.value) {
+          showCollectionManage.value = true
+          fromCollectionManage.value = false
+        }
+        return
+      } else if (showBatchMoveOutModal.value) {
+        console.log('✅ 关闭批量迁出')
+        showBatchMoveOutModal.value = false
+        // 🆕 如果是从文件夹管理打开的，返回到文件夹管理
+        if (fromCollectionManage.value) {
+          showCollectionManage.value = true
+          fromCollectionManage.value = false
+        }
+        return
+      }
+      // 🆕 第二层：文件夹管理页面
+      else if (showCollectionManage.value) {
+        console.log('✅ 关闭文件夹管理')
+        showCollectionManage.value = false
+        return
+      }
+      // 🆕 第二层：更多文件夹选择
+      else if (showMoreCollections.value) {
+        console.log('✅ 关闭更多文件夹')
+        showMoreCollections.value = false
+        return
+      }
+      // 🆕 文件夹选择状态（二级页面）
+      else if (selectedCollectionId.value !== null) {
+        console.log('✅ 返回到全部任务')
+        selectCollection(null)
+        return
+      }
       // 第二层弹窗（中层）
       else if (showTutorial.value) {
         console.log('✅ 关闭教程模式')
@@ -12667,9 +13185,9 @@ onMounted(async () => {
       } else if (showTrash.value) {
         console.log('✅ 关闭回收站')
         showTrash.value = false
-      } else if (showDataStats.value) {
-        console.log('✅ 关闭数据统计')
-        showDataStats.value = false
+      } else if (showEnhancedStats.value) {
+        console.log('✅ 关闭统计中心')
+        showEnhancedStats.value = false
       } else if (showDailySummary.value) {
         console.log('✅ 关闭今日总结')
         showDailySummary.value = false
@@ -13887,6 +14405,27 @@ watch(() => reportData.value, (newData) => {
   transform: rotate(45deg);
 }
 
+/* 🆕 移动到文件夹按钮 */
+.btn-move-inline {
+  background: none;
+  border: none;
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 0.6rem;
+  margin: -0.6rem;
+  opacity: 0.3;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  line-height: 1;
+  filter: grayscale(1);
+}
+
+.btn-move-inline:hover {
+  opacity: 0.8;
+  transform: scale(1.15);
+  filter: grayscale(0);
+}
+
 /* 番茄钟按钮 */
 .btn-pomodoro-inline {
   background: none;
@@ -14282,16 +14821,424 @@ watch(() => reportData.value, (newData) => {
   display: flex;
   gap: 0.25rem;
   align-items: center;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.left-actions {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.right-actions {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
 }
 
 .header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   padding: 1rem 0.1rem;
   margin-bottom: 0.5rem;
   border-bottom: 1px solid var(--glass-border);
   width: 100%;
+}
+
+/* 🆕 左侧区域（任务树 + 文件夹按钮） */
+.left-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 🆕 文件夹按钮 */
+.btn-folder-toggle {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-folder-toggle:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  border-color: rgba(255, 255, 255, 1);
+}
+
+.btn-folder-toggle.active {
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  color: white;
+  border-color: rgba(255, 255, 255, 1);
+}
+
+/* 🆕 文件夹快捷栏 */
+.collection-quick-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+}
+
+.collection-quick-bar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+
+/* 🆕 文件夹图标按钮 */
+.quick-bar-icon-btn {
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 24px;
+  border: 2px solid #e0e0e0;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.quick-bar-icon-btn .icon {
+  font-size: 1.4rem;
+}
+
+.quick-bar-icon-btn .text {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.quick-bar-icon-btn .count {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.quick-bar-icon-btn:hover {
+  border-color: #8b5cf6;
+  background: #f3f0ff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
+}
+
+.quick-bar-icon-btn.active {
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  border-color: #8b5cf6;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+}
+
+.quick-bar-icon-btn.active .text,
+.quick-bar-icon-btn.active .count {
+  color: white;
+}
+
+.collection-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border-radius: 24px;
+  border: 2px solid #e0e0e0;
+  background: white;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-height: 36px;
+}
+
+.collection-chip:hover {
+  border-color: #8b5cf6;
+  background: #f3f0ff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
+}
+
+.collection-chip.active {
+  border-color: #8b5cf6;
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  color: white;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+}
+
+.chip-icon {
+  font-size: 1rem;
+}
+
+.chip-name {
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+.chip-count {
+  font-size: 0.8rem;
+  opacity: 0.9;
+}
+
+.manage-btn {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 6px;
+  font-size: 1.2rem;
+}
+
+.chip-count {
+  opacity: 0.7;
+  font-size: 0.8rem;
+}
+
+.collection-chip.active .chip-count {
+  opacity: 0.9;
+}
+
+.chip-more {
+  background: #f0f0f0;
+  border-color: #d0d0d0;
+}
+
+.chip-more:hover {
+  background: #e0e0e0;
+}
+
+.chip-more.active {
+  background: #8b5cf6;
+  color: white;
+  border-color: #8b5cf6;
+}
+
+/* 🆕 批量添加按钮 */
+.chip-batch-add {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border-color: #10b981;
+}
+
+.chip-batch-add:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  border-color: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+/* 🆕 文件夹列表面板 */
+.collection-list-panel {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  max-height: 300px;
+  overflow-y: auto;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 🆕 文件夹项 */
+.collection-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+}
+
+.collection-item:hover {
+  background: #f3f0ff;
+  transform: translateX(4px);
+}
+
+.collection-item.active {
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  color: white;
+}
+
+.collection-item.editing {
+  background: #f3f0ff;
+  border: 2px solid #8b5cf6;
+}
+
+.collection-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+/* 🆕 完整列表中的操作按钮组 */
+.collection-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.collection-actions .action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: none;
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.collection-actions .action-btn:hover {
+  background: white;
+  transform: scale(1.1);
+}
+
+.collection-actions .action-move-in:hover {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.collection-actions .action-move-out:hover {
+  background: #fed7aa;
+  color: #d97706;
+}
+
+.collection-actions .action-password:hover {
+  background: #fef3c7;
+  color: #f59e0b;
+}
+
+.collection-actions .action-delete:hover {
+  background: #fee;
+  color: #dc2626;
+}
+
+.collection-item.active .collection-actions .action-btn {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.collection-item.active .collection-actions .action-btn:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.collection-icon {
+  font-size: 1.2rem;
+}
+
+.lock-icon {
+  font-size: 0.85rem;
+  opacity: 0.7;
+  margin-left: 2px;
+}
+
+.collection-name {
+  font-weight: 500;
+  cursor: text;
+}
+
+.collection-name:hover {
+  text-decoration: underline;
+  text-decoration-style: dashed;
+}
+
+/* 🆕 文件夹名称编辑输入框 */
+.collection-name-input {
+  flex: 1;
+  padding: 4px 8px;
+  border: 2px solid #8b5cf6;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 500;
+  background: white;
+  outline: none;
+}
+
+.collection-name-input:focus {
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.collection-name {
+  font-weight: 500;
+}
+
+.collection-count {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.collection-item.active .collection-count {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.check-mark {
+  margin-left: auto;
+  font-size: 1.2rem;
+}
+
+.btn-more {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.collection-item:hover .btn-more {
+  opacity: 1;
+}
+
+.btn-more:hover {
+  background: rgba(0,0,0,0.1);
+}
+
+.collection-item.active .btn-more:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+/* 🆕 新建文件夹按钮 */
+.btn-new-collection {
+  width: 100%;
+  padding: 12px;
+  border: 2px dashed #8b5cf6;
+  background: white;
+  border-radius: 8px;
+  color: #8b5cf6;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-new-collection:hover {
+  background: #f3f0ff;
+  border-color: #6366f1;
 }
 
 /* 任务树成长 */
@@ -14363,6 +15310,14 @@ watch(() => reportData.value, (newData) => {
   background: rgba(255, 255, 255, 0.4);
   transform: translateY(-2px);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+
+.btn-manage {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.btn-manage:hover {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
 }
 
 .btn-icon-circle:active {
@@ -19013,6 +19968,12 @@ watch(() => reportData.value, (newData) => {
 
 .attr-select-short {
   min-width: 42px;
+}
+
+/* 🆕 文件夹选择器 */
+.attr-select-collection {
+  min-width: 90px;
+  max-width: 120px;
 }
 
 .attr-text {
