@@ -3751,7 +3751,6 @@
       @moveOut="(c) => { openBatchMoveOut(c.id, true); showCollectionManage = false }"
       @delete="(c) => { fromCollectionManage = true; openDeleteCollection(c.id); showCollectionManage = false }"
       @batchEncrypt="handleBatchEncrypt"
-      @batchMerge="handleBatchMerge"
       @batchDelete="handleBatchDelete"
     />
 
@@ -5063,36 +5062,34 @@ const initVersionHistory = () => {
       version: '0.8.2',
       date: '2026-03-06',
       features: [
-        '📁 笔记本树形嵌套：支持无限层级嵌套，树形可视化展示完整目录结构',
-        '🌳 任务树连续生长：图标、尺寸、颜色随成长值平滑变化，30个细分状态',
-        '🗺️ 面包屑导航：首页显示完整路径，响应式设计（小屏显示最后2级）',
-        '📚 更多文件夹选择：点击"+N▼"查看更多文件夹，快速进入查看任务'
+        '📁 笔记本树形嵌套系统：支持无限层级嵌套（工作 > 项目A > 子项目A1）',
+        '🌳 任务树连续生长效果：30个细分状态，图标/尺寸/颜色平滑变化',
+        '🗺️ 面包屑导航：首页显示完整路径（📚 全部 > 📁 工作 > 📁 项目A）',
+        '📚 更多文件夹选择：点击"+N▼"快速查看和进入更多文件夹'
       ],
       improvements: [
-        '🌲 树形展开/折叠：点击▼/▶切换子笔记本显示，缩进显示层级关系',
+        '🌲 树形可视化：点击▼/▶展开/折叠子笔记本，缩进显示层级关系',
         '📊 递归统计：笔记本任务数包含所有子笔记本的任务',
         '📦 移动笔记本：支持移动到任意位置，带循环依赖检测',
         '➕ 新建子笔记本：每个节点都有➕按钮，可在任意层级创建',
-        '🗑️ 删除选项增强：支持级联删除/提升子笔记本/移到其他位置',
+        '🗑️ 删除选项增强：级联删除/提升子笔记本/移到其他位置',
         '🔒 权限继承：父笔记本加密后，子笔记本自动加密',
-        '✨ 平滑过渡：0.5秒缓动动画，每完成任务都能看到树的变化',
-        '💡 激励增强：微小进步也有视觉反馈，持续的成长感',
-        '🎯 细节丰富：10阶段×3状态=30个细分状态（种子→神树）',
-        '🌱 连续生长：0-26分🌱（小）→ 27-53分🌱（中）→ 54-80分🌿（大）',
-        '🎨 尺寸渐变：1.35rem → 1.8rem 随成长值线性增长',
+        '✨ 平滑过渡：0.5秒缓动动画，微小进步也有视觉反馈',
+        '🎨 连续生长：种子🌱(小/中/大) → 幼苗🌿 → ... → 神树🎋',
+        '📐 尺寸渐变：1.35rem → 1.8rem 随成长值线性增长',
         '🌈 颜色渐变：浅绿 → 深绿 → 金色（0-10000分连续变化）',
         '🔧 迁入任务优化：只显示未分类任务，避免重复迁入',
-        '📁 功能区分：管理按钮（创建/编辑/删除）vs 更多按钮（只读选择）',
-        '🔒 私密标识：更多文件夹列表中显示🔒图标',
-        '📱 返回逻辑：有弹窗→关闭弹窗 | 有表单→清空内容 | 首页→退到后台'
+        '🎯 笔记本排序：按创建时间倒序（最新的在最上面）',
+        '🎨 多选样式优化：黄色背景+橙色边框，区别于"全部笔记本"',
+        '📱 布局优化：笔记本名称和操作按钮完全左对齐',
+        '🗑️ 删除合并功能：移除笔记本合并功能，简化操作逻辑'
       ],
       fixes: [
         '修复合并笔记本层级丢失：完整保留子笔记本结构',
         '修复合并笔记本任务统计错误：递归移动所有层级任务',
-        '修复合并笔记本层级关系：只改变直接子笔记本的parentId',
-        '修复首页返回手势无响应问题（删除canGoBack判断）',
-        '修复演示功能步骤过多导致用户疲劳（30→24步）',
-        '修复"更多"按钮功能混淆（从管理页面改为只读选择）'
+        '修复首页返回手势无响应问题',
+        '修复演示功能步骤过多（30→24步）',
+        '修复"更多"按钮功能混淆'
       ]
     },
     {
@@ -11990,71 +11987,6 @@ const handleBatchEncrypt = async (collectionIds) => {
   
   await taskStore.saveCollections()
   showNotification(`✅ 已为 ${collectionIds.length} 个笔记本设置密码`, 'success')
-}
-
-// 🆕 批量合并笔记本
-const handleBatchMerge = async (collectionIds) => {
-  const targetName = prompt(`将 ${collectionIds.length} 个笔记本合并为：`, '合并笔记本')
-  if (!targetName || !targetName.trim()) return
-  
-  // 创建新笔记本
-  const newCollection = {
-    id: Date.now(),
-    name: targetName.trim(),
-    icon: '📚',
-    isPrivate: false,
-    password: null,
-    parentId: null  // 🆕 合并后的笔记本在根级
-  }
-  
-  taskStore.collections.push(newCollection)
-  
-  // 🆕 递归移动所有任务（不改变子笔记本结构）
-  let movedTaskCount = 0
-  let movedCollectionCount = 0
-  
-  const moveTasksRecursive = (collectionId) => {
-    // 1. 移动当前笔记本的直接任务
-    taskStore.tasks.forEach(task => {
-      if (task.collectionId === collectionId) {
-        task.collectionId = newCollection.id
-        movedTaskCount++
-      }
-    })
-    
-    // 2. 找到所有子笔记本，递归移动它们的任务
-    const childCollections = taskStore.collections.filter(c => c.parentId === collectionId)
-    childCollections.forEach(child => {
-      moveTasksRecursive(child.id)  // 递归移动子笔记本的任务
-    })
-  }
-  
-  // 对每个选中的笔记本执行递归移动任务
-  collectionIds.forEach(id => {
-    moveTasksRecursive(id)
-  })
-  
-  // 🆕 将选中笔记本的直接子笔记本改为新笔记本的子级（保持原有层级结构）
-  collectionIds.forEach(id => {
-    const childCollections = taskStore.collections.filter(c => c.parentId === id)
-    childCollections.forEach(child => {
-      child.parentId = newCollection.id
-      movedCollectionCount++
-    })
-  })
-  
-  // 删除原笔记本（只删除顶层）
-  collectionIds.forEach(id => {
-    const index = taskStore.collections.findIndex(c => c.id === id)
-    if (index > -1) {
-      taskStore.collections.splice(index, 1)
-    }
-  })
-  
-  await taskStore.saveCollections()
-  await taskStore.saveTasks()
-  
-  showNotification(`✅ 已合并 ${collectionIds.length} 个笔记本，共 ${movedTaskCount} 个任务${movedCollectionCount > 0 ? `，${movedCollectionCount} 个子笔记本` : ''}`, 'success')
 }
 
 // 🆕 确认移动笔记本

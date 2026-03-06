@@ -1256,7 +1256,9 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
 
     // 🆕 获取子文件夹列表
     getChildCollections(parentId) {
-      return this.collections.filter(c => c.parentId === parentId)
+      return this.collections
+        .filter(c => c.parentId === parentId)
+        .sort((a, b) => b.id - a.id) // 最新创建的在前
     },
 
     // 🆕 进入文件夹

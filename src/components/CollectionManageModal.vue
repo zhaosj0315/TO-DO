@@ -62,7 +62,6 @@
           <div class="selected-count">已选择 {{ selectedIds.length }} 个笔记本</div>
           <div class="action-buttons">
             <button @click="handleBatchEncrypt" class="action-btn encrypt">🔒 批量加密</button>
-            <button @click="handleBatchMerge" class="action-btn merge" :disabled="selectedIds.length < 2">🔗 合并笔记本</button>
             <button @click="handleBatchDelete" class="action-btn delete">🗑️ 批量删除</button>
           </div>
         </div>
@@ -76,15 +75,17 @@ import { ref, computed } from 'vue'
 import CollectionTreeNode from './CollectionTreeNode.vue'
 
 const props = defineProps(['collections', 'getTaskCount', 'totalTaskCount', 'getChildCollections'])
-const emit = defineEmits(['close', 'create', 'select', 'rename', 'setPrivate', 'changePassword', 'moveIn', 'moveOut', 'moveCollection', 'delete', 'batchEncrypt', 'batchMerge', 'batchDelete'])
+const emit = defineEmits(['close', 'create', 'select', 'rename', 'setPrivate', 'changePassword', 'moveIn', 'moveOut', 'moveCollection', 'delete', 'batchEncrypt', 'batchDelete'])
 
 const batchMode = ref(false)
 const selectedIds = ref([])
 const expandedIds = ref([]) // 🆕 展开的笔记本ID列表
 
-// 🆕 获取根级笔记本
+// 🆕 获取根级笔记本（按创建时间倒序）
 const rootCollections = computed(() => {
-  return props.collections.filter(c => c.parentId === null)
+  return props.collections
+    .filter(c => c.parentId === null)
+    .sort((a, b) => b.id - a.id) // 最新创建的在前
 })
 
 // 🆕 切换展开/折叠
@@ -118,12 +119,6 @@ const toggleSelect = (id) => {
 
 const handleBatchEncrypt = () => {
   emit('batchEncrypt', selectedIds.value)
-  exitBatchMode()
-}
-
-const handleBatchMerge = () => {
-  if (selectedIds.value.length < 2) return
-  emit('batchMerge', selectedIds.value)
   exitBatchMode()
 }
 
