@@ -86,7 +86,7 @@ const steps = [
     target: null,
     icon: '👋',
     title: '欢迎使用 TO-DO App！',
-    description: '这是一个功能强大的离线任务管理应用。<br>让我们用 <strong>5-8 分钟</strong>，快速掌握核心功能。',
+    description: '这是一个功能强大的离线任务管理应用。<br>让我们用 <strong>6-8 分钟</strong>，快速掌握核心功能。',
     position: 'center',
     category: 'intro'
   },
@@ -106,6 +106,8 @@ const steps = [
       <strong>10级成长体系</strong>：<br>
       🌱种子 → 🌿幼苗 → 🪴树苗 → 🌳小树 → 🌲大树<br>
       → 🌸开花 → 🌺繁茂 → 🌻茂盛 → 🏵️参天 → 🎋神树<br>
+      <br>
+      <strong>连续生长</strong>：30个细分状态，平滑过渡<br>
       <br>
       💡 点击树图标查看详细成长信息
     `,
@@ -165,7 +167,22 @@ const steps = [
     category: 'basic'
   },
   
-  // 6. 任务卡片操作
+  // 6. 搜索功能
+  {
+    target: '.search-bar',
+    icon: '🔍',
+    title: '搜索任务',
+    description: `
+      <strong>功能</strong>：快速查找任务<br>
+      <strong>支持</strong>：模糊匹配任务名称和描述<br>
+      <br>
+      💡 输入关键字后，列表会实时过滤
+    `,
+    position: 'bottom',
+    category: 'basic'
+  },
+  
+  // 7. 任务卡片操作
   {
     target: '.task-list',
     icon: '📝',
@@ -183,7 +200,7 @@ const steps = [
     category: 'basic'
   },
   
-  // 7. 任务详情页
+  // 8. 任务详情页
   {
     target: '.task-list',
     icon: '📋',
@@ -201,7 +218,7 @@ const steps = [
     category: 'basic'
   },
   
-  // 8. 执行日志系统
+  // 9. 执行日志系统
   {
     target: '.task-list',
     icon: '💬',
@@ -221,7 +238,42 @@ const steps = [
     category: 'advanced'
   },
   
-  // 9. 番茄钟计时
+  // 10. 添加日志
+  {
+    target: '.task-list',
+    icon: '✍️',
+    title: '如何添加执行日志',
+    description: `
+      <strong>操作步骤</strong>：<br>
+      1. 点击任务标题打开详情页<br>
+      2. 点击"添加日志"按钮<br>
+      3. 选择日志类型<br>
+      4. 填写内容、耗时、进度等信息<br>
+      5. 点击"保存"<br>
+      <br>
+      💡 可以添加标签、记录心情、关联阻碍
+    `,
+    position: 'bottom',
+    category: 'advanced'
+  },
+  
+  // 11. 完成任务
+  {
+    target: '.task-list',
+    icon: '✅',
+    title: '完成任务',
+    description: `
+      <strong>方式1</strong>：点击任务卡片左侧的复选框<br>
+      <strong>方式2</strong>：在详情页点击"完成任务"按钮<br>
+      <strong>方式3</strong>：添加"完成"类型的日志<br>
+      <br>
+      💡 完成时可以添加质量评分（1-5星）和经验教训
+    `,
+    position: 'top',
+    category: 'basic'
+  },
+  
+  // 12. 番茄钟计时
   {
     target: '.task-list',
     icon: '🍅',
@@ -237,7 +289,90 @@ const steps = [
     category: 'advanced'
   },
   
-  // 10. AI智能助手
+  // 13. 置顶任务
+  {
+    target: '.task-list',
+    icon: '📌',
+    title: '置顶重要任务',
+    description: `
+      <strong>功能</strong>：将重要任务固定在列表最前面<br>
+      <strong>操作</strong>：点击 📌 按钮切换置顶状态<br>
+      <strong>排序</strong>：置顶任务内部按优先级排序<br>
+      <br>
+      💡 置顶任务会显示 📌 图标
+    `,
+    position: 'top',
+    category: 'basic'
+  },
+  
+  // 14. 高级筛选
+  {
+    target: '.filter-card',
+    icon: '🎛️',
+    title: '高级筛选功能',
+    description: `
+      <strong>筛选条件</strong>：<br>
+      • 日期范围（创建/截止/完成时间）<br>
+      • 分类（工作/学习/生活）<br>
+      • 优先级（高/中/低）<br>
+      • 关键字搜索<br>
+      <br>
+      💡 所有条件可以组合使用
+    `,
+    position: 'bottom',
+    category: 'advanced'
+  },
+  
+  // 15. 刷新按钮
+  {
+    target: '.btn-refresh-icon',
+    icon: '🔄',
+    title: '刷新按钮',
+    description: `
+      <strong>功能</strong>：重置所有筛选条件到初始状态<br>
+      <strong>操作</strong>：点击右上角的紫色刷新按钮<br>
+      <br>
+      💡 当筛选条件太多时，一键清空很方便
+    `,
+    position: 'bottom-left',
+    category: 'basic'
+  },
+  
+  // 16. 回收站
+  {
+    target: '.btn-trash',
+    icon: '🗑️',
+    title: '回收站（逻辑删除）',
+    description: `
+      <strong>功能</strong>：删除的任务会先移到回收站<br>
+      <strong>操作</strong>：<br>
+      • 恢复任务：点击"恢复"按钮<br>
+      • 永久删除：点击"彻底删除"按钮<br>
+      • 清空回收站：删除所有回收站任务<br>
+      <br>
+      💡 回收站右上角显示任务数量
+    `,
+    position: 'bottom-left',
+    category: 'basic'
+  },
+  
+  // 17. 数据管理
+  {
+    target: '.btn-avatar',
+    icon: '💾',
+    title: '数据导入导出',
+    description: `
+      <strong>导出</strong>：将任务导出为Excel文件备份<br>
+      <strong>导入</strong>：从Excel批量导入任务<br>
+      <strong>模板</strong>：下载官方导入模板（含100条示例）<br>
+      <br>
+      💡 定期导出数据，防止数据丢失
+    `,
+    position: 'bottom-left',
+    category: 'advanced'
+  },
+  
+  // 18. AI智能助手
   {
     target: '.btn-ai',
     icon: '🤖',
@@ -256,7 +391,7 @@ const steps = [
     category: 'advanced'
   },
   
-  // 11. AI任务拆分
+  // 19. AI任务拆分
   {
     target: '.task-list',
     icon: '✂️',
@@ -275,7 +410,25 @@ const steps = [
     category: 'advanced'
   },
   
-  // 12. 数据报告
+  // 20. 任务依赖关系
+  {
+    target: '.task-list',
+    icon: '🔗',
+    title: '任务依赖关系',
+    description: `
+      <strong>功能</strong>：设置任务之间的依赖关系<br>
+      <strong>操作</strong>：<br>
+      1. 打开任务详情页<br>
+      2. 点击"设置等待任务"<br>
+      3. 选择需要等待的任务<br>
+      <br>
+      💡 等待中的任务会显示 🔒 徽章
+    `,
+    position: 'bottom',
+    category: 'advanced'
+  },
+  
+  // 21. 数据报告
   {
     target: '.btn-avatar',
     icon: '📊',
@@ -294,45 +447,43 @@ const steps = [
     category: 'advanced'
   },
   
-  // 13. 高级筛选
+  // 22. 个人中心
   {
-    target: '.filter-card',
-    icon: '🎛️',
-    title: '高级筛选功能',
+    target: '.btn-avatar',
+    icon: '👤',
+    title: '个人中心',
     description: `
-      <strong>筛选条件</strong>：<br>
-      • 日期范围（创建/截止/完成时间）<br>
-      • 分类（工作/学习/生活）<br>
-      • 优先级（高/中/低）<br>
-      • 关键字搜索<br>
+      <strong>功能</strong>：<br>
+      • 查看个人信息（用户名、注册时间、绑定手机）<br>
+      • 番茄钟统计（已获得/待获得/逾期扣除/净获得）<br>
+      • 数据管理（导入/导出/备份）<br>
+      • 修改密码、绑定手机号<br>
       <br>
-      💡 所有条件可以组合使用
-    `,
-    position: 'bottom',
-    category: 'advanced'
-  },
-  
-  // 14. 回收站与数据管理
-  {
-    target: '.btn-trash',
-    icon: '🗑️',
-    title: '回收站与数据管理',
-    description: `
-      <strong>回收站</strong>：删除的任务先移到回收站<br>
-      • 恢复任务 | 永久删除 | 清空回收站<br>
-      <br>
-      <strong>数据管理</strong>：<br>
-      • 导出Excel备份<br>
-      • 导入Excel批量创建<br>
-      • 下载官方模板（100条示例）<br>
-      <br>
-      💡 定期导出数据，防止数据丢失
+      💡 点击头像打开个人中心
     `,
     position: 'bottom-left',
     category: 'basic'
   },
   
-  // 15. 完成页
+  // 23. 其他实用功能
+  {
+    target: null,
+    icon: '🎁',
+    title: '更多实用功能',
+    description: `
+      <strong>智能提醒</strong>：逾期提醒、1小时预警<br>
+      <strong>语音输入</strong>：点击🎤按钮语音创建任务<br>
+      <strong>拍照OCR</strong>：点击📷按钮拍照识别文字<br>
+      <strong>离线运行</strong>：无需网络，数据本地存储<br>
+      <strong>多用户隔离</strong>：每个用户的数据完全独立<br>
+      <br>
+      💡 更多功能等你探索！
+    `,
+    position: 'center',
+    category: 'intro'
+  },
+  
+  // 24. 完成页
   {
     target: null,
     icon: '🎉',
@@ -347,6 +498,7 @@ const steps = [
       ✅ 番茄钟：25分钟专注计时<br>
       ✅ AI助手：智能问答、任务拆分、报告生成<br>
       ✅ 高级筛选：多维度筛选任务<br>
+      ✅ 数据管理：导入导出、回收站<br>
       <br>
       💡 随时点击右上角 💡 按钮重新查看教程
     `,
