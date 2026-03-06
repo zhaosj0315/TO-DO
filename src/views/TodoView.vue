@@ -7,13 +7,13 @@
         <div class="header-actions">
           <!-- 左侧按钮组（只保留2个）-->
           <div class="left-actions">
-            <!-- 📁 文件夹管理按钮 -->
+            <!-- 📓 文件夹管理按钮 -->
             <button 
               class="btn-icon-circle btn-manage" 
               @click="showCollectionManage = true" 
               title="管理文件夹"
             >
-              📁
+              📓
             </button>
             
             <!-- 任务树成长 -->
@@ -48,6 +48,22 @@
           </div>
         </div>
       </header>
+
+      <!-- 🆕 面包屑导航（仅在选中笔记本时显示） -->
+      <div v-if="selectedCollectionId && selectedCollectionId !== 'uncategorized'" class="breadcrumb-nav">
+        <span class="breadcrumb-item" @click="selectCollection(null)">
+          📚 全部
+        </span>
+        <span 
+          v-for="(item, index) in currentBreadcrumb" 
+          :key="item.id"
+          class="breadcrumb-item"
+          @click="selectCollection(item.id)"
+        >
+          <span class="separator">›</span>
+          <span class="crumb-text">{{ item.icon }} {{ item.name }}</span>
+        </span>
+      </div>
 
       <!-- 🆕 文件夹快捷栏（成长树下方，独立一行） -->
       <div class="collection-quick-bar">
@@ -3655,7 +3671,8 @@
     <!-- 🆕 创建文件夹弹窗 -->
     <CreateCollectionModal
       v-if="showCreateCollectionModal"
-      @close="showCreateCollectionModal = false"
+      :parent-id="currentParentId"
+      @close="showCreateCollectionModal = false; currentParentId = null"
       @created="handleCollectionCreated"
     />
 
@@ -3720,14 +3737,22 @@
     <CollectionManageModal
       v-if="showCollectionManage"
       :collections="sortedCollections"
-      :get-task-count="getCollectionTaskCount"
+      :get-task-count="(id) => taskStore.getCollectionTaskCount(id)"
+      :get-child-collections="(id) => taskStore.getChildCollections(id)"
+      :total-task-count="taskStore.tasks.length"
       @close="showCollectionManage = false"
-      @create="() => { fromCollectionManage = true; showCreateCollectionModal = true; showCollectionManage = false }"
+      @create="(parentId) => { currentParentId = parentId; fromCollectionManage = true; showCreateCollectionModal = true; showCollectionManage = false }"
+      @select="(id) => { selectCollection(id); showCollectionManage = false }"
       @rename="(c) => { fromCollectionManage = true; startEditCollectionName(c); showCollectionManage = false }"
+      @setPrivate="(c) => { fromCollectionManage = true; openSetPrivate(c); showCollectionManage = false }"
       @changePassword="(c) => { fromCollectionManage = true; openChangePassword(c.id); showCollectionManage = false }"
+      @moveCollection="(c) => { collectionToMove = c; showMoveCollectionModal = true }"
       @moveIn="(c) => { openBatchMoveIn(c.id, true); showCollectionManage = false }"
       @moveOut="(c) => { openBatchMoveOut(c.id, true); showCollectionManage = false }"
       @delete="(c) => { fromCollectionManage = true; openDeleteCollection(c.id); showCollectionManage = false }"
+      @batchEncrypt="handleBatchEncrypt"
+      @batchMerge="handleBatchMerge"
+      @batchDelete="handleBatchDelete"
     />
 
     <!-- 🆕 重命名文件夹弹窗 -->
@@ -3737,6 +3762,17 @@
       :collection-name="renamingCollection?.name"
       @close="showRenameCollectionModal = false; renamingCollection = null"
       @renamed="handleRenameCollection"
+    />
+
+    <!-- 🆕 移动笔记本弹窗 -->
+    <MoveCollectionModal
+      v-if="showMoveCollectionModal && collectionToMove"
+      :collection="collectionToMove"
+      :collections="taskStore.collections"
+      :can-move-collection-to="(sourceId, targetId) => taskStore.canMoveCollectionTo(sourceId, targetId)"
+      :get-breadcrumb="(id) => taskStore.getCollectionBreadcrumb(id)"
+      @close="showMoveCollectionModal = false; collectionToMove = null"
+      @move="handleConfirmMoveCollection"
     />
 
     <!-- 🆕 更多文件夹选择弹窗 -->
@@ -3810,6 +3846,7 @@ import VerifyPasswordModal from '../components/VerifyPasswordModal.vue'  // 🆕
 import ChangePasswordModal from '../components/ChangePasswordModal.vue'  // 🆕
 import RenameCollectionModal from '../components/RenameCollectionModal.vue'  // 🆕
 import CollectionManageModal from '../components/CollectionManageModal.vue'  // 🆕
+import MoveCollectionModal from '../components/MoveCollectionModal.vue'  // 🆕
 import MoreCollectionsModal from '../components/MoreCollectionsModal.vue'  // 🆕
 import { CountUp } from 'countup.js'
 import { manualBackup, listBackups, restoreBackup, deleteBackup } from '../utils/autoBackup'
@@ -4277,10 +4314,13 @@ const renamingCollection = ref(null)  // 🆕 正在重命名的文件夹
 const fromCollectionManage = ref(false)  // 🆕 标记是否从文件夹管理打开的弹窗
 const selectedCollectionId = ref(null)  // 选中的文件夹ID（null=全部，'uncategorized'=未分类）
 const showCreateCollectionModal = ref(false)  // 创建文件夹弹窗
+const currentParentId = ref(null)  // 🆕 创建子笔记本时的父ID
 const showDeleteCollectionModal = ref(false)  // 删除文件夹弹窗
 const collectionToDelete = ref(null)  // 待删除的文件夹
 const showMoveToCollectionModal = ref(false)  // 🆕 移动任务到文件夹弹窗
+const showMoveCollectionModal = ref(false)  // 🆕 移动笔记本弹窗
 const taskToMove = ref(null)  // 🆕 待移动的任务
+const collectionToMove = ref(null)  // 🆕 待移动的笔记本
 const editingCollectionId = ref(null)  // 🆕 正在编辑名称的文件夹ID
 const editingCollectionName = ref('')  // 🆕 编辑中的文件夹名称
 const showBatchAddModal = ref(false)  // 🆕 批量添加任务弹窗
@@ -5023,25 +5063,33 @@ const initVersionHistory = () => {
       version: '0.8.2',
       date: '2026-03-06',
       features: [
+        '📁 笔记本树形嵌套：支持无限层级嵌套，树形可视化展示完整目录结构',
         '🌳 任务树连续生长：图标、尺寸、颜色随成长值平滑变化，30个细分状态',
-        '📚 更多文件夹选择：点击"+N▼"查看更多文件夹，快速进入查看任务',
-        '🔙 首页返回手势：首页滑动返回退出应用到后台，重新进入保持状态',
-        '📖 演示功能优化：从30步精简为24步（6-8分钟），突出核心功能'
+        '🗺️ 面包屑导航：首页显示完整路径，响应式设计（小屏显示最后2级）',
+        '📚 更多文件夹选择：点击"+N▼"查看更多文件夹，快速进入查看任务'
       ],
       improvements: [
+        '🌲 树形展开/折叠：点击▼/▶切换子笔记本显示，缩进显示层级关系',
+        '📊 递归统计：笔记本任务数包含所有子笔记本的任务',
+        '📦 移动笔记本：支持移动到任意位置，带循环依赖检测',
+        '➕ 新建子笔记本：每个节点都有➕按钮，可在任意层级创建',
+        '🗑️ 删除选项增强：支持级联删除/提升子笔记本/移到其他位置',
+        '🔒 权限继承：父笔记本加密后，子笔记本自动加密',
         '✨ 平滑过渡：0.5秒缓动动画，每完成任务都能看到树的变化',
         '💡 激励增强：微小进步也有视觉反馈，持续的成长感',
         '🎯 细节丰富：10阶段×3状态=30个细分状态（种子→神树）',
         '🌱 连续生长：0-26分🌱（小）→ 27-53分🌱（中）→ 54-80分🌿（大）',
         '🎨 尺寸渐变：1.35rem → 1.8rem 随成长值线性增长',
         '🌈 颜色渐变：浅绿 → 深绿 → 金色（0-10000分连续变化）',
+        '🔧 迁入任务优化：只显示未分类任务，避免重复迁入',
         '📁 功能区分：管理按钮（创建/编辑/删除）vs 更多按钮（只读选择）',
-        '📂 更多文件夹弹窗：底部滑出，显示第4个及以后的文件夹',
         '🔒 私密标识：更多文件夹列表中显示🔒图标',
-        '📱 返回逻辑：有弹窗→关闭弹窗 | 有表单→清空内容 | 首页→退到后台',
-        '📖 教程优化：保留重要功能细节，删除冗余步骤，平衡精简与完整性'
+        '📱 返回逻辑：有弹窗→关闭弹窗 | 有表单→清空内容 | 首页→退到后台'
       ],
       fixes: [
+        '修复合并笔记本层级丢失：完整保留子笔记本结构',
+        '修复合并笔记本任务统计错误：递归移动所有层级任务',
+        '修复合并笔记本层级关系：只改变直接子笔记本的parentId',
         '修复首页返回手势无响应问题（删除canGoBack判断）',
         '修复演示功能步骤过多导致用户疲劳（30→24步）',
         '修复"更多"按钮功能混淆（从管理页面改为只读选择）'
@@ -7234,6 +7282,14 @@ const uncategorizedTaskCount = computed(() => {
   return taskStore.tasks.filter(t => !t.collectionId).length
 })
 
+// 🆕 当前笔记本的面包屑路径
+const currentBreadcrumb = computed(() => {
+  if (!selectedCollectionId.value || selectedCollectionId.value === 'uncategorized') {
+    return []
+  }
+  return taskStore.getCollectionBreadcrumb(selectedCollectionId.value)
+})
+
 const getCollectionTaskCount = (collectionId) => {
   return taskStore.getCollectionTasks(collectionId).length
 }
@@ -7323,12 +7379,22 @@ const priorityOptions = computed(() => {
   }
 })
 
-// 分类统计（基于当前时间筛选）
+// 分类统计（基于当前文件夹和时间筛选）
 const getCategoryCount = (category) => {
-  const filtered = taskStore.getFilteredTasks('all', category, {
+  let filtered = taskStore.getFilteredTasks('all', category, {
     start: startDate.value,
     end: endDate.value
   })
+  
+  // 🆕 如果选中了文件夹，只统计该文件夹内的任务
+  if (selectedCollectionId.value !== null) {
+    if (selectedCollectionId.value === 'uncategorized') {
+      filtered = filtered.filter(t => !t.collectionId)
+    } else {
+      filtered = filtered.filter(t => t.collectionId === selectedCollectionId.value)
+    }
+  }
+  
   return filtered.length
 }
 
@@ -7362,24 +7428,51 @@ const usageDays = computed(() => {
 
 // 番茄统计
 const earnedPomodoros = computed(() => {
-  // 已完成任务获得的番茄数
-  return taskStore.tasks
-    .filter(t => t.status === TaskStatus.COMPLETED)
-    .reduce((sum, t) => sum + getPomodoroCount(t), 0)
+  // 已完成任务获得的番茄数（考虑文件夹筛选）
+  let tasks = taskStore.tasks.filter(t => t.status === TaskStatus.COMPLETED)
+  
+  // 🆕 如果选中了文件夹，只统计该文件夹内的任务
+  if (selectedCollectionId.value !== null) {
+    if (selectedCollectionId.value === 'uncategorized') {
+      tasks = tasks.filter(t => !t.collectionId)
+    } else {
+      tasks = tasks.filter(t => t.collectionId === selectedCollectionId.value)
+    }
+  }
+  
+  return tasks.reduce((sum, t) => sum + getPomodoroCount(t), 0)
 })
 
 const pendingPomodoros = computed(() => {
-  // 待完成任务可获得的番茄数
-  return taskStore.tasks
-    .filter(t => t.status === TaskStatus.PENDING)
-    .reduce((sum, t) => sum + getPomodoroCount(t), 0)
+  // 待完成任务可获得的番茄数（考虑文件夹筛选）
+  let tasks = taskStore.tasks.filter(t => t.status === TaskStatus.PENDING)
+  
+  // 🆕 如果选中了文件夹，只统计该文件夹内的任务
+  if (selectedCollectionId.value !== null) {
+    if (selectedCollectionId.value === 'uncategorized') {
+      tasks = tasks.filter(t => !t.collectionId)
+    } else {
+      tasks = tasks.filter(t => t.collectionId === selectedCollectionId.value)
+    }
+  }
+  
+  return tasks.reduce((sum, t) => sum + getPomodoroCount(t), 0)
 })
 
 const lostPomodoros = computed(() => {
-  // 逾期任务扣除的番茄数
-  return taskStore.tasks
-    .filter(t => t.status === TaskStatus.OVERDUE)
-    .reduce((sum, t) => sum + getPomodoroCount(t), 0)
+  // 逾期任务扣除的番茄数（考虑文件夹筛选）
+  let tasks = taskStore.tasks.filter(t => t.status === TaskStatus.OVERDUE)
+  
+  // 🆕 如果选中了文件夹，只统计该文件夹内的任务
+  if (selectedCollectionId.value !== null) {
+    if (selectedCollectionId.value === 'uncategorized') {
+      tasks = tasks.filter(t => !t.collectionId)
+    } else {
+      tasks = tasks.filter(t => t.collectionId === selectedCollectionId.value)
+    }
+  }
+  
+  return tasks.reduce((sum, t) => sum + getPomodoroCount(t), 0)
 })
 
 const totalPomodoros = computed(() => {
@@ -7387,18 +7480,38 @@ const totalPomodoros = computed(() => {
   return earnedPomodoros.value - lostPomodoros.value
 })
 
-// 按分类统计番茄数
+// 按分类统计番茄数（考虑文件夹筛选）
 const getPomodorosByCategory = (category) => {
-  return taskStore.tasks
+  let tasks = taskStore.tasks
     .filter(t => t.category === category && t.status === TaskStatus.COMPLETED)
-    .reduce((sum, t) => sum + getPomodoroCount(t), 0)
+  
+  // 🆕 如果选中了文件夹，只统计该文件夹内的任务
+  if (selectedCollectionId.value !== null) {
+    if (selectedCollectionId.value === 'uncategorized') {
+      tasks = tasks.filter(t => !t.collectionId)
+    } else {
+      tasks = tasks.filter(t => t.collectionId === selectedCollectionId.value)
+    }
+  }
+  
+  return tasks.reduce((sum, t) => sum + getPomodoroCount(t), 0)
 }
 
-// 按优先级统计番茄数
+// 按优先级统计番茄数（考虑文件夹筛选）
 const getPomodorosByPriority = (priority) => {
-  return taskStore.tasks
+  let tasks = taskStore.tasks
     .filter(t => t.priority === priority && t.status === TaskStatus.COMPLETED)
-    .reduce((sum, t) => sum + getPomodoroCount(t), 0)
+  
+  // 🆕 如果选中了文件夹，只统计该文件夹内的任务
+  if (selectedCollectionId.value !== null) {
+    if (selectedCollectionId.value === 'uncategorized') {
+      tasks = tasks.filter(t => !t.collectionId)
+    } else {
+      tasks = tasks.filter(t => t.collectionId === selectedCollectionId.value)
+    }
+  }
+  
+  return tasks.reduce((sum, t) => sum + getPomodoroCount(t), 0)
 }
 
 // 按时间统计番茄数
@@ -7406,7 +7519,7 @@ const getPomodorosByTime = (period) => {
   const now = new Date()
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   
-  return taskStore.tasks
+  let tasks = taskStore.tasks
     .filter(t => {
       if (t.status !== TaskStatus.COMPLETED) return false
       const completedDate = new Date(t.created_at)
@@ -7423,7 +7536,17 @@ const getPomodorosByTime = (period) => {
       }
       return false
     })
-    .reduce((sum, t) => sum + getPomodoroCount(t), 0)
+  
+  // 🆕 如果选中了文件夹，只统计该文件夹内的任务
+  if (selectedCollectionId.value !== null) {
+    if (selectedCollectionId.value === 'uncategorized') {
+      tasks = tasks.filter(t => !t.collectionId)
+    } else {
+      tasks = tasks.filter(t => t.collectionId === selectedCollectionId.value)
+    }
+  }
+  
+  return tasks.reduce((sum, t) => sum + getPomodoroCount(t), 0)
 }
 
 // 连续打卡天数
@@ -11827,6 +11950,155 @@ const showCollectionMenu = (collection) => {
   showDeleteCollectionModal.value = true
 }
 
+// 🆕 打开删除文件夹弹窗
+const openDeleteCollection = (collectionId) => {
+  const collection = taskStore.collections.find(c => c.id === collectionId)
+  if (collection) {
+    collectionToDelete.value = collection
+    showDeleteCollectionModal.value = true
+  }
+}
+
+// 🆕 设为私密（复用创建笔记本的加密逻辑）
+const openSetPrivate = (collection) => {
+  // 打开修改密码弹窗，但是是"设置密码"模式
+  pendingCollectionId.value = collection.id
+  showChangePasswordModal.value = true
+}
+
+// 🆕 批量加密笔记本
+const handleBatchEncrypt = async (collectionIds) => {
+  const password = prompt('请输入统一密码（至少4位）：')
+  if (!password || password.length < 4) {
+    showNotification('❌ 密码至少4位', 'error')
+    return
+  }
+  
+  const confirmPwd = prompt('请再次输入密码确认：')
+  if (password !== confirmPwd) {
+    showNotification('❌ 两次输入的密码不一致', 'error')
+    return
+  }
+  
+  collectionIds.forEach(id => {
+    const collection = taskStore.collections.find(c => c.id === id)
+    if (collection) {
+      collection.isPrivate = true
+      collection.password = btoa(password)
+    }
+  })
+  
+  await taskStore.saveCollections()
+  showNotification(`✅ 已为 ${collectionIds.length} 个笔记本设置密码`, 'success')
+}
+
+// 🆕 批量合并笔记本
+const handleBatchMerge = async (collectionIds) => {
+  const targetName = prompt(`将 ${collectionIds.length} 个笔记本合并为：`, '合并笔记本')
+  if (!targetName || !targetName.trim()) return
+  
+  // 创建新笔记本
+  const newCollection = {
+    id: Date.now(),
+    name: targetName.trim(),
+    icon: '📚',
+    isPrivate: false,
+    password: null,
+    parentId: null  // 🆕 合并后的笔记本在根级
+  }
+  
+  taskStore.collections.push(newCollection)
+  
+  // 🆕 递归移动所有任务（不改变子笔记本结构）
+  let movedTaskCount = 0
+  let movedCollectionCount = 0
+  
+  const moveTasksRecursive = (collectionId) => {
+    // 1. 移动当前笔记本的直接任务
+    taskStore.tasks.forEach(task => {
+      if (task.collectionId === collectionId) {
+        task.collectionId = newCollection.id
+        movedTaskCount++
+      }
+    })
+    
+    // 2. 找到所有子笔记本，递归移动它们的任务
+    const childCollections = taskStore.collections.filter(c => c.parentId === collectionId)
+    childCollections.forEach(child => {
+      moveTasksRecursive(child.id)  // 递归移动子笔记本的任务
+    })
+  }
+  
+  // 对每个选中的笔记本执行递归移动任务
+  collectionIds.forEach(id => {
+    moveTasksRecursive(id)
+  })
+  
+  // 🆕 将选中笔记本的直接子笔记本改为新笔记本的子级（保持原有层级结构）
+  collectionIds.forEach(id => {
+    const childCollections = taskStore.collections.filter(c => c.parentId === id)
+    childCollections.forEach(child => {
+      child.parentId = newCollection.id
+      movedCollectionCount++
+    })
+  })
+  
+  // 删除原笔记本（只删除顶层）
+  collectionIds.forEach(id => {
+    const index = taskStore.collections.findIndex(c => c.id === id)
+    if (index > -1) {
+      taskStore.collections.splice(index, 1)
+    }
+  })
+  
+  await taskStore.saveCollections()
+  await taskStore.saveTasks()
+  
+  showNotification(`✅ 已合并 ${collectionIds.length} 个笔记本，共 ${movedTaskCount} 个任务${movedCollectionCount > 0 ? `，${movedCollectionCount} 个子笔记本` : ''}`, 'success')
+}
+
+// 🆕 确认移动笔记本
+const handleConfirmMoveCollection = async (collectionId, newParentId) => {
+  try {
+    await taskStore.moveCollection(collectionId, newParentId)
+    showNotification('✅ 移动成功', 'success')
+    showMoveCollectionModal.value = false
+    collectionToMove.value = null
+  } catch (error) {
+    showNotification(`❌ ${error.message}`, 'error')
+  }
+}
+
+// 🆕 批量删除笔记本
+const handleBatchDelete = async (collectionIds) => {
+  const confirmed = confirm(`确定要删除 ${collectionIds.length} 个笔记本吗？\n\n笔记本内的任务将移至"未分类"`)
+  if (!confirmed) return
+  
+  // 将任务移至未分类
+  let movedCount = 0
+  collectionIds.forEach(id => {
+    taskStore.tasks.forEach(task => {
+      if (task.collectionId === id) {
+        task.collectionId = null
+        movedCount++
+      }
+    })
+  })
+  
+  // 删除笔记本
+  collectionIds.forEach(id => {
+    const index = taskStore.collections.findIndex(c => c.id === id)
+    if (index > -1) {
+      taskStore.collections.splice(index, 1)
+    }
+  })
+  
+  await taskStore.saveCollections()
+  await taskStore.saveTasks()
+  
+  showNotification(`✅ 已删除 ${collectionIds.length} 个笔记本，${movedCount} 个任务已移至未分类`, 'success')
+}
+
 const handleCollectionCreated = (collection) => {
   showNotification(`✅ 文件夹"${collection.name}"创建成功`, 'success')
 }
@@ -14881,6 +15153,63 @@ watch(() => reportData.value, (newData) => {
   border-color: rgba(255, 255, 255, 1);
 }
 
+/* 🆕 面包屑导航 */
+.breadcrumb-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 0;
+  margin-bottom: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  font-size: 0.9rem;
+}
+
+.breadcrumb-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.breadcrumb-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  white-space: nowrap;
+  color: #667eea;
+  flex-shrink: 0;
+}
+
+.breadcrumb-item:hover {
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.breadcrumb-item .separator {
+  color: #9ca3af;
+  margin: 0 2px;
+  pointer-events: none;
+}
+
+.breadcrumb-item .crumb-text {
+  font-weight: 500;
+}
+
+/* 响应式：小屏幕只显示最后2级 */
+@media (max-width: 600px) {
+  .breadcrumb-item:not(:nth-last-child(-n+2)):not(:first-child) {
+    display: none;
+  }
+  
+  /* 在第一个和倒数第二个之间显示省略号 */
+  .breadcrumb-item:first-child::after {
+    content: '›';
+    color: #9ca3af;
+    margin-left: 4px;
+  }
+}
+
 /* 🆕 文件夹快捷栏 */
 .collection-quick-bar {
   display: flex;
@@ -14951,7 +15280,7 @@ watch(() => reportData.value, (newData) => {
   align-items: center;
   gap: 4px;
   padding: 8px 12px;
-  border-radius: 24px;
+  border-radius: 10px;
   border: 2px solid #e0e0e0;
   background: white;
   font-size: 0.85rem;
@@ -15313,11 +15642,11 @@ watch(() => reportData.value, (newData) => {
 }
 
 .btn-manage {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 .btn-manage:hover {
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
 }
 
 .btn-icon-circle:active {

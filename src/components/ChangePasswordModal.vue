@@ -1,10 +1,10 @@
 <template>
   <div class="modal-overlay" @click="$emit('close')">
     <div class="modal-content" @click.stop>
-      <h3>🔑 修改密码</h3>
+      <h3>{{ isSetMode ? '🔒 设为私密' : '🔑 修改密码' }}</h3>
       <p class="tip">{{ collectionName }}</p>
       
-      <div class="form-group">
+      <div v-if="!isSetMode" class="form-group">
         <label>旧密码</label>
         <input 
           ref="oldPasswordInput"
@@ -16,23 +16,23 @@
       </div>
       
       <div class="form-group">
-        <label>新密码</label>
+        <label>{{ isSetMode ? '设置密码' : '新密码' }}</label>
         <input 
           ref="newPasswordInput"
           type="password" 
           v-model="newPassword" 
-          placeholder="请输入新密码"
+          placeholder="请输入密码（至少4位）"
           @keyup.enter="focusConfirmPassword"
         />
       </div>
       
       <div class="form-group">
-        <label>确认新密码</label>
+        <label>确认密码</label>
         <input 
           ref="confirmPasswordInput"
           type="password" 
           v-model="confirmPassword" 
-          placeholder="再次输入新密码"
+          placeholder="再次输入密码"
           @keyup.enter="handleChange"
         />
       </div>
@@ -41,14 +41,14 @@
       
       <div class="buttons">
         <button class="btn-cancel" @click="$emit('close')">取消</button>
-        <button class="btn-confirm" @click="handleChange">确认修改</button>
+        <button class="btn-confirm" @click="handleChange">{{ isSetMode ? '设为私密' : '确认修改' }}</button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useOfflineTaskStore } from '@/stores/offlineTaskStore'
 
 const props = defineProps(['collectionId', 'collectionName'])
@@ -63,8 +63,18 @@ const oldPasswordInput = ref(null)
 const newPasswordInput = ref(null)
 const confirmPasswordInput = ref(null)
 
+// 判断是否为"设置密码"模式（笔记本当前不是私密的）
+const isSetMode = computed(() => {
+  const collection = store.collections.find(c => c.id === props.collectionId)
+  return collection && !collection.isPrivate
+})
+
 onMounted(() => {
-  oldPasswordInput.value?.focus()
+  if (isSetMode.value) {
+    newPasswordInput.value?.focus()
+  } else {
+    oldPasswordInput.value?.focus()
+  }
 })
 
 const focusNewPassword = () => {
@@ -78,6 +88,36 @@ const focusConfirmPassword = () => {
 const handleChange = async () => {
   errorMsg.value = ''
   
+  // 设置密码模式：不需要旧密码
+  if (isSetMode.value) {
+    if (!newPassword.value.trim()) {
+      errorMsg.value = '请输入密码'
+      return
+    }
+    
+    if (newPassword.value.length < 4) {
+      errorMsg.value = '密码至少4位'
+      return
+    }
+    
+    if (newPassword.value !== confirmPassword.value) {
+      errorMsg.value = '两次输入的密码不一致'
+      return
+    }
+    
+    // 直接设置为私密
+    const collection = store.collections.find(c => c.id === props.collectionId)
+    if (collection) {
+      collection.isPrivate = true
+      collection.password = btoa(newPassword.value) // Base64编码
+      await store.saveCollections()
+      emit('changed')
+      emit('close')
+    }
+    return
+  }
+  
+  // 修改密码模式：需要旧密码
   if (!oldPassword.value.trim()) {
     errorMsg.value = '请输入旧密码'
     return

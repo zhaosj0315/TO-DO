@@ -9,6 +9,7 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
     tasks: [],
     deletedTasks: [],
     collections: [],      // 🆕 文件夹/合集数组
+    currentCollectionId: null, // 🆕 当前查看的文件夹ID（null=全部笔记本）
     currentUser: null
   }),
 
@@ -21,6 +22,22 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
     // 🆕 获取所有文件夹（按order排序）
     sortedCollections: (state) => {
       return [...state.collections].sort((a, b) => a.order - b.order)
+    },
+
+    // 🆕 获取当前层级的子文件夹
+    currentLevelCollections: (state) => {
+      return state.collections
+        .filter(c => c.parentId === state.currentCollectionId)
+        .sort((a, b) => a.order - b.order)
+    },
+
+    // 🆕 获取当前文件夹的直接任务（不包括子文件夹）
+    currentCollectionDirectTasks: (state) => {
+      if (state.currentCollectionId === null) {
+        // 全部笔记本：显示所有任务
+        return state.tasks
+      }
+      return state.tasks.filter(t => t.collectionId === state.currentCollectionId)
     }
   },
 
@@ -1009,6 +1026,13 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         key: `collections_${this.currentUser}` 
       })
       this.collections = value ? JSON.parse(value) : []
+      
+      // 🆕 数据迁移：为旧数据添加parentId字段
+      this.collections.forEach(c => {
+        if (c.parentId === undefined) {
+          c.parentId = null
+        }
+      })
     },
 
     // 保存文件夹
@@ -1021,7 +1045,7 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
     },
 
     // 创建文件夹
-    async createCollection({ name, description = '', color = '#8b5cf6', icon = '📁', isPrivate = false, password = '' }) {
+    async createCollection({ name, description = '', color = '#8b5cf6', icon = '📁', isPrivate = false, password = '', parentId = null }) {
       const collection = {
         id: Date.now(),
         name,
@@ -1030,6 +1054,7 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         icon,
         isPrivate,
         password: isPrivate ? btoa(password) : '', // Base64简单加密
+        parentId, // 🆕 父文件夹ID（null表示根级）
         order: this.collections.length,
         created_at: new Date().toISOString(),
         user_id: this.currentUser
@@ -1071,24 +1096,53 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
 
     // 删除文件夹
     async deleteCollection(id, action = 'uncategorize') {
-      // action: 'delete' | 'uncategorize' | { moveTo: collectionId }
+      // action: 'delete' | 'uncategorize' | 'promote' | { moveTo: collectionId }
       const tasksInCollection = this.tasks.filter(t => t.collectionId === id)
+      const childCollections = this.collections.filter(c => c.parentId === id)
       
       if (action === 'delete') {
-        // 删除所有任务
+        // 级联删除：删除所有任务和子文件夹
         tasksInCollection.forEach(task => {
           this.deletedTasks.push(task)
         })
         this.tasks = this.tasks.filter(t => t.collectionId !== id)
+        
+        // 递归删除子文件夹
+        for (const child of childCollections) {
+          await this.deleteCollection(child.id, 'delete')
+        }
+      } else if (action === 'promote') {
+        // 提升到根级：子文件夹提升到父级
+        const parentCollection = this.collections.find(c => c.id === id)
+        const parentId = parentCollection?.parentId || null
+        
+        childCollections.forEach(child => {
+          child.parentId = parentId
+        })
+        
+        // 任务移到未分类
+        tasksInCollection.forEach(task => {
+          task.collectionId = null
+        })
       } else if (action === 'uncategorize') {
         // 移到未分类
         tasksInCollection.forEach(task => {
           task.collectionId = null
         })
+        
+        // 子文件夹提升到根级
+        childCollections.forEach(child => {
+          child.parentId = null
+        })
       } else if (action.moveTo) {
         // 移到其他文件夹
         tasksInCollection.forEach(task => {
           task.collectionId = action.moveTo
+        })
+        
+        // 子文件夹也移动
+        childCollections.forEach(child => {
+          child.parentId = action.moveTo
         })
       }
       
@@ -1130,6 +1184,97 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
     // 获取文件夹内的任务
     getCollectionTasks(collectionId) {
       return this.tasks.filter(t => t.collectionId === collectionId)
+    },
+
+    // 🆕 递归获取文件夹及其所有子文件夹的任务
+    getCollectionTasksRecursive(collectionId) {
+      const directTasks = this.tasks.filter(t => t.collectionId === collectionId)
+      const childCollections = this.collections.filter(c => c.parentId === collectionId)
+      
+      const childTasks = childCollections.flatMap(child => 
+        this.getCollectionTasksRecursive(child.id)
+      )
+      
+      return [...directTasks, ...childTasks]
+    },
+
+    // 🆕 递归统计任务数量
+    getCollectionTaskCount(collectionId) {
+      return this.getCollectionTasksRecursive(collectionId).length
+    },
+
+    // 🆕 获取面包屑路径
+    getCollectionBreadcrumb(collectionId) {
+      const path = []
+      let current = this.collections.find(c => c.id === collectionId)
+      
+      while (current) {
+        path.unshift(current)
+        current = this.collections.find(c => c.id === current.parentId)
+      }
+      
+      return path
+    },
+
+    // 🆕 检查是否可以移动到目标文件夹（防止循环）
+    canMoveCollectionTo(sourceId, targetId) {
+      if (sourceId === targetId) return false
+      
+      let current = this.collections.find(c => c.id === targetId)
+      while (current) {
+        if (current.id === sourceId) return false
+        current = this.collections.find(c => c.id === current.parentId)
+      }
+      
+      return true
+    },
+
+    // 🆕 移动文件夹到新位置
+    async moveCollection(collectionId, newParentId) {
+      if (!this.canMoveCollectionTo(collectionId, newParentId)) {
+        throw new Error('无法移动：会造成循环依赖')
+      }
+      
+      const collection = this.collections.find(c => c.id === collectionId)
+      if (collection) {
+        collection.parentId = newParentId
+        await this.saveCollections()
+      }
+    },
+
+    // 🆕 检查文件夹是否被加密（包括父级）
+    isCollectionLocked(collectionId) {
+      let current = this.collections.find(c => c.id === collectionId)
+      
+      while (current) {
+        if (current.isPrivate && current.password) return true
+        current = this.collections.find(c => c.id === current.parentId)
+      }
+      
+      return false
+    },
+
+    // 🆕 获取子文件夹列表
+    getChildCollections(parentId) {
+      return this.collections.filter(c => c.parentId === parentId)
+    },
+
+    // 🆕 进入文件夹
+    enterCollection(collectionId) {
+      this.currentCollectionId = collectionId
+    },
+
+    // 🆕 返回上一级
+    goBackCollection() {
+      if (this.currentCollectionId === null) return
+      
+      const current = this.collections.find(c => c.id === this.currentCollectionId)
+      this.currentCollectionId = current?.parentId || null
+    },
+
+    // 🆕 返回根级（全部笔记本）
+    goToRootCollection() {
+      this.currentCollectionId = null
     },
 
     // 获取文件夹统计

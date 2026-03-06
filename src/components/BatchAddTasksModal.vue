@@ -72,9 +72,9 @@ const store = useOfflineTaskStore()
 const selectedTaskIds = ref([])
 const searchKeyword = ref('')
 
-// 可迁入的任务：不在当前文件夹的所有任务
+// 🆕 可迁入的任务：只显示未分类的任务（collectionId === null）
 const availableTasks = computed(() => {
-  return props.allTasks.filter(t => t.collectionId !== props.collectionId)
+  return props.allTasks.filter(t => t.collectionId === null)
 })
 
 // 🆕 搜索过滤

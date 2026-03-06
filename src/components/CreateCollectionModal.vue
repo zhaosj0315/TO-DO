@@ -97,6 +97,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useOfflineTaskStore } from '@/stores/offlineTaskStore'
 
+const props = defineProps(['parentId']) // 🆕 接收父文件夹ID
 const emit = defineEmits(['close', 'created'])
 const store = useOfflineTaskStore()
 
@@ -109,7 +110,8 @@ const formData = ref({
   color: '#8b5cf6',
   isPrivate: false,
   password: '',
-  confirmPassword: ''
+  confirmPassword: '',
+  parentId: props.parentId || null // 🆕 保存父ID
 })
 
 const iconOptions = ['📁', '📚', '💼', '🏠', '🎯', '💡', '🎨', '🔧', '📊', '🌟', '🎮', '🏃']

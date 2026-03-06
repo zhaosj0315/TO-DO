@@ -4,16 +4,28 @@
       <h3>⚠️ 删除文件夹</h3>
       <p class="warning-text">
         文件夹"<strong>{{ collection.name }}</strong>"中有 <strong>{{ taskCount }}</strong> 个任务
+        <span v-if="childCount > 0">和 <strong>{{ childCount }}</strong> 个子文件夹</span>
       </p>
       
       <div class="options">
+        <label v-if="childCount > 0" class="option-item">
+          <input type="radio" v-model="action" value="promote" />
+          <div class="option-content">
+            <span class="option-icon">⬆️</span>
+            <div>
+              <div class="option-title">提升子文件夹到上一级</div>
+              <div class="option-desc">子文件夹保留，任务移到未分类</div>
+            </div>
+          </div>
+        </label>
+
         <label class="option-item">
           <input type="radio" v-model="action" value="uncategorize" />
           <div class="option-content">
             <span class="option-icon">📂</span>
             <div>
               <div class="option-title">移到未分类</div>
-              <div class="option-desc">任务保留，移到未分类文件夹</div>
+              <div class="option-desc">任务保留，移到未分类{{ childCount > 0 ? '，子文件夹提升到根级' : '' }}</div>
             </div>
           </div>
         </label>
@@ -24,7 +36,7 @@
             <span class="option-icon">📁</span>
             <div>
               <div class="option-title">移到其他文件夹</div>
-              <div class="option-desc">选择一个目标文件夹</div>
+              <div class="option-desc">任务和子文件夹都移动到目标文件夹</div>
             </div>
           </div>
         </label>
@@ -34,8 +46,8 @@
           <div class="option-content">
             <span class="option-icon">🗑️</span>
             <div>
-              <div class="option-title">连同任务一起删除</div>
-              <div class="option-desc">任务将移到回收站</div>
+              <div class="option-title">级联删除</div>
+              <div class="option-desc">删除所有任务{{ childCount > 0 ? '和子文件夹' : '' }}（移到回收站）</div>
             </div>
           </div>
         </label>
@@ -71,11 +83,16 @@ const props = defineProps(['collection'])
 const emit = defineEmits(['close', 'confirm'])
 
 const store = useOfflineTaskStore()
-const action = ref('uncategorize')  // 默认移到未分类
+const action = ref('promote')  // 🆕 默认提升子文件夹
 const targetCollectionId = ref('')
 
 const taskCount = computed(() => 
   store.getCollectionTasks(props.collection.id).length
+)
+
+// 🆕 计算子文件夹数量
+const childCount = computed(() => 
+  store.getChildCollections(props.collection.id).length
 )
 
 const otherCollections = computed(() => 
