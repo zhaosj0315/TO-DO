@@ -4,47 +4,72 @@
     <main class="main-content glass-card" ref="mainContent">
       <!-- 顶部标题栏 -->
       <header class="header">
-        <div class="header-actions">
-          <!-- 左侧按钮组（只保留2个）-->
-          <div class="left-actions">
-            <!-- 📓 文件夹管理按钮 -->
-            <button 
-              class="btn-icon-circle btn-manage" 
-              @click="showCollectionManage = true" 
-              title="管理文件夹"
-            >
-              📓
-            </button>
+        <div class="header-row">
+          <!-- 左侧按钮组 -->
+          <div class="header-group left-group">
+            <!-- 笔记本 -->
+            <div class="header-item">
+              <button 
+                class="btn-icon-circle btn-manage" 
+                @click="showCollectionManage = true" 
+                title="管理文件夹"
+              >
+                📓
+              </button>
+              <span class="item-label">笔记本</span>
+            </div>
             
-            <!-- 任务树成长 -->
-            <div class="growth-tree" @click="showGrowthDetail = true" :title="`成长等级 ${treeLevel} - 点击查看详情`">
-              <div class="tree-icon" :style="treeStyle">{{ treeIcon }}</div>
+            <!-- 成长树 -->
+            <div class="header-item">
+              <div class="growth-tree" @click="showGrowthDetail = true" :title="`成长等级 ${treeLevel} - 点击查看详情`">
+                <div class="tree-icon" :style="treeStyle">{{ treeIcon }}</div>
+              </div>
+              <span class="item-label">成长树</span>
             </div>
           </div>
           
           <!-- 右侧按钮组 -->
-          <div class="right-actions">
-            <!-- 刷新按钮 -->
-            <button class="btn-icon-circle btn-refresh-icon" @click="handleRefresh" :title="t('refresh')">
-              <span :class="{ spinning: isRefreshing }">⟳</span>
-            </button>
-            <!-- 回收站按钮（带数字气泡）-->
-            <button class="btn-icon-circle btn-trash" @click="showTrash = true" :title="t('trash')">
-              🗑️
-              <span v-if="taskStore.deletedTasks.length > 0" class="badge-count">{{ taskStore.deletedTasks.length }}</span>
-            </button>
-            <!-- AI问答按钮 -->
-            <button class="btn-icon-circle btn-ai" @click="showAIChat = true" :title="t('aiChat')">
-              🤖
-            </button>
-            <!-- 演示模式按钮 -->
-            <button class="btn-icon-circle btn-tutorial" @click="startTutorial" :title="t('tutorial')">
-              💡
-            </button>
-            <!-- 个人头像 -->
-            <button class="btn-avatar" @click="showProfile = true" :title="t('profile')">
-              <span class="username-text">{{ currentUsername }}</span>
-            </button>
+          <div class="header-group right-group">
+            <!-- 刷新 -->
+            <div class="header-item">
+              <button class="btn-icon-circle btn-refresh-icon" @click="handleRefresh" :title="t('refresh')">
+                <span :class="{ spinning: isRefreshing }">⟳</span>
+              </button>
+              <span class="item-label">刷新</span>
+            </div>
+            
+            <!-- 回收站 -->
+            <div class="header-item">
+              <button class="btn-icon-circle btn-trash" @click="showTrash = true" :title="t('trash')">
+                🗑️
+                <span v-if="taskStore.deletedTasks.length > 0" class="badge-count">{{ taskStore.deletedTasks.length }}</span>
+              </button>
+              <span class="item-label">回收站</span>
+            </div>
+            
+            <!-- AI助手 -->
+            <div class="header-item">
+              <button class="btn-icon-circle btn-ai" @click="showAIChat = true" :title="t('aiChat')">
+                🤖
+              </button>
+              <span class="item-label">AI助手</span>
+            </div>
+            
+            <!-- 教程 -->
+            <div class="header-item">
+              <button class="btn-icon-circle btn-tutorial" @click="startTutorial" :title="t('tutorial')">
+                💡
+              </button>
+              <span class="item-label">教程</span>
+            </div>
+            
+            <!-- 我的主页 -->
+            <div class="header-item">
+              <button class="btn-avatar" @click="showProfile = true" :title="t('profile')">
+                <span class="username-text">{{ currentUsername }}</span>
+              </button>
+              <span class="item-label">我的主页</span>
+            </div>
           </div>
         </div>
       </header>
@@ -15029,25 +15054,45 @@ watch(() => reportData.value, (newData) => {
   justify-content: space-between;
 }
 
-.left-actions {
-  display: flex;
-  gap: 0.25rem;
-  align-items: center;
-}
-
-.right-actions {
-  display: flex;
-  gap: 0.25rem;
-  align-items: center;
-}
-
 .header {
-  display: flex;
-  align-items: center;
-  padding: 1rem 0.1rem;
+  padding: 1rem 0.1rem 0.5rem;
   margin-bottom: 0.5rem;
   border-bottom: 1px solid var(--glass-border);
   width: 100%;
+}
+
+/* 统一的横向布局 */
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+}
+
+/* 左右分组 */
+.header-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+}
+
+/* 每个图标+文字单元 */
+.header-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* 文字标签 */
+.item-label {
+  font-size: 0.7rem;
+  color: #666;
+  white-space: nowrap;
+  text-align: center;
+  line-height: 1;
+  margin: 0;
+  padding: 0;
 }
 
 /* 🆕 左侧区域（任务树 + 文件夹按钮） */
@@ -15504,8 +15549,8 @@ watch(() => reportData.value, (newData) => {
 
 /* 任务树成长 */
 .growth-tree {
-  width: 42px;
-  height: 42px;
+  width: 36px; /* 42px → 36px */
+  height: 36px;
   border-radius: 50%;
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   border: 2px solid rgba(255, 255, 255, 0.8);
@@ -15523,7 +15568,7 @@ watch(() => reportData.value, (newData) => {
 }
 
 .tree-icon {
-  font-size: 1.35rem;
+  font-size: 1.1rem; /* 1.35rem → 1.1rem */
   animation: treeGrow 2s ease-in-out infinite;
 }
 
@@ -15541,13 +15586,13 @@ watch(() => reportData.value, (newData) => {
 
 /* 统一的圆形图标按钮 */
 .btn-icon-circle {
-  width: 42px;
-  height: 42px;
+  width: 36px; /* 42px → 36px */
+  height: 36px;
   border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, 0.8);
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  font-size: 1.35rem;
+  font-size: 1.1rem; /* 1.35rem → 1.1rem */
   cursor: pointer;
   transition: all 0.3s;
   display: flex;
@@ -15674,9 +15719,9 @@ watch(() => reportData.value, (newData) => {
 }
 
 .btn-avatar {
-  height: 42px;
-  padding: 0 1.2rem;
-  border-radius: 21px;
+  height: 36px; /* 42px → 36px */
+  padding: 0 1rem; /* 1.2rem → 1rem */
+  border-radius: 18px; /* 21px → 18px */
   border: 2px solid rgba(255, 255, 255, 0.8) !important;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   cursor: pointer;
@@ -15699,7 +15744,7 @@ watch(() => reportData.value, (newData) => {
 
 .username-text {
   color: white;
-  font-size: 1rem;
+  font-size: 0.85rem; /* 1rem → 0.85rem */
   font-weight: 600;
   white-space: nowrap;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
