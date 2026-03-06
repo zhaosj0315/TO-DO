@@ -192,7 +192,7 @@ const loading = ref(false)
 const messagesContainer = ref(null)
 
 // 侧边栏状态
-const showSidebar = ref(true)
+const showSidebar = ref(false) // 默认收起历史记录侧边栏
 const chatHistoryList = ref([])
 const currentChatId = ref(null)
 const searchQuery = ref('')
