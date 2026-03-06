@@ -86,26 +86,52 @@ const steps = [
     target: null,
     icon: '👋',
     title: '欢迎使用 TO-DO App！',
-    description: '这是一个功能强大的离线任务管理应用。<br>让我们用 <strong>8-10 分钟</strong>，快速掌握所有核心功能。',
+    description: '这是一个功能强大的离线任务管理应用。<br>让我们用 <strong>5-8 分钟</strong>，快速掌握核心功能。',
     position: 'center',
     category: 'intro'
   },
-  // 2. 界面总览
+  
+  // 2. 任务树成长系统（v0.8.2 新功能）
   {
-    target: 'body',
-    icon: '🗺️',
-    title: '界面总览',
+    target: '.growth-tree',
+    icon: '🌳',
+    title: '任务树成长系统（NEW）',
     description: `
-      <strong>顶部</strong>：任务统计面板<br>
-      <strong>中间</strong>：任务列表区域<br>
-      <strong>右上角</strong>：刷新、回收站、个人中心<br>
+      <strong>蚂蚁森林式激励</strong>：完成任务让树持续生长！<br>
       <br>
-      💡 所有功能都在这一个页面上！
+      <strong>成长值获取</strong>：<br>
+      • 完成任务 +1分（高优先级 +2分）<br>
+      • 完成番茄钟 +0.5分<br>
+      <br>
+      <strong>10级成长体系</strong>：<br>
+      🌱种子 → 🌿幼苗 → 🪴树苗 → 🌳小树 → 🌲大树<br>
+      → 🌸开花 → 🌺繁茂 → 🌻茂盛 → 🏵️参天 → 🎋神树<br>
+      <br>
+      💡 点击树图标查看详细成长信息
     `,
-    position: 'center',
+    position: 'bottom-right',
     category: 'intro'
   },
-  // 3. 任务统计
+  
+  // 3. 快速开始：导入模板
+  {
+    target: '.btn-avatar',
+    icon: '📦',
+    title: '快速开始：导入模板数据',
+    description: `
+      <strong>推荐新用户操作</strong>：<br>
+      1. 点击右上角头像<br>
+      2. 找到"数据管理"区域<br>
+      3. 点击"📥 下载导入模板"<br>
+      4. 点击"📂 导入任务"选择文件<br>
+      <br>
+      💡 模板包含100条示例任务，快速体验完整功能
+    `,
+    position: 'bottom-left',
+    category: 'basic'
+  },
+  
+  // 4. 任务统计面板
   {
     target: '.stats-grid',
     icon: '📊',
@@ -119,424 +145,118 @@ const steps = [
     position: 'bottom',
     category: 'basic'
   },
-  // 4. 创建任务
+  
+  // 5. 创建任务
   {
     target: '.add-form-row-main',
     icon: '➕',
     title: '创建新任务',
     description: `
-      <strong>方式1 - 手动创建</strong>：<br>
-      1. 在输入框中输入任务名称<br>
-      2. 按 <strong>回车键</strong> 或点击右侧 <strong>✓</strong> 按钮<br>
+      <strong>输入任务名称</strong> → 按回车或点击 ✓<br>
       <br>
-      <strong>方式2 - 导入模板（推荐）</strong>：<br>
-      点击右上角头像 → 数据管理 → 下载模板 → 导入模板<br>
+      <strong>任务属性</strong>：<br>
+      • 类型：今天/明天/本周/指定日期/重复任务<br>
+      • 分类：💼工作/📚学习/🏠生活<br>
+      • 优先级：⚡高/中/低<br>
       <br>
-      💡 模板包含100条示例任务，快速体验完整功能
+      💡 不同优先级对应不同番茄钟数（高4/中2/低1）
     `,
     position: 'bottom',
     category: 'basic'
   },
-  // 5. 快速体验：导入模板数据
-  {
-    target: '.btn-avatar',
-    icon: '📦',
-    title: '快速体验：导入模板数据',
-    description: `
-      <strong>推荐新用户操作</strong>：<br>
-      1. 点击右上角头像打开个人中心<br>
-      2. 找到"数据管理"区域<br>
-      3. 点击"📥 下载导入模板"<br>
-      4. 点击"📂 导入任务"选择刚下载的文件<br>
-      <br>
-      💡 导入后可以看到完整的任务列表，包含各种类型、分类、优先级的任务示例
-    `,
-    position: 'bottom-left',
-    category: 'basic'
-  },
-  // 6. 任务属性
-  {
-    target: '.add-form-container',
-    icon: '⚙️',
-    title: '设置任务属性',
-    description: `
-      <strong>任务类型</strong>：今天、明天、本周、指定日期、重复任务等<br>
-      <strong>分类</strong>：💼工作、📚学习、🏠生活<br>
-      <strong>优先级</strong>：⚡高、中、低<br>
-      <br>
-      💡 不同优先级对应不同的番茄钟数量（高4/中2/低1）
-    `,
-    position: 'bottom',
-    category: 'basic'
-  },
-  // 7. 搜索功能
-  {
-    target: '.search-bar',
-    icon: '🔍',
-    title: '搜索任务',
-    description: `
-      <strong>功能</strong>：快速查找任务<br>
-      <strong>支持</strong>：模糊匹配任务名称和描述<br>
-      <br>
-      💡 输入关键字后，列表会实时过滤
-    `,
-    position: 'bottom',
-    category: 'basic'
-  },
-  // 8. 任务卡片
+  
+  // 6. 任务卡片操作
   {
     target: '.task-list',
     icon: '📝',
     title: '任务卡片操作',
     description: `
-      <strong>点击标题/描述</strong> → 打开任务详情页<br>
-      <strong>点击复选框 ☑️</strong> → 标记完成/取消完成<br>
+      <strong>点击标题/描述</strong> → 打开任务详情<br>
+      <strong>点击 ☑️</strong> → 标记完成/取消完成<br>
       <strong>点击 🍅</strong> → 开始番茄钟计时<br>
       <strong>点击 📌</strong> → 置顶/取消置顶<br>
-      <strong>点击 🗑️</strong> → 删除任务（移入回收站）<br>
+      <strong>点击 🗑️</strong> → 删除（移入回收站）<br>
       <br>
-      💡 徽章显示：💬 日志数量、📊 进度百分比
+      💡 徽章：💬日志数、📊进度%、🔒等待中
     `,
     position: 'bottom',
     category: 'basic'
   },
-  // 9. 任务详情页
+  
+  // 7. 任务详情页
   {
     target: '.task-list',
     icon: '📋',
-    title: '任务详情页（Bottom Sheet）',
+    title: '任务详情页',
     description: `
-      <strong>点击任务标题或描述</strong>打开详情页，包含：<br>
+      <strong>点击任务标题</strong>打开详情页，包含：<br>
       • 任务概览（状态、优先级、分类、截止时间）<br>
-      • 执行统计（推进次数、总耗时、平均时长、阻碍统计）<br>
+      • 执行统计（推进次数、总耗时、阻碍统计）<br>
       • 时间轴（创建 → 截止 → 完成）<br>
       • 执行日志列表<br>
       <br>
       💡 这是查看任务全貌的统一入口
     `,
     position: 'bottom',
-    category: 'advanced'
+    category: 'basic'
   },
-  // 10. 执行日志系统
+  
+  // 8. 执行日志系统
   {
     target: '.task-list',
     icon: '💬',
-    title: '执行日志系统（v1.7.0 核心功能）',
+    title: '执行日志系统',
     description: `
-      <strong>6 种日志类型</strong>：<br>
-      🚀 <strong>开始</strong>：记录任务启动<br>
-      📈 <strong>进展</strong>：记录推进情况<br>
-      🚧 <strong>阻碍</strong>：记录遇到的问题<br>
-      💡 <strong>方案</strong>：记录解决方案<br>
-      🎯 <strong>里程碑</strong>：记录重要节点<br>
-      ✅ <strong>完成</strong>：记录完成总结<br>
+      <strong>6种日志类型</strong>：<br>
+      🚀 开始 | 📈 进展 | 🚧 阻碍<br>
+      💡 方案 | 🎯 里程碑 | ✅ 完成<br>
+      <br>
+      <strong>记录内容</strong>：<br>
+      • 日志内容、耗时、进度%<br>
+      • 标签、心情、关联阻碍<br>
       <br>
       💡 每条日志自动记录时间戳
     `,
     position: 'bottom',
     category: 'advanced'
   },
-  // 11. 添加日志
-  {
-    target: '.task-list',
-    icon: '✍️',
-    title: '如何添加执行日志',
-    description: `
-      <strong>操作步骤</strong>：<br>
-      1. 点击任务标题打开详情页<br>
-      2. 点击"添加日志"按钮<br>
-      3. 选择日志类型<br>
-      4. 填写内容、耗时、进度等信息<br>
-      5. 点击"保存"<br>
-      <br>
-      💡 可以添加标签、记录心情、关联阻碍
-    `,
-    position: 'bottom',
-    category: 'advanced'
-  },
-  // 12. 进度追踪
-  {
-    target: '.task-list',
-    icon: '📊',
-    title: '进度追踪',
-    description: `
-      <strong>进度显示</strong>：任务卡片上显示 📊 X%<br>
-      <strong>进度设置</strong>：添加日志时可以设置当前进度（0-100%）<br>
-      <strong>统计数据</strong>：详情页显示推进次数、总耗时、平均时长<br>
-      <br>
-      💡 通过日志追踪任务的完整执行过程
-    `,
-    position: 'bottom',
-    category: 'advanced'
-  },
-  // 13. 完成任务
-  {
-    target: '.task-list',
-    icon: '✅',
-    title: '完成任务',
-    description: `
-      <strong>方式 1</strong>：点击任务卡片左侧的复选框<br>
-      <strong>方式 2</strong>：在详情页点击"完成任务"按钮<br>
-      <strong>方式 3</strong>：添加"完成"类型的日志<br>
-      <br>
-      💡 完成时可以添加质量评分（1-5星）和经验教训
-    `,
-    position: 'top',
-    category: 'basic'
-  },
-  // 14. 番茄钟计时
+  
+  // 9. 番茄钟计时
   {
     target: '.task-list',
     icon: '🍅',
     title: '番茄钟计时器',
     description: `
-      <strong>专注模式</strong>：25 分钟专注计时<br>
-      <strong>休息模式</strong>：5 分钟短休息 / 15 分钟长休息<br>
+      <strong>专注模式</strong>：25分钟专注计时<br>
+      <strong>休息模式</strong>：5分钟短休息/15分钟长休息<br>
       <strong>操作</strong>：暂停、继续、放弃、跳过休息<br>
       <br>
-      💡 完成番茄钟后会自动记录到任务历史中
+      💡 完成番茄钟后自动记录到任务历史
     `,
     position: 'bottom',
     category: 'advanced'
   },
-  // 15. 置顶任务
-  {
-    target: '.task-list',
-    icon: '📌',
-    title: '置顶重要任务',
-    description: `
-      <strong>功能</strong>：将重要任务固定在列表最前面<br>
-      <strong>操作</strong>：点击 📌 按钮切换置顶状态<br>
-      <strong>排序</strong>：置顶任务内部按优先级排序<br>
-      <br>
-      💡 置顶任务会显示 📌 图标
-    `,
-    position: 'top',
-    category: 'basic'
-  },
-  // 16. 高级筛选
-  {
-    target: '.filter-card',
-    icon: '🎛️',
-    title: '高级筛选功能',
-    description: `
-      <strong>筛选条件</strong>：<br>
-      • 日期范围（创建时间/截止时间/完成时间）<br>
-      • 分类（工作/学习/生活）<br>
-      • 优先级（高/中/低）<br>
-      • 关键字搜索<br>
-      <br>
-      💡 所有条件可以组合使用
-    `,
-    position: 'bottom',
-    category: 'advanced'
-  },
-  // 17. 刷新按钮
-  {
-    target: '.btn-refresh-icon',
-    icon: '🔄',
-    title: '刷新按钮',
-    description: `
-      <strong>功能</strong>：重置所有筛选条件到初始状态<br>
-      <strong>操作</strong>：点击右上角的紫色刷新按钮<br>
-      <br>
-      💡 当筛选条件太多时，一键清空很方便
-    `,
-    position: 'bottom-left',
-    category: 'basic'
-  },
-  // 18. 回收站
-  {
-    target: '.btn-trash',
-    icon: '🗑️',
-    title: '回收站（逻辑删除）',
-    description: `
-      <strong>功能</strong>：删除的任务会先移到回收站<br>
-      <strong>操作</strong>：<br>
-      • 恢复任务：点击"恢复"按钮<br>
-      • 永久删除：点击"彻底删除"按钮<br>
-      • 清空回收站：删除所有回收站任务<br>
-      <br>
-      💡 回收站右上角显示任务数量
-    `,
-    position: 'bottom-left',
-    category: 'basic'
-  },
-  // 19. 数据管理
-  {
-    target: '.btn-avatar',
-    icon: '💾',
-    title: '数据导入导出',
-    description: `
-      <strong>导出</strong>：将任务导出为 Excel 文件备份<br>
-      <strong>导入</strong>：从 Excel 批量导入任务<br>
-      <strong>模板</strong>：下载官方导入模板（含 100 条示例）<br>
-      <br>
-      💡 定期导出数据，防止数据丢失
-    `,
-    position: 'bottom-left',
-    category: 'advanced'
-  },
-  // 20. 个人中心
-  {
-    target: '.btn-avatar',
-    icon: '👤',
-    title: '个人中心',
-    description: `
-      <strong>功能</strong>：<br>
-      • 查看个人信息（用户名、注册时间、绑定手机）<br>
-      • 番茄钟统计（已获得/待获得/逾期扣除/净获得）<br>
-      • 数据管理（导入/导出/备份）<br>
-      • 修改密码、绑定手机号<br>
-      <br>
-      💡 点击头像打开个人中心
-    `,
-    position: 'bottom-left',
-    category: 'basic'
-  },
-  // 21. 其他功能
-  {
-    target: null,
-    icon: '🎁',
-    title: '更多实用功能',
-    description: `
-      <strong>智能提醒</strong>：逾期提醒、1小时预警<br>
-      <strong>自动备份</strong>：定期自动备份数据<br>
-      <strong>离线运行</strong>：无需网络，数据本地存储<br>
-      <strong>多用户隔离</strong>：每个用户的数据完全独立<br>
-      <br>
-      💡 接下来介绍更多高级功能！
-    `,
-    position: 'center',
-    category: 'intro'
-  },
-  // 22. AI智能助手
+  
+  // 10. AI智能助手
   {
     target: '.btn-ai',
     icon: '🤖',
-    title: 'AI智能助手（统一入口）',
+    title: 'AI智能助手',
     description: `
       <strong>AI问答</strong>：用自然语言询问任务相关问题<br>
-      <strong>今日规划</strong>：点击"📅 今日规划"按钮生成智能规划<br>
+      <strong>今日规划</strong>：点击"📅 今日规划"生成智能规划<br>
       <strong>快捷问题</strong>：<br>
       • 今天完成了哪些任务？<br>
       • 本周工作情况如何？<br>
       • 有哪些高优先级任务？<br>
       <br>
-      💡 AI可以访问所有任务数据，提供智能分析和建议
+      💡 AI可访问所有任务数据，提供智能分析
     `,
     position: 'bottom-left',
     category: 'advanced'
   },
-  // 23. AI报告生成
-  {
-    target: '.btn-avatar',
-    icon: '📊',
-    title: 'AI报告生成器',
-    description: `
-      <strong>7种报告类型</strong>：日报/周报/月报/季报/半年报/年报/区间报告<br>
-      <strong>完整11章节</strong>：智能总结、数据概览、完成任务明细、关键工作等<br>
-      <strong>报告历史</strong>：自动保存所有生成的报告<br>
-      <br>
-      💡 点击个人中心 → 区间报告/报告历史
-    `,
-    position: 'bottom-left',
-    category: 'advanced'
-  },
-  // 24. 任务依赖关系
-  {
-    target: '.task-list',
-    icon: '🔗',
-    title: '任务依赖关系',
-    description: `
-      <strong>功能</strong>：设置任务之间的依赖关系<br>
-      <strong>操作</strong>：<br>
-      1. 打开任务详情页<br>
-      2. 点击"设置等待任务"<br>
-      3. 选择需要等待的任务<br>
-      <br>
-      💡 等待中的任务会显示 🔒 徽章
-    `,
-    position: 'bottom',
-    category: 'advanced'
-  },
-  // 25. 拍照OCR识别
-  {
-    target: '.btn-camera',
-    icon: '📷',
-    title: '拍照识别文字（OCR）',
-    description: `
-      <strong>功能</strong>：拍照识别文字，自动创建任务<br>
-      <strong>操作</strong>：<br>
-      1. 点击任务输入框旁的 📷 按钮<br>
-      2. 拍摄包含文字的照片<br>
-      3. AI自动识别并填充任务信息<br>
-      <br>
-      💡 支持中英文混合识别，离线运行
-    `,
-    position: 'bottom',
-    category: 'advanced'
-  },
-  // 26. 文本选中提取
-  {
-    target: 'body',
-    icon: '🎯',
-    title: '文本选中提取任务',
-    description: `
-      <strong>功能</strong>：从任意文本中提取任务<br>
-      <strong>操作</strong>：<br>
-      1. 选中任意文本（任务描述、邮件内容等）<br>
-      2. 点击弹出菜单中的"提取任务"<br>
-      3. AI自动分析并提取任务信息<br>
-      <br>
-      💡 支持批量提取多个任务
-    `,
-    position: 'center',
-    category: 'advanced'
-  },
-  // 27. 高级筛选优化
-  {
-    target: '.filter-card',
-    icon: '🎛️',
-    title: '高级筛选功能（全面升级）',
-    description: `
-      <strong>快捷场景</strong>（一键直达）：<br>
-      • 今日待办、本周待办、今日逾期<br>
-      • 高优先级、工作任务、学习任务<br>
-      <br>
-      <strong>快捷日期</strong>（12个选项）：<br>
-      • 今天、昨天、本周、上周、本月、上月<br>
-      • 全部逾期、最近7天、最近30天<br>
-      <br>
-      <strong>时间维度</strong>：创建时间/截止时间/完成时间<br>
-      <br>
-      💡 操作步骤减少50%，筛选效率提升60%
-    `,
-    position: 'bottom',
-    category: 'advanced'
-  },
-  // 28. 报告功能
-  {
-    target: '.btn-avatar',
-    icon: '📊',
-    title: '数据报告功能（全面整合）',
-    description: `
-      <strong>7种报告类型</strong>：<br>
-      • 日报、周报、月报、季报、半年报、年报、区间报告<br>
-      <br>
-      <strong>完整11章节结构</strong>：<br>
-      • 智能总结、数据概览、完成任务明细<br>
-      • 已完成情况、本期目标、本期进展<br>
-      • 本周进展、关键工作、风险与问题、下期计划<br>
-      <br>
-      <strong>报告历史</strong>：自动保存所有生成的报告<br>
-      <br>
-      💡 点击个人中心 → 区间报告/报告历史
-    `,
-    position: 'bottom-left',
-    category: 'advanced'
-  },
-  // 29. AI任务拆分
+  
+  // 11. AI任务拆分
   {
     target: '.task-list',
     icon: '✂️',
@@ -546,7 +266,7 @@ const steps = [
       <strong>操作</strong>：<br>
       1. 打开任务详情页<br>
       2. 点击"AI拆分任务"<br>
-      3. 选择拆分模板（快速/详细/时间优先/优先级优先）<br>
+      3. 选择拆分模板<br>
       4. AI自动生成子任务列表<br>
       <br>
       💡 子任务自动设置依赖关系和预估时长
@@ -554,21 +274,79 @@ const steps = [
     position: 'bottom',
     category: 'advanced'
   },
-  // 30. 完成页
+  
+  // 12. 数据报告
+  {
+    target: '.btn-avatar',
+    icon: '📊',
+    title: '数据报告生成',
+    description: `
+      <strong>7种报告类型</strong>：<br>
+      日报/周报/月报/季报/半年报/年报/自定义<br>
+      <br>
+      <strong>完整结构</strong>：<br>
+      智能总结、数据概览、完成任务明细、<br>
+      关键工作、风险与问题、下期计划<br>
+      <br>
+      💡 点击个人中心 → 区间报告/报告历史
+    `,
+    position: 'bottom-left',
+    category: 'advanced'
+  },
+  
+  // 13. 高级筛选
+  {
+    target: '.filter-card',
+    icon: '🎛️',
+    title: '高级筛选功能',
+    description: `
+      <strong>筛选条件</strong>：<br>
+      • 日期范围（创建/截止/完成时间）<br>
+      • 分类（工作/学习/生活）<br>
+      • 优先级（高/中/低）<br>
+      • 关键字搜索<br>
+      <br>
+      💡 所有条件可以组合使用
+    `,
+    position: 'bottom',
+    category: 'advanced'
+  },
+  
+  // 14. 回收站与数据管理
+  {
+    target: '.btn-trash',
+    icon: '🗑️',
+    title: '回收站与数据管理',
+    description: `
+      <strong>回收站</strong>：删除的任务先移到回收站<br>
+      • 恢复任务 | 永久删除 | 清空回收站<br>
+      <br>
+      <strong>数据管理</strong>：<br>
+      • 导出Excel备份<br>
+      • 导入Excel批量创建<br>
+      • 下载官方模板（100条示例）<br>
+      <br>
+      💡 定期导出数据，防止数据丢失
+    `,
+    position: 'bottom-left',
+    category: 'basic'
+  },
+  
+  // 15. 完成页
   {
     target: null,
     icon: '🎉',
     title: '教程完成！',
     description: `
-      <strong>恭喜您已经掌握了 TO-DO App 的所有核心功能！</strong><br>
+      <strong>恭喜！您已掌握 TO-DO App 核心功能！</strong><br>
       <br>
       <strong>核心功能回顾</strong>：<br>
+      ✅ 任务树成长：完成任务让树持续生长<br>
       ✅ 任务管理：创建、编辑、完成、删除<br>
-      ✅ 执行日志：6种日志类型，完整记录执行过程<br>
+      ✅ 执行日志：6种日志类型，完整记录<br>
       ✅ 番茄钟：25分钟专注计时<br>
-      ✅ AI助手：智能问答、今日规划、报告生成<br>
-      ✅ 高级筛选：快捷场景、快捷日期、时间维度<br>
-      ✅ 数据报告：7种类型、11章节结构、报告历史<br>
+      ✅ AI助手：智能问答、任务拆分、报告生成<br>
+      ✅ 高级筛选：多维度筛选任务<br>
       <br>
       💡 随时点击右上角 💡 按钮重新查看教程
     `,
