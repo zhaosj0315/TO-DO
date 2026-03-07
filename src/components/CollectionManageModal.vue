@@ -55,6 +55,15 @@
             <p>📂 还没有笔记本</p>
             <p class="tip">点击上方按钮创建第一个笔记本</p>
           </div>
+          
+          <!-- 🆕 未分类（永远在最下面） -->
+          <div class="uncategorized-item" @click="!batchMode && $emit('select', 'uncategorized')" :style="{ cursor: batchMode ? 'default' : 'pointer' }">
+            <div class="notebook-info">
+              <span class="icon">📂</span>
+              <span class="name">未分类</span>
+              <span class="count">({{ uncategorizedCount }})</span>
+            </div>
+          </div>
         </div>
         
         <!-- 批量操作按钮 -->
@@ -74,18 +83,18 @@
 import { ref, computed } from 'vue'
 import CollectionTreeNode from './CollectionTreeNode.vue'
 
-const props = defineProps(['collections', 'getTaskCount', 'totalTaskCount', 'getChildCollections'])
+const props = defineProps(['collections', 'getTaskCount', 'totalTaskCount', 'getChildCollections', 'uncategorizedCount'])
 const emit = defineEmits(['close', 'create', 'select', 'rename', 'setPrivate', 'changePassword', 'moveIn', 'moveOut', 'moveCollection', 'delete', 'batchEncrypt', 'batchDelete'])
 
 const batchMode = ref(false)
 const selectedIds = ref([])
 const expandedIds = ref([]) // 🆕 展开的笔记本ID列表
 
-// 🆕 获取根级笔记本（按创建时间倒序）
+// 🆕 获取根级笔记本（按order排序，与首页一致）
 const rootCollections = computed(() => {
   return props.collections
     .filter(c => c.parentId === null)
-    .sort((a, b) => b.id - a.id) // 最新创建的在前
+    .sort((a, b) => a.order - b.order) // 按order升序排序
 })
 
 // 🆕 切换展开/折叠
@@ -294,6 +303,44 @@ const handleBatchDelete = () => {
   font-size: 0.9rem;
   opacity: 0.8;
   margin-left: 32px;
+}
+
+/* 🆕 未分类样式（灰色系，永远在最下面） */
+.uncategorized-item {
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+  border: 2px solid #9ca3af;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 16px;
+  transition: all 0.2s;
+}
+
+.uncategorized-item:hover {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  border-color: #6b7280;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(156, 163, 175, 0.2);
+}
+
+.uncategorized-item .notebook-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.uncategorized-item .icon {
+  font-size: 1.5rem;
+}
+
+.uncategorized-item .name {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #4b5563;
+}
+
+.uncategorized-item .count {
+  color: #6b7280;
+  font-weight: 500;
 }
 
 .create-btn {

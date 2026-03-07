@@ -1033,6 +1033,18 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
           c.parentId = null
         }
       })
+      
+      // 🐛 修复孤儿笔记本：如果parentId指向的笔记本不存在，提升为根级
+      const validIds = new Set(this.collections.map(c => c.id))
+      this.collections.forEach(c => {
+        if (c.parentId !== null && !validIds.has(c.parentId)) {
+          console.warn(`🔧 修复孤儿笔记本: "${c.name}" (parentId: ${c.parentId} 不存在) → 提升为根级`)
+          c.parentId = null
+        }
+      })
+      
+      // 保存修复后的数据
+      await this.saveCollections()
     },
 
     // 保存文件夹

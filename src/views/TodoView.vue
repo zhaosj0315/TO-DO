@@ -3661,6 +3661,7 @@
       </div>
     </transition>
 
+    <!-- 删除确认 Bottom Sheet -->
     <!-- 底部抽屉 - 添加任务 -->
 
     <!-- AI 文本选择菜单 -->
@@ -3773,6 +3774,7 @@
       :get-task-count="(id) => taskStore.getCollectionTaskCount(id)"
       :get-child-collections="(id) => taskStore.getChildCollections(id)"
       :total-task-count="taskStore.tasks.length"
+      :uncategorized-count="uncategorizedTaskCount"
       @close="showCollectionManage = false"
       @create="(parentId) => { currentParentId = parentId; fromCollectionManage = true; showCreateCollectionModal = true; showCollectionManage = false }"
       @select="(id) => { selectCollection(id); showCollectionManage = false }"
@@ -3856,8 +3858,14 @@ import { Capacitor } from '@capacitor/core'
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera'
 import { App } from '@capacitor/app'
 
-// 注册中文OCR插件
-const ChineseOcr = Capacitor.registerPlugin('ChineseOcr')
+// 注册中文OCR插件（避免重复注册）
+let ChineseOcr
+try {
+  ChineseOcr = Capacitor.registerPlugin('ChineseOcr')
+} catch (e) {
+  // 插件已注册，直接获取
+  ChineseOcr = Capacitor.Plugins.ChineseOcr
+}
 import * as XLSX from 'xlsx'
 import html2canvas from 'html2canvas'
 import EChart from '../components/EChart.vue'
@@ -5095,24 +5103,23 @@ const initVersionHistory = () => {
       version: '0.8.3',
       date: '2026-03-07',
       features: [
-        '🎨 UI布局全面优化：统计栏重构，删除"全部"按钮，避免功能重复',
-        '💊 胶囊按钮统一：笔记本和统计栏改为横向胶囊布局，视觉一致',
-        '📏 间距极致紧凑：所有行间距统一为2px，按钮内边距4px 8px',
-        '📐 等宽布局：5个统计按钮等宽平分空间，左右边缘对齐',
-        '🎨 成长树配色统一：从绿色渐变改为紫色渐变，与其他按钮一致'
+        '📁 笔记本管理逻辑修复：自动修复孤儿笔记本（父笔记本不存在时提升为根级）',
+        '🗑️ 批量删除递归逻辑：删除笔记本时自动递归删除所有子笔记本（2级、3级...无限层级）',
+        '📂 笔记本管理显示未分类：未分类永远显示在最下面，灰色样式区分',
+        '🎯 任务删除优化：点击删除按钮直接删除，不再重复确认'
       ],
       improvements: [
-        '🔤 图标文字优化：筛选和收起按钮的图标移到文字后方',
-        '📏 高度统一：第2/3/4行所有按钮和输入框统一为36px高度',
-        '🗺️ 面包屑优化：上下内边距从8px缩减至0px，完全贴近header',
-        '🔘 按钮间距精简：笔记本和统计按钮间距从10px缩减至1px',
-        '🔧 Header图标重排：刷新→AI助手→回收站→教程→我的主页',
-        '📊 按使用频率排序：高频功能前置，个人设置后置',
-        '📐 空间利用率提升：内边距从12px缩减至8px（缩减33%）',
-        '⬆️ 上下间距统一：面包屑4px，其他行2px，整体更紧凑',
-        '📝 输入框优化：高度从44px缩减至36px，与按钮对齐'
+        '🔧 笔记本排序统一：首页和笔记本管理都按order字段排序，显示顺序一致',
+        '📊 任务统计准确：所有层级的任务都会正确移至未分类',
+        '🔔 通知优化：显示实际删除的笔记本总数（包括子笔记本）',
+        '💾 数据自动修复：加载笔记本时自动检测并修复数据完整性'
       ],
-      fixes: []
+      fixes: [
+        '🐛 修复笔记本管理只显示根级笔记本，子笔记本丢失的问题',
+        '🐛 修复批量删除不删除子笔记本，导致孤儿笔记本的问题',
+        '🐛 修复首页和笔记本管理显示顺序不一致的问题',
+        '🐛 修复合并笔记本后层级关系丢失的问题'
+      ]
     },
     {
       version: '0.8.2',
@@ -7322,7 +7329,10 @@ const baseFilteredTasks = computed(() => {
 })
 
 // 🆕 文件夹相关计算属性
-const sortedCollections = computed(() => taskStore.sortedCollections)
+const sortedCollections = computed(() => {
+  // 显示所有笔记本（包括子笔记本），方便快速跳转
+  return taskStore.sortedCollections
+})
 
 // 🆕 快捷栏显示的前3个文件夹
 const quickCollections = computed(() => {
@@ -12065,9 +12075,22 @@ const handleBatchDelete = async (collectionIds) => {
   const confirmed = confirm(`确定要删除 ${collectionIds.length} 个笔记本吗？\n\n笔记本内的任务将移至"未分类"`)
   if (!confirmed) return
   
-  // 将任务移至未分类
+  // 🐛 修复：递归收集所有需要删除的笔记本（包括子笔记本）
+  const allIdsToDelete = new Set(collectionIds)
+  
+  const collectChildren = (parentId) => {
+    const children = taskStore.collections.filter(c => c.parentId === parentId)
+    children.forEach(child => {
+      allIdsToDelete.add(child.id)
+      collectChildren(child.id) // 递归收集子笔记本
+    })
+  }
+  
+  collectionIds.forEach(id => collectChildren(id))
+  
+  // 将所有笔记本内的任务移至未分类
   let movedCount = 0
-  collectionIds.forEach(id => {
+  allIdsToDelete.forEach(id => {
     taskStore.tasks.forEach(task => {
       if (task.collectionId === id) {
         task.collectionId = null
@@ -12076,8 +12099,8 @@ const handleBatchDelete = async (collectionIds) => {
     })
   })
   
-  // 删除笔记本
-  collectionIds.forEach(id => {
+  // 删除所有笔记本（包括子笔记本）
+  allIdsToDelete.forEach(id => {
     const index = taskStore.collections.findIndex(c => c.id === id)
     if (index > -1) {
       taskStore.collections.splice(index, 1)
@@ -12087,7 +12110,7 @@ const handleBatchDelete = async (collectionIds) => {
   await taskStore.saveCollections()
   await taskStore.saveTasks()
   
-  showNotification(`✅ 已删除 ${collectionIds.length} 个笔记本，${movedCount} 个任务已移至未分类`, 'success')
+  showNotification(`✅ 已删除 ${allIdsToDelete.size} 个笔记本，${movedCount} 个任务已移至未分类`, 'success')
 }
 
 const handleCollectionCreated = (collection) => {
@@ -13146,7 +13169,12 @@ onMounted(async () => {
       }
       
       // 第三层弹窗（最上层，优先关闭）
-      if (showGrowthDetail.value) {
+      if (showDeleteConfirmCard.value) {
+        console.log('✅ 关闭删除确认框')
+        showDeleteConfirmCard.value = false
+        deleteTaskId.value = null
+        return
+      } else if (showGrowthDetail.value) {
         console.log('✅ 关闭任务树成长详情')
         showGrowthDetail.value = false
         return
@@ -13417,7 +13445,10 @@ onMounted(async () => {
         console.log('✅ 关闭任务详情')
         // 检查 TaskDetailModal 内部是否有打开的子弹窗
         if (taskDetailModalRef.value) {
-          if (taskDetailModalRef.value.showAddLogModal) {
+          if (taskDetailModalRef.value.showDeleteConfirm) {
+            taskDetailModalRef.value.showDeleteConfirm = false
+            return
+          } else if (taskDetailModalRef.value.showAddLogModal) {
             taskDetailModalRef.value.showAddLogModal = false
             return
           } else if (taskDetailModalRef.value.showWaitForSelector) {
