@@ -451,9 +451,13 @@ const getAIConfig = async () => {
           baseURL = defaultModel.url.replace('/api/generate', '/v1/chat/completions')
         } else {
           // OpenAI格式
-          baseURL = defaultModel.url.includes('/chat/completions') 
-            ? defaultModel.url 
-            : `${defaultModel.url}/chat/completions`
+          if (defaultModel.url.includes('/chat/completions')) {
+            baseURL = defaultModel.url
+          } else if (defaultModel.url.includes('/v1')) {
+            baseURL = defaultModel.url + '/chat/completions'
+          } else {
+            baseURL = defaultModel.url + '/v1/chat/completions'
+          }
         }
         
         console.log('📦 最终URL:', baseURL)

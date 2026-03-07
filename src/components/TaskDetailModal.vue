@@ -574,6 +574,24 @@
       @close="showAISummaryResult = false"
     />
 
+    <!-- 删除确认 Bottom Sheet -->
+    <div v-if="showDeleteConfirm" class="modal-overlay" @click="showDeleteConfirm = false">
+      <div class="delete-confirm-sheet" @click.stop>
+        <div class="sheet-header">
+          <div class="sheet-handle"></div>
+          <h3>⚠️ 确认删除</h3>
+        </div>
+        <div class="sheet-content">
+          <p class="warning-text">确定要删除这个任务吗？</p>
+          <p class="hint-text">任务将被移至回收站，可以恢复</p>
+        </div>
+        <div class="sheet-actions">
+          <button class="btn-cancel" @click="showDeleteConfirm = false">取消</button>
+          <button class="btn-confirm-delete" @click="confirmDelete">删除</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 加载动画 -->
     <div v-if="isProcessing" class="loading-overlay">
       <div class="loading-spinner">
@@ -618,11 +636,13 @@ const taskStore = useOfflineTaskStore()
 const showAddLogModal = ref(false)
 const showTimeline = ref(false)
 const showWaitForSelector = ref(false)
+const showDeleteConfirm = ref(false)
 
 // 暴露内部状态给父组件
 defineExpose({
   showAddLogModal,
-  showWaitForSelector
+  showWaitForSelector,
+  showDeleteConfirm
 })
 
 // 依赖关系相关
@@ -1210,21 +1230,27 @@ const handleComplete = async () => {
 }
 
 // 删除任务
-const handleDelete = async () => {
+const handleDelete = () => {
   console.log('handleDelete called')
-  if (confirm('确定要删除这个任务吗？')) {
-    const taskId = props.task.id
-    
-    // 先发送通知事件
-    emit('notify', { message: '🗑️ 任务已移至回收站', type: 'success' })
-    
-    // 延迟关闭弹窗和删除任务
-    setTimeout(async () => {
-      emit('close')
-      await taskStore.deleteTask(taskId)
-      emit('refresh')
-    }, 100)
-  }
+  showDeleteConfirm.value = true
+}
+
+// 确认删除
+const confirmDelete = async () => {
+  const taskId = props.task.id
+  
+  // 关闭确认框
+  showDeleteConfirm.value = false
+  
+  // 先发送通知事件
+  emit('notify', { message: '🗑️ 任务已移至回收站', type: 'success' })
+  
+  // 延迟关闭弹窗和删除任务
+  setTimeout(async () => {
+    emit('close')
+    await taskStore.deleteTask(taskId)
+    emit('refresh')
+  }, 100)
 }
 
 // AI总结功能
@@ -2665,5 +2691,102 @@ section h3 {
   color: white;
   font-size: 1rem;
   font-weight: 600;
+}
+
+/* 删除确认 Bottom Sheet */
+.delete-confirm-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 20px 20px 0 0;
+  padding: 20px;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.3s ease-out;
+  z-index: 10002;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.sheet-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: #ddd;
+  border-radius: 2px;
+  margin: 0 auto 16px;
+}
+
+.sheet-header h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.sheet-content {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.warning-text {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #333;
+  margin: 0 0 8px 0;
+}
+
+.hint-text {
+  font-size: 0.9rem;
+  color: #666;
+  margin: 0;
+}
+
+.sheet-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-cancel,
+.btn-confirm-delete {
+  flex: 1;
+  height: 44px;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancel {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.btn-cancel:hover {
+  background: #e0e0e0;
+}
+
+.btn-confirm-delete {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+}
+
+.btn-confirm-delete:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 </style>

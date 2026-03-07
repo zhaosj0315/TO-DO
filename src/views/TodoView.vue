@@ -5115,6 +5115,7 @@ const initVersionHistory = () => {
         '💾 数据自动修复：加载笔记本时自动检测并修复数据完整性'
       ],
       fixes: [
+        '🐛 修复Android返回手势失效：删除未定义的showDeleteConfirmCard变量引用（关键Bug）',
         '🐛 修复笔记本管理只显示根级笔记本，子笔记本丢失的问题',
         '🐛 修复批量删除不删除子笔记本，导致孤儿笔记本的问题',
         '🐛 修复首页和笔记本管理显示顺序不一致的问题',
@@ -13169,12 +13170,7 @@ onMounted(async () => {
       }
       
       // 第三层弹窗（最上层，优先关闭）
-      if (showDeleteConfirmCard.value) {
-        console.log('✅ 关闭删除确认框')
-        showDeleteConfirmCard.value = false
-        deleteTaskId.value = null
-        return
-      } else if (showGrowthDetail.value) {
+      if (showGrowthDetail.value) {
         console.log('✅ 关闭任务树成长详情')
         showGrowthDetail.value = false
         return
