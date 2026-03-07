@@ -1311,7 +1311,10 @@ ${logsText || '暂无日志'}
       if (type === 'local') {
         return `${baseUrl}/api/generate`
       } else {
-        return `${baseUrl}/v1/chat/completions`
+        // 检查是否已包含 /v1，避免重复
+        return baseUrl.endsWith('/v1') 
+          ? `${baseUrl}/chat/completions` 
+          : `${baseUrl}/v1/chat/completions`
       }
     }
     

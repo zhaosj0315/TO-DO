@@ -350,10 +350,13 @@ const getApiUrl = (baseUrl, type, endpoint) => {
     }
   } else {
     // OpenAI 兼容 API
+    // 检查是否已包含 /v1，避免重复
+    const hasV1 = baseUrl.endsWith('/v1')
+    
     if (endpoint === 'models') {
-      return `${baseUrl}/v1/models`
+      return hasV1 ? `${baseUrl}/models` : `${baseUrl}/v1/models`
     } else if (endpoint === 'chat' || endpoint === 'generate') {
-      return `${baseUrl}/v1/chat/completions`
+      return hasV1 ? `${baseUrl}/chat/completions` : `${baseUrl}/v1/chat/completions`
     }
   }
   
