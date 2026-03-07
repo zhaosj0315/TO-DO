@@ -15,11 +15,6 @@
     <!-- 核心数字 -->
     <div class="hero-stats">
       <div class="hero-stat-card">
-        <div class="hero-stat-icon">🍅</div>
-        <div class="hero-stat-value">{{ reportData.totalPomodoros || 0 }}</div>
-        <div class="hero-stat-label">番茄钟</div>
-      </div>
-      <div class="hero-stat-card">
         <div class="hero-stat-icon">✅</div>
         <div class="hero-stat-value">{{ reportData.completedTasks || 0 }}</div>
         <div class="hero-stat-label">已完成</div>
@@ -29,46 +24,43 @@
         <div class="hero-stat-value">{{ reportData.completionRate || 0 }}%</div>
         <div class="hero-stat-label">完成率</div>
       </div>
+      <div class="hero-stat-card">
+        <div class="hero-stat-icon">📊</div>
+        <div class="hero-stat-value">{{ reportData.totalTasks || 0 }}</div>
+        <div class="hero-stat-label">总任务数</div>
+      </div>
     </div>
 
-    <!-- 分类统计 -->
-    <div v-if="reportData.categories" class="report-section">
-      <h3 class="section-title">📊 分类统计</h3>
-      <div class="category-stats">
-        <div v-for="cat in reportData.categories" :key="cat.name" class="category-item">
-          <div class="category-header">
-            <span class="category-name">{{ cat.icon }} {{ cat.name }}</span>
-            <span class="category-value">{{ cat.completed }}/{{ cat.total }} ({{ cat.rate }}%)</span>
-          </div>
-          <div class="progress-bar">
-            <div class="progress-fill" :style="{ width: cat.rate + '%', background: cat.color }"></div>
-          </div>
-          <div class="category-detail">
-            <span>🍅 {{ cat.pomodoros }}个</span>
-          </div>
-        </div>
-      </div>
+    <!-- 任务完成趋势图 -->
+    <div class="report-section">
+      <h3 class="section-title">📈 任务完成趋势</h3>
+      <div ref="trendChartRef" class="chart-container"></div>
+    </div>
+
+    <!-- 分类占比饼图 -->
+    <div class="report-section">
+      <h3 class="section-title">🥧 任务分类占比</h3>
+      <div ref="categoryChartRef" class="chart-container"></div>
     </div>
 
     <!-- 优先级分布 -->
-    <div v-if="reportData.priorities" class="report-section">
+    <div class="report-section">
       <h3 class="section-title">⚡ 优先级分布</h3>
-      <div class="priority-stats">
-        <div v-for="pri in reportData.priorities" :key="pri.name" class="priority-item">
-          <div class="priority-header">
-            <span class="priority-name">{{ pri.name }}</span>
-            <span class="priority-value">{{ pri.total }}项 ({{ pri.percentage }}%)</span>
-          </div>
-          <div class="progress-bar">
-            <div class="progress-fill" :style="{ width: pri.percentage + '%', background: pri.color }"></div>
-          </div>
-        </div>
-      </div>
+      <div ref="priorityChartRef" class="chart-container"></div>
+    </div>
+
+    <!-- 365天完成热力图 -->
+    <div class="report-section">
+      <h3 class="section-title">🗓️ 365天完成热力图</h3>
+      <div ref="heatmapChartRef" class="heatmap-container"></div>
     </div>
   </div>
 </template>
 
 <script setup>
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import * as echarts from 'echarts'
+
 const props = defineProps({
   reportData: {
     type: Object,
@@ -76,6 +68,270 @@ const props = defineProps({
   },
   reportType: String
 })
+
+const trendChartRef = ref(null)
+const categoryChartRef = ref(null)
+const priorityChartRef = ref(null)
+const heatmapChartRef = ref(null)
+
+let trendChart = null
+let categoryChart = null
+let priorityChart = null
+let heatmapChart = null
+
+// 初始化图表
+const initCharts = async () => {
+  await nextTick()
+  
+  if (trendChartRef.value) {
+    trendChart = echarts.init(trendChartRef.value)
+    updateTrendChart()
+  }
+  
+  if (categoryChartRef.value) {
+    categoryChart = echarts.init(categoryChartRef.value)
+    updateCategoryChart()
+  }
+  
+  if (priorityChartRef.value) {
+    priorityChart = echarts.init(priorityChartRef.value)
+    updatePriorityChart()
+  }
+  
+  if (heatmapChartRef.value) {
+    heatmapChart = echarts.init(heatmapChartRef.value)
+    updateHeatmapChart()
+  }
+}
+
+// 更新趋势图
+const updateTrendChart = () => {
+  if (!trendChart || !props.reportData.trendData) {
+    console.log('趋势图数据缺失:', props.reportData.trendData)
+    return
+  }
+  
+  console.log('更新趋势图:', props.reportData.trendData)
+  
+  const option = {
+    tooltip: {
+      trigger: 'axis'
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      data: props.reportData.trendData?.labels || [],
+      axisLabel: {
+        rotate: 45
+      }
+    },
+    yAxis: {
+      type: 'value',
+      minInterval: 1
+    },
+    series: [{
+      data: props.reportData.trendData?.values || [],
+      type: 'line',
+      smooth: true,
+      areaStyle: {
+        color: 'rgba(102, 126, 234, 0.2)'
+      },
+      itemStyle: {
+        color: '#667eea'
+      }
+    }]
+  }
+  
+  trendChart.setOption(option)
+}
+
+// 更新分类饼图
+const updateCategoryChart = () => {
+  if (!categoryChart || !props.reportData.categories) {
+    console.log('分类图数据缺失:', props.reportData.categories)
+    return
+  }
+  
+  const data = props.reportData.categories.map(cat => ({
+    name: cat.name,
+    value: cat.completed
+  }))
+  
+  console.log('更新分类图:', data)
+  
+  const option = {
+    tooltip: {
+      trigger: 'item',
+      formatter: '{b}: {c} ({d}%)'
+    },
+    legend: {
+      bottom: '5%',
+      left: 'center'
+    },
+    series: [{
+      type: 'pie',
+      radius: ['40%', '70%'],
+      avoidLabelOverlap: false,
+      itemStyle: {
+        borderRadius: 10,
+        borderColor: '#fff',
+        borderWidth: 2
+      },
+      label: {
+        show: true,
+        formatter: '{b}: {c}'
+      },
+      emphasis: {
+        label: {
+          show: true,
+          fontSize: 16,
+          fontWeight: 'bold'
+        }
+      },
+      data: data,
+      color: props.reportData.categories.map(c => c.color)
+    }]
+  }
+  
+  categoryChart.setOption(option)
+}
+
+// 更新优先级分布图
+const updatePriorityChart = () => {
+  if (!priorityChart || !props.reportData.priorities) {
+    console.log('优先级图数据缺失:', props.reportData.priorities)
+    return
+  }
+  
+  console.log('更新优先级图:', props.reportData.priorities)
+  
+  const option = {
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'shadow'
+      },
+      formatter: '{b}: {c}个任务'
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      data: props.reportData.priorities.map(p => p.name)
+    },
+    yAxis: {
+      type: 'value',
+      minInterval: 1
+    },
+    series: [{
+      data: props.reportData.priorities.map(p => ({
+        value: p.total,
+        itemStyle: { color: p.color }
+      })),
+      type: 'bar',
+      barWidth: '60%',
+      label: {
+        show: true,
+        position: 'top',
+        formatter: '{c}'
+      }
+    }]
+  }
+  
+  priorityChart.setOption(option)
+}
+
+// 更新热力图
+const updateHeatmapChart = () => {
+  if (!heatmapChart || !props.reportData.heatmapData) {
+    console.log('热力图数据缺失:', props.reportData.heatmapData)
+    return
+  }
+  
+  console.log('更新热力图，数据量:', props.reportData.heatmapData.length)
+  
+  const option = {
+    tooltip: {
+      position: 'top',
+      formatter: (params) => {
+        return `${params.value[0]}<br/>完成 ${params.value[1]} 个任务`
+      }
+    },
+    visualMap: {
+      min: 0,
+      max: 10,
+      calculable: true,
+      orient: 'horizontal',
+      left: 'center',
+      bottom: '5%',
+      inRange: {
+        color: ['#ebedf0', '#c6e48b', '#7bc96f', '#239a3b', '#196127']
+      },
+      text: ['多', '少']
+    },
+    calendar: {
+      range: new Date().getFullYear(),
+      cellSize: ['auto', 13],
+      yearLabel: { show: false },
+      dayLabel: {
+        firstDay: 1,
+        nameMap: ['日', '一', '二', '三', '四', '五', '六']
+      },
+      monthLabel: {
+        nameMap: 'cn'
+      }
+    },
+    series: [{
+      type: 'heatmap',
+      coordinateSystem: 'calendar',
+      data: props.reportData.heatmapData || []
+    }]
+  }
+  
+  heatmapChart.setOption(option)
+}
+
+// 监听数据变化
+watch(() => props.reportData, () => {
+  if (trendChart) updateTrendChart()
+  if (categoryChart) updateCategoryChart()
+  if (priorityChart) updatePriorityChart()
+  if (heatmapChart) updateHeatmapChart()
+}, { deep: true })
+
+// 窗口resize时重新调整图表大小
+const handleResize = () => {
+  if (trendChart) trendChart.resize()
+  if (categoryChart) categoryChart.resize()
+  if (priorityChart) priorityChart.resize()
+  if (heatmapChart) heatmapChart.resize()
+}
+
+onMounted(() => {
+  initCharts()
+  window.addEventListener('resize', handleResize)
+})
+
+// 清理
+const cleanup = () => {
+  window.removeEventListener('resize', handleResize)
+  if (trendChart) trendChart.dispose()
+  if (categoryChart) categoryChart.dispose()
+  if (priorityChart) priorityChart.dispose()
+  if (heatmapChart) heatmapChart.dispose()
+}
+
+// 组件卸载时清理
+onUnmounted(cleanup)
 </script>
 
 <style scoped>
@@ -262,5 +518,18 @@ const props = defineProps({
 .priority-value {
   font-size: 0.9rem;
   color: #6b7280;
+}
+
+/* 图表容器 */
+.chart-container {
+  width: 100%;
+  height: 300px;
+  margin-top: 1rem;
+}
+
+.heatmap-container {
+  width: 100%;
+  height: 200px;
+  margin-top: 1rem;
 }
 </style>

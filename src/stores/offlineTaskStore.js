@@ -42,16 +42,6 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
   },
 
   actions: {
-    // 根据优先级获取预估番茄钟数
-    getEstimatedPomodoros(priority) {
-      const pomodoroMap = {
-        high: 4,
-        medium: 2,
-        low: 1
-      }
-      return pomodoroMap[priority] || 2
-    },
-
     async loadTasks() {
       if (!this.currentUser) return
       
@@ -138,9 +128,6 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         enableReminder: taskData.enableReminder || false,
         reminderTime: taskData.reminderTime || null,
         forceReminder: taskData.forceReminder || false, // 强制提醒
-        completedPomodoros: taskData.completedPomodoros || 0, // 已完成的番茄钟数
-        estimatedPomodoros: taskData.estimatedPomodoros || this.getEstimatedPomodoros(taskData.priority), // 预估番茄钟数
-        pomodoroHistory: taskData.pomodoroHistory || [], // 番茄钟历史记录
         logs: taskData.logs || [], // 任务执行日志
         stats: taskData.stats || this.calculateTaskStats([]), // 统计数据
         waitFor: taskData.waitFor || [], // 等待的任务ID数组

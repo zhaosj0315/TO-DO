@@ -10,13 +10,7 @@
       </div>
 
       <!-- 标签页切换 -->
-      <div class="tabs">
-        <button 
-          :class="['tab-btn', { active: activeTab === 'pomodoro' }]"
-          @click="activeTab = 'pomodoro'"
-        >
-          🍅 番茄钟
-        </button>
+      <div class="tabs" style="display: none;">
         <button 
           :class="['tab-btn', { active: activeTab === 'data' }]"
           @click="activeTab = 'data'"
@@ -25,8 +19,8 @@
         </button>
       </div>
 
-      <!-- 番茄钟统计内容 -->
-      <div class="stats-body" v-show="activeTab === 'pomodoro'">
+      <!-- 番茄钟统计内容（隐藏） -->
+      <div class="stats-body" v-show="false">
         <!-- 今日专注统计 -->
         <div class="today-focus-stats">
           <div class="focus-stat-card">
@@ -274,7 +268,7 @@ const priorityChart = ref(null)
 const heatmapChart = ref(null)
 
 const selectedRange = ref('week')
-const activeTab = ref('pomodoro') // 默认显示番茄钟统计
+const activeTab = ref('data') // 默认显示数据统计
 const timeRanges = [
   { label: '最近7天', value: 'week' },
   { label: '最近30天', value: 'month' },

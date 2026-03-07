@@ -384,7 +384,7 @@
                     v-if="task.status === 'pending'"
                     class="btn-pomodoro-inline" 
                     @click.stop="startPomodoro(task)" 
-                    :title="`开始专注 (${task.completedPomodoros || 0}/${task.estimatedPomodoros || getPomodoroCount(task)})`"
+                    title="开始专注"
                   >
                     🍅
                   </button>
@@ -4627,9 +4627,6 @@ const handleCreateTasks = (tasks) => {
       status: 'pending',
       created_at: new Date().toISOString(),
       completed_at: null,
-      completedPomodoros: 0,
-      estimatedPomodoros: task.priority === 'high' ? 4 : task.priority === 'medium' ? 2 : 1,
-      pomodoroHistory: [],
       logs: [],
       stats: {
         sessionCount: 0,

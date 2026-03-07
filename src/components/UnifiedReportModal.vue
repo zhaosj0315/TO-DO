@@ -337,66 +337,249 @@ const generateUnifiedReport = async (startDate, endDate) => {
       {
         name: '工作',
         icon: '💼',
-        total: props.tasks.filter(t => t.category === 'work').length,
-        completed: textData.overview.workTasks,
-        rate: props.tasks.filter(t => t.category === 'work').length > 0 
-          ? Math.round((textData.overview.workTasks / props.tasks.filter(t => t.category === 'work').length) * 100) 
+        total: filteredTasks.filter(t => t.category === 'work').length,
+        completed: filteredTasks.filter(t => t.category === 'work' && t.status === 'completed').length,
+        rate: filteredTasks.filter(t => t.category === 'work').length > 0 
+          ? Math.round((filteredTasks.filter(t => t.category === 'work' && t.status === 'completed').length / filteredTasks.filter(t => t.category === 'work').length) * 100) 
           : 0,
-        pomodoros: textData.overview.workTasks,
+        pomodoros: filteredTasks.filter(t => t.category === 'work' && t.status === 'completed').length,
         color: '#667eea'
       },
       {
         name: '学习',
         icon: '📚',
-        total: props.tasks.filter(t => t.category === 'study').length,
-        completed: textData.overview.studyTasks,
-        rate: props.tasks.filter(t => t.category === 'study').length > 0 
-          ? Math.round((textData.overview.studyTasks / props.tasks.filter(t => t.category === 'study').length) * 100) 
+        total: filteredTasks.filter(t => t.category === 'study').length,
+        completed: filteredTasks.filter(t => t.category === 'study' && t.status === 'completed').length,
+        rate: filteredTasks.filter(t => t.category === 'study').length > 0 
+          ? Math.round((filteredTasks.filter(t => t.category === 'study' && t.status === 'completed').length / filteredTasks.filter(t => t.category === 'study').length) * 100) 
           : 0,
-        pomodoros: textData.overview.studyTasks,
+        pomodoros: filteredTasks.filter(t => t.category === 'study' && t.status === 'completed').length,
         color: '#f093fb'
       },
       {
         name: '生活',
         icon: '🏠',
-        total: props.tasks.filter(t => t.category === 'life').length,
-        completed: textData.overview.lifeTasks,
-        rate: props.tasks.filter(t => t.category === 'life').length > 0 
-          ? Math.round((textData.overview.lifeTasks / props.tasks.filter(t => t.category === 'life').length) * 100) 
+        total: filteredTasks.filter(t => t.category === 'life').length,
+        completed: filteredTasks.filter(t => t.category === 'life' && t.status === 'completed').length,
+        rate: filteredTasks.filter(t => t.category === 'life').length > 0 
+          ? Math.round((filteredTasks.filter(t => t.category === 'life' && t.status === 'completed').length / filteredTasks.filter(t => t.category === 'life').length) * 100) 
           : 0,
-        pomodoros: textData.overview.lifeTasks,
+        pomodoros: filteredTasks.filter(t => t.category === 'life' && t.status === 'completed').length,
         color: '#4facfe'
       }
     ],
     priorities: [
       {
         name: '高优先级',
-        total: props.tasks.filter(t => t.priority === 'high').length,
-        percentage: props.tasks.length > 0 
-          ? Math.round((props.tasks.filter(t => t.priority === 'high').length / props.tasks.length) * 100) 
+        total: filteredTasks.filter(t => t.priority === 'high').length,
+        percentage: filteredTasks.length > 0 
+          ? Math.round((filteredTasks.filter(t => t.priority === 'high').length / filteredTasks.length) * 100) 
           : 0,
         color: '#ef4444'
       },
       {
         name: '中优先级',
-        total: props.tasks.filter(t => t.priority === 'medium').length,
-        percentage: props.tasks.length > 0 
-          ? Math.round((props.tasks.filter(t => t.priority === 'medium').length / props.tasks.length) * 100) 
+        total: filteredTasks.filter(t => t.priority === 'medium').length,
+        percentage: filteredTasks.length > 0 
+          ? Math.round((filteredTasks.filter(t => t.priority === 'medium').length / filteredTasks.length) * 100) 
           : 0,
         color: '#f59e0b'
       },
       {
         name: '低优先级',
-        total: props.tasks.filter(t => t.priority === 'low').length,
-        percentage: props.tasks.length > 0 
-          ? Math.round((props.tasks.filter(t => t.priority === 'low').length / props.tasks.length) * 100) 
+        total: filteredTasks.filter(t => t.priority === 'low').length,
+        percentage: filteredTasks.length > 0 
+          ? Math.round((filteredTasks.filter(t => t.priority === 'low').length / filteredTasks.length) * 100) 
           : 0,
         color: '#3b82f6'
       }
-    ]
+    ],
+    // 趋势数据（根据报告类型调整粒度）
+    trendData: generateTrendData(filteredTasks, startDate, endDate, selectedType.value),
+    // 热力图数据
+    heatmapData: generateHeatmapData(props.tasks),
+    // 总任务数
+    totalTasks: filteredTasks.length
   }
 
   return { visualData, textData }
+}
+
+// 生成趋势数据（根据报告类型调整粒度）
+const generateTrendData = (tasks, startDate, endDate, reportType) => {
+  const labels = []
+  const values = []
+  
+  // 根据报告类型确定时间粒度
+  if (reportType === 'daily') {
+    // 日报：按小时统计
+    for (let i = 0; i < 24; i++) {
+      labels.push(`${i}:00`)
+      const count = tasks.filter(t => {
+        if (!t.completed_at) return false
+        const hour = new Date(t.completed_at).getHours()
+        return hour === i
+      }).length
+      values.push(count)
+    }
+  } else if (reportType === 'weekly') {
+    // 周报：按天统计（7天）
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(startDate)
+      date.setDate(date.getDate() + i)
+      const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+      labels.push(weekdays[date.getDay()])
+      
+      const dateStr = date.toISOString().split('T')[0]
+      const count = tasks.filter(t => {
+        if (!t.completed_at) return false
+        const completedDate = new Date(t.completed_at).toISOString().split('T')[0]
+        return completedDate === dateStr
+      }).length
+      values.push(count)
+    }
+  } else if (reportType === 'monthly') {
+    // 月报：按周统计（4-5周）
+    const weeks = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24 * 7))
+    for (let i = 0; i < weeks; i++) {
+      labels.push(`第${i + 1}周`)
+      
+      const weekStart = new Date(startDate)
+      weekStart.setDate(weekStart.getDate() + i * 7)
+      const weekEnd = new Date(weekStart)
+      weekEnd.setDate(weekEnd.getDate() + 6)
+      
+      const count = tasks.filter(t => {
+        if (!t.completed_at) return false
+        const completedDate = new Date(t.completed_at)
+        return completedDate >= weekStart && completedDate <= weekEnd
+      }).length
+      values.push(count)
+    }
+  } else if (reportType === 'quarterly') {
+    // 季报：按月统计（3个月）
+    for (let i = 0; i < 3; i++) {
+      const month = new Date(startDate)
+      month.setMonth(month.getMonth() + i)
+      labels.push(`${month.getMonth() + 1}月`)
+      
+      const count = tasks.filter(t => {
+        if (!t.completed_at) return false
+        const completedDate = new Date(t.completed_at)
+        return completedDate.getMonth() === month.getMonth() && 
+               completedDate.getFullYear() === month.getFullYear()
+      }).length
+      values.push(count)
+    }
+  } else if (reportType === 'halfyearly') {
+    // 半年报：按月统计（6个月）
+    for (let i = 0; i < 6; i++) {
+      const month = new Date(startDate)
+      month.setMonth(month.getMonth() + i)
+      labels.push(`${month.getMonth() + 1}月`)
+      
+      const count = tasks.filter(t => {
+        if (!t.completed_at) return false
+        const completedDate = new Date(t.completed_at)
+        return completedDate.getMonth() === month.getMonth() && 
+               completedDate.getFullYear() === month.getFullYear()
+      }).length
+      values.push(count)
+    }
+  } else if (reportType === 'yearly') {
+    // 年报：按月统计（12个月）
+    for (let i = 0; i < 12; i++) {
+      labels.push(`${i + 1}月`)
+      
+      const count = tasks.filter(t => {
+        if (!t.completed_at) return false
+        const completedDate = new Date(t.completed_at)
+        return completedDate.getMonth() === i && 
+               completedDate.getFullYear() === startDate.getFullYear()
+      }).length
+      values.push(count)
+    }
+  } else {
+    // 自定义：根据天数自动选择粒度
+    const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24))
+    
+    if (days <= 7) {
+      // 7天内：按天
+      for (let i = 0; i < days; i++) {
+        const date = new Date(startDate)
+        date.setDate(date.getDate() + i)
+        labels.push(`${date.getMonth() + 1}/${date.getDate()}`)
+        
+        const dateStr = date.toISOString().split('T')[0]
+        const count = tasks.filter(t => {
+          if (!t.completed_at) return false
+          const completedDate = new Date(t.completed_at).toISOString().split('T')[0]
+          return completedDate === dateStr
+        }).length
+        values.push(count)
+      }
+    } else if (days <= 60) {
+      // 60天内：按周
+      const weeks = Math.ceil(days / 7)
+      for (let i = 0; i < weeks; i++) {
+        labels.push(`第${i + 1}周`)
+        
+        const weekStart = new Date(startDate)
+        weekStart.setDate(weekStart.getDate() + i * 7)
+        const weekEnd = new Date(weekStart)
+        weekEnd.setDate(weekEnd.getDate() + 6)
+        
+        const count = tasks.filter(t => {
+          if (!t.completed_at) return false
+          const completedDate = new Date(t.completed_at)
+          return completedDate >= weekStart && completedDate <= weekEnd
+        }).length
+        values.push(count)
+      }
+    } else {
+      // 60天以上：按月
+      const months = Math.ceil(days / 30)
+      for (let i = 0; i < months; i++) {
+        const month = new Date(startDate)
+        month.setMonth(month.getMonth() + i)
+        labels.push(`${month.getMonth() + 1}月`)
+        
+        const count = tasks.filter(t => {
+          if (!t.completed_at) return false
+          const completedDate = new Date(t.completed_at)
+          return completedDate.getMonth() === month.getMonth() && 
+                 completedDate.getFullYear() === month.getFullYear()
+        }).length
+        values.push(count)
+      }
+    }
+  }
+  
+  return { labels, values }
+}
+
+// 生成热力图数据
+const generateHeatmapData = (tasks) => {
+  const data = []
+  const now = new Date()
+  const yearStart = new Date(now.getFullYear(), 0, 1)
+  
+  // 生成365天的数据
+  for (let i = 0; i < 365; i++) {
+    const date = new Date(yearStart)
+    date.setDate(date.getDate() + i)
+    const dateStr = date.toISOString().split('T')[0]
+    
+    const count = tasks.filter(t => {
+      if (!t.completed_at) return false
+      const completedDate = new Date(t.completed_at).toISOString().split('T')[0]
+      return completedDate === dateStr
+    }).length
+    
+    data.push([dateStr, count])
+  }
+  
+  return data
 }
 
 // 生成AI工作汇报

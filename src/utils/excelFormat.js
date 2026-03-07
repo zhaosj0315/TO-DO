@@ -21,8 +21,6 @@ export const EXCEL_COLUMNS = [
   { key: 'reminderTime', label: '提醒时间', required: false },
   { key: 'forceReminder', label: '强制提醒', required: false },
   // 新增字段
-  { key: 'completedPomodoros', label: '已完成番茄钟', required: false },
-  { key: 'estimatedPomodoros', label: '预估番茄钟', required: false },
   { key: 'logCount', label: '执行日志数', required: false },
   { key: 'latestProgress', label: '最新进度', required: false },
   { key: 'hasAISummary', label: '有AI总结', required: false }
@@ -135,8 +133,6 @@ export function taskToExcelRow(task, includeUser = false) {
     '提醒时间': task.reminderTime || '',
     '强制提醒': task.forceReminder ? '是' : '否',
     // 新增字段
-    '已完成番茄钟': task.completedPomodoros || 0,
-    '预估番茄钟': task.estimatedPomodoros || 0,
     '执行日志数': task.logs?.length || 0,
     '最新进度': task.stats?.progressHistory?.[task.stats.progressHistory.length - 1] || 0,
     '有AI总结': task.aiSummary ? '是' : '否',
@@ -181,11 +177,6 @@ export function excelRowToTask(row, userId) {
       tags: [],
       blocksResolved: 0
     },
-    pomodoroHistory: [],
-    completedPomodoros: 0,
-    estimatedPomodoros: row['预估番茄钟'] || (
-      row['优先级'] === '高' ? 4 : row['优先级'] === '中' ? 2 : 1
-    )
   }
   
   return task
