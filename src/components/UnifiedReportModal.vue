@@ -444,21 +444,11 @@ const getAIConfig = async () => {
       console.log('📦 找到的默认模型:', defaultModel)
       
       if (defaultModel) {
-        let baseURL
-        
-        // Ollama特殊处理
-        if (defaultModel.type === 'local' && defaultModel.url.includes('11434')) {
-          baseURL = defaultModel.url.replace('/api/generate', '/v1/chat/completions')
-        } else {
-          // OpenAI格式
-          if (defaultModel.url.includes('/chat/completions')) {
-            baseURL = defaultModel.url
-          } else if (defaultModel.url.includes('/v1')) {
-            baseURL = defaultModel.url + '/chat/completions'
-          } else {
-            baseURL = defaultModel.url + '/v1/chat/completions'
-          }
-        }
+        // 统一URL处理：基础URL + API路径
+        let baseUrl = defaultModel.url.replace(/\/$/, '')
+        let baseURL = defaultModel.type === 'local'
+          ? `${baseUrl}/api/generate`
+          : `${baseUrl}/v1/chat/completions`
         
         console.log('📦 最终URL:', baseURL)
         

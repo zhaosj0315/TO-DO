@@ -1482,10 +1482,9 @@ const callOpenAIStream = async (context, question, model, msgIndex) => {
   if (!model.apiKey) throw new Error('请在配置中填写API Key')
   
   try {
-    let apiUrl = model.url
-    if (!apiUrl.includes('/v1/chat/completions')) {
-      apiUrl = apiUrl.replace(/\/v1.*$/, '').replace(/\/$/, '') + '/v1/chat/completions'
-    }
+    // 统一URL处理：基础URL + /v1/chat/completions
+    let baseUrl = model.url.replace(/\/$/, '')
+    let apiUrl = `${baseUrl}/v1/chat/completions`
     
     console.log('📡 API URL:', apiUrl)
     console.log('🔑 Model Name:', model.modelName)
@@ -1664,10 +1663,9 @@ const callOpenAI = async (context, question, model) => {
   if (!model.apiKey) throw new Error('请在配置中填写API Key')
   
   try {
-    let apiUrl = model.url
-    if (!apiUrl.includes('/v1/chat/completions')) {
-      apiUrl = apiUrl.replace(/\/v1.*$/, '').replace(/\/$/, '') + '/v1/chat/completions'
-    }
+    // 统一URL处理：基础URL + /v1/chat/completions
+    let baseUrl = model.url.replace(/\/$/, '')
+    let apiUrl = `${baseUrl}/v1/chat/completions`
     
     const res = await fetch(apiUrl, {
       method: 'POST',
