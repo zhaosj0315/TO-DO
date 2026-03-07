@@ -26,7 +26,12 @@
           
           <div class="add-model-form">
             <!-- 选择厂商（预设 + 已保存） -->
-            <select v-model="selectedProviderOption" @change="handleProviderSelect" class="form-select-large">
+            <select 
+              v-model="selectedProviderOption" 
+              @change="handleProviderSelect" 
+              class="form-select-large"
+              :key="'provider-select-' + selectedProviderOption"
+            >
               <option value="">请选择厂商...</option>
               <optgroup label="📦 已保存的厂商配置" v-if="providerConfigs.length > 0">
                   <option v-for="config in providerConfigs" :key="'saved-' + config.id" :value="'saved:' + config.id">
@@ -68,8 +73,24 @@
                 </optgroup>
               </select>
             
+            <!-- 显示选中的厂商信息（已保存的配置） -->
+            <div v-if="selectedProviderOption && selectedProviderOption.startsWith('saved:')" class="selected-provider-card">
+              <div class="provider-info-row">
+                <span class="info-label">📍 厂商地址:</span>
+                <span class="info-value">{{ newModel.url }}</span>
+              </div>
+              <div v-if="newModel.apiKey" class="provider-info-row">
+                <span class="info-label">🔑 API Key:</span>
+                <span class="info-value">{{ '•'.repeat(20) }}</span>
+              </div>
+              <div class="provider-info-row">
+                <span class="info-label">🏷️ 类型:</span>
+                <span class="info-value">{{ newModel.type === 'local' ? 'Ollama 本地' : 'OpenAI 兼容' }}</span>
+              </div>
+            </div>
+            
             <!-- 厂商地址（自定义时可编辑） -->
-            <div v-if="selectedProviderOption === 'preset:custom'" class="input-group">
+            <div v-else-if="selectedProviderOption === 'preset:custom'" class="input-group">
               <input 
                 v-model="newModel.url" 
                 placeholder="输入厂商地址（如：https://api.example.com）"
@@ -77,15 +98,15 @@
               />
             </div>
             
-            <!-- 显示选中的厂商地址（只读） -->
-            <div v-else-if="newModel.url" class="url-display">
+            <!-- 显示选中的厂商地址（预设厂商） -->
+            <div v-else-if="newModel.url && selectedProviderOption.startsWith('preset:')" class="url-display">
               <span class="url-label">📍 厂商地址:</span>
               <span class="url-value">{{ newModel.url }}</span>
             </div>
             
-            <!-- API Key -->
+            <!-- API Key（预设厂商需要输入） -->
             <input 
-              v-if="newModel.url && needApiKey"
+              v-if="newModel.url && needApiKey && !selectedProviderOption.startsWith('saved:')"
               v-model="newModel.apiKey" 
               type="password"
               placeholder="输入 API Key"
@@ -443,7 +464,7 @@ const loadProviderConfig = (configId) => {
   if (config) {
     newModel.value.type = config.type
     newModel.value.url = config.url
-    newModel.value.apiKey = config.apiKey
+    newModel.value.apiKey = config.apiKey || ''
     newModel.value.providerId = config.id
     
     // 自动获取模型列表
@@ -637,31 +658,38 @@ const fetchAvailableModels = async () => {
       console.log(`成功获取 ${availableModels.value.length} 个模型`)
       
       // 3. 保存厂商配置（保存规范化后的基础URL）
-      const providerId = Date.now().toString()
-      const providerConfig = {
-        id: providerId,
-        type: newModel.value.type,
-        url: baseUrl, // 保存基础URL
-        apiKey: newModel.value.apiKey || '',
-        createdAt: new Date().toISOString()
+      // 如果已经有 providerId，说明是加载已保存的配置，保持原有ID
+      if (!newModel.value.providerId) {
+        const providerId = Date.now().toString()
+        const providerConfig = {
+          id: providerId,
+          type: newModel.value.type,
+          url: baseUrl, // 保存基础URL
+          apiKey: newModel.value.apiKey || '',
+          createdAt: new Date().toISOString()
+        }
+        
+        console.log('保存厂商配置 - 基础URL:', baseUrl)
+        
+        // 检查是否已存在相同配置
+        const existingIndex = providerConfigs.value.findIndex(
+          p => p.type === providerConfig.type && p.url === providerConfig.url
+        )
+        
+        if (existingIndex >= 0) {
+          // 更新现有配置
+          providerConfigs.value[existingIndex].apiKey = providerConfig.apiKey
+          newModel.value.providerId = providerConfigs.value[existingIndex].id
+          // 更新 selectedProviderOption 以匹配现有配置
+          selectedProviderOption.value = `saved:${providerConfigs.value[existingIndex].id}`
+        } else {
+          // 添加新配置
+          providerConfigs.value.push(providerConfig)
+          newModel.value.providerId = providerId
+          selectedProviderOption.value = `saved:${providerId}`
+        }
       }
-      
-      console.log('保存厂商配置 - 基础URL:', baseUrl)
-      
-      // 检查是否已存在相同配置
-      const existingIndex = providerConfigs.value.findIndex(
-        p => p.type === providerConfig.type && p.url === providerConfig.url
-      )
-      
-      if (existingIndex >= 0) {
-        // 更新现有配置
-        providerConfigs.value[existingIndex] = providerConfig
-        newModel.value.providerId = providerConfigs.value[existingIndex].id
-      } else {
-        // 添加新配置
-        providerConfigs.value.push(providerConfig)
-        newModel.value.providerId = providerId
-      }
+      // 如果已有 providerId，说明是从已保存配置加载的，不需要重新保存
     }
     
   } catch (error) {
@@ -1639,6 +1667,39 @@ const deleteModel = (index) => {
 .url-value {
   color: #667eea;
   font-family: monospace;
+}
+
+/* 已保存配置信息卡片 */
+.selected-provider-card {
+  padding: 1rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  border: 2px solid #667eea;
+  margin-bottom: 0.5rem;
+}
+
+.provider-info-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.provider-info-row:last-child {
+  margin-bottom: 0;
+}
+
+.info-label {
+  color: #666;
+  font-weight: 600;
+  min-width: 90px;
+}
+
+.info-value {
+  color: #333;
+  font-family: monospace;
+  flex: 1;
   word-break: break-all;
 }
 
