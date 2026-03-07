@@ -1482,11 +1482,17 @@ const callOpenAIStream = async (context, question, model, msgIndex) => {
   if (!model.apiKey) throw new Error('请在配置中填写API Key')
   
   try {
-    // 统一URL处理：基础URL + /v1/chat/completions
-    let baseUrl = model.url.replace(/\/$/, '')
+    // 统一URL处理：先规范化基础URL，再拼接API路径
+    const normalizeBaseUrl = (url) => {
+      if (!url) return ''
+      let baseUrl = url.trim().replace(/\/v1(\/.*)?$/, '').replace(/\/$/, '')
+      return baseUrl
+    }
+    
+    let baseUrl = normalizeBaseUrl(model.url)
     let apiUrl = `${baseUrl}/v1/chat/completions`
     
-    console.log('📡 API URL:', apiUrl)
+    console.log('📡 基础URL:', baseUrl, '完整URL:', apiUrl)
     console.log('🔑 Model Name:', model.modelName)
     
     // 先尝试流式响应
@@ -1663,8 +1669,14 @@ const callOpenAI = async (context, question, model) => {
   if (!model.apiKey) throw new Error('请在配置中填写API Key')
   
   try {
-    // 统一URL处理：基础URL + /v1/chat/completions
-    let baseUrl = model.url.replace(/\/$/, '')
+    // 统一URL处理：先规范化基础URL，再拼接API路径
+    const normalizeBaseUrl = (url) => {
+      if (!url) return ''
+      let baseUrl = url.trim().replace(/\/v1(\/.*)?$/, '').replace(/\/$/, '')
+      return baseUrl
+    }
+    
+    let baseUrl = normalizeBaseUrl(model.url)
     let apiUrl = `${baseUrl}/v1/chat/completions`
     
     const res = await fetch(apiUrl, {

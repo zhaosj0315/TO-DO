@@ -1292,13 +1292,33 @@ ${logsText || '暂无日志'}
     // 显示loading
     isProcessing.value = true
     
-    console.log('使用模型:', model.name, model.url)
+    console.log('使用模型:', model.name, model.url, model.type)
     
-    // 统一URL处理：基础URL + API路径
-    let baseUrl = model.url.replace(/\/$/, '')
-    let apiUrl = model.type === 'local'
-      ? `${baseUrl}/api/generate`
-      : `${baseUrl}/v1/chat/completions`
+    // 统一URL处理：先规范化基础URL，再根据类型获取完整URL
+    const normalizeBaseUrl = (url, type) => {
+      if (!url) return ''
+      let baseUrl = url.trim()
+      if (type === 'local') {
+        baseUrl = baseUrl.replace(/\/api\/.*$/, '')
+      } else {
+        baseUrl = baseUrl.replace(/\/v1(\/.*)?$/, '')
+      }
+      return baseUrl.replace(/\/$/, '')
+    }
+    
+    const getApiUrl = (baseUrl, type) => {
+      baseUrl = baseUrl.replace(/\/$/, '')
+      if (type === 'local') {
+        return `${baseUrl}/api/generate`
+      } else {
+        return `${baseUrl}/v1/chat/completions`
+      }
+    }
+    
+    const baseUrl = normalizeBaseUrl(model.url, model.type)
+    const apiUrl = getApiUrl(baseUrl, model.type)
+    
+    console.log('基础URL:', baseUrl, '完整URL:', apiUrl)
     
     const response = await fetch(apiUrl, {
       method: 'POST',

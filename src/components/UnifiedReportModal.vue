@@ -444,13 +444,24 @@ const getAIConfig = async () => {
       console.log('📦 找到的默认模型:', defaultModel)
       
       if (defaultModel) {
-        // 统一URL处理：基础URL + API路径
-        let baseUrl = defaultModel.url.replace(/\/$/, '')
+        // 统一URL处理：先规范化基础URL，再根据类型拼接API路径
+        const normalizeBaseUrl = (url, type) => {
+          if (!url) return ''
+          let baseUrl = url.trim()
+          if (type === 'local') {
+            baseUrl = baseUrl.replace(/\/api\/.*$/, '')
+          } else {
+            baseUrl = baseUrl.replace(/\/v1(\/.*)?$/, '')
+          }
+          return baseUrl.replace(/\/$/, '')
+        }
+        
+        let baseUrl = normalizeBaseUrl(defaultModel.url, defaultModel.type)
         let baseURL = defaultModel.type === 'local'
           ? `${baseUrl}/api/generate`
           : `${baseUrl}/v1/chat/completions`
         
-        console.log('📦 最终URL:', baseURL)
+        console.log('📦 基础URL:', baseUrl, '完整URL:', baseURL)
         
         return {
           enabled: true,
