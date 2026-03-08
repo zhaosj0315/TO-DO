@@ -5066,26 +5066,26 @@ const initVersionHistory = () => {
       version: '0.8.3',
       date: '2026-03-08',
       features: [
-        '📊 报告中心功能增强：新增任务执行质量分析（平均日志数/阻碍数/评分/进度）',
-        '💡 效率分析模块：新增平均完成时间/完成率/最高效时段/总任务数统计',
-        '🗑️ 统计中心完整融入：删除独立统计中心，所有功能整合到报告中心',
-        '🏷️ 智能报告中心改名：统一改为"报告中心"，入口更清晰'
+        '🤖 AI模型配置全面重构：17个预设厂商（本地/官方/中转/国产/云/开源），零学习成本',
+        '🎯 统一厂商选择：已保存配置和预设厂商合并到一个下拉框，优先显示已保存配置',
+        '⚡ 智能获取模型：输入API Key后自动获取模型列表（失焦触发），支持自定义厂商',
+        '📁 笔记本管理优化：孤儿笔记本自动修复、批量删除递归、未分类永远在最下面'
       ],
       improvements: [
-        '📅 日期计算全面修复：周报/月报/季报/半年报/年报结束日期改为今天（而非周期末）',
-        '📆 周报日期修正：正确处理周日边界（本周一到今天，而非未来一周）',
-        '📊 数据准确性保障：所有计算逻辑与原统计中心完全对齐',
-        '🎯 质量指标计算：使用stats.progressHistory最后值（而非log.progress最大值）',
-        '⚡ 效率分析优化：使用Map统计小时分布，与统计中心完全一致',
-        '🧹 代码精简：删除~1850行冗余代码，净减少~250行',
-        '📝 文档完善：新增4个技术文档（数据准确性审查/日期修复/功能对比/删除报告）'
+        '🔧 AI模型URL统一处理：所有URL统一为基础URL，使用时动态添加API路径',
+        '🎨 UI布局优化：统计栏删除"全部"按钮、胶囊按钮样式统一、间距极致紧凑（2px）',
+        '🌳 成长树配色调整：从绿色渐变改为紫色渐变，与其他按钮保持一致',
+        '📱 Header图标重排：刷新→AI助手→回收站→教程→我的主页（按使用频率排序）',
+        '🔙 返回手势优化：报告中心返回层级修复（历史报告详情→报告历史列表→报告中心）',
+        '🎯 交互优化：任务删除简化（直接删除不再重复确认）、数据自动修复',
+        '📝 新用户引导：首次使用显示"👋 欢迎使用！请先配置一个AI模型"紫色脉动提示'
       ],
       fixes: [
-        '🐛 修复周报显示未来一周数据（3/8-3/14 → 3/3-3/8）',
-        '🐛 修复周日生成周报时startDate变成上周日',
-        '🐛 修复所有报告类型endDate为周期末而非今天',
-        '🐛 修复质量数据计算逻辑（进度统计错误）',
-        '🐛 修复效率分析最高效时段计算（hourMap逻辑）'
+        '🐛 修复Android返回手势失效：删除未定义的showDeleteConfirmCard变量引用',
+        '🐛 修复AI模型URL不一致：获取模型列表/测试连接/实际调用URL统一处理',
+        '🐛 修复LongCat等特殊路径前缀被错误移除：智能识别并保留自定义路径',
+        '🐛 修复报告中心返回手势优先级错误：历史报告详情返回时不再跳过报告历史列表',
+        '🐛 修复笔记本合并层级丢失：递归移动任务时保持完整子笔记本结构'
       ]
     },
     {
@@ -13175,8 +13175,21 @@ onMounted(async () => {
         console.log('✅ 关闭报告模板')
         showReportTemplates.value = false
         return
+      } else if (showUnifiedReport.value && historyReportData.value) {
+        console.log('✅ 关闭历史报告详情')
+        // 检查是否有内部状态需要处理（AI汇报弹窗）
+        if (unifiedReportModalRef.value && unifiedReportModalRef.value.handleBackButton) {
+          const handled = unifiedReportModalRef.value.handleBackButton()
+          if (handled) {
+            return
+          }
+        }
+        // 关闭历史报告详情，返回报告历史列表
+        showUnifiedReport.value = false
+        historyReportData.value = null
+        return
       } else if (showReportHistoryModal.value) {
-        console.log('✅ 关闭报告历史')
+        console.log('✅ 关闭报告历史列表')
         showReportHistoryModal.value = false
         return
       } else if (showTemplateDetail.value) {
@@ -13362,7 +13375,7 @@ onMounted(async () => {
         console.log('✅ 关闭番茄钟计时器')
         showPomodoroTimer.value = false
       } else if (showUnifiedReport.value) {
-        console.log('✅ 关闭统一报告中心')
+        console.log('✅ 关闭普通报告中心')
         // 检查是否有内部状态需要处理
         if (unifiedReportModalRef.value && unifiedReportModalRef.value.handleBackButton) {
           const handled = unifiedReportModalRef.value.handleBackButton()
