@@ -218,6 +218,8 @@ defineExpose({
 // 选择报告类型
 const selectType = (type) => {
   selectedType.value = type
+  // 🐛 修复：切换报告类型时清空AI汇报，避免显示旧内容
+  aiReportText.value = ''
   if (type !== 'custom') {
     generateReport()
   }
@@ -239,6 +241,8 @@ const generateReport = async () => {
 
   generating.value = true
   reportGenerated.value = false
+  // 🐛 修复：生成新报告时清空AI汇报
+  aiReportText.value = ''
 
   try {
     // 计算日期范围

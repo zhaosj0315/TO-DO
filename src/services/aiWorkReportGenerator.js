@@ -167,13 +167,21 @@ ${dataSummary}
       console.log('🌐 发送AI请求到:', this.aiConfig.baseURL)
       console.log('🌐 使用模型:', this.aiConfig.model)
       
-      const response = await fetch(this.aiConfig.baseURL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.aiConfig.apiKey}`
-        },
-        body: JSON.stringify({
+      // 判断是否为 Ollama 本地模型
+      const isOllama = this.aiConfig.baseURL.includes('/api/generate')
+      
+      let requestBody
+      if (isOllama) {
+        // Ollama 格式
+        const systemPrompt = '你是一个专业的工作汇报助手，擅长将任务数据总结成高质量的工作汇报。你的汇报风格专业、简洁、有洞察力，能够突出重点和价值。'
+        requestBody = {
+          model: this.aiConfig.model,
+          prompt: `${systemPrompt}\n\n${prompt}`,
+          stream: false
+        }
+      } else {
+        // OpenAI 格式
+        requestBody = {
           model: this.aiConfig.model,
           messages: [
             { 
@@ -184,7 +192,16 @@ ${dataSummary}
           ],
           temperature: 0.7,
           max_tokens: 2000
-        })
+        }
+      }
+      
+      const response = await fetch(this.aiConfig.baseURL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.aiConfig.apiKey}`
+        },
+        body: JSON.stringify(requestBody)
       })
 
       if (!response.ok) {
@@ -192,8 +209,30 @@ ${dataSummary}
       }
 
       const result = await response.json()
-      console.log('✅ AI响应成功')
-      return result.choices[0].message.content
+      console.log('✅ AI响应成功', result)
+      
+      // 兼容不同AI模型的响应格式
+      let content = null
+      
+      // OpenAI格式: { choices: [{ message: { content: "..." } }] }
+      if (result.choices && result.choices[0]?.message?.content) {
+        content = result.choices[0].message.content
+      }
+      // Ollama格式: { response: "..." }
+      else if (result.response) {
+        content = result.response
+      }
+      // 其他格式
+      else if (result.content) {
+        content = result.content
+      }
+      
+      // 检查内容是否有效（非空字符串）
+      if (!content || content.trim() === '') {
+        throw new Error('AI响应内容为空')
+      }
+      
+      return content
     } catch (error) {
       console.error('❌ AI生成失败:', error)
       console.log('⚠️ 降级使用规则生成')
