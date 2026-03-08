@@ -1244,18 +1244,6 @@
             <div class="entry-arrow">›</div>
           </div>
 
-          <!-- 报告历史入口 -->
-          <div class="pomodoro-entry" @click="showReportHistory">
-            <div class="entry-icon">📚</div>
-            <div class="entry-content">
-              <div class="entry-title">报告历史</div>
-              <div class="entry-summary">
-                查看历史报告记录
-              </div>
-            </div>
-            <div class="entry-arrow">›</div>
-          </div>
-
           <!-- 版本更新入口 -->
           <div class="pomodoro-entry" @click="showVersionHistory">
             <div class="entry-icon">🎉</div>

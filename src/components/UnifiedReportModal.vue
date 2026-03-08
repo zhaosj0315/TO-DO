@@ -7,7 +7,9 @@
           <span>← 返回</span>
         </button>
         <h3>📊 报告中心</h3>
-        <div style="width: 80px;"></div>
+        <button v-if="!isHistoryMode" class="history-btn" @click="$emit('show-history')" title="报告历史">
+          📚
+        </button>
       </div>
 
       <div class="modal-body">
@@ -82,7 +84,6 @@
         <button v-if="isHistoryMode" class="btn btn-secondary" @click="saveAsNew">📋 另存为</button>
         <button class="btn btn-secondary" @click="exportHTML">📄 导出</button>
         <button class="btn btn-secondary" @click="copyText">📋 复制</button>
-        <button v-if="!isHistoryMode" class="btn btn-secondary" @click="showHistory">📚 历史</button>
         <button class="btn btn-primary" @click="$emit('close')">关闭</button>
       </div>
     </div>
@@ -1066,6 +1067,25 @@ watch(() => props.visible, (newVal) => {
 
 .back-btn:hover {
   opacity: 0.8;
+}
+
+.history-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.history-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
 }
 
 /* Modal Body */
