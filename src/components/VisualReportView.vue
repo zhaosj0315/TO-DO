@@ -54,6 +54,64 @@
       <h3 class="section-title">🗓️ 365天完成热力图</h3>
       <div ref="heatmapChartRef" class="heatmap-container"></div>
     </div>
+
+    <!-- 任务执行质量分析 -->
+    <div class="report-section">
+      <h3 class="section-title">⭐ 任务执行质量</h3>
+      <div class="quality-grid">
+        <div class="quality-card">
+          <div class="card-icon">💬</div>
+          <div class="card-value">{{ reportData.quality?.avgLogsPerTask || 0 }}</div>
+          <div class="card-label">平均日志数</div>
+          <div class="card-desc">任务推进频率</div>
+        </div>
+        <div class="quality-card">
+          <div class="card-icon">⚠️</div>
+          <div class="card-value">{{ reportData.quality?.avgBlocksPerTask || 0 }}</div>
+          <div class="card-label">平均阻碍数</div>
+          <div class="card-desc">任务难度指标</div>
+        </div>
+        <div class="quality-card">
+          <div class="card-icon">⭐</div>
+          <div class="card-value">{{ reportData.quality?.avgRating || 0 }}/5</div>
+          <div class="card-label">平均完成评分</div>
+          <div class="card-desc">任务质量指标</div>
+        </div>
+        <div class="quality-card">
+          <div class="card-icon">📊</div>
+          <div class="card-value">{{ reportData.quality?.avgProgress || 0 }}%</div>
+          <div class="card-label">平均进度</div>
+          <div class="card-desc">任务完成度</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 效率分析 -->
+    <div class="report-section">
+      <h3 class="section-title">💡 效率分析</h3>
+      <div class="efficiency-grid">
+        <div class="efficiency-card">
+          <div class="card-icon">⏱️</div>
+          <div class="card-value">{{ reportData.efficiency?.avgCompletionTime || '0天' }}</div>
+          <div class="card-label">平均完成时间</div>
+        </div>
+        <div class="efficiency-card">
+          <div class="card-icon">🎯</div>
+          <div class="card-value">{{ reportData.efficiency?.completionRate || 0 }}%</div>
+          <div class="card-label">完成率</div>
+        </div>
+        <div class="efficiency-card">
+          <div class="card-icon">🔥</div>
+          <div class="card-value">{{ reportData.efficiency?.mostProductiveTime || '--:--' }}</div>
+          <div class="card-label">最高效时段</div>
+        </div>
+        <div class="efficiency-card">
+          <div class="card-icon">📊</div>
+          <div class="card-value">{{ reportData.efficiency?.totalTasks || 0 }}</div>
+          <div class="card-label">总任务数</div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -531,5 +589,77 @@ onUnmounted(cleanup)
   width: 100%;
   height: 200px;
   margin-top: 1rem;
+}
+
+/* 任务执行质量 */
+.quality-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.quality-card {
+  background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  border: 1px solid #e5e7eb;
+}
+
+.quality-card .card-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.quality-card .card-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #667eea;
+  margin-bottom: 0.25rem;
+}
+
+.quality-card .card-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.25rem;
+}
+
+.quality-card .card-desc {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* 效率分析 */
+.efficiency-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.efficiency-card {
+  background: linear-gradient(135deg, #f093fb15 0%, #f5576c15 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  border: 1px solid #e5e7eb;
+}
+
+.efficiency-card .card-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.efficiency-card .card-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #f5576c;
+  margin-bottom: 0.25rem;
+}
+
+.efficiency-card .card-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #374151;
 }
 </style>

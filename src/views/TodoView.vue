@@ -1232,23 +1232,11 @@
             </div>
           </div>
 
-          <!-- 统计中心入口 -->
-          <div class="pomodoro-entry" @click="showEnhancedStats = true">
-            <div class="entry-icon">📊</div>
-            <div class="entry-content">
-              <div class="entry-title">统计中心</div>
-              <div class="entry-summary">
-                番茄钟统计 + 数据可视化分析
-              </div>
-            </div>
-            <div class="entry-arrow">›</div>
-          </div>
-
-          <!-- 智能报告中心入口（整合数据报告和区间报告） -->
+          <!-- 报告中心入口 -->
           <div class="pomodoro-entry" @click="showUnifiedReport = true">
             <div class="entry-icon">📊</div>
             <div class="entry-content">
-              <div class="entry-title">智能报告中心</div>
+              <div class="entry-title">报告中心</div>
               <div class="entry-summary">
                 可视化数据看板 + AI结构化报告
               </div>
@@ -1845,14 +1833,6 @@
         </div>
       </div>
     </div>
-
-    <!-- 番茄统计详情弹窗 -->
-    <!-- 统计中心（番茄钟 + 数据统计） -->
-    <EnhancedPomodoroStats
-      :visible="showEnhancedStats"
-      :tasks="taskStore.tasks"
-      @close="showEnhancedStats = false"
-    />
 
     <!-- 星期选择模态框 - 每周重复 -->
     <div v-if="showWeeklyModal" class="modal-overlay" @click.self="showWeeklyModal = false" style="z-index: 10001;">
@@ -3851,7 +3831,6 @@ import AISuggestionCard from '../components/AISuggestionCard.vue'
 import DailySummaryModal from '../components/DailySummaryModal.vue'
 import AIReportModal from '../components/AIReportModal.vue'
 import SmartTaskSplitter from '../components/SmartTaskSplitter.vue'
-import EnhancedPomodoroStats from '../components/EnhancedPomodoroStats.vue'
 import { Filesystem, Directory } from '@capacitor/filesystem'
 import { LocalNotifications } from '@capacitor/local-notifications'
 import { Capacitor } from '@capacitor/core'
@@ -4340,7 +4319,6 @@ const activeScene = ref('') // 当前激活的快捷场景
 const countdownInterval = ref(null)
 const showTrash = ref(false)
 const showProfile = ref(false)
-const showEnhancedStats = ref(false)  // 🆕 统一的统计中心
 const showSupport = ref(false)
 const showAIConfig = ref(false)
 const showAIChat = ref(false)
@@ -11844,7 +11822,6 @@ const handleRefresh = async () => {
   showDailySummary.value = false
   showAIReport.value = false
   showTaskSplitter.value = false
-  showEnhancedStats.value = false
   showTextResult.value = false
   showTaskPreview.value = false
   showSubtaskPreview.value = false
@@ -13457,13 +13434,6 @@ onMounted(async () => {
         showAIChat.value = false
       } else if (showProfile.value) {
         console.log('✅ 关闭个人主页')
-        // 检查个人主页内部是否有打开的子弹窗
-        if (showEnhancedStats.value) {
-          // 先关闭统计中心
-          console.log('  → 先关闭统计中心')
-          showEnhancedStats.value = false
-          return
-        }
         // 没有子弹窗，关闭个人主页本身
         showProfile.value = false
       } else if (showFilterModal.value) {
@@ -13472,9 +13442,6 @@ onMounted(async () => {
       } else if (showTrash.value) {
         console.log('✅ 关闭回收站')
         showTrash.value = false
-      } else if (showEnhancedStats.value) {
-        console.log('✅ 关闭统计中心')
-        showEnhancedStats.value = false
       } else if (showDailySummary.value) {
         console.log('✅ 关闭今日总结')
         showDailySummary.value = false

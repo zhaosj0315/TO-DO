@@ -6,7 +6,7 @@
         <button class="back-btn" @click="$emit('close')">
           <span>← 返回</span>
         </button>
-        <h3>📊 智能报告中心</h3>
+        <h3>📊 报告中心</h3>
         <div style="width: 80px;"></div>
       </div>
 
@@ -253,46 +253,49 @@ const calculateDateRange = () => {
       break
     
     case 'weekly':
-      // 本周一 00:00 - 本周日 23:59
+      // 本周一 00:00 - 今天 23:59
+      const dayOfWeek = now.getDay()
+      const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1 // 周日算上周，需要回退6天
+      
       startDate = new Date(now)
-      startDate.setDate(now.getDate() - now.getDay())
+      startDate.setDate(now.getDate() - daysFromMonday)
       startDate.setHours(0, 0, 0, 0)
-      endDate = new Date(startDate)
-      endDate.setDate(startDate.getDate() + 6)
+      
+      endDate = new Date(now)
       endDate.setHours(23, 59, 59, 999)
       break
     
     case 'monthly':
-      // 本月1号 00:00 - 本月最后一天 23:59
+      // 本月1号 00:00 - 今天 23:59
       startDate = new Date(now.getFullYear(), now.getMonth(), 1)
       startDate.setHours(0, 0, 0, 0)
-      endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+      endDate = new Date(now)
       endDate.setHours(23, 59, 59, 999)
       break
     
     case 'quarterly':
-      // 本季度第一天 - 本季度最后一天
+      // 本季度第一天 - 今天 23:59
       const quarterStartMonth = Math.floor(now.getMonth() / 3) * 3
       startDate = new Date(now.getFullYear(), quarterStartMonth, 1)
       startDate.setHours(0, 0, 0, 0)
-      endDate = new Date(now.getFullYear(), quarterStartMonth + 3, 0)
+      endDate = new Date(now)
       endDate.setHours(23, 59, 59, 999)
       break
     
     case 'halfyearly':
-      // 本半年第一天 - 本半年最后一天
+      // 本半年第一天 - 今天 23:59
       const halfStartMonth = now.getMonth() < 6 ? 0 : 6
       startDate = new Date(now.getFullYear(), halfStartMonth, 1)
       startDate.setHours(0, 0, 0, 0)
-      endDate = new Date(now.getFullYear(), halfStartMonth + 6, 0)
+      endDate = new Date(now)
       endDate.setHours(23, 59, 59, 999)
       break
     
     case 'yearly':
-      // 今年1月1号 00:00 - 今年12月31号 23:59
+      // 今年1月1号 00:00 - 今天 23:59
       startDate = new Date(now.getFullYear(), 0, 1)
       startDate.setHours(0, 0, 0, 0)
-      endDate = new Date(now.getFullYear(), 11, 31)
+      endDate = new Date(now)
       endDate.setHours(23, 59, 59, 999)
       break
     
@@ -313,7 +316,7 @@ const generateUnifiedReport = async (startDate, endDate) => {
   const generator = new AIReportGenerator(props.tasks)
   const textData = generator.generateReport(startDate, endDate, selectedType.value)
   
-  // 生成可视化数据
+  // 筛选时间范围内的任务（按完成时间筛选）
   const filteredTasks = props.tasks.filter(task => {
     const completedAt = task.completed_at ? new Date(task.completed_at) : null
     return completedAt && completedAt >= startDate && completedAt <= endDate
@@ -398,11 +401,122 @@ const generateUnifiedReport = async (startDate, endDate) => {
     trendData: generateTrendData(filteredTasks, startDate, endDate, selectedType.value),
     // 热力图数据
     heatmapData: generateHeatmapData(props.tasks),
+    // 任务执行质量
+    quality: generateQualityData(completed),
+    // 效率分析
+    efficiency: generateEfficiencyData(filteredTasks, completed),
     // 总任务数
     totalTasks: filteredTasks.length
   }
 
   return { visualData, textData }
+}
+
+// 生成任务执行质量数据
+const generateQualityData = (completedTasks) => {
+  if (completedTasks.length === 0) {
+    return {
+      avgLogsPerTask: 0,
+      avgBlocksPerTask: 0,
+      avgRating: 0,
+      avgProgress: 0
+    }
+  }
+
+  let totalLogs = 0
+  let totalBlocks = 0
+  let totalRating = 0
+  let ratingCount = 0
+  let totalProgress = 0
+
+  completedTasks.forEach(task => {
+    // 统计日志数
+    if (task.logs && Array.isArray(task.logs)) {
+      totalLogs += task.logs.length
+      
+      // 统计阻碍数
+      totalBlocks += task.logs.filter(log => log.type === 'block').length
+      
+      // 统计评分（只统计complete类型的日志）
+      const completeLog = task.logs.find(log => log.type === 'complete' && log.rating)
+      if (completeLog) {
+        totalRating += completeLog.rating
+        ratingCount++
+      }
+    }
+    
+    // 统计进度（使用stats.progressHistory的最后一个值，与统计中心一致）
+    if (task.stats?.progressHistory && task.stats.progressHistory.length > 0) {
+      const latestProgress = task.stats.progressHistory[task.stats.progressHistory.length - 1]
+      totalProgress += latestProgress
+    } else {
+      totalProgress += 100 // 已完成任务默认100%
+    }
+  })
+
+  return {
+    avgLogsPerTask: (totalLogs / completedTasks.length).toFixed(1),
+    avgBlocksPerTask: (totalBlocks / completedTasks.length).toFixed(1),
+    avgRating: ratingCount > 0 ? (totalRating / ratingCount).toFixed(1) : 0,
+    avgProgress: Math.round(totalProgress / completedTasks.length)
+  }
+}
+
+// 生成效率分析数据
+const generateEfficiencyData = (allTasks, completedTasks) => {
+  // 计算平均完成时间
+  let avgCompletionTime = '0天'
+  
+  if (completedTasks.length > 0) {
+    const totalTime = completedTasks.reduce((sum, task) => {
+      if (!task.created_at || !task.completed_at) return sum
+      const created = new Date(task.created_at)
+      const completed = new Date(task.completed_at)
+      return sum + (completed - created)
+    }, 0)
+    
+    const avgTimeMs = totalTime / completedTasks.length
+    const avgTimeDays = avgTimeMs / (1000 * 60 * 60 * 24)
+    
+    if (avgTimeDays < 1) {
+      const hours = Math.round(avgTimeDays * 24)
+      avgCompletionTime = `${hours}小时`
+    } else {
+      avgCompletionTime = `${avgTimeDays.toFixed(1)}天`
+    }
+  }
+  
+  // 计算完成率
+  const completionRate = allTasks.length > 0 
+    ? Math.round((completedTasks.length / allTasks.length) * 100) 
+    : 0
+  
+  // 计算最高效时段
+  let mostProductiveTime = '--:--'
+  
+  if (completedTasks.length > 0) {
+    const hourMap = new Map()
+    completedTasks.forEach(task => {
+      if (task.completed_at) {
+        const hour = new Date(task.completed_at).getHours()
+        hourMap.set(hour, (hourMap.get(hour) || 0) + 1)
+      }
+    })
+    
+    if (hourMap.size > 0) {
+      const maxHour = Array.from(hourMap.entries()).reduce((max, curr) => 
+        curr[1] > max[1] ? curr : max
+      )
+      mostProductiveTime = `${maxHour[0]}:00-${maxHour[0] + 1}:00`
+    }
+  }
+  
+  return {
+    avgCompletionTime,
+    completionRate,
+    mostProductiveTime,
+    totalTasks: allTasks.length
+  }
 }
 
 // 生成趋势数据（根据报告类型调整粒度）
