@@ -1030,6 +1030,17 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         }
       })
       
+      // 🆕 数据迁移：为旧数据添加时间戳字段
+      const now = new Date().toISOString()
+      this.collections.forEach(c => {
+        if (!c.createdAt) {
+          c.createdAt = c.created_at || now
+        }
+        if (!c.updatedAt) {
+          c.updatedAt = c.created_at || now
+        }
+      })
+      
       // 保存修复后的数据
       await this.saveCollections()
     },
@@ -1045,6 +1056,7 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
 
     // 创建文件夹
     async createCollection({ name, description = '', color = '#8b5cf6', icon = '📁', isPrivate = false, password = '', parentId = null }) {
+      const now = new Date().toISOString()
       const collection = {
         id: Date.now(),
         name,
@@ -1055,7 +1067,9 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         password: isPrivate ? btoa(password) : '', // Base64简单加密
         parentId, // 🆕 父文件夹ID（null表示根级）
         order: this.collections.length,
-        created_at: new Date().toISOString(),
+        created_at: now,
+        createdAt: now, // 🆕 创建时间
+        updatedAt: now, // 🆕 更新时间
         user_id: this.currentUser
       }
       this.collections.push(collection)
@@ -1067,7 +1081,7 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
     async updateCollection(id, updates) {
       const collection = this.collections.find(c => c.id === id)
       if (collection) {
-        Object.assign(collection, updates)
+        Object.assign(collection, updates, { updatedAt: new Date().toISOString() }) // 🆕 更新时间
         await this.saveCollections()
       }
     },

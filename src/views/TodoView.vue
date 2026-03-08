@@ -531,7 +531,7 @@
         <footer class="app-footer">
           <div class="footer-content">
             <p class="footer-main">
-              <span class="footer-version">TO-DO App v0.8.3</span>
+              <span class="footer-version">TO-DO App v0.8.4</span>
               <span class="footer-divider">·</span>
               <span class="footer-text">
                 {{ currentLanguage === 'zh' ? '完全离线 · 本地存储' : 'Offline · Local Storage' }}
@@ -4947,6 +4947,7 @@ const showReportHistory = () => {
     completedCount: report.visualData.completedTasks || 0,
     content: report.textData,
     visualData: report.visualData,
+    aiReport: report.aiReport || null, // 🆕 包含AI汇报
     isUnified: true // 标记为统一报告
   }))
   
@@ -5002,6 +5003,7 @@ const viewHistoryReport = (report) => {
       period: report.period,
       visualData: report.visualData,
       textData: report.content,
+      aiReport: report.aiReport || null, // 🆕 包含AI汇报
       createdAt: report.createdAt
     }
     
@@ -5053,7 +5055,7 @@ const batchDeleteReports = () => {
 const showVersionModal = ref(false) // 版本历史弹窗
 const versionHistory = ref([]) // 版本历史列表
 const hasUnreadVersions = ref(false) // 是否有未读版本
-const CURRENT_VERSION = '0.8.3' // 当前应用版本
+const CURRENT_VERSION = '0.8.4' // 当前应用版本
 const versionModalTitle = ref('🎉 版本更新') // 弹窗标题（动态）
 
 // 版本历史数据
@@ -5063,8 +5065,37 @@ const initVersionHistory = () => {
   // 完整版本历史
   const allVersions = [
     {
-      version: '0.8.3',
+      version: '0.8.4',
       date: '2026-03-08',
+      features: [
+        '📁 笔记本管理全面优化：一键展开/折叠所有层级按钮（📂/📁图标切换）',
+        '🏷️ 层级标识徽章：L1/L2/L3/L4彩色渐变徽章，一眼识别层级关系',
+        '⏰ 时间信息显示：显示笔记本创建时间和更新时间（年/月/日 时:分:秒）',
+        '🔍 批量迁入搜索优化：实时搜索任务标题和描述，显示匹配结果数量',
+        '🤖 AI汇报自动保存：生成AI汇报后自动保存到历史，无需手动保存'
+      ],
+      improvements: [
+        '🎨 层级视觉效果：不同层级使用不同颜色边框和背景（紫/橙/绿/红）',
+        '📐 对齐优化：操作按钮与笔记本名称按层级完美对齐',
+        '🔘 按钮优化：操作按钮增大到32×32px，间距增加到8px，避免误触',
+        '📝 图标+文字统一：所有操作按钮统一为"图标+文字"格式（➕新建、✏️改名、🔒加密、🔑密码、📂移动、⬇️迁入、⬆️迁出、🗑️删除）',
+        '🔙 返回逻辑优化：笔记本管理中的所有操作（新建/迁入/迁出）完成后停留在管理页面',
+        '💬 提示信息优化：迁入显示目标笔记本，迁出显示源笔记本和目标位置',
+        '📊 展开按钮位置调整：从卡片左侧移到任务数量后面，布局更简洁',
+        '📚 AI汇报历史功能：历史报告中的AI汇报完全只读，有则显示，无则不显示',
+        '🔄 智能保存逻辑：AI汇报生成成功后自动保存，避免重复生成浪费成本'
+      ],
+      fixes: [
+        '🐛 修复新建笔记本后自动跳转到首页的问题',
+        '🐛 修复迁入/迁出任务后自动跳转到首页的问题',
+        '🐛 修复批量迁入搜索功能无效（task.text为undefined导致崩溃）',
+        '🐛 修复操作按钮对齐问题：现在按层级缩进与笔记本名称对齐',
+        '🐛 修复AI汇报历史丢失：保存和加载报告时正确处理aiReport字段'
+      ]
+    },
+    {
+      version: '0.8.3',
+      date: '2026-03-07',
       features: [
         '🤖 AI模型配置全面重构：17个预设厂商（本地/官方/中转/国产/云/开源），零学习成本',
         '🎯 统一厂商选择：已保存配置和预设厂商合并到一个下拉框，优先显示已保存配置',
@@ -11918,11 +11949,26 @@ const openBatchMoveOut = (collectionId, fromManage = false) => {
 // 🆕 批量添加任务完成
 const handleBatchAdded = (count) => {
   showNotification(`✅ 已迁入 ${count} 个任务到"${getSelectedCollectionName()}"`, 'success')
+  showBatchAddModal.value = false
+  
+  // 🆕 如果是从文件夹管理打开的，返回到文件夹管理
+  if (fromCollectionManage.value) {
+    showCollectionManage.value = true
+    fromCollectionManage.value = false
+  }
 }
 
 // 🆕 批量迁出任务完成
 const handleBatchMovedOut = (count) => {
-  showNotification(`✅ 已迁出 ${count} 个任务`, 'success')
+  const sourceName = getSelectedCollectionName()
+  showNotification(`✅ 已从"${sourceName}"迁出 ${count} 个任务到未分类`, 'success')
+  showBatchMoveOutModal.value = false
+  
+  // 🆕 如果是从文件夹管理打开的，返回到文件夹管理
+  if (fromCollectionManage.value) {
+    showCollectionManage.value = true
+    fromCollectionManage.value = false
+  }
 }
 
 // 🆕 密码验证成功
@@ -12053,6 +12099,14 @@ const handleBatchDelete = async (collectionIds) => {
 
 const handleCollectionCreated = (collection) => {
   showNotification(`✅ 文件夹"${collection.name}"创建成功`, 'success')
+  showCreateCollectionModal.value = false
+  currentParentId.value = null
+  
+  // 🆕 如果是从文件夹管理打开的，返回到文件夹管理
+  if (fromCollectionManage.value) {
+    showCollectionManage.value = true
+    fromCollectionManage.value = false
+  }
 }
 
 const handleCollectionDeleted = () => {

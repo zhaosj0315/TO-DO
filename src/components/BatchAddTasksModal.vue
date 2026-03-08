@@ -12,11 +12,17 @@
       <div class="search-box">
         <input 
           v-model="searchKeyword" 
+          @input="handleSearch"
           type="text" 
           placeholder="🔍 搜索任务标题或描述..."
           class="search-input"
         />
-        <span v-if="searchKeyword" class="clear-btn" @click="searchKeyword = ''">✕</span>
+        <span v-if="searchKeyword" class="clear-btn" @click="clearSearch">✕</span>
+      </div>
+      
+      <!-- 搜索结果提示 -->
+      <div v-if="searchKeyword" class="search-result-tip">
+        找到 {{ filteredTasks.length }} 个匹配的任务
       </div>
       
       <div class="task-list">
@@ -72,6 +78,17 @@ const store = useOfflineTaskStore()
 const selectedTaskIds = ref([])
 const searchKeyword = ref('')
 
+// 搜索处理
+const handleSearch = () => {
+  // 触发响应式更新
+  searchKeyword.value = searchKeyword.value
+}
+
+// 清空搜索
+const clearSearch = () => {
+  searchKeyword.value = ''
+}
+
 // 🆕 可迁入的任务：只显示未分类的任务（collectionId === null）
 const availableTasks = computed(() => {
   return props.allTasks.filter(t => t.collectionId === null)
@@ -84,10 +101,11 @@ const filteredTasks = computed(() => {
   }
   
   const keyword = searchKeyword.value.toLowerCase().trim()
-  return availableTasks.value.filter(task => 
-    task.text.toLowerCase().includes(keyword) || 
-    (task.description && task.description.toLowerCase().includes(keyword))
-  )
+  return availableTasks.value.filter(task => {
+    const text = task.text || ''
+    const description = task.description || ''
+    return text.toLowerCase().includes(keyword) || description.toLowerCase().includes(keyword)
+  })
 })
 
 const getTaskCollectionName = (task) => {
@@ -224,6 +242,15 @@ const handleAdd = async () => {
 .clear-btn:hover {
   background: #9ca3af;
   transform: translateY(-50%) scale(1.1);
+}
+
+.search-result-tip {
+  font-size: 0.85rem;
+  color: #8b5cf6;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: #f3e8ff;
+  border-radius: 6px;
 }
 
 .task-list {

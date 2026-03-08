@@ -4,6 +4,9 @@
       <div class="modal-header">
         <h3>📓 笔记本管理</h3>
         <div class="header-actions">
+          <button v-if="!batchMode" class="expand-all-btn" @click="toggleExpandAll" :title="allExpanded ? '折叠全部' : '展开全部'">
+            {{ allExpanded ? '📁' : '📂' }}
+          </button>
           <button v-if="!batchMode" class="batch-btn" @click="enterBatchMode">多选</button>
           <button v-else class="batch-btn cancel" @click="exitBatchMode">取消</button>
           <button class="close-btn" @click="$emit('close')">✕</button>
@@ -104,6 +107,37 @@ const toggleExpand = (id) => {
     expandedIds.value.splice(index, 1)
   } else {
     expandedIds.value.push(id)
+  }
+}
+
+// 🆕 一键展开/折叠所有层级
+const allExpanded = computed(() => {
+  const allIds = getAllCollectionIds(props.collections)
+  return allIds.length > 0 && allIds.every(id => expandedIds.value.includes(id))
+})
+
+const getAllCollectionIds = (collections) => {
+  const ids = []
+  const traverse = (items) => {
+    items.forEach(item => {
+      ids.push(item.id)
+      const children = props.getChildCollections(item.id)
+      if (children.length > 0) {
+        traverse(children)
+      }
+    })
+  }
+  traverse(collections.filter(c => c.parentId === null))
+  return ids
+}
+
+const toggleExpandAll = () => {
+  if (allExpanded.value) {
+    // 折叠全部
+    expandedIds.value = []
+  } else {
+    // 展开全部
+    expandedIds.value = getAllCollectionIds(props.collections)
   }
 }
 
@@ -235,6 +269,30 @@ const handleBatchDelete = () => {
 
 .batch-btn.cancel:hover {
   background: rgba(239, 68, 68, 1);
+}
+
+.expand-all-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  padding: 6px 10px;
+  border-radius: 16px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+}
+
+.expand-all-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.expand-all-btn:active {
+  transform: scale(0.95);
 }
 
 .close-btn {

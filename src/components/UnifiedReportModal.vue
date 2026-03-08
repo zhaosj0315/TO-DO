@@ -79,7 +79,8 @@
 
       <!-- 操作按钮 -->
       <div v-if="reportGenerated && !generating" class="modal-footer">
-        <button class="btn btn-ai" @click="generateAIReport">🤖 AI汇报</button>
+        <button v-if="!isHistoryMode" class="btn btn-ai" @click="generateAIReport">🤖 AI汇报</button>
+        <button v-if="isHistoryMode && aiReportText" class="btn btn-ai" @click="showAIReportModal = true">🤖 查看AI汇报</button>
         <button v-if="!isHistoryMode" class="btn btn-secondary" @click="saveToHistory">💾 保存</button>
         <button v-if="isHistoryMode" class="btn btn-secondary" @click="saveAsNew">📋 另存为</button>
         <button class="btn btn-secondary" @click="exportHTML">📄 导出</button>
@@ -174,6 +175,24 @@ const aiReportText = ref('')
 
 // 是否为历史报告模式（只读）
 const isHistoryMode = computed(() => !!props.historyReport)
+
+// 🆕 监听历史报告变化，加载AI汇报
+watch(() => props.historyReport, (newReport) => {
+  if (newReport) {
+    // 加载历史报告数据
+    selectedType.value = newReport.type
+    visualData.value = newReport.visualData
+    textData.value = newReport.textData
+    reportGenerated.value = true
+    
+    // 🆕 加载AI汇报（如果有）
+    if (newReport.aiReport) {
+      aiReportText.value = newReport.aiReport
+    } else {
+      aiReportText.value = ''
+    }
+  }
+}, { immediate: true })
 
 // 暴露内部状态和方法给父组件（必须在变量定义之后）
 defineExpose({
@@ -699,9 +718,22 @@ const generateHeatmapData = (tasks) => {
 
 // 生成AI工作汇报
 const generateAIReport = async () => {
+  // 🆕 历史模式下不生成，只查看
+  if (isHistoryMode.value) {
+    if (aiReportText.value) {
+      showAIReportModal.value = true
+    }
+    return
+  }
+  
   showAIReportModal.value = true
+  
+  // 🆕 如果已经有AI汇报（已生成），直接显示
+  if (aiReportText.value) {
+    return
+  }
+  
   generatingAIReport.value = true
-  aiReportText.value = ''
 
   try {
     // 计算日期范围
@@ -717,6 +749,11 @@ const generateAIReport = async () => {
     const report = await generator.generateWorkReport(startDate, endDate, selectedType.value)
     
     aiReportText.value = report
+    
+    // 🆕 AI汇报生成成功后自动保存到历史
+    if (report && report !== '生成失败，请重试') {
+      autoSaveWithAIReport()
+    }
   } catch (error) {
     console.error('生成AI汇报失败:', error)
     aiReportText.value = '生成失败，请重试'
@@ -724,6 +761,24 @@ const generateAIReport = async () => {
     generatingAIReport.value = false
   }
 }
+
+// 🆕 自动保存（包含AI汇报）
+const autoSaveWithAIReport = () => {
+  const report = {
+    id: Date.now(),
+    type: selectedType.value,
+    period: visualData.value.period,
+    visualData: visualData.value,
+    textData: textData.value,
+    aiReport: aiReportText.value,
+    createdAt: new Date().toISOString()
+  }
+  
+  emit('report-saved', report)
+  console.log('✅ AI汇报生成后自动保存到历史')
+}
+
+// 🗑️ 删除重新生成函数（保持历史报告只读）
 
 // 获取AI配置
 const getAIConfig = async () => {
@@ -828,11 +883,12 @@ const saveToHistory = () => {
     period: visualData.value.period,
     visualData: visualData.value,
     textData: textData.value,
+    aiReport: aiReportText.value || null, // 🆕 保存AI汇报
     createdAt: new Date().toISOString()
   }
   
   emit('report-saved', report)
-  alert('报告已保存到历史')
+  alert('报告已保存到历史（包含AI汇报）')
 }
 
 // 另存为新报告（历史模式）
@@ -843,11 +899,12 @@ const saveAsNew = () => {
     period: visualData.value.period,
     visualData: visualData.value,
     textData: textData.value,
+    aiReport: aiReportText.value || null, // 🆕 保存AI汇报
     createdAt: new Date().toISOString()
   }
   
   emit('report-saved', report)
-  alert('已另存为新报告')
+  alert('已另存为新报告（包含AI汇报）')
 }
 
 // 格式化历史日期
