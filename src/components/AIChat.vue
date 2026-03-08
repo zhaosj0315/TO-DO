@@ -110,13 +110,17 @@
               <span class="btn-icon">✅</span>
               <span class="btn-text">今日完成</span>
             </button>
-            <button @click="askQuick('本周情况如何？')" class="quick-btn">
-              <span class="btn-icon">📊</span>
-              <span class="btn-text">本周情况</span>
+            <button @click="askQuick('今天还有哪些待办？')" class="quick-btn">
+              <span class="btn-icon">📋</span>
+              <span class="btn-text">今日待办</span>
             </button>
-            <button @click="askQuick('分析我的效率')" class="quick-btn">
-              <span class="btn-icon">📈</span>
-              <span class="btn-text">效率分析</span>
+            <button @click="askQuick('本周完成了什么？')" class="quick-btn">
+              <span class="btn-icon">📊</span>
+              <span class="btn-text">本周完成</span>
+            </button>
+            <button @click="askQuick('本月完成了多少任务？')" class="quick-btn">
+              <span class="btn-icon">📆</span>
+              <span class="btn-text">本月统计</span>
             </button>
             <button @click="askQuick('有哪些高优先级待办？')" class="quick-btn">
               <span class="btn-icon">⚡</span>
@@ -126,17 +130,13 @@
               <span class="btn-icon">⏰</span>
               <span class="btn-text">逾期预警</span>
             </button>
+            <button @click="askQuick('最近遇到了什么困难？')" class="quick-btn">
+              <span class="btn-icon">🚧</span>
+              <span class="btn-text">困难分析</span>
+            </button>
             <button @click="askQuick('给我一些任务管理建议')" class="quick-btn">
               <span class="btn-icon">💡</span>
               <span class="btn-text">优化建议</span>
-            </button>
-            <button @click="askQuick('本月完成了多少任务？')" class="quick-btn">
-              <span class="btn-icon">📆</span>
-              <span class="btn-text">本月统计</span>
-            </button>
-            <button @click="askQuick('最近有什么阻碍？')" class="quick-btn">
-              <span class="btn-icon">🚧</span>
-              <span class="btn-text">阻碍分析</span>
             </button>
           </div>
         </div>
@@ -174,8 +174,29 @@ marked.setOptions({
   pedantic: false,
   sanitize: false,
   smartLists: true,
-  smartypants: false
+  smartypants: false,
+  headerIds: false,
+  mangle: false
 })
+
+// 🆕 自定义渲染器，确保表格正确渲染
+const renderer = new marked.Renderer()
+renderer.table = function(header, body) {
+  return '<table>\n<thead>\n' + header + '</thead>\n<tbody>\n' + body + '</tbody>\n</table>\n'
+}
+renderer.tablerow = function(content) {
+  return '<tr>\n' + content + '</tr>\n'
+}
+renderer.tablecell = function(content, flags) {
+  const type = flags.header ? 'th' : 'td'
+  const tag = flags.align
+    ? '<' + type + ' align="' + flags.align + '">'
+    : '<' + type + '>'
+  // 🔧 确保content是字符串
+  const safeContent = String(content || '')
+  return tag + safeContent + '</' + type + '>\n'
+}
+marked.use({ renderer })
 
 const props = defineProps({
   visible: Boolean,
@@ -687,7 +708,10 @@ const generateDailyPlan = async () => {
       markdown += '| 时间 | 任务 | 安排理由 |\n'
       markdown += '|------|------|----------|\n'
       plan.schedule.forEach(item => {
-        markdown += `| ${item.time} | ${item.task} | ${item.reason} |\n`
+        const time = String(item.time || '未设置')
+        const task = String(item.task || '未知任务')
+        const reason = String(item.reason || '无')
+        markdown += `| ${time} | ${task} | ${reason} |\n`
       })
       markdown += '\n'
     }
@@ -1028,7 +1052,7 @@ const sendMessage = async () => {
       await handleTaskCreation(question)
     } else if (intent === 'daily_plan') {
       // 今日规划意图
-      await handleDailyPlan()
+      await generateDailyPlan() // 🔧 使用新的generateDailyPlan函数
     } else if (intent === 'split_task') {
       // 任务分解意图
       await handleTaskSplit(question)
@@ -1321,75 +1345,7 @@ const handleTaskSplit = async (text) => {
   }
 }
 
-// 处理今日规划
-const handleDailyPlan = async () => {
-  const assistantMsgIndex = messages.value.length
-  messages.value.push({ 
-    role: 'assistant', 
-    content: '🌅 正在生成今日规划...',
-    modelName: currentModel.value?.name
-  })
-  
-  try {
-    const { tasks = [] } = props.tasksData
-    const pendingTasks = tasks.filter(task => task.status === 'pending')
-    
-    if (pendingTasks.length === 0) {
-      messages.value[assistantMsgIndex].content = '❌ 没有待办任务，无法生成规划'
-      return
-    }
-    
-    // 为任务添加截止时间信息
-    const tasksWithDeadline = pendingTasks.map(task => ({
-      ...task,
-      deadline: task.customDate && task.customTime 
-        ? `${task.customDate} ${task.customTime}` 
-        : null
-    }))
-    
-    // 动态导入 AIDailyPlanner
-    const { AIDailyPlanner } = await import('../services/aiDailyPlanner')
-    const plan = await AIDailyPlanner.generateDailyPlan(tasksWithDeadline)
-    
-    // 格式化规划结果
-    let resultText = `🌅 **今日规划**\n\n`
-    resultText += `📊 **任务概览**\n`
-    resultText += `- 待办任务：${pendingTasks.length} 个\n`
-    resultText += `- 高优先级：${pendingTasks.filter(t => t.priority === 'high').length} 个\n\n`
-    
-    if (plan.morning && plan.morning.length > 0) {
-      resultText += `🌄 **上午安排**\n`
-      plan.morning.forEach((task, i) => {
-        resultText += `${i + 1}. ${task.text} (${task.priority === 'high' ? '⚡高' : task.priority === 'medium' ? '📌中' : '📋低'})\n`
-      })
-      resultText += `\n`
-    }
-    
-    if (plan.afternoon && plan.afternoon.length > 0) {
-      resultText += `☀️ **下午安排**\n`
-      plan.afternoon.forEach((task, i) => {
-        resultText += `${i + 1}. ${task.text} (${task.priority === 'high' ? '⚡高' : task.priority === 'medium' ? '📌中' : '📋低'})\n`
-      })
-      resultText += `\n`
-    }
-    
-    if (plan.evening && plan.evening.length > 0) {
-      resultText += `🌙 **晚上安排**\n`
-      plan.evening.forEach((task, i) => {
-        resultText += `${i + 1}. ${task.text} (${task.priority === 'high' ? '⚡高' : task.priority === 'medium' ? '📌中' : '📋低'})\n`
-      })
-      resultText += `\n`
-    }
-    
-    if (plan.suggestions) {
-      resultText += `💡 **AI 建议**\n${plan.suggestions}`
-    }
-    
-    messages.value[assistantMsgIndex].content = resultText
-  } catch (error) {
-    messages.value[assistantMsgIndex].content = `❌ 生成规划失败：${error.message}`
-  }
-}
+// 🗑️ 删除旧的handleDailyPlan函数（已被新的generateDailyPlan替代）
 
 // 处理普通对话
 const handleNormalChat = async (question) => {
