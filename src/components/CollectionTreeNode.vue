@@ -345,9 +345,11 @@ const getLevelLabel = (level) => {
 
 /* 操作按钮 */
 .actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
   flex-shrink: 0;
+  width: 100%;
 }
 
 .actions button {

@@ -100,15 +100,44 @@
         
         <!-- 快捷问题 - 始终显示在底部 -->
         <div class="quick-questions">
-          <div class="quick-label">💡 继续提问：</div>
-          <div class="quick-categories-compact">
-            <button @click="generateDailyPlan" class="quick-btn-small quick-btn-primary">📅 今日规划</button>
-            <button @click="askQuick('今天完成了什么？')" class="quick-btn-small">今日完成</button>
-            <button @click="askQuick('本周情况如何？')" class="quick-btn-small">本周情况</button>
-            <button @click="askQuick('分析我的效率')" class="quick-btn-small">效率分析</button>
-            <button @click="askQuick('有哪些高优先级待办？')" class="quick-btn-small">重要待办</button>
-            <button @click="askQuick('哪些任务即将逾期？')" class="quick-btn-small">逾期预警</button>
-            <button @click="askQuick('给我一些任务管理建议')" class="quick-btn-small">优化建议</button>
+          <div class="quick-label">💡 快捷操作：</div>
+          <div class="quick-grid">
+            <button @click="generateDailyPlan" class="quick-btn">
+              <span class="btn-icon">📅</span>
+              <span class="btn-text">今日规划</span>
+            </button>
+            <button @click="askQuick('今天完成了什么？')" class="quick-btn">
+              <span class="btn-icon">✅</span>
+              <span class="btn-text">今日完成</span>
+            </button>
+            <button @click="askQuick('本周情况如何？')" class="quick-btn">
+              <span class="btn-icon">📊</span>
+              <span class="btn-text">本周情况</span>
+            </button>
+            <button @click="askQuick('分析我的效率')" class="quick-btn">
+              <span class="btn-icon">📈</span>
+              <span class="btn-text">效率分析</span>
+            </button>
+            <button @click="askQuick('有哪些高优先级待办？')" class="quick-btn">
+              <span class="btn-icon">⚡</span>
+              <span class="btn-text">重要待办</span>
+            </button>
+            <button @click="askQuick('哪些任务即将逾期？')" class="quick-btn">
+              <span class="btn-icon">⏰</span>
+              <span class="btn-text">逾期预警</span>
+            </button>
+            <button @click="askQuick('给我一些任务管理建议')" class="quick-btn">
+              <span class="btn-icon">💡</span>
+              <span class="btn-text">优化建议</span>
+            </button>
+            <button @click="askQuick('本月完成了多少任务？')" class="quick-btn">
+              <span class="btn-icon">📆</span>
+              <span class="btn-text">本月统计</span>
+            </button>
+            <button @click="askQuick('最近有什么阻碍？')" class="quick-btn">
+              <span class="btn-icon">🚧</span>
+              <span class="btn-text">阻碍分析</span>
+            </button>
           </div>
         </div>
         </div>
@@ -2472,40 +2501,49 @@ const getPriorityLabel = (priority) => {
   margin-bottom: 0.5rem;
 }
 
-.quick-categories-compact {
+.quick-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.5rem;
 }
 
-.quick-btn-small {
-  padding: 0.6rem 0.8rem;
-  background: #f5f5f5;
+.quick-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.8rem 0.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
   border-radius: 8px;
   font-size: 0.75rem;
   cursor: pointer;
   transition: all 0.2s;
-  color: #333;
+  color: white;
   text-align: center;
-  line-height: 1.4;
-  min-height: 44px;
+  min-height: 70px;
+  font-weight: 500;
+}
+
+.quick-btn .btn-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.quick-btn .btn-text {
+  font-size: 0.75rem;
+  line-height: 1.2;
   white-space: nowrap;
 }
 
-.quick-btn-small:hover {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+.quick-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
-/* 今日规划按钮特殊样式 */
-.quick-btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  font-weight: 600;
-  border: none;
+.quick-btn:active {
+  transform: translateY(0);
 }
 
 .quick-btn-primary:hover {
