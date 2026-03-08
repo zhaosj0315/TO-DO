@@ -3073,7 +3073,7 @@
     </div>
 
     <!-- 报告历史弹窗 -->
-    <div v-if="showReportHistoryModal" class="modal-overlay" @click.self="showReportHistoryModal = false">
+    <div v-if="showReportHistoryModal" class="modal-overlay" @click.self="showReportHistoryModal = false" style="z-index: 10009;">
       <div class="report-bottom-sheet">
         <div class="modal-header">
           <button class="back-btn" @click="showReportHistoryModal = false">
