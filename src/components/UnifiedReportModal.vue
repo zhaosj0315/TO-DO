@@ -1,6 +1,6 @@
 <template>
   <!-- 主报告弹窗 -->
-  <div v-if="visible" class="modal-overlay" @click.self="$emit('close')">
+  <div v-if="visible" class="modal-overlay" @click.self="$emit('close')" :style="{ zIndex: isHistoryMode ? 10010 : 10008 }">
     <div class="unified-report-sheet">
       <div class="modal-header">
         <button class="back-btn" @click="$emit('close')">
@@ -986,7 +986,7 @@ watch(() => props.visible, (newVal) => {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  z-index: 10008; /* 提升到高层级 */
+  /* z-index 通过内联样式动态设置：普通模式10008，历史模式10010 */
   animation: fadeIn 0.2s ease-out;
   padding: 0;
 }
