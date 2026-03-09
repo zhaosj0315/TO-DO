@@ -43,11 +43,12 @@ class SQLiteService {
       await this.db.open()
       await this.createTables()
       
+      // Android数据库实际位置
       const location = this.isNative 
-        ? `Documents/${BACKUP_DIR}/${DB_NAME}` 
+        ? `应用私有目录 (/data/data/com.todo.app/databases/${DB_NAME})` 
         : 'IndexedDB (浏览器存储)'
       
-      return { success: true, message: `✅ SQLite连接成功！\n数据库位置: ${location}` }
+      return { success: true, message: `✅ SQLite连接成功！\n📁 数据库位置: ${location}\n💡 提示: Android数据库在应用私有目录，需root权限访问` }
     } catch (error) {
       console.error('SQLite初始化失败:', error)
       return { success: false, message: error.message }
@@ -115,6 +116,44 @@ class SQLiteService {
     } catch (error) {
       console.error('SQLite sync error:', error)
       return { success: false, message: error.message }
+    }
+  }
+
+  // 导出数据库文件到Documents（用户可访问）
+  async exportDatabase() {
+    if (!this.isNative) {
+      return { success: false, message: '❌ 仅支持Android/iOS平台' }
+    }
+
+    try {
+      // 1. 导出数据库到临时位置
+      const exportResult = await this.sqlite.exportToJson(DB_NAME)
+      
+      // 2. 保存到Documents目录
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
+      const filename = `${DB_NAME}_${timestamp}.json`
+      
+      await Filesystem.writeFile({
+        path: `${BACKUP_DIR}/${filename}`,
+        data: JSON.stringify(exportResult.export, null, 2),
+        directory: Directory.Documents,
+        encoding: 'utf8'
+      })
+
+      // 3. 获取文件URI
+      const fileUri = await Filesystem.getUri({
+        path: `${BACKUP_DIR}/${filename}`,
+        directory: Directory.Documents
+      })
+
+      return {
+        success: true,
+        message: `✅ 数据库已导出\n📁 位置: Documents/${BACKUP_DIR}/${filename}`,
+        path: fileUri.uri
+      }
+    } catch (error) {
+      console.error('导出数据库失败:', error)
+      return { success: false, message: `❌ 导出失败: ${error.message}` }
     }
   }
 }

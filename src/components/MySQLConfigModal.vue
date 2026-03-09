@@ -1,11 +1,13 @@
 <template>
-  <transition name="modal">
+  <transition name="modal-fade">
     <div v-if="show" class="modal-overlay" @click.self="$emit('close')">
-      <div class="modal-container">
+      <div class="db-config-modal">
         <div class="modal-header">
-          <div class="drag-indicator"></div>
+          <button class="back-btn" @click="$emit('close')">
+            <span>← 返回</span>
+          </button>
           <h3>🗄️ 数据库配置</h3>
-          <button @click="$emit('close')" class="close-btn">✕</button>
+          <div style="width: 80px;"></div>
         </div>
 
         <div class="modal-body">
@@ -67,14 +69,16 @@
             <div class="info-text">
               <strong>本地数据库备份</strong><br>
               仅支持Android/iOS原生应用<br>
-              数据库位置: Documents/TODO-App-backups/
+              数据库位置: 应用私有目录 (/data/data/com.todo.app/databases/)
             </div>
           </div>
           <div class="info-card" style="background: #fff3cd; border-left-color: #ffc107;">
             <div class="info-icon">💡</div>
             <div class="info-text">
-              <strong>网页端提示</strong><br>
-              网页端不支持SQLite，请使用MySQL远程备份
+              <strong>重要提示</strong><br>
+              • 网页端不支持SQLite，请使用MySQL<br>
+              • Android数据库在应用私有目录，需root权限访问<br>
+              • 建议使用MySQL实现多设备同步
             </div>
           </div>
         </div>
@@ -118,7 +122,14 @@
         </div>
 
         <div class="status-info" v-if="statusMessage">
-          <span :class="statusType">{{ statusMessage }}</span>
+          <div class="status-card" :class="statusType">
+            <div class="status-icon">
+              <span v-if="statusType === 'success'">✅</span>
+              <span v-else-if="statusType === 'error'">❌</span>
+              <span v-else>⏳</span>
+            </div>
+            <div class="status-text">{{ statusMessage }}</div>
+          </div>
         </div>
       </div>
 
@@ -130,31 +141,59 @@
         
         <!-- SQLite/MySQL：显示操作按钮 -->
         <template v-else>
-          <div class="button-group">
-            <button v-if="!isConnected" @click="testConnection" class="btn-test">
+          <!-- 主要操作 -->
+          <div v-if="!isConnected" class="button-row">
+            <button @click="testConnection" class="btn-primary btn-full">
               🔍 测试连接
             </button>
-            <button v-if="isConnected" @click="saveConfig" class="btn-save">
-              💾 保存配置
-            </button>
-            <button v-if="isConnected" @click="syncNow" class="btn-sync">
-              ⬆️ 立即同步
-            </button>
-            <button v-if="isConnected" @click="restoreData" class="btn-restore">
-              ⬇️ 恢复数据
-            </button>
-            <button v-if="isConnected" @click="toggleTakeover" class="btn-takeover" :class="{ active: isTakeover }">
-              <span v-if="isTakeover">✅ 已接管</span>
-              <span v-else>🔄 接管模式</span>
-            </button>
           </div>
+          
+          <template v-else>
+            <!-- 配置操作 -->
+            <div class="button-row">
+              <button @click="saveConfig" class="btn-secondary">
+                💾 保存配置
+              </button>
+            </div>
+            
+            <!-- 数据操作 -->
+            <div class="button-row">
+              <button @click="syncNow" class="btn-primary">
+                ⬆️ 立即同步
+              </button>
+              <button @click="restoreData" class="btn-secondary">
+                ⬇️ 恢复数据
+              </button>
+            </div>
+            
+            <!-- 接管模式 -->
+            <div class="button-row">
+              <button @click="toggleTakeover" class="btn-takeover btn-full" :class="{ active: isTakeover }">
+                <span v-if="isTakeover">✅ 接管模式：已开启</span>
+                <span v-else>🔄 接管模式：已关闭</span>
+              </button>
+            </div>
+            
+            <!-- 接管模式说明 -->
+            <div v-if="isTakeover" class="takeover-info">
+              <div class="info-card" style="background: #f0fdf4; border-left-color: #10b981;">
+                <div class="info-icon">💡</div>
+                <div class="info-text" style="color: #065f46;">
+                  <strong>实时同步已开启</strong><br>
+                  • 创建任务 → 自动上传<br>
+                  • 修改任务 → 自动更新<br>
+                  • 删除任务 → 自动删除
+                </div>
+              </div>
+            </div>
+          </template>
           
           <!-- 操作提示 -->
           <div v-if="!isConnected" class="step-hint">
             👆 第1步：先测试连接
           </div>
           <div v-else-if="!isTakeover" class="step-hint">
-            💡 提示：点击"🔄 接管模式"开启实时同步
+            💡 提示：开启接管模式后，数据将实时同步
           </div>
         </template>
       </div>
@@ -223,13 +262,15 @@ export default {
           // 加载接管状态
           isTakeover.value = await mysqlConfigService.getTakeover()
         }
+      } else {
+        // 如果没有保存的db_type，尝试加载MySQL配置（用于显示）
+        const savedMysql = await mysqlConfigService.getConfig()
+        if (savedMysql) {
+          mysqlConfig.value = savedMysql
+        }
       }
 
-      const savedMysql = await mysqlConfigService.getConfig()
-      if (savedMysql) {
-        mysqlConfig.value = savedMysql
-      }
-
+      // 加载SQLite配置
       const savedSqlite = await sqliteConfigService.getConfig()
       if (savedSqlite) {
         sqliteConfig.value = savedSqlite
@@ -287,7 +328,8 @@ export default {
         if (dbType.value === 'sqlite') {
           const result = await sqliteService.sync(
             userData.username, 
-            userData.tasks, 
+            userData.tasks,
+            userData.deletedTasks,  // ✅ 添加回收站
             userData.collections
           )
           statusMessage.value = result.message
@@ -312,12 +354,23 @@ export default {
       statusType.value = 'info'
       
       try {
-        const result = await mysqlSyncService.restoreFromMySQL(
-          mysqlConfig.value, 
-          taskStore.currentUser
-        )
+        let result
         
-        if (result.success) {
+        if (dbType.value === 'sqlite') {
+          // SQLite恢复（从本地数据库读取）
+          // 注意：SQLite的恢复需要先实现查询功能
+          statusMessage.value = '❌ SQLite恢复功能开发中'
+          statusType.value = 'error'
+          return
+        } else if (dbType.value === 'mysql') {
+          // MySQL恢复
+          result = await mysqlSyncService.restoreFromMySQL(
+            mysqlConfig.value, 
+            taskStore.currentUser
+          )
+        }
+        
+        if (result && result.success) {
           statusMessage.value = '✅ 数据恢复成功！请刷新页面查看'
           statusType.value = 'success'
           
@@ -326,7 +379,7 @@ export default {
             window.location.reload()
           }, 3000)
         } else {
-          statusMessage.value = `❌ 恢复失败: ${result.error}`
+          statusMessage.value = `❌ 恢复失败: ${result?.error || '未知错误'}`
           statusType.value = 'error'
         }
       } catch (error) {
@@ -484,47 +537,57 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: flex-end;
-  justify-content: center;
-  z-index: 9999;
+  justify-content: stretch;
+  z-index: 10002;
+  backdrop-filter: blur(8px);
+  animation: fadeIn 0.2s ease;
 }
 
-.modal-container {
-  background: white;
-  border-radius: 20px 20px 0 0;
-  width: 100%;
-  max-height: 85vh;
-  overflow-y: auto;
-  animation: slideUp 0.3s ease-out;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes slideUp {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.db-config-modal {
+  background: white;
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
 }
 
 /* Transition动画 */
-.modal-enter-active {
-  transition: opacity 0.3s ease;
+.modal-fade-enter-active {
+  transition: opacity 0.2s ease;
 }
 
-.modal-enter-active .modal-container {
-  animation: slideUp 0.3s ease-out;
+.modal-fade-enter-active .db-config-modal {
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.modal-leave-active {
-  transition: opacity 0.3s ease;
+.modal-fade-leave-active {
+  transition: opacity 0.2s ease;
 }
 
-.modal-leave-active .modal-container {
-  animation: slideDown 0.3s ease-in;
+.modal-fade-leave-active .db-config-modal {
+  animation: slideDown 0.2s cubic-bezier(0.4, 0, 1, 1);
 }
 
 @keyframes slideDown {
@@ -536,56 +599,59 @@ export default {
   }
 }
 
-.modal-enter-from,
-.modal-leave-to {
+.modal-fade-enter-from,
+.modal-fade-leave-to {
   opacity: 0;
 }
 
 .modal-header {
-  position: sticky;
-  top: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.5rem 1rem 1rem;
+  border-bottom: 1px solid #e0e0e0;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  z-index: 10;
+  border-radius: 20px 20px 0 0;
+  position: relative;
+  flex-shrink: 0;
 }
 
-.drag-indicator {
-  width: 40px;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.5);
-  border-radius: 2px;
-  margin-bottom: 0.5rem;
+.back-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.back-btn:active {
+  transform: scale(0.95);
 }
 
 .modal-header h3 {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 600;
-}
-
-.close-btn {
-  position: absolute;
-  right: 1rem;
-  top: 1.5rem;
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: white;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  flex: 1;
+  text-align: center;
 }
 
 .modal-body {
   padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
 }
 
 .form-group {
@@ -692,10 +758,11 @@ export default {
 }
 
 .btn-takeover {
-  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-  color: #333;
+  background: linear-gradient(135deg, #e5e7eb 0%, #f3f4f6 100%);
+  color: #374151;
   transition: all 0.2s;
-  border: 2px solid transparent;
+  border: 2px solid #d1d5db;
+  font-weight: 500;
 }
 
 .btn-takeover:active {
@@ -703,11 +770,113 @@ export default {
 }
 
 .btn-takeover.active {
-  background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
   font-weight: 600;
-  border: 2px solid #4ade80;
-  box-shadow: 0 0 10px rgba(74, 222, 128, 0.3);
+  border: 2px solid #10b981;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+}
+
+/* 按钮行布局 */
+.button-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.button-row button {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.button-row button:active {
+  transform: scale(0.98);
+}
+
+.btn-full {
+  width: 100%;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-primary:hover {
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
+.btn-secondary:hover {
+  box-shadow: 0 4px 12px rgba(240, 147, 251, 0.4);
+}
+
+/* 状态卡片 */
+.status-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+  animation: slideIn 0.3s ease;
+}
+
+.status-card.success {
+  background: #f0fdf4;
+  border-left: 4px solid #10b981;
+  color: #065f46;
+}
+
+.status-card.error {
+  background: #fef2f2;
+  border-left: 4px solid #ef4444;
+  color: #991b1b;
+}
+
+.status-card.info {
+  background: #eff6ff;
+  border-left: 4px solid #3b82f6;
+  color: #1e40af;
+}
+
+.status-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.status-text {
+  flex: 1;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+/* 接管模式说明 */
+.takeover-info {
+  margin-top: 0.5rem;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .button-group {

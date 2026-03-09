@@ -58,13 +58,27 @@ async function getAllData() {
     }
   }
   
-  // 3. 获取 localStorage 数据（AI相关）
+  // 3. 获取 localStorage 数据（AI相关 + 用户隔离数据）
+  const { value: currentUserStr } = await Preferences.get({ key: 'currentUser' });
+  const currentUser = currentUserStr || 'guest';
+  
   const localStorageKeys = [
-    'weekly_reports',      // AI周报历史（包含所有报告类型）
-    'ai_chat_list',        // AI对话历史
-    'ai_models',           // AI模型配置
-    'ai_default_model',    // 默认AI模型
-    'backupFiles'          // Web端备份文件列表
+    // 旧版本数据（无用户后缀）
+    'weekly_reports',
+    'unified_reports',
+    'ai_chat_list',
+    'ai_models',
+    'ai_default_model',
+    'ai_provider_configs',
+    'backupFiles',
+    // 新版本数据（有用户后缀）
+    `weekly_reports_${currentUser}`,
+    `unified_reports_${currentUser}`,
+    `ai_chat_list_${currentUser}`,
+    `ai_models_${currentUser}`,
+    `ai_default_model_${currentUser}`,
+    `ai_provider_configs_${currentUser}`,
+    `last_app_version_${currentUser}`
   ];
   
   data._localStorage = {};
@@ -72,6 +86,16 @@ async function getAllData() {
     const value = localStorage.getItem(key);
     if (value) {
       data._localStorage[key] = value;
+    }
+  }
+  
+  // 4. 获取所有用户的collections数据（文件夹）
+  if (usersStr) {
+    const users = JSON.parse(usersStr);
+    for (const username in users) {
+      const collectionsKey = `collections_${username}`;
+      const { value: collections } = await Preferences.get({ key: collectionsKey });
+      if (collections) data[collectionsKey] = collections;
     }
   }
   
