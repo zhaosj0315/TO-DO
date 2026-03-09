@@ -62,7 +62,7 @@ async function getAllData() {
     }
   }
   
-  // 3. 获取 localStorage 数据（AI相关 + 用户隔离数据）
+  // 3. 获取 localStorage 数据（AI相关 + 用户隔离数据 + 数据库配置）
   data._localStorage = {};
   
   // 3.1 旧版本数据（无用户后缀）
@@ -83,7 +83,22 @@ async function getAllData() {
     }
   }
   
-  // 3.2 所有用户的数据（有用户后缀）
+  // 3.2 数据库配置（关键）
+  const dbKeys = [
+    'db_config',
+    'db_type',
+    'db_takeover',
+    'sqlite_config'
+  ];
+  
+  for (const key of dbKeys) {
+    const value = localStorage.getItem(key);
+    if (value) {
+      data._localStorage[key] = value;
+    }
+  }
+  
+  // 3.3 所有用户的数据（有用户后缀）
   if (usersStr) {
     const users = JSON.parse(usersStr);
     for (const username in users) {
@@ -94,7 +109,8 @@ async function getAllData() {
         `ai_models_${username}`,
         `ai_default_model_${username}`,
         `ai_provider_configs_${username}`,
-        `last_app_version_${username}`
+        `last_app_version_${username}`,
+        `db_takeover_${username}`
       ];
       
       for (const key of userKeys) {

@@ -1326,19 +1326,20 @@
               <div class="group-desc">
                 <strong>✅ 包含所有数据（100%完整）：</strong>
                 <ul style="margin: 0.5rem 0 0 1.5rem; font-size: 0.85rem; line-height: 1.6;">
-                  <li><strong>任务数据</strong>：标题、描述、分类、优先级、状态、时间</li>
-                  <li><strong>执行日志</strong>：6种日志类型、进度、标签、心情、阻碍解决</li>
-                  <li><strong>番茄钟历史</strong>：专注记录、时长统计、完成数量</li>
+                  <li><strong>任务数据</strong>：标题、描述、分类、优先级、状态、时间、执行日志、番茄钟历史</li>
+                  <li><strong>文件夹数据</strong>：所有笔记本及层级关系</li>
                   <li><strong>回收站数据</strong>：已删除任务（可恢复）</li>
                   <li><strong>AI报告历史</strong>：所有生成的报告记录（日/周/月/季/半年/年报）</li>
                   <li><strong>AI对话历史</strong>：所有AI问答记录</li>
                   <li><strong>AI模型配置</strong>：模型列表和默认模型</li>
+                  <li><strong>数据库配置</strong>：MySQL/SQLite连接信息、接管模式开关</li>
                   <li><strong>用户信息</strong>：账号、密码、手机号、安全问题</li>
                   <li><strong>任务关系</strong>：依赖关系、父子任务、AI总结</li>
                 </ul>
                 <div style="margin-top: 0.5rem; padding: 0.5rem; background: rgba(102, 126, 234, 0.1); border-radius: 6px; font-size: 0.85rem;">
                   💡 <strong>备份说明</strong>：<br>
-                  • Web端：下载JSON文件 + 自动保存到浏览器（最近10个）<br>
+                  • 执行日志和番茄钟历史存储在任务对象内，会随任务一起备份<br>
+                  • Web端：下载JSON文件 + 自动保存到浏览器（最近20个）<br>
                   • 移动端：保存到 Documents/TODO-App-backups/<br>
                   • 建议每周备份一次，重要操作前备份
                 </div>
@@ -8670,21 +8671,29 @@ const clearAllTasks = async () => {
     return
   }
   
-  const message = `⚠️ 危险操作警告 ⚠️\n\n` +
+  const message = `🚨 危险操作警告 🚨\n\n` +
     `即将清空所有数据：\n` +
     `• 当前任务：${totalCount} 个\n` +
     `• 回收站任务：${deletedCount} 个\n` +
     `• 总计：${total} 个\n\n` +
-    `此操作不可撤销！\n` +
-    `建议先导出备份。\n\n` +
+    `⚠️ 此操作不可撤销！\n` +
+    `⚠️ 所有执行日志、番茄钟历史将永久丢失！\n\n` +
+    `💡 强烈建议先点击"完整备份"保存数据！\n\n` +
     `确定要继续吗？`
   
-  if (confirm(message)) {
-    // 二次确认
-    if (confirm(`最后确认：真的要删除所有 ${total} 个任务吗？`)) {
-      await taskStore.clearAllTasks()
-      showNotification(`已清空所有任务（${total} 个）`, 'success')
-    }
+  if (!confirm(message)) {
+    return
+  }
+  
+  // 二次确认（更严格）
+  const confirmText = `最后确认：请输入"删除"二字确认操作`
+  const userInput = prompt(confirmText)
+  
+  if (userInput === '删除') {
+    await taskStore.clearAllTasks()
+    showNotification(`已清空所有任务（${total} 个）`, 'success')
+  } else {
+    showNotification('已取消清空操作', 'info')
   }
 }
 
@@ -10842,22 +10851,49 @@ const handleRestoreFile = async (event) => {
     const backupData = JSON.parse(text)
     
     // 1. 恢复 Preferences 数据
+    let preferencesCount = 0
     for (const key in backupData) {
       if (key === '_localStorage') continue
-      await Preferences.set({ key, value: backupData[key] })
-    }
-    
-    // 2. 恢复 localStorage 数据
-    if (backupData._localStorage) {
-      for (const key in backupData._localStorage) {
-        localStorage.setItem(key, backupData._localStorage[key])
+      try {
+        await Preferences.set({ key, value: backupData[key] })
+        preferencesCount++
+      } catch (error) {
+        if (error.name === 'QuotaExceededError') {
+          throw new Error('数据量过大，超出存储限制。\n\n建议：\n1. 使用数据库模式（MySQL/SQLite）\n2. 或删除部分旧数据后再恢复')
+        }
+        throw error
       }
     }
     
-    showNotification('恢复成功！即将刷新页面...', 'success')
+    // 2. 恢复 localStorage 数据
+    let localStorageCount = 0
+    if (backupData._localStorage) {
+      for (const key in backupData._localStorage) {
+        try {
+          localStorage.setItem(key, backupData._localStorage[key])
+          localStorageCount++
+        } catch (error) {
+          if (error.name === 'QuotaExceededError') {
+            console.warn(`localStorage配额不足，跳过: ${key}`)
+            // 跳过非关键数据
+            continue
+          }
+          throw error
+        }
+      }
+    }
+    
+    showNotification(
+      `✅ 恢复成功！\n\n` +
+      `📦 Preferences: ${preferencesCount}项\n` +
+      `💾 localStorage: ${localStorageCount}项\n\n` +
+      `即将刷新页面...`,
+      'success'
+    )
+    
     setTimeout(() => {
       window.location.reload()
-    }, 1500)
+    }, 2000)
   } catch (error) {
     console.error('恢复失败:', error)
     showNotification(`恢复失败: ${error.message}`, 'error')
@@ -10956,48 +10992,34 @@ const exportToExcel = async () => {
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, '我的任务')
     
-    // 生成文件名
-    const filename = `TODO任务_${currentUsername.value}_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.xlsx`
+    // 生成文件名（统一命名规范）
+    const now = new Date()
+    const dateStr = now.toISOString().split('T')[0] // YYYY-MM-DD
+    const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '') // HHmmss
+    const filename = `TODO-App_export_${currentUsername.value}_${dateStr}_${timeStr}.xlsx`
     
     // 检测运行环境
     const isNative = Capacitor.isNativePlatform()
     
     if (isNative) {
-      // 原生应用：尝试多种保存方式
+      // 原生应用：统一保存到 Documents/TODO-App-exports/
       try {
         const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' })
         
-        // 先尝试保存到 Documents 目录
-        try {
-          await Filesystem.writeFile({
-            path: filename,
-            data: wbout,
-            directory: Directory.Documents
-          })
-          showNotification(`文件已保存到：文档/${filename}`, 'success')
-        } catch (docError) {
-          console.warn('Documents 目录保存失败，尝试 ExternalStorage:', docError)
-          
-          // 如果失败，尝试保存到 ExternalStorage（Android）
-          try {
-            await Filesystem.writeFile({
-              path: filename,
-              data: wbout,
-              directory: Directory.ExternalStorage
-            })
-            showNotification(`文件已保存到：外部存储/${filename}`, 'success')
-          } catch (extError) {
-            console.warn('ExternalStorage 保存失败，尝试 Data 目录:', extError)
-            
-            // 最后尝试 Data 目录
-            await Filesystem.writeFile({
-              path: filename,
-              data: wbout,
-              directory: Directory.Data
-            })
-            showNotification(`文件已保存到：应用数据/${filename}`, 'success')
-          }
-        }
+        await Filesystem.writeFile({
+          path: `TODO-App-exports/${filename}`,
+          data: wbout,
+          directory: Directory.Documents,
+          recursive: true
+        })
+        
+        showNotification(
+          `✅ 导出成功！\n\n` +
+          `📄 文件名: ${filename}\n` +
+          `📂 保存位置:\n/storage/emulated/0/Documents/TODO-App-exports/\n\n` +
+          `💡 可通过文件管理器访问`,
+          'success'
+        )
       } catch (nativeError) {
         console.error('原生保存失败，降级到浏览器下载:', nativeError)
         // 降级到浏览器下载方式

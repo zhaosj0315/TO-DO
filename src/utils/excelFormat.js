@@ -150,6 +150,55 @@ export function taskToExcelRow(task, includeUser = false) {
 
 // 从Excel行数据转换为任务对象
 export function excelRowToTask(row, userId) {
+  // Excel日期转换函数
+  const parseExcelDate = (value) => {
+    if (!value) return null;
+    
+    // 如果已经是ISO格式字符串
+    if (typeof value === 'string' && value.includes('T')) {
+      return value;
+    }
+    
+    // 如果是Excel序列号（数字）
+    if (typeof value === 'number') {
+      // Excel日期从1900-01-01开始计算
+      const excelEpoch = new Date(1900, 0, 1);
+      const days = Math.floor(value) - 2; // Excel bug: 1900不是闰年但Excel认为是
+      const milliseconds = (value - Math.floor(value)) * 86400000;
+      const date = new Date(excelEpoch.getTime() + days * 86400000 + milliseconds);
+      return date.toISOString();
+    }
+    
+    // 如果是日期对象
+    if (value instanceof Date) {
+      return value.toISOString();
+    }
+    
+    // 尝试解析字符串
+    try {
+      const date = new Date(value);
+      if (!isNaN(date.getTime())) {
+        return date.toISOString();
+      }
+    } catch (e) {
+      console.warn('日期解析失败:', value);
+    }
+    
+    return null;
+  };
+  
+  // 布尔值转换函数
+  const parseBoolean = (value) => {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') {
+      return value === '是' || value.toLowerCase() === 'true' || value === '1';
+    }
+    if (typeof value === 'number') {
+      return value === 1;
+    }
+    return false;
+  };
+  
   const task = {
     text: row['任务名称'] || '',
     description: row['详细描述'] || '',
@@ -157,15 +206,15 @@ export function excelRowToTask(row, userId) {
     category: CATEGORY_REVERSE[row['分类']] || 'work',
     priority: PRIORITY_REVERSE[row['优先级']] || 'medium',
     status: STATUS_REVERSE[row['状态']] || 'pending',
-    created_at: row['创建时间'] || new Date().toISOString(),
+    created_at: parseExcelDate(row['创建时间']) || new Date().toISOString(),
     customDate: row['指定日期'] || null,
     customTime: row['指定时间'] || null,
     weekdays: row['重复周期'] ? row['重复周期'].split(',').map(d => d.trim()).filter(Boolean) : [],
-    completed_at: row['完成时间'] || null,
-    is_pinned: row['是否置顶'] === '是',
-    enableReminder: row['启用提醒'] === '是',
-    reminderTime: row['提醒时间'] || null,
-    forceReminder: row['强制提醒'] === '是',
+    completed_at: parseExcelDate(row['完成时间']),
+    is_pinned: parseBoolean(row['是否置顶']),
+    enableReminder: parseBoolean(row['启用提醒']),
+    reminderTime: parseExcelDate(row['提醒时间']),
+    forceReminder: parseBoolean(row['强制提醒']),
     user_id: userId,
     // 初始化新字段（Excel导入时为空）
     logs: [],
