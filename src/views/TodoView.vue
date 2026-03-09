@@ -5072,7 +5072,7 @@ const batchDeleteReports = () => {
 const showVersionModal = ref(false) // 版本历史弹窗
 const versionHistory = ref([]) // 版本历史列表
 const hasUnreadVersions = ref(false) // 是否有未读版本
-const CURRENT_VERSION = '0.8.4' // 当前应用版本
+const CURRENT_VERSION = '0.8.5' // 当前应用版本
 const versionModalTitle = ref('🎉 版本更新') // 弹窗标题（动态）
 
 // 版本历史数据
@@ -5081,6 +5081,25 @@ const showAllVersions = ref(false) // 是否展开全部历史
 const initVersionHistory = () => {
   // 完整版本历史
   const allVersions = [
+    {
+      version: '0.8.5',
+      date: '2026-03-09',
+      features: [
+        '🗄️ 数据库接管模式：MySQL/SQLite支持实时双写（本地+数据库），可手动切换',
+        '🔄 数据库配置UI：Bottom Sheet样式，支持本地存储/SQLite/MySQL三种方式',
+        '🔗 任务关联逻辑修复：父任务的subtasks字段自动维护，删除子任务时自动清理'
+      ],
+      improvements: [
+        '⏰ MySQL时间格式修复：使用本地时区（北京时间）而非UTC时间',
+        '🎨 数据库配置弹窗优化：紫色渐变头部、顶部小横条、底部滑出动画',
+        '💡 操作提示增强：未连接时提示"先测试连接"，已连接提示"开启接管模式"'
+      ],
+      fixes: [
+        '🐛 修复父任务subtasks字段未自动更新：创建子任务时自动添加到父任务',
+        '🐛 修复删除子任务时父任务未清理：从父任务的subtasks数组中移除',
+        '🐛 修复SQLite Web平台兼容性：禁用Web端SQLite，提示使用MySQL'
+      ]
+    },
     {
       version: '0.8.4',
       date: '2026-03-08',

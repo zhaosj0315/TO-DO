@@ -14,28 +14,42 @@ class SQLiteService {
 
   // 初始化
   async init() {
-    if (!this.isNative) {
-      return { success: false, message: 'SQLite仅支持Android/iOS' }
-    }
-
     try {
-      // 确保备份目录存在
-      try {
-        await Filesystem.mkdir({
-          path: BACKUP_DIR,
-          directory: Directory.Documents,
-          recursive: true
-        })
-      } catch (e) {
-        // 目录已存在，忽略错误
+      // Web平台：SQLite不支持，建议使用MySQL
+      if (!this.isNative) {
+        return { 
+          success: false, 
+          message: '❌ SQLite仅支持Android/iOS\n💡 网页端请使用MySQL远程备份' 
+        }
+      }
+      
+      // 确保备份目录存在（仅原生平台）
+      if (this.isNative) {
+        try {
+          await Filesystem.mkdir({
+            path: BACKUP_DIR,
+            directory: Directory.Documents,
+            recursive: true
+          })
+        } catch (e) {
+          // 目录已存在，忽略错误
+        }
       }
 
+      // 创建SQLite连接
       this.sqlite = new SQLiteConnection(CapacitorSQLite)
+      
       this.db = await this.sqlite.createConnection(DB_NAME, false, 'no-encryption', 1, false)
       await this.db.open()
       await this.createTables()
-      return { success: true, message: `✅ SQLite连接成功！\n数据库位置: Documents/${BACKUP_DIR}/${DB_NAME}` }
+      
+      const location = this.isNative 
+        ? `Documents/${BACKUP_DIR}/${DB_NAME}` 
+        : 'IndexedDB (浏览器存储)'
+      
+      return { success: true, message: `✅ SQLite连接成功！\n数据库位置: ${location}` }
     } catch (error) {
+      console.error('SQLite初始化失败:', error)
       return { success: false, message: error.message }
     }
   }

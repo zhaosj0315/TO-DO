@@ -1,12 +1,14 @@
 <template>
-  <div v-if="show" class="modal-overlay" @click.self="$emit('close')">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>🗄️ 数据库配置</h3>
-        <button @click="$emit('close')" class="close-btn">✕</button>
-      </div>
+  <transition name="modal">
+    <div v-if="show" class="modal-overlay" @click.self="$emit('close')">
+      <div class="modal-container">
+        <div class="modal-header">
+          <div class="drag-indicator"></div>
+          <h3>🗄️ 数据库配置</h3>
+          <button @click="$emit('close')" class="close-btn">✕</button>
+        </div>
 
-      <div class="modal-body">
+        <div class="modal-body">
         <!-- 数据库类型选择 -->
         <div class="form-group">
           <label>数据库类型</label>
@@ -28,7 +30,7 @@
                 <div class="option-icon">💾</div>
                 <div class="option-text">
                   <div class="option-title">SQLite</div>
-                  <div class="option-desc">本地数据库备份</div>
+                  <div class="option-desc">本地数据库备份（仅Android/iOS）</div>
                 </div>
               </div>
             </label>
@@ -64,8 +66,15 @@
             <div class="info-icon">✅</div>
             <div class="info-text">
               <strong>本地数据库备份</strong><br>
-              数据库位置: Documents/TODO-App-backups/<br>
-              与完整备份保存在同一目录
+              仅支持Android/iOS原生应用<br>
+              数据库位置: Documents/TODO-App-backups/
+            </div>
+          </div>
+          <div class="info-card" style="background: #fff3cd; border-left-color: #ffc107;">
+            <div class="info-icon">💡</div>
+            <div class="info-text">
+              <strong>网页端提示</strong><br>
+              网页端不支持SQLite，请使用MySQL远程备份
             </div>
           </div>
         </div>
@@ -111,17 +120,34 @@
         
         <!-- SQLite/MySQL：显示操作按钮 -->
         <template v-else>
-          <button v-if="!isConnected" @click="testConnection" class="btn-test">
-            🔍 测试连接
-          </button>
-          <button v-if="isConnected" @click="saveConfig" class="btn-save">💾 保存配置</button>
-          <button v-if="isConnected" @click="syncNow" class="btn-sync">
-            ⬆️ 立即同步
-          </button>
+          <div class="button-group">
+            <button v-if="!isConnected" @click="testConnection" class="btn-test">
+              🔍 测试连接
+            </button>
+            <button v-if="isConnected" @click="saveConfig" class="btn-save">
+              💾 保存配置
+            </button>
+            <button v-if="isConnected" @click="syncNow" class="btn-sync">
+              ⬆️ 立即同步
+            </button>
+            <button v-if="isConnected" @click="toggleTakeover" class="btn-takeover" :class="{ active: isTakeover }">
+              <span v-if="isTakeover">✅ 已接管</span>
+              <span v-else>🔄 接管模式</span>
+            </button>
+          </div>
+          
+          <!-- 操作提示 -->
+          <div v-if="!isConnected" class="step-hint">
+            👆 第1步：先测试连接
+          </div>
+          <div v-else-if="!isTakeover" class="step-hint">
+            💡 提示：点击"🔄 接管模式"开启实时同步
+          </div>
         </template>
       </div>
     </div>
-  </div>
+    </div>
+  </transition>
 </template>
 
 <script>
@@ -152,6 +178,7 @@ export default {
     const statusMessage = ref('')
     const statusType = ref('')
     const isConnected = ref(false)
+    const isTakeover = ref(false)
 
     onMounted(async () => {
       // 加载保存的配置
@@ -167,6 +194,8 @@ export default {
             statusMessage.value = '✅ SQLite已就绪'
             statusType.value = 'success'
           }
+          // 加载接管状态
+          isTakeover.value = await sqliteConfigService.getTakeover()
         } else if (value === 'mysql') {
           const savedMysql = await mysqlConfigService.getConfig()
           if (savedMysql) {
@@ -178,6 +207,8 @@ export default {
               statusType.value = 'success'
             }
           }
+          // 加载接管状态
+          isTakeover.value = await mysqlConfigService.getTakeover()
         }
       }
 
@@ -258,6 +289,30 @@ export default {
       }
     }
 
+    const toggleTakeover = async () => {
+      // 检查是否已保存配置
+      if (!isConnected.value) {
+        statusMessage.value = '❌ 请先测试连接并保存配置'
+        statusType.value = 'error'
+        return
+      }
+      
+      isTakeover.value = !isTakeover.value
+      
+      if (dbType.value === 'sqlite') {
+        await sqliteConfigService.setTakeover(isTakeover.value)
+      } else if (dbType.value === 'mysql') {
+        await mysqlConfigService.setTakeover(isTakeover.value)
+      }
+      
+      statusMessage.value = isTakeover.value 
+        ? '✅ 已开启接管模式，数据将实时同步到数据库' 
+        : '✅ 已关闭接管模式，仅手动同步'
+      statusType.value = 'success'
+      
+      console.log('🔄 接管状态已切换:', isTakeover.value)
+    }
+
     return {
       dbType,
       mysqlConfig,
@@ -265,9 +320,11 @@ export default {
       statusMessage,
       statusType,
       isConnected,
+      isTakeover,
       testConnection,
       saveConfig,
-      syncNow
+      syncNow,
+      toggleTakeover
     }
   }
 }
@@ -303,14 +360,11 @@ export default {
   border-left: 4px solid #667eea;
 }
 
-.db-type-option.recommended {
+/* 选中状态：整个卡片高亮 */
+.db-type-option:has(input[type="radio"]:checked) {
   border-color: #667eea;
   background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
-}
-
-.db-type-option:first-child {
-  border-color: #667eea;
-  background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
 }
 
 .option-content {
@@ -385,39 +439,102 @@ export default {
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   z-index: 9999;
 }
 
-.modal-content {
+.modal-container {
   background: white;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 500px;
-  max-height: 80vh;
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-height: 85vh;
   overflow-y: auto;
+  animation: slideUp 0.3s ease-out;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Transition动画 */
+.modal-enter-active {
+  transition: opacity 0.3s ease;
+}
+
+.modal-enter-active .modal-container {
+  animation: slideUp 0.3s ease-out;
+}
+
+.modal-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.modal-leave-active .modal-container {
+  animation: slideDown 0.3s ease-in;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
 }
 
 .modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  position: sticky;
+  top: 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
   padding: 1rem;
-  border-bottom: 1px solid #eee;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 10;
+}
+
+.drag-indicator {
+  width: 40px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 2px;
+  margin-bottom: 0.5rem;
 }
 
 .modal-header h3 {
   margin: 0;
   font-size: 1.2rem;
+  font-weight: 600;
 }
 
 .close-btn {
-  background: none;
+  position: absolute;
+  right: 1rem;
+  top: 1.5rem;
+  background: rgba(255, 255, 255, 0.2);
   border: none;
   font-size: 1.5rem;
   cursor: pointer;
-  color: #999;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .modal-body {
@@ -495,20 +612,70 @@ export default {
 .btn-test {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
+  transition: all 0.2s;
+}
+
+.btn-test:active {
+  transform: scale(0.95);
 }
 
 .btn-save {
   background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
   color: white;
+  transition: all 0.2s;
+}
+
+.btn-save:active {
+  transform: scale(0.95);
 }
 
 .btn-sync {
   background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
   color: white;
+  transition: all 0.2s;
+}
+
+.btn-sync:active {
+  transform: scale(0.95);
 }
 
 .btn-sync:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.btn-takeover {
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  color: #333;
+  transition: all 0.2s;
+  border: 2px solid transparent;
+}
+
+.btn-takeover:active {
+  transform: scale(0.95);
+}
+
+.btn-takeover.active {
+  background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+  color: white;
+  font-weight: 600;
+  border: 2px solid #4ade80;
+  box-shadow: 0 0 10px rgba(74, 222, 128, 0.3);
+}
+
+.button-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.step-hint {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #f0f9ff;
+  border-left: 3px solid #667eea;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: #667eea;
 }
 </style>

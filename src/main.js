@@ -4,6 +4,27 @@ import App from './App.vue'
 import router from './router'
 import './assets/main.css'
 
+// SQLite Web支持
+import { Capacitor } from '@capacitor/core'
+import { defineCustomElements as jeepSqlite } from 'jeep-sqlite/loader'
+import { CapacitorSQLite, SQLiteConnection } from '@capacitor-community/sqlite'
+
+// 初始化SQLite Web组件（异步）
+async function initSQLite() {
+  if (Capacitor.getPlatform() === 'web') {
+    await jeepSqlite(window)
+    
+    // 初始化Web Store
+    const sqlite = new SQLiteConnection(CapacitorSQLite)
+    await sqlite.initWebStore()
+    
+    console.log('✅ jeep-sqlite Web组件已加载并初始化')
+  }
+}
+
+// 立即初始化
+initSQLite()
+
 // AI Configuration Initialization from Environment Variables
 if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
   const apiKey = import.meta.env.VITE_OPENAI_API_KEY

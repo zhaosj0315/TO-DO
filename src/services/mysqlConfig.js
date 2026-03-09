@@ -22,6 +22,21 @@ export const mysqlConfigService = {
     await Preferences.remove({ key: MYSQL_CONFIG_KEY })
   },
 
+  // 设置接管状态
+  async setTakeover(enabled) {
+    const config = await this.getConfig()
+    if (config) {
+      config.takeover = enabled
+      await this.saveConfig(config)
+    }
+  },
+
+  // 获取接管状态
+  async getTakeover() {
+    const config = await this.getConfig()
+    return config?.takeover || false
+  },
+
   // 测试连接
   async testConnection(config) {
     try {

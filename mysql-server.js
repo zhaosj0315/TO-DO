@@ -6,6 +6,19 @@ const app = express()
 app.use(cors())
 app.use(express.json({ limit: '50mb' }))
 
+// 日期格式化函数（保持本地时区）
+function formatDateForMySQL(isoString) {
+  if (!isoString) return null
+  const date = new Date(isoString)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+}
+
 // 测试连接并自动创建数据库
 app.post('/api/mysql/test', async (req, res) => {
   const { host, port, user, password, database } = req.body
@@ -100,9 +113,9 @@ app.post('/api/mysql/sync', async (req, res) => {
 
     // 同步任务
     for (const task of data.tasks) {
-      // 转换ISO日期为MySQL格式，处理undefined
-      const createdAt = task.created_at ? new Date(task.created_at).toISOString().slice(0, 19).replace('T', ' ') : null
-      const completedAt = task.completed_at ? new Date(task.completed_at).toISOString().slice(0, 19).replace('T', ' ') : null
+      // 转换ISO日期为MySQL格式（保持本地时区）
+      const createdAt = task.created_at ? formatDateForMySQL(task.created_at) : null
+      const completedAt = task.completed_at ? formatDateForMySQL(task.completed_at) : null
       
       await connection.execute(
         `INSERT INTO tasks (id, username, text, description, type, category, priority, status, created_at, completed_at, collection_id, parent_task_id, data)

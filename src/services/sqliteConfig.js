@@ -20,5 +20,21 @@ export const sqliteConfigService = {
   // 删除配置
   async removeConfig() {
     await Preferences.remove({ key: SQLITE_CONFIG_KEY })
+  },
+
+  // 设置接管状态
+  async setTakeover(enabled) {
+    const config = await this.getConfig()
+    config.takeover = enabled
+    await this.saveConfig(config)
+    console.log('✅ SQLite接管状态已保存:', enabled, '完整配置:', config)
+  },
+
+  // 获取接管状态
+  async getTakeover() {
+    const config = await this.getConfig()
+    const takeover = config?.takeover || false
+    console.log('📖 SQLite读取接管状态:', takeover, '完整配置:', config)
+    return takeover
   }
 }

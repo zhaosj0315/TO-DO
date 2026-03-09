@@ -1,5 +1,8 @@
 <template>
   <div class="app">
+    <!-- SQLite Web元素（必须在DOM中，带autoSave属性） -->
+    <jeep-sqlite v-if="isWeb" autoSave="true"></jeep-sqlite>
+    
     <div class="bg-decoration">
       <div class="blob blob-1"></div>
       <div class="blob blob-2"></div>
@@ -23,8 +26,21 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { Capacitor } from '@capacitor/core'
 import NotificationSheet from './components/NotificationSheet.vue'
+
+const platform = Capacitor.getPlatform()
+const isWeb = computed(() => platform === 'web')
+
+console.log('🔍 当前平台:', platform, '是否Web:', isWeb.value)
+
+onMounted(() => {
+  if (isWeb.value) {
+    const jeepEl = document.querySelector('jeep-sqlite')
+    console.log('✅ App.vue mounted - jeep-sqlite元素:', jeepEl)
+  }
+})
 
 const notification = reactive({
   show: false,

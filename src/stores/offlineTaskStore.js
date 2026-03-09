@@ -102,12 +102,58 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
     async saveTasks() {
       if (!this.currentUser) return
       
-      // 按用户保存任务
+      // 1. 本地存储（主数据源，优先保存）
       await Preferences.set({ key: `tasks_${this.currentUser}`, value: JSON.stringify(this.tasks) })
       await Preferences.set({ key: `deletedTasks_${this.currentUser}`, value: JSON.stringify(this.deletedTasks) })
       
-      // 自动备份（每天首次变动时）
+      // 2. 自动备份（每天首次变动时）
       await performBackup()
+      
+      // 3. 数据库接管模式（异步，不阻塞）
+      this.syncToDatabase()
+    },
+
+    async syncToDatabase() {
+      try {
+        // 动态导入，避免循环依赖
+        const { mysqlConfigService } = await import('../services/mysqlConfig')
+        const { sqliteConfigService } = await import('../services/sqliteConfig')
+        const { Preferences } = await import('@capacitor/preferences')
+        
+        // 获取数据库类型
+        const { value: dbType } = await Preferences.get({ key: 'db_type' })
+        console.log('🔄 syncToDatabase - dbType:', dbType)
+        
+        if (dbType === 'mysql') {
+          const isTakeover = await mysqlConfigService.getTakeover()
+          console.log('🔄 MySQL接管状态:', isTakeover)
+          if (isTakeover) {
+            const { mysqlSyncService } = await import('../services/mysqlSync')
+            const config = await mysqlConfigService.getConfig()
+            if (config) {
+              console.log('🔄 开始同步到MySQL...')
+              const result = await mysqlSyncService.syncToMySQL(config, {
+                username: this.currentUser,
+                tasks: this.tasks,
+                collections: this.collections
+              })
+              console.log('✅ MySQL同步结果:', result)
+            }
+          }
+        } else if (dbType === 'sqlite') {
+          const isTakeover = await sqliteConfigService.getTakeover()
+          console.log('🔄 SQLite接管状态:', isTakeover)
+          if (isTakeover) {
+            const { sqliteService } = await import('../services/sqliteService')
+            console.log('🔄 开始同步到SQLite...')
+            const result = await sqliteService.sync(this.currentUser, this.tasks, this.collections)
+            console.log('✅ SQLite同步结果:', result)
+          }
+        }
+      } catch (error) {
+        // 数据库同步失败不影响应用使用
+        console.error('❌ 数据库同步失败:', error)
+      }
     },
 
     async addTask(taskData) {
@@ -132,10 +178,24 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         stats: taskData.stats || this.calculateTaskStats([]), // 统计数据
         waitFor: taskData.waitFor || [], // 等待的任务ID数组
         parentTaskId: taskData.parentTaskId || null, // 父任务ID（AI拆分）
+        subtasks: taskData.subtasks || [], // 子任务ID列表
         aiSummary: taskData.aiSummary || null, // AI生成的任务总结
         collectionId: taskData.collectionId !== undefined ? taskData.collectionId : null  // 🆕 所属文件夹ID
       }
       this.tasks.push(task)
+      
+      // 🔧 修复：如果是子任务，自动更新父任务的subtasks字段
+      if (task.parentTaskId) {
+        const parentTask = this.tasks.find(t => t.id === task.parentTaskId)
+        if (parentTask) {
+          if (!parentTask.subtasks) parentTask.subtasks = []
+          if (!parentTask.subtasks.includes(task.id)) {
+            parentTask.subtasks.push(task.id)
+            console.log(`✅ 已将子任务 ${task.id} 添加到父任务 ${parentTask.id} 的subtasks`)
+          }
+        }
+      }
+      
       await this.saveTasks()
       
       // 如果启用了提醒，安排通知
@@ -368,6 +428,15 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
             t.waitFor = t.waitFor.filter(id => id !== taskId)
           }
         })
+        
+        // 🔧 修复：如果是子任务，从父任务的subtasks中移除
+        if (task.parentTaskId) {
+          const parentTask = this.tasks.find(t => t.id === task.parentTaskId)
+          if (parentTask && Array.isArray(parentTask.subtasks)) {
+            parentTask.subtasks = parentTask.subtasks.filter(id => id !== taskId)
+            console.log(`✅ 已从父任务 ${parentTask.id} 的subtasks中移除子任务 ${taskId}`)
+          }
+        }
         
         await this.saveTasks()
       }
