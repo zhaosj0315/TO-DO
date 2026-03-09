@@ -58,7 +58,7 @@ app.post('/api/mysql/test', async (req, res) => {
 
 // 初始化数据库表
 async function initDatabase(connection) {
-  // 1. 任务表（扩展字段）
+  // 1. 任务表（扩展字段 + 优化索引）
   await connection.execute(`
     CREATE TABLE IF NOT EXISTS tasks (
       id BIGINT PRIMARY KEY,
@@ -88,11 +88,17 @@ async function initDatabase(connection) {
       INDEX idx_username (username),
       INDEX idx_status (status),
       INDEX idx_pinned (is_pinned),
-      INDEX idx_collection (collection_id)
+      INDEX idx_collection (collection_id),
+      INDEX idx_user_status (username, status),
+      INDEX idx_user_collection (username, collection_id),
+      INDEX idx_updated_at (updated_at),
+      INDEX idx_parent_task (parent_task_id),
+      INDEX idx_created_at (created_at),
+      INDEX idx_completed_at (completed_at)
     )
   `)
 
-  // 2. 文件夹表
+  // 2. 文件夹表（优化索引）
   await connection.execute(`
     CREATE TABLE IF NOT EXISTS collections (
       id BIGINT PRIMARY KEY,
@@ -105,11 +111,12 @@ async function initDatabase(connection) {
       data JSON,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       INDEX idx_username (username),
-      INDEX idx_parent (parent_id)
+      INDEX idx_parent (parent_id),
+      INDEX idx_user_parent (username, parent_id)
     )
   `)
 
-  // 3. 任务执行日志表
+  // 3. 任务执行日志表（优化索引）
   await connection.execute(`
     CREATE TABLE IF NOT EXISTS task_logs (
       id BIGINT PRIMARY KEY,
@@ -123,7 +130,8 @@ async function initDatabase(connection) {
       tags JSON,
       created_at DATETIME,
       INDEX idx_task_id (task_id),
-      INDEX idx_username (username)
+      INDEX idx_username (username),
+      INDEX idx_user_time (username, created_at)
     )
   `)
 
