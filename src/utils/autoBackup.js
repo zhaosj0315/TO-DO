@@ -44,58 +44,65 @@ async function getAllData() {
   if (usersStr) {
     const users = JSON.parse(usersStr);
     for (const username in users) {
+      // 任务数据
       const tasksKey = `tasks_${username}`;
       const deletedKey = `deletedTasks_${username}`;
       const notifiedKey = `notified_reminders_${username}`;
+      const collectionsKey = `collections_${username}`;
       
       const { value: tasks } = await Preferences.get({ key: tasksKey });
       const { value: deleted } = await Preferences.get({ key: deletedKey });
       const { value: notified } = await Preferences.get({ key: notifiedKey });
+      const { value: collections } = await Preferences.get({ key: collectionsKey });
       
       if (tasks) data[tasksKey] = tasks;
       if (deleted) data[deletedKey] = deleted;
       if (notified) data[notifiedKey] = notified;
+      if (collections) data[collectionsKey] = collections;
     }
   }
   
   // 3. 获取 localStorage 数据（AI相关 + 用户隔离数据）
-  const { value: currentUserStr } = await Preferences.get({ key: 'currentUser' });
-  const currentUser = currentUserStr || 'guest';
+  data._localStorage = {};
   
-  const localStorageKeys = [
-    // 旧版本数据（无用户后缀）
+  // 3.1 旧版本数据（无用户后缀）
+  const globalKeys = [
     'weekly_reports',
     'unified_reports',
     'ai_chat_list',
     'ai_models',
     'ai_default_model',
     'ai_provider_configs',
-    'backupFiles',
-    // 新版本数据（有用户后缀）
-    `weekly_reports_${currentUser}`,
-    `unified_reports_${currentUser}`,
-    `ai_chat_list_${currentUser}`,
-    `ai_models_${currentUser}`,
-    `ai_default_model_${currentUser}`,
-    `ai_provider_configs_${currentUser}`,
-    `last_app_version_${currentUser}`
+    'backupFiles'
   ];
   
-  data._localStorage = {};
-  for (const key of localStorageKeys) {
+  for (const key of globalKeys) {
     const value = localStorage.getItem(key);
     if (value) {
       data._localStorage[key] = value;
     }
   }
   
-  // 4. 获取所有用户的collections数据（文件夹）
+  // 3.2 所有用户的数据（有用户后缀）
   if (usersStr) {
     const users = JSON.parse(usersStr);
     for (const username in users) {
-      const collectionsKey = `collections_${username}`;
-      const { value: collections } = await Preferences.get({ key: collectionsKey });
-      if (collections) data[collectionsKey] = collections;
+      const userKeys = [
+        `weekly_reports_${username}`,
+        `unified_reports_${username}`,
+        `ai_chat_list_${username}`,
+        `ai_models_${username}`,
+        `ai_default_model_${username}`,
+        `ai_provider_configs_${username}`,
+        `last_app_version_${username}`
+      ];
+      
+      for (const key of userKeys) {
+        const value = localStorage.getItem(key);
+        if (value) {
+          data._localStorage[key] = value;
+        }
+      }
     }
   }
   
@@ -172,20 +179,50 @@ export async function restoreBackup(fileName) {
       backupData = JSON.parse(data);
     }
     
+    console.log('📦 开始恢复备份...');
+    let preferencesCount = 0;
+    let localStorageCount = 0;
+    
     // 1. 恢复 Preferences 数据
     for (const key in backupData) {
       if (key === '_localStorage') continue; // 跳过localStorage标记
       await Preferences.set({ key, value: backupData[key] });
+      preferencesCount++;
+      
+      // 记录恢复的数据类型
+      if (key.startsWith('tasks_')) {
+        console.log(`  ✅ 恢复任务数据: ${key}`);
+      } else if (key.startsWith('collections_')) {
+        console.log(`  ✅ 恢复文件夹数据: ${key}`);
+      } else if (key.startsWith('deletedTasks_')) {
+        console.log(`  ✅ 恢复回收站数据: ${key}`);
+      }
     }
     
     // 2. 恢复 localStorage 数据
     if (backupData._localStorage) {
       for (const key in backupData._localStorage) {
         localStorage.setItem(key, backupData._localStorage[key]);
+        localStorageCount++;
+        
+        // 记录恢复的数据类型
+        if (key.includes('ai_models')) {
+          console.log(`  ✅ 恢复AI配置: ${key}`);
+        } else if (key.includes('unified_reports')) {
+          console.log(`  ✅ 恢复报告数据: ${key}`);
+        } else if (key.includes('ai_chat_list')) {
+          console.log(`  ✅ 恢复AI对话: ${key}`);
+        }
       }
     }
     
-    return { success: true };
+    console.log(`✅ 恢复完成！Preferences: ${preferencesCount}项, localStorage: ${localStorageCount}项`);
+    
+    return { 
+      success: true, 
+      preferencesCount, 
+      localStorageCount 
+    };
   } catch (error) {
     console.error('恢复失败:', error);
     return { success: false, error: error.message };
@@ -253,8 +290,8 @@ export async function manualBackup() {
           date: today,
           size: new Blob([jsonContent]).size // 只保存大小，不保存数据
         });
-        // 只保留最近3个备份记录（减少存储占用）
-        if (backups.length > 3) {
+        // 只保留最近20个备份记录
+        if (backups.length > 20) {
           backups.shift();
         }
         localStorage.setItem('backupFiles', JSON.stringify(backups));
@@ -398,9 +435,9 @@ export async function deleteBackup(fileName) {
       localStorage.setItem('backupFiles', JSON.stringify(filtered));
       return { success: true };
     } else {
-      // 移动端：删除文件
+      // 移动端：删除文件（修复路径）
       await Filesystem.deleteFile({
-        path: `backups/${fileName}`,
+        path: `TODO-App-backups/${fileName}`,
         directory: Directory.Documents
       });
       return { success: true };
