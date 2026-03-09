@@ -5072,7 +5072,7 @@ const batchDeleteReports = () => {
 const showVersionModal = ref(false) // 版本历史弹窗
 const versionHistory = ref([]) // 版本历史列表
 const hasUnreadVersions = ref(false) // 是否有未读版本
-const CURRENT_VERSION = '0.8.5' // 当前应用版本
+const CURRENT_VERSION = '0.8.6' // 当前应用版本
 const versionModalTitle = ref('🎉 版本更新') // 弹窗标题（动态）
 
 // 版本历史数据
@@ -5085,38 +5085,30 @@ const initVersionHistory = () => {
       version: '0.8.6',
       date: '2026-03-09',
       features: [
-        '☁️ 接管模式完善：100%数据同步，支持多设备实时共享',
-        '🔄 多设备同步：连接同一数据库+同一账号=数据完全一致',
-        '👥 用户数据隔离：不同用户数据100%隔离，AI配置、对话、报告按用户独立存储'
-      ],
-      improvements: [
-        '🗄️ 数据完整性：任务、日志、文件夹、回收站、AI配置、对话历史、报告全部同步',
-        '🔧 删除操作同步：删除任务时正确从远程数据库移除，确保多设备数据一致',
-        '🛠️ 孤儿任务修复：自动检测并修复文件夹被删除后的孤儿任务'
-      ],
-      fixes: [
-        '🐛 修复localStorage未按用户隔离：AI配置、对话历史现在按用户完全隔离',
-        '🐛 修复接管状态未按用户隔离：每个用户独立的接管开关',
-        '🐛 修复任务日志未恢复：从数据库恢复时正确组装任务执行日志'
-      ]
-    },
-    {
-      version: '0.8.5',
-      date: '2026-03-09',
-      features: [
         '🗄️ 数据库接管模式：MySQL/SQLite支持实时双写（本地+数据库），可手动切换',
+        '☁️ 多设备数据同步：不同设备连接同一数据库+同一账号=数据自动共享',
         '🔄 数据库配置UI：Bottom Sheet样式，支持本地存储/SQLite/MySQL三种方式',
-        '🔗 任务关联逻辑修复：父任务的subtasks字段自动维护，删除子任务时自动清理'
+        '📱 使用方法：右上角"数据库配置" → 配置MySQL → 开启"接管模式"'
       ],
       improvements: [
+        '🗄️ 数据完整性：任务、日志、文件夹、回收站、AI配置全部同步',
+        '👥 用户数据隔离：不同用户数据100%隔离，互不干扰',
+        '🔧 删除操作同步：删除任务时正确从远程数据库移除',
+        '🔄 数据迁移：自动检测旧localStorage数据并迁移到新格式',
         '⏰ MySQL时间格式修复：使用本地时区（北京时间）而非UTC时间',
         '🎨 数据库配置弹窗优化：紫色渐变头部、顶部小横条、底部滑出动画',
         '💡 操作提示增强：未连接时提示"先测试连接"，已连接提示"开启接管模式"'
       ],
       fixes: [
+        '🐛 修复localStorage未按用户隔离：AI配置、对话历史现在按用户独立存储',
+        '🐛 修复接管状态未按用户隔离：每个用户独立的接管开关',
+        '🐛 修复任务日志未恢复：从数据库恢复时正确组装执行日志',
+        '🐛 修复手动同步缺少deletedTasks：回收站数据现在正确同步',
+        '🐛 修复孤儿任务自动修复：文件夹删除后自动修复关联任务',
         '🐛 修复父任务subtasks字段未自动更新：创建子任务时自动添加到父任务',
         '🐛 修复删除子任务时父任务未清理：从父任务的subtasks数组中移除',
-        '🐛 修复SQLite Web平台兼容性：禁用Web端SQLite，提示使用MySQL'
+        '🐛 修复SQLite Web平台兼容性：禁用Web端SQLite，提示使用MySQL',
+        '🔗 任务关联逻辑修复：父任务的subtasks字段自动维护，删除子任务时自动清理'
       ]
     },
     {
@@ -5427,7 +5419,8 @@ const toggleAllVersions = () => {
 
 // 检查版本更新（首次打开或版本升级时自动弹出）
 const checkVersionUpdate = () => {
-  const lastVersion = localStorage.getItem('last_app_version')
+  const currentUser = taskStore.currentUser || 'guest'
+  const lastVersion = localStorage.getItem(`last_app_version_${currentUser}`)
   
   // 首次打开应用 或 版本号变化
   if (!lastVersion || lastVersion !== CURRENT_VERSION) {
@@ -5444,10 +5437,21 @@ const checkVersionUpdate = () => {
       
       showVersionModal.value = true
       
-      // 保存当前版本号
-      localStorage.setItem('last_app_version', CURRENT_VERSION)
+      // 保存当前版本号（按用户隔离）
+      localStorage.setItem(`last_app_version_${currentUser}`, CURRENT_VERSION)
       
-      // 如果是版本升级，显示提示
+      // 如果是v0.8.6，显示接管模式使用提示
+      if (CURRENT_VERSION === '0.8.6' && lastVersion && lastVersion !== CURRENT_VERSION) {
+        setTimeout(() => {
+          showInfo(
+            '💡 接管模式使用提示',
+            '1. 点击右上角"数据库配置"\n2. 选择MySQL并配置数据库信息\n3. 点击"接管模式"开启\n4. 其他设备使用相同配置即可同步数据\n\n详见版本更新说明 ↑',
+            8000
+          )
+        }, 2000)
+      }
+      
+      // 日志
       if (lastVersion && lastVersion !== CURRENT_VERSION) {
         console.log(`版本升级: ${lastVersion} → ${CURRENT_VERSION}`)
       } else {

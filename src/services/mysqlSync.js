@@ -36,6 +36,26 @@ export const mysqlSyncService = {
       
       // 收集localStorage数据（按用户隔离）
       const username = userData.username
+      
+      // 数据迁移：检查旧key并迁移到新key
+      const migrateData = (oldKey, newKey) => {
+        const oldData = localStorage.getItem(oldKey)
+        const newData = localStorage.getItem(newKey)
+        if (oldData && !newData) {
+          console.log(`🔄 迁移数据: ${oldKey} → ${newKey}`)
+          localStorage.setItem(newKey, oldData)
+          return oldData
+        }
+        return newData
+      }
+      
+      // 迁移AI对话
+      migrateData('ai_chat_list', `ai_chat_list_${username}`)
+      
+      // 迁移报告
+      migrateData('weekly_reports', `weekly_reports_${username}`)
+      migrateData('unified_reports', `unified_reports_${username}`)
+      
       const aiModels = JSON.parse(localStorage.getItem(`ai_models_${username}`) || '[]')
       const aiDefaultModel = localStorage.getItem(`ai_default_model_${username}`) || ''
       const aiProviderConfigs = JSON.parse(localStorage.getItem(`ai_provider_configs_${username}`) || '[]')
@@ -59,6 +79,15 @@ export const mysqlSyncService = {
         data: report,
         createdAt: report.createdAt || report.date || new Date().toISOString()
       }))
+      
+      // 调试日志
+      console.log('📊 同步数据统计:')
+      console.log('  - 任务:', userData.tasks?.length || 0)
+      console.log('  - 回收站:', userData.deletedTasks?.length || 0)
+      console.log('  - 文件夹:', userData.collections?.length || 0)
+      console.log('  - AI对话:', aiChatHistory.length)
+      console.log('  - 报告:', allReports.length)
+      console.log('  - AI模型:', aiModels.length)
       
       const response = await fetch(`${baseUrl}/api/mysql/sync`, {
         method: 'POST',

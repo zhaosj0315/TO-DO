@@ -105,6 +105,16 @@
             <label>数据库名</label>
             <input v-model="mysqlConfig.database" placeholder="todo_app" />
           </div>
+          
+          <!-- 自动初始化说明 -->
+          <div class="info-card" style="background: #f0f9ff; border-left-color: #3b82f6; margin-top: 1rem;">
+            <div class="info-icon">💡</div>
+            <div class="info-text" style="color: #1e40af;">
+              <strong>自动初始化</strong><br>
+              点击"测试连接"后，应用会自动创建数据库和所有表<br>
+              无需手动操作，开箱即用
+            </div>
+          </div>
         </div>
 
         <div class="status-info" v-if="statusMessage">
@@ -238,7 +248,7 @@ export default {
       } else if (dbType.value === 'mysql') {
         const success = await mysqlConfigService.testConnection(mysqlConfig.value)
         if (success) {
-          statusMessage.value = '✅ MySQL连接成功！'
+          statusMessage.value = '✅ 连接成功！数据库和表已自动创建'
           statusType.value = 'success'
           isConnected.value = true
         } else {
@@ -269,6 +279,7 @@ export default {
       const userData = {
         username: taskStore.currentUser,
         tasks: taskStore.tasks,
+        deletedTasks: taskStore.deletedTasks,  // ✅ 添加回收站
         collections: taskStore.collections
       }
 
