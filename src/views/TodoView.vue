@@ -10850,35 +10850,59 @@ const handleRestoreFile = async (event) => {
     const text = await file.text()
     const backupData = JSON.parse(text)
     
+    // Web端特殊处理：分批恢复，避免配额限制
+    const isWeb = Capacitor.getPlatform() === 'web'
+    
     // 1. 恢复 Preferences 数据
     let preferencesCount = 0
     for (const key in backupData) {
       if (key === '_localStorage') continue
+      
       try {
-        await Preferences.set({ key, value: backupData[key] })
+        if (isWeb && key.startsWith('tasks_')) {
+          // Web端：任务数据分批保存
+          const tasks = JSON.parse(backupData[key])
+          const batchSize = 50 // 每批50个任务
+          
+          for (let i = 0; i < tasks.length; i += batchSize) {
+            const batch = tasks.slice(i, i + batchSize)
+            const batchKey = `${key}_batch_${Math.floor(i / batchSize)}`
+            await Preferences.set({ key: batchKey, value: JSON.stringify(batch) })
+          }
+          
+          // 保存批次信息
+          await Preferences.set({ 
+            key: `${key}_meta`, 
+            value: JSON.stringify({ 
+              total: tasks.length, 
+              batches: Math.ceil(tasks.length / batchSize) 
+            }) 
+          })
+        } else {
+          await Preferences.set({ key, value: backupData[key] })
+        }
         preferencesCount++
       } catch (error) {
-        if (error.name === 'QuotaExceededError') {
-          throw new Error('数据量过大，超出存储限制。\n\n建议：\n1. 使用数据库模式（MySQL/SQLite）\n2. 或删除部分旧数据后再恢复')
-        }
-        throw error
+        console.error(`恢复失败: ${key}`, error)
+        // 继续恢复其他数据
       }
     }
     
-    // 2. 恢复 localStorage 数据
+    // 2. 恢复 localStorage 数据（跳过大数据）
     let localStorageCount = 0
     if (backupData._localStorage) {
       for (const key in backupData._localStorage) {
         try {
-          localStorage.setItem(key, backupData._localStorage[key])
-          localStorageCount++
-        } catch (error) {
-          if (error.name === 'QuotaExceededError') {
-            console.warn(`localStorage配额不足，跳过: ${key}`)
-            // 跳过非关键数据
+          const value = backupData._localStorage[key]
+          // 跳过超大数据（>1MB）
+          if (value.length > 1024 * 1024) {
+            console.warn(`跳过超大数据: ${key} (${(value.length / 1024).toFixed(0)}KB)`)
             continue
           }
-          throw error
+          localStorage.setItem(key, value)
+          localStorageCount++
+        } catch (error) {
+          console.warn(`localStorage恢复失败，跳过: ${key}`)
         }
       }
     }

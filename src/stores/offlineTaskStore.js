@@ -48,31 +48,54 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       // 🔄 如果开启接管模式，先从数据库拉取最新数据
       await this.pullFromDatabase()
       
-      // 按用户加载任务
-      const { value } = await Preferences.get({ key: `tasks_${this.currentUser}` })
-      if (value) {
-        this.tasks = JSON.parse(value)
-        // 数据迁移：为旧任务添加 logs、stats、waitFor 和 collectionId 字段
-        this.tasks = this.tasks.map(task => {
-          let waitFor = task.waitFor
-          // 兼容旧数据：null → []，单个ID → [ID]
-          if (waitFor === null || waitFor === undefined) {
-            waitFor = []
-          } else if (typeof waitFor === 'number') {
-            waitFor = [waitFor]
+      // 按用户加载任务（支持分批加载）
+      const tasksKey = `tasks_${this.currentUser}`
+      
+      // 检查是否有分批数据
+      const { value: metaValue } = await Preferences.get({ key: `${tasksKey}_meta` })
+      
+      if (metaValue) {
+        // 分批加载
+        const meta = JSON.parse(metaValue)
+        const allTasks = []
+        
+        for (let i = 0; i < meta.batches; i++) {
+          const { value: batchValue } = await Preferences.get({ key: `${tasksKey}_batch_${i}` })
+          if (batchValue) {
+            const batch = JSON.parse(batchValue)
+            allTasks.push(...batch)
           }
-          
-          return {
-            ...task,
-            logs: task.logs || [],
-            stats: task.stats || this.calculateTaskStats([]),
-            waitFor,
-            collectionId: task.collectionId !== undefined ? task.collectionId : null  // 🆕 文件夹ID
-          }
-        })
+        }
+        
+        this.tasks = allTasks
       } else {
-        this.tasks = []
+        // 正常加载
+        const { value } = await Preferences.get({ key: tasksKey })
+        if (value) {
+          this.tasks = JSON.parse(value)
+        } else {
+          this.tasks = []
+        }
       }
+      
+      // 数据迁移：为旧任务添加 logs、stats、waitFor 和 collectionId 字段
+      this.tasks = this.tasks.map(task => {
+        let waitFor = task.waitFor
+        // 兼容旧数据：null → []，单个ID → [ID]
+        if (waitFor === null || waitFor === undefined) {
+          waitFor = []
+        } else if (typeof waitFor === 'number') {
+          waitFor = [waitFor]
+        }
+        
+        return {
+          ...task,
+          logs: task.logs || [],
+          stats: task.stats || this.calculateTaskStats([]),
+          waitFor,
+          collectionId: task.collectionId !== undefined ? task.collectionId : null  // 🆕 文件夹ID
+        }
+      })
       
       const { value: deleted } = await Preferences.get({ key: `deletedTasks_${this.currentUser}` })
       if (deleted) {
