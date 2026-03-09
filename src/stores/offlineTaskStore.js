@@ -97,17 +97,42 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         }
       })
       
-      const { value: deleted } = await Preferences.get({ key: `deletedTasks_${this.currentUser}` })
-      if (deleted) {
-        this.deletedTasks = JSON.parse(deleted)
-        // 数据迁移：为旧任务添加 logs、stats、waitFor 和 collectionId 字段
-        this.deletedTasks = this.deletedTasks.map(task => {
-          let waitFor = task.waitFor
-          if (waitFor === null || waitFor === undefined) {
-            waitFor = []
-          } else if (typeof waitFor === 'number') {
-            waitFor = [waitFor]
+      // 加载回收站数据（支持分批加载）
+      const deletedKey = `deletedTasks_${this.currentUser}`
+      const { value: deletedMetaValue } = await Preferences.get({ key: `${deletedKey}_meta` })
+      
+      if (deletedMetaValue) {
+        // 分批加载
+        const meta = JSON.parse(deletedMetaValue)
+        const allDeleted = []
+        
+        for (let i = 0; i < meta.batches; i++) {
+          const { value: batchValue } = await Preferences.get({ key: `${deletedKey}_batch_${i}` })
+          if (batchValue) {
+            const batch = JSON.parse(batchValue)
+            allDeleted.push(...batch)
           }
+        }
+        
+        this.deletedTasks = allDeleted
+      } else {
+        // 正常加载
+        const { value: deleted } = await Preferences.get({ key: deletedKey })
+        if (deleted) {
+          this.deletedTasks = JSON.parse(deleted)
+        } else {
+          this.deletedTasks = []
+        }
+      }
+      
+      // 数据迁移：为旧任务添加 logs、stats、waitFor 和 collectionId 字段
+      this.deletedTasks = this.deletedTasks.map(task => {
+        let waitFor = task.waitFor
+        if (waitFor === null || waitFor === undefined) {
+          waitFor = []
+        } else if (typeof waitFor === 'number') {
+          waitFor = [waitFor]
+        }
           
           return {
             ...task,

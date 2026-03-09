@@ -10860,17 +10860,53 @@ const handleRestoreFile = async (event) => {
       
       try {
         if (isWeb && key.startsWith('tasks_')) {
-          // Web端：任务数据分批保存
+          // Web端：任务数据分批保存（减小批次大小）
           const tasks = JSON.parse(backupData[key])
-          const batchSize = 50 // 每批50个任务
+          const batchSize = 10 // 减小到每批10个任务
           
           for (let i = 0; i < tasks.length; i += batchSize) {
             const batch = tasks.slice(i, i + batchSize)
             const batchKey = `${key}_batch_${Math.floor(i / batchSize)}`
-            await Preferences.set({ key: batchKey, value: JSON.stringify(batch) })
+            
+            try {
+              await Preferences.set({ key: batchKey, value: JSON.stringify(batch) })
+            } catch (batchError) {
+              if (batchError.name === 'QuotaExceededError') {
+                console.warn(`批次 ${batchKey} 超出配额，跳过`)
+                continue
+              }
+              throw batchError
+            }
           }
           
           // 保存批次信息
+          await Preferences.set({ 
+            key: `${key}_meta`, 
+            value: JSON.stringify({ 
+              total: tasks.length, 
+              batches: Math.ceil(tasks.length / batchSize) 
+            }) 
+          })
+        } else if (isWeb && key.startsWith('deletedTasks_')) {
+          // 回收站数据也分批
+          const tasks = JSON.parse(backupData[key])
+          const batchSize = 10
+          
+          for (let i = 0; i < tasks.length; i += batchSize) {
+            const batch = tasks.slice(i, i + batchSize)
+            const batchKey = `${key}_batch_${Math.floor(i / batchSize)}`
+            
+            try {
+              await Preferences.set({ key: batchKey, value: JSON.stringify(batch) })
+            } catch (batchError) {
+              if (batchError.name === 'QuotaExceededError') {
+                console.warn(`批次 ${batchKey} 超出配额，跳过`)
+                continue
+              }
+              throw batchError
+            }
+          }
+          
           await Preferences.set({ 
             key: `${key}_meta`, 
             value: JSON.stringify({ 
