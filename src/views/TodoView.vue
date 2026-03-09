@@ -531,7 +531,7 @@
         <footer class="app-footer">
           <div class="footer-content">
             <p class="footer-main">
-              <span class="footer-version">TO-DO App v0.8.4</span>
+              <span class="footer-version">TO-DO App v0.8.6</span>
               <span class="footer-divider">·</span>
               <span class="footer-text">
                 {{ currentLanguage === 'zh' ? '完全离线 · 本地存储' : 'Offline · Local Storage' }}
@@ -5081,6 +5081,25 @@ const showAllVersions = ref(false) // 是否展开全部历史
 const initVersionHistory = () => {
   // 完整版本历史
   const allVersions = [
+    {
+      version: '0.8.6',
+      date: '2026-03-09',
+      features: [
+        '☁️ 接管模式完善：100%数据同步，支持多设备实时共享',
+        '🔄 多设备同步：连接同一数据库+同一账号=数据完全一致',
+        '👥 用户数据隔离：不同用户数据100%隔离，AI配置、对话、报告按用户独立存储'
+      ],
+      improvements: [
+        '🗄️ 数据完整性：任务、日志、文件夹、回收站、AI配置、对话历史、报告全部同步',
+        '🔧 删除操作同步：删除任务时正确从远程数据库移除，确保多设备数据一致',
+        '🛠️ 孤儿任务修复：自动检测并修复文件夹被删除后的孤儿任务'
+      ],
+      fixes: [
+        '🐛 修复localStorage未按用户隔离：AI配置、对话历史现在按用户完全隔离',
+        '🐛 修复接管状态未按用户隔离：每个用户独立的接管开关',
+        '🐛 修复任务日志未恢复：从数据库恢复时正确组装任务执行日志'
+      ]
+    },
     {
       version: '0.8.5',
       date: '2026-03-09',

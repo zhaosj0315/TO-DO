@@ -58,6 +58,7 @@ app.post('/api/mysql/test', async (req, res) => {
 
 // 初始化数据库表
 async function initDatabase(connection) {
+  // 1. 任务表（扩展字段）
   await connection.execute(`
     CREATE TABLE IF NOT EXISTS tasks (
       id BIGINT PRIMARY KEY,
@@ -72,13 +73,26 @@ async function initDatabase(connection) {
       completed_at DATETIME,
       collection_id BIGINT,
       parent_task_id BIGINT,
+      weekdays JSON,
+      custom_date DATE,
+      custom_time TIME,
+      is_pinned BOOLEAN DEFAULT FALSE,
+      enable_reminder BOOLEAN DEFAULT FALSE,
+      reminder_time DATETIME,
+      force_reminder BOOLEAN DEFAULT FALSE,
+      wait_for JSON,
+      subtasks JSON,
+      ai_summary TEXT,
       data JSON,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       INDEX idx_username (username),
-      INDEX idx_status (status)
+      INDEX idx_status (status),
+      INDEX idx_pinned (is_pinned),
+      INDEX idx_collection (collection_id)
     )
   `)
 
+  // 2. 文件夹表
   await connection.execute(`
     CREATE TABLE IF NOT EXISTS collections (
       id BIGINT PRIMARY KEY,
@@ -90,7 +104,76 @@ async function initDatabase(connection) {
       is_encrypted BOOLEAN,
       data JSON,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_username (username),
+      INDEX idx_parent (parent_id)
+    )
+  `)
+
+  // 3. 任务执行日志表
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS task_logs (
+      id BIGINT PRIMARY KEY,
+      task_id BIGINT,
+      username VARCHAR(100),
+      log_type VARCHAR(50),
+      content TEXT,
+      duration INT,
+      progress INT,
+      mood VARCHAR(20),
+      tags JSON,
+      created_at DATETIME,
+      INDEX idx_task_id (task_id),
       INDEX idx_username (username)
+    )
+  `)
+
+  // 4. 回收站表
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS deleted_tasks (
+      id BIGINT PRIMARY KEY,
+      username VARCHAR(100),
+      task_data JSON,
+      deleted_at DATETIME,
+      INDEX idx_username (username),
+      INDEX idx_deleted_at (deleted_at)
+    )
+  `)
+
+  // 5. 用户设置表
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS user_settings (
+      username VARCHAR(100) PRIMARY KEY,
+      ai_models JSON,
+      notified_tasks JSON,
+      last_version VARCHAR(20),
+      settings JSON,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `)
+
+  // 6. AI对话历史表
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS ai_chat_history (
+      id VARCHAR(100) PRIMARY KEY,
+      username VARCHAR(100),
+      chat_id VARCHAR(100),
+      messages JSON,
+      created_at DATETIME,
+      INDEX idx_username (username),
+      INDEX idx_chat_id (chat_id)
+    )
+  `)
+
+  // 7. 报告历史表
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS reports (
+      id BIGINT PRIMARY KEY,
+      username VARCHAR(100),
+      report_type VARCHAR(50),
+      report_data JSON,
+      created_at DATETIME,
+      INDEX idx_username (username),
+      INDEX idx_type (report_type)
     )
   `)
 }
@@ -111,17 +194,39 @@ app.post('/api/mysql/sync', async (req, res) => {
 
     await initDatabase(connection)
 
-    // 同步任务
+    // 0. 先删除远程数据库中已被删除的任务（关键！）
+    if (data.deletedTasks && data.deletedTasks.length > 0) {
+      for (const deletedTask of data.deletedTasks) {
+        await connection.execute(
+          'DELETE FROM tasks WHERE id = ? AND username = ?',
+          [deletedTask.id, data.username]
+        )
+        // 同时删除该任务的日志
+        await connection.execute(
+          'DELETE FROM task_logs WHERE task_id = ? AND username = ?',
+          [deletedTask.id, data.username]
+        )
+      }
+    }
+
+    // 1. 同步任务（扩展字段）
     for (const task of data.tasks) {
-      // 转换ISO日期为MySQL格式（保持本地时区）
       const createdAt = task.created_at ? formatDateForMySQL(task.created_at) : null
       const completedAt = task.completed_at ? formatDateForMySQL(task.completed_at) : null
+      const reminderTime = task.reminderTime ? formatDateForMySQL(task.reminderTime) : null
       
       await connection.execute(
-        `INSERT INTO tasks (id, username, text, description, type, category, priority, status, created_at, completed_at, collection_id, parent_task_id, data)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-         ON DUPLICATE KEY UPDATE
-         text=VALUES(text), description=VALUES(description), status=VALUES(status), completed_at=VALUES(completed_at), data=VALUES(data)`,
+        `INSERT INTO tasks (
+          id, username, text, description, type, category, priority, status,
+          created_at, completed_at, collection_id, parent_task_id,
+          weekdays, custom_date, custom_time, is_pinned,
+          enable_reminder, reminder_time, force_reminder,
+          wait_for, subtasks, ai_summary, data
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+          text=VALUES(text), description=VALUES(description), status=VALUES(status),
+          completed_at=VALUES(completed_at), is_pinned=VALUES(is_pinned),
+          wait_for=VALUES(wait_for), subtasks=VALUES(subtasks), data=VALUES(data)`,
         [
           task.id || 0,
           data.username || '',
@@ -135,12 +240,46 @@ app.post('/api/mysql/sync', async (req, res) => {
           completedAt,
           task.collectionId !== undefined ? task.collectionId : null,
           task.parentTaskId !== undefined ? task.parentTaskId : null,
+          JSON.stringify(task.weekdays || []),
+          task.customDate || null,
+          task.customTime || null,
+          task.is_pinned || false,
+          task.enableReminder || false,
+          reminderTime,
+          task.forceReminder || false,
+          JSON.stringify(task.waitFor || []),
+          JSON.stringify(task.subtasks || []),
+          task.aiSummary || null,
           JSON.stringify(task)
         ]
       )
+      
+      // 同步任务日志
+      if (task.logs && task.logs.length > 0) {
+        for (const log of task.logs) {
+          const logCreatedAt = log.timestamp ? formatDateForMySQL(log.timestamp) : null
+          await connection.execute(
+            `INSERT INTO task_logs (id, task_id, username, log_type, content, duration, progress, mood, tags, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE content=VALUES(content), duration=VALUES(duration), progress=VALUES(progress)`,
+            [
+              log.id || Date.now(),
+              task.id,
+              data.username,
+              log.type || '',
+              log.content || '',
+              log.duration || 0,
+              log.progress || 0,
+              log.mood || '',
+              JSON.stringify(log.tags || []),
+              logCreatedAt
+            ]
+          )
+        }
+      }
     }
 
-    // 同步文件夹
+    // 2. 同步文件夹
     for (const collection of data.collections || []) {
       await connection.execute(
         `INSERT INTO collections (id, username, name, icon, parent_id, order_num, is_encrypted, data)
@@ -159,11 +298,90 @@ app.post('/api/mysql/sync', async (req, res) => {
         ]
       )
     }
+    
+    // 3. 同步回收站
+    if (data.deletedTasks && data.deletedTasks.length > 0) {
+      for (const task of data.deletedTasks) {
+        const deletedAt = task.deleted_at ? formatDateForMySQL(task.deleted_at) : null
+        await connection.execute(
+          `INSERT INTO deleted_tasks (id, username, task_data, deleted_at)
+           VALUES (?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE task_data=VALUES(task_data), deleted_at=VALUES(deleted_at)`,
+          [task.id, data.username, JSON.stringify(task), deletedAt]
+        )
+      }
+    }
+    
+    // 4. 同步用户配置
+    if (data.userSettings) {
+      await connection.execute(
+        `INSERT INTO user_settings (username, ai_models, notified_tasks, last_version, settings)
+         VALUES (?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE
+         ai_models=VALUES(ai_models), notified_tasks=VALUES(notified_tasks), 
+         last_version=VALUES(last_version), settings=VALUES(settings)`,
+        [
+          data.username,
+          JSON.stringify(data.userSettings.aiModels || []),
+          JSON.stringify(data.userSettings.notifiedTasks || []),
+          data.userSettings.lastVersion || '',
+          JSON.stringify(data.userSettings.settings || {})
+        ]
+      )
+    }
+    
+    // 5. 同步AI对话历史
+    if (data.aiChatHistory && data.aiChatHistory.length > 0) {
+      for (const chat of data.aiChatHistory) {
+        const createdAt = chat.createdAt ? formatDateForMySQL(chat.createdAt) : null
+        await connection.execute(
+          `INSERT INTO ai_chat_history (id, username, chat_id, messages, created_at)
+           VALUES (?, ?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE messages=VALUES(messages)`,
+          [
+            chat.id || `${Date.now()}_${Math.random()}`,
+            data.username,
+            chat.chatId || '',
+            JSON.stringify(chat.messages || []),
+            createdAt
+          ]
+        )
+      }
+    }
+    
+    // 6. 同步报告历史
+    if (data.reports && data.reports.length > 0) {
+      for (const report of data.reports) {
+        const createdAt = report.createdAt ? formatDateForMySQL(report.createdAt) : null
+        await connection.execute(
+          `INSERT INTO reports (id, username, report_type, report_data, created_at)
+           VALUES (?, ?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE report_data=VALUES(report_data)`,
+          [
+            report.id || Date.now(),
+            data.username,
+            report.type || '',
+            JSON.stringify(report.data || {}),
+            createdAt
+          ]
+        )
+      }
+    }
 
     await connection.end()
+    
+    const stats = {
+      tasks: data.tasks.length,
+      collections: (data.collections || []).length,
+      deletedTasks: (data.deletedTasks || []).length,
+      logs: data.tasks.reduce((sum, t) => sum + (t.logs?.length || 0), 0),
+      aiChats: (data.aiChatHistory || []).length,
+      reports: (data.reports || []).length
+    }
+    
     res.json({ 
       success: true, 
-      message: `同步成功: ${data.tasks.length} 个任务, ${(data.collections || []).length} 个文件夹` 
+      message: `同步成功: ${stats.tasks}任务, ${stats.collections}文件夹, ${stats.deletedTasks}回收站, ${stats.logs}日志, ${stats.aiChats}对话, ${stats.reports}报告` 
     })
   } catch (error) {
     if (connection) await connection.end()
@@ -185,13 +403,86 @@ app.post('/api/mysql/restore', async (req, res) => {
       database: config.database || 'todo_app'
     })
 
+    // 辅助函数：安全解析JSON
+    const safeJsonParse = (data) => {
+      if (!data) return null
+      if (typeof data === 'object') return data  // 已经是对象，直接返回
+      try {
+        return JSON.parse(data)  // 是字符串，尝试解析
+      } catch (e) {
+        console.error('JSON解析失败:', e)
+        return null
+      }
+    }
+
+    // 1. 恢复任务
     const [tasks] = await connection.execute(
       'SELECT data FROM tasks WHERE username = ?',
       [username]
     )
+    
+    // 2. 恢复任务日志（关键！）
+    const [taskLogs] = await connection.execute(
+      'SELECT task_id, id, log_type, content, duration, progress, mood, tags, created_at FROM task_logs WHERE username = ?',
+      [username]
+    )
+    
+    // 3. 将日志组装到任务中
+    const taskMap = new Map()
+    tasks.forEach(row => {
+      const task = safeJsonParse(row.data)
+      if (task) {
+        task.logs = []  // 初始化日志数组
+        taskMap.set(task.id, task)
+      }
+    })
+    
+    // 将日志添加到对应的任务
+    taskLogs.forEach(log => {
+      const task = taskMap.get(log.task_id)
+      if (task) {
+        task.logs.push({
+          id: log.id,
+          type: log.log_type,
+          content: log.content,
+          duration: log.duration,
+          progress: log.progress,
+          mood: log.mood,
+          tags: safeJsonParse(log.tags) || [],
+          timestamp: log.created_at
+        })
+      }
+    })
+    
+    const tasksWithLogs = Array.from(taskMap.values())
 
+    // 4. 恢复文件夹
     const [collections] = await connection.execute(
       'SELECT data FROM collections WHERE username = ?',
+      [username]
+    )
+    
+    // 5. 恢复回收站
+    const [deletedTasks] = await connection.execute(
+      'SELECT task_data FROM deleted_tasks WHERE username = ?',
+      [username]
+    )
+    
+    // 6. 恢复用户配置
+    const [userSettings] = await connection.execute(
+      'SELECT ai_models, notified_tasks, last_version, settings FROM user_settings WHERE username = ?',
+      [username]
+    )
+    
+    // 7. 恢复AI对话
+    const [aiChats] = await connection.execute(
+      'SELECT chat_id, messages FROM ai_chat_history WHERE username = ? ORDER BY created_at DESC',
+      [username]
+    )
+    
+    // 8. 恢复报告
+    const [reports] = await connection.execute(
+      'SELECT report_type, report_data FROM reports WHERE username = ? ORDER BY created_at DESC',
       [username]
     )
 
@@ -200,8 +491,23 @@ app.post('/api/mysql/restore', async (req, res) => {
     res.json({
       success: true,
       data: {
-        tasks: tasks.map(row => JSON.parse(row.data)),
-        collections: collections.map(row => JSON.parse(row.data))
+        tasks: tasksWithLogs,  // 包含日志的任务
+        collections: collections.map(row => safeJsonParse(row.data)).filter(Boolean),
+        deletedTasks: deletedTasks.map(row => safeJsonParse(row.task_data)).filter(Boolean),
+        userSettings: userSettings[0] ? {
+          aiModels: safeJsonParse(userSettings[0].ai_models) || [],
+          notifiedTasks: safeJsonParse(userSettings[0].notified_tasks) || [],
+          lastVersion: userSettings[0].last_version || '',
+          settings: safeJsonParse(userSettings[0].settings) || {}
+        } : null,
+        aiChatHistory: aiChats.map(row => ({
+          id: row.chat_id,
+          messages: safeJsonParse(row.messages) || []
+        })),
+        reports: reports.map(row => ({
+          type: row.report_type,
+          ...(safeJsonParse(row.report_data) || {})
+        }))
       }
     })
   } catch (error) {

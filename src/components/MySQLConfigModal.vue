@@ -130,6 +130,9 @@
             <button v-if="isConnected" @click="syncNow" class="btn-sync">
               ⬆️ 立即同步
             </button>
+            <button v-if="isConnected" @click="restoreData" class="btn-restore">
+              ⬇️ 恢复数据
+            </button>
             <button v-if="isConnected" @click="toggleTakeover" class="btn-takeover" :class="{ active: isTakeover }">
               <span v-if="isTakeover">✅ 已接管</span>
               <span v-else>🔄 接管模式</span>
@@ -276,15 +279,47 @@ export default {
             userData.tasks, 
             userData.collections
           )
-          statusMessage.value = result.success ? `✅ ${result.message}` : `❌ ${result.message}`
+          statusMessage.value = result.message
           statusType.value = result.success ? 'success' : 'error'
         } else if (dbType.value === 'mysql') {
           const result = await mysqlSyncService.syncToMySQL(mysqlConfig.value, userData)
-          statusMessage.value = result.success ? `✅ ${result.message}` : `❌ 同步失败: ${result.error}`
+          statusMessage.value = result.message || '✅ 同步成功'
           statusType.value = result.success ? 'success' : 'error'
         }
       } catch (error) {
         statusMessage.value = `❌ 同步失败: ${error.message}`
+        statusType.value = 'error'
+      }
+    }
+    
+    const restoreData = async () => {
+      if (!confirm('确定要从数据库恢复数据吗？\n\n⚠️ 这将覆盖本地所有数据！')) {
+        return
+      }
+      
+      statusMessage.value = '正在恢复数据...'
+      statusType.value = 'info'
+      
+      try {
+        const result = await mysqlSyncService.restoreFromMySQL(
+          mysqlConfig.value, 
+          taskStore.currentUser
+        )
+        
+        if (result.success) {
+          statusMessage.value = '✅ 数据恢复成功！请刷新页面查看'
+          statusType.value = 'success'
+          
+          // 3秒后自动刷新页面
+          setTimeout(() => {
+            window.location.reload()
+          }, 3000)
+        } else {
+          statusMessage.value = `❌ 恢复失败: ${result.error}`
+          statusType.value = 'error'
+        }
+      } catch (error) {
+        statusMessage.value = `❌ 恢复失败: ${error.message}`
         statusType.value = 'error'
       }
     }
@@ -324,6 +359,7 @@ export default {
       testConnection,
       saveConfig,
       syncNow,
+      restoreData,
       toggleTakeover
     }
   }

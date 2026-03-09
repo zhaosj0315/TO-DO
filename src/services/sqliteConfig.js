@@ -22,19 +22,30 @@ export const sqliteConfigService = {
     await Preferences.remove({ key: SQLITE_CONFIG_KEY })
   },
 
-  // 设置接管状态
-  async setTakeover(enabled) {
-    const config = await this.getConfig()
-    config.takeover = enabled
-    await this.saveConfig(config)
-    console.log('✅ SQLite接管状态已保存:', enabled, '完整配置:', config)
+  // 设置接管状态（按用户隔离）
+  async setTakeover(enabled, username) {
+    if (!username) {
+      // 兼容旧调用，从Preferences获取当前用户
+      const { value } = await Preferences.get({ key: 'currentUser' })
+      username = value || 'guest'
+    }
+    await Preferences.set({
+      key: `sqlite_takeover_${username}`,
+      value: enabled ? 'true' : 'false'
+    })
+    console.log('✅ SQLite接管状态已保存:', enabled, 'username:', username)
   },
 
-  // 获取接管状态
-  async getTakeover() {
-    const config = await this.getConfig()
-    const takeover = config?.takeover || false
-    console.log('📖 SQLite读取接管状态:', takeover, '完整配置:', config)
+  // 获取接管状态（按用户隔离）
+  async getTakeover(username) {
+    if (!username) {
+      // 兼容旧调用，从Preferences获取当前用户
+      const { value } = await Preferences.get({ key: 'currentUser' })
+      username = value || 'guest'
+    }
+    const { value } = await Preferences.get({ key: `sqlite_takeover_${username}` })
+    const takeover = value === 'true'
+    console.log('📖 SQLite读取接管状态:', takeover, 'username:', username)
     return takeover
   }
 }

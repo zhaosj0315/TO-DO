@@ -45,6 +45,9 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
     async loadTasks() {
       if (!this.currentUser) return
       
+      // 🔄 如果开启接管模式，先从数据库拉取最新数据
+      await this.pullFromDatabase()
+      
       // 按用户加载任务
       const { value } = await Preferences.get({ key: `tasks_${this.currentUser}` })
       if (value) {
@@ -135,6 +138,7 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
               const result = await mysqlSyncService.syncToMySQL(config, {
                 username: this.currentUser,
                 tasks: this.tasks,
+                deletedTasks: this.deletedTasks,  // ✅ 新增：回收站
                 collections: this.collections
               })
               console.log('✅ MySQL同步结果:', result)
@@ -153,6 +157,58 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       } catch (error) {
         // 数据库同步失败不影响应用使用
         console.error('❌ 数据库同步失败:', error)
+      }
+    },
+    
+    // 🆕 从数据库拉取最新数据（接管模式自动同步）
+    async pullFromDatabase() {
+      try {
+        const { mysqlConfigService } = await import('../services/mysqlConfig')
+        const { Preferences } = await import('@capacitor/preferences')
+        
+        // 获取数据库类型
+        const { value: dbType } = await Preferences.get({ key: 'db_type' })
+        
+        if (dbType === 'mysql') {
+          const isTakeover = await mysqlConfigService.getTakeover()
+          if (isTakeover) {
+            const { mysqlSyncService } = await import('../services/mysqlSync')
+            const config = await mysqlConfigService.getConfig()
+            if (config) {
+              console.log('🔽 从MySQL拉取最新数据...')
+              const result = await mysqlSyncService.restoreFromMySQL(config, this.currentUser)
+              if (result.success) {
+                console.log('✅ 数据拉取成功，已自动合并到本地')
+                // restoreFromMySQL 已经将数据合并并保存到 Preferences
+                // loadTasks() 后续会读取 Preferences，这里不需要重复读取
+                
+                // 🔧 修复孤儿任务（文件夹被删除但任务仍引用）
+                this.fixOrphanTasks()
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('❌ 从数据库拉取数据失败:', error)
+      }
+    },
+    
+    // 🆕 修复孤儿任务
+    fixOrphanTasks() {
+      const collectionIds = new Set(this.collections.map(c => c.id))
+      let fixedCount = 0
+      
+      this.tasks.forEach(task => {
+        if (task.collectionId && !collectionIds.has(task.collectionId)) {
+          console.log(`🔧 修复孤儿任务: ${task.text} (collectionId: ${task.collectionId} 不存在)`)
+          task.collectionId = null
+          fixedCount++
+        }
+      })
+      
+      if (fixedCount > 0) {
+        console.log(`✅ 已修复 ${fixedCount} 个孤儿任务`)
+        this.saveTasks() // 保存修复后的数据
       }
     },
 

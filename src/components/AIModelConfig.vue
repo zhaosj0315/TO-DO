@@ -276,12 +276,17 @@
 import { ref, computed, watch } from 'vue'
 import LoadingSpinner from './LoadingSpinner.vue'
 import { showSuccess, showError, showConfirm, showInfo, showWarning } from '@/services/notificationService'
+import { useOfflineTaskStore } from '@/stores/offlineTaskStore'
 
 const props = defineProps({
   visible: Boolean
 })
 
 const emit = defineEmits(['close', 'update'])
+
+// 获取当前用户
+const taskStore = useOfflineTaskStore()
+const getCurrentUsername = () => taskStore.currentUser || 'guest'
 
 // ==================== 预设厂商配置 ====================
 const PRESET_PROVIDERS = [
@@ -384,12 +389,13 @@ const getApiUrl = (baseUrl, type, endpoint) => {
   return baseUrl
 }
 
-// 从localStorage加载配置
-const models = ref(JSON.parse(localStorage.getItem('ai_models') || '[]'))
-const defaultModelId = ref(localStorage.getItem('ai_default_model') || '')
+// 从localStorage加载配置（按用户隔离）
+const username = getCurrentUsername()
+const models = ref(JSON.parse(localStorage.getItem(`ai_models_${username}`) || '[]'))
+const defaultModelId = ref(localStorage.getItem(`ai_default_model_${username}`) || '')
 
-// 厂商配置（持久化）
-const providerConfigs = ref(JSON.parse(localStorage.getItem('ai_provider_configs') || '[]'))
+// 厂商配置（持久化，按用户隔离）
+const providerConfigs = ref(JSON.parse(localStorage.getItem(`ai_provider_configs_${username}`) || '[]'))
 const selectedProviderId = ref('')
 const showProviderManager = ref(false)
 
@@ -575,11 +581,12 @@ watch(() => newModel.value.modelName, (modelName) => {
   }
 })
 
-// 保存到localStorage
+// 保存到localStorage（按用户隔离）
 watch([models, defaultModelId, providerConfigs], () => {
-  localStorage.setItem('ai_models', JSON.stringify(models.value))
-  localStorage.setItem('ai_default_model', defaultModelId.value)
-  localStorage.setItem('ai_provider_configs', JSON.stringify(providerConfigs.value))
+  const username = getCurrentUsername()
+  localStorage.setItem(`ai_models_${username}`, JSON.stringify(models.value))
+  localStorage.setItem(`ai_default_model_${username}`, defaultModelId.value)
+  localStorage.setItem(`ai_provider_configs_${username}`, JSON.stringify(providerConfigs.value))
   emit('update', { models: models.value, defaultModelId: defaultModelId.value })
 }, { deep: true })
 

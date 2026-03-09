@@ -1,1 +1,3 @@
-MySQL同步服务运行在 http://localhost:3000
+✅ MySQL同步服务运行在:
+   本地: http://localhost:3000
+   局域网: http://192.168.31.159:3000

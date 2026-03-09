@@ -22,19 +22,28 @@ export const mysqlConfigService = {
     await Preferences.remove({ key: MYSQL_CONFIG_KEY })
   },
 
-  // 设置接管状态
-  async setTakeover(enabled) {
-    const config = await this.getConfig()
-    if (config) {
-      config.takeover = enabled
-      await this.saveConfig(config)
+  // 设置接管状态（按用户隔离）
+  async setTakeover(enabled, username) {
+    if (!username) {
+      // 兼容旧调用，从Preferences获取当前用户
+      const { value } = await Preferences.get({ key: 'currentUser' })
+      username = value || 'guest'
     }
+    await Preferences.set({
+      key: `mysql_takeover_${username}`,
+      value: enabled ? 'true' : 'false'
+    })
   },
 
-  // 获取接管状态
-  async getTakeover() {
-    const config = await this.getConfig()
-    return config?.takeover || false
+  // 获取接管状态（按用户隔离）
+  async getTakeover(username) {
+    if (!username) {
+      // 兼容旧调用，从Preferences获取当前用户
+      const { value } = await Preferences.get({ key: 'currentUser' })
+      username = value || 'guest'
+    }
+    const { value } = await Preferences.get({ key: `mysql_takeover_${username}` })
+    return value === 'true'
   },
 
   // 测试连接
