@@ -1271,6 +1271,18 @@
             <div class="entry-arrow">›</div>
           </div>
 
+          <!-- MySQL数据库配置入口 -->
+          <div class="pomodoro-entry" @click="showMySQLConfig = true">
+            <div class="entry-icon">🗄️</div>
+            <div class="entry-content">
+              <div class="entry-title">数据库配置</div>
+              <div class="entry-summary">
+                可选：同步数据到MySQL数据库
+              </div>
+            </div>
+            <div class="entry-arrow">›</div>
+          </div>
+
           <!-- 修改密码入口 -->
           <div class="settings-entry" @click="showPasswordModal = true">
             <div class="entry-icon">🔒</div>
@@ -1430,6 +1442,9 @@
 
     <!-- AI配置弹窗 -->
     <AIConfigModal v-if="showAIConfig" @close="showAIConfig = false" @saved="handleAIConfigSaved" />
+
+    <!-- MySQL数据库配置弹窗 -->
+    <MySQLConfigModal :show="showMySQLConfig" @close="showMySQLConfig = false" />
 
     <!-- 联系与支持详情弹窗 -->
     <!-- 联系与支持 (Bottom Sheet) -->
@@ -3811,6 +3826,7 @@ import { AIReportGenerator } from '../services/aiReportGenerator'
 import { AIChatService } from '../services/aiChatService'
 import { AITextEnhancer } from '../services/aiTextEnhancer'
 import AIConfigModal from '../components/AIConfigModal.vue'
+import MySQLConfigModal from '../components/MySQLConfigModal.vue'
 import TaskPreviewModal from '../components/TaskPreviewModal.vue'
 import SubtaskPreviewModal from '../components/SubtaskPreviewModal.vue'
 import AddSubtaskModal from '../components/AddSubtaskModal.vue'
@@ -4309,6 +4325,7 @@ const showTrash = ref(false)
 const showProfile = ref(false)
 const showSupport = ref(false)
 const showAIConfig = ref(false)
+const showMySQLConfig = ref(false)
 const showAIChat = ref(false)
 
 // 🆕 文件夹相关状态
