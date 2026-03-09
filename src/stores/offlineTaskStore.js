@@ -144,10 +144,6 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       })
       
       // 🆕 加载文件夹
-        this.deletedTasks = []
-      }
-      
-      // 🆕 加载文件夹
       await this.loadCollections()
     },
 
