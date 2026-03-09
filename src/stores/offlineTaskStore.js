@@ -133,16 +133,17 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         } else if (typeof waitFor === 'number') {
           waitFor = [waitFor]
         }
-          
-          return {
-            ...task,
-            logs: task.logs || [],
-            stats: task.stats || this.calculateTaskStats([]),
-            waitFor,
-            collectionId: task.collectionId !== undefined ? task.collectionId : null  // 🆕 文件夹ID
-          }
-        })
-      } else {
+        
+        return {
+          ...task,
+          logs: task.logs || [],
+          stats: task.stats || this.calculateTaskStats([]),
+          waitFor,
+          collectionId: task.collectionId !== undefined ? task.collectionId : null
+        }
+      })
+      
+      // 🆕 加载文件夹
         this.deletedTasks = []
       }
       
