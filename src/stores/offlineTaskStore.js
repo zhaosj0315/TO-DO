@@ -45,8 +45,16 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
     async loadTasks() {
       if (!this.currentUser) return
       
-      // 🔄 如果开启接管模式，先从数据库拉取最新数据
-      await this.pullFromDatabase()
+      // 🔄 只有在接管模式开启时，才从数据库拉取
+      // ⚠️ 修复：避免未勾选接管时仍然从数据库读取
+      const shouldPullFromDB = await this.checkDatabaseTakeover()
+      console.log('🔍 loadTasks - 是否从数据库拉取:', shouldPullFromDB)
+      if (shouldPullFromDB) {
+        console.log('🔽 开始从数据库拉取数据...')
+        await this.pullFromDatabase()
+      } else {
+        console.log('✅ 跳过数据库拉取，直接从本地 Preferences 加载')
+      }
       
       // 按用户加载任务（支持分批加载）
       const tasksKey = `tasks_${this.currentUser}`
@@ -56,7 +64,9 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       
       if (metaValue) {
         // 分批加载
+        console.log('📦 loadTasks - 检测到分批数据，开始分批加载')
         const meta = JSON.parse(metaValue)
+        console.log('📦 loadTasks - 分批元数据:', meta)
         const allTasks = []
         
         for (let i = 0; i < meta.batches; i++) {
@@ -64,17 +74,23 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
           if (batchValue) {
             const batch = JSON.parse(batchValue)
             allTasks.push(...batch)
+            console.log(`📦 loadTasks - 加载批次 ${i}: ${batch.length} 个任务`)
           }
         }
         
         this.tasks = allTasks
+        console.log('📦 loadTasks - 分批加载完成，总任务数:', this.tasks.length)
+        console.log('📦 loadTasks - 已完成任务数量:', this.tasks.filter(t => t.status === 'completed').length)
       } else {
         // 正常加载
         const { value } = await Preferences.get({ key: tasksKey })
         if (value) {
           this.tasks = JSON.parse(value)
+          console.log('📖 loadTasks - 从 Preferences 加载任务数量:', this.tasks.length)
+          console.log('📖 loadTasks - 已完成任务数量:', this.tasks.filter(t => t.status === 'completed').length)
         } else {
           this.tasks = []
+          console.log('📖 loadTasks - Preferences 中无数据，初始化为空数组')
         }
       }
       
@@ -151,9 +167,29 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
     async saveTasks() {
       if (!this.currentUser) return
       
+      console.log('💾 saveTasks - 开始保存任务到本地 Preferences')
+      console.log('💾 saveTasks - 任务数量:', this.tasks.length)
+      console.log('💾 saveTasks - 已完成任务数量:', this.tasks.filter(t => t.status === 'completed').length)
+      
+      const tasksKey = `tasks_${this.currentUser}`
+      
+      // 🔧 修复：清除旧的分批数据，避免加载时读取旧数据
+      const { value: metaValue } = await Preferences.get({ key: `${tasksKey}_meta` })
+      if (metaValue) {
+        console.log('🧹 saveTasks - 检测到旧的分批数据，开始清理')
+        const meta = JSON.parse(metaValue)
+        for (let i = 0; i < meta.batches; i++) {
+          await Preferences.remove({ key: `${tasksKey}_batch_${i}` })
+        }
+        await Preferences.remove({ key: `${tasksKey}_meta` })
+        console.log('✅ saveTasks - 旧分批数据已清理')
+      }
+      
       // 1. 本地存储（主数据源，优先保存）
-      await Preferences.set({ key: `tasks_${this.currentUser}`, value: JSON.stringify(this.tasks) })
+      await Preferences.set({ key: tasksKey, value: JSON.stringify(this.tasks) })
       await Preferences.set({ key: `deletedTasks_${this.currentUser}`, value: JSON.stringify(this.deletedTasks) })
+      
+      console.log('✅ saveTasks - 本地 Preferences 保存完成')
       
       // 2. 自动备份（每天首次变动时）
       await performBackup()
@@ -164,6 +200,13 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
 
     async syncToDatabase() {
       try {
+        // 🔧 修复：只有勾选接管时才同步到数据库
+        const shouldSync = await this.checkDatabaseTakeover()
+        if (!shouldSync) {
+          console.log('⏭️ 数据库接管未开启，跳过同步')
+          return
+        }
+        
         // 动态导入，避免循环依赖
         const { mysqlConfigService } = await import('../services/mysqlConfig')
         const { sqliteConfigService } = await import('../services/sqliteConfig')
@@ -174,35 +217,55 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         console.log('🔄 syncToDatabase - dbType:', dbType)
         
         if (dbType === 'mysql') {
-          const isTakeover = await mysqlConfigService.getTakeover()
-          console.log('🔄 MySQL接管状态:', isTakeover)
-          if (isTakeover) {
-            const { mysqlSyncService } = await import('../services/mysqlSync')
-            const config = await mysqlConfigService.getConfig()
-            if (config) {
-              console.log('🔄 开始同步到MySQL...')
-              const result = await mysqlSyncService.syncToMySQL(config, {
-                username: this.currentUser,
-                tasks: this.tasks,
-                deletedTasks: this.deletedTasks,  // ✅ 新增：回收站
-                collections: this.collections
-              })
-              console.log('✅ MySQL同步结果:', result)
-            }
+          const { mysqlSyncService } = await import('../services/mysqlSync')
+          const config = await mysqlConfigService.getConfig()
+          if (config) {
+            console.log('🔄 开始同步到MySQL...')
+            const result = await mysqlSyncService.syncToMySQL(config, {
+              username: this.currentUser,
+              tasks: this.tasks,
+              deletedTasks: this.deletedTasks,
+              collections: this.collections
+            })
+            console.log('✅ MySQL同步结果:', result)
           }
         } else if (dbType === 'sqlite') {
-          const isTakeover = await sqliteConfigService.getTakeover()
-          console.log('🔄 SQLite接管状态:', isTakeover)
-          if (isTakeover) {
-            const { sqliteService } = await import('../services/sqliteService')
-            console.log('🔄 开始同步到SQLite...')
-            const result = await sqliteService.sync(this.currentUser, this.tasks, this.collections)
-            console.log('✅ SQLite同步结果:', result)
-          }
+          const { sqliteService } = await import('../services/sqliteService')
+          console.log('🔄 开始同步到SQLite...')
+          const result = await sqliteService.sync(this.currentUser, this.tasks, this.collections)
+          console.log('✅ SQLite同步结果:', result)
         }
       } catch (error) {
         // 数据库同步失败不影响应用使用
         console.error('❌ 数据库同步失败:', error)
+      }
+    },
+    
+    // 🆕 检查数据库接管状态（统一判断逻辑）
+    async checkDatabaseTakeover() {
+      try {
+        const { Preferences } = await import('@capacitor/preferences')
+        const { value: dbType } = await Preferences.get({ key: 'db_type' })
+        
+        console.log('🔍 checkDatabaseTakeover - db_type:', dbType)
+        
+        if (dbType === 'mysql') {
+          const { mysqlConfigService } = await import('../services/mysqlConfig')
+          const isTakeover = await mysqlConfigService.getTakeover()
+          console.log('🔍 checkDatabaseTakeover - MySQL接管状态:', isTakeover)
+          return isTakeover
+        } else if (dbType === 'sqlite') {
+          const { sqliteConfigService } = await import('../services/sqliteConfig')
+          const isTakeover = await sqliteConfigService.getTakeover()
+          console.log('🔍 checkDatabaseTakeover - SQLite接管状态:', isTakeover)
+          return isTakeover
+        }
+        
+        console.log('🔍 checkDatabaseTakeover - 无数据库类型，返回 false')
+        return false  // 没有设置数据库类型，默认不接管
+      } catch (error) {
+        console.error('❌ 检查数据库接管状态失败:', error)
+        return false
       }
     },
     
@@ -216,22 +279,27 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         const { value: dbType } = await Preferences.get({ key: 'db_type' })
         
         if (dbType === 'mysql') {
-          const isTakeover = await mysqlConfigService.getTakeover()
-          if (isTakeover) {
-            const { mysqlSyncService } = await import('../services/mysqlSync')
-            const config = await mysqlConfigService.getConfig()
-            if (config) {
-              console.log('🔽 从MySQL拉取最新数据...')
-              const result = await mysqlSyncService.restoreFromMySQL(config, this.currentUser)
-              if (result.success) {
-                console.log('✅ 数据拉取成功，已自动合并到本地')
-                // restoreFromMySQL 已经将数据合并并保存到 Preferences
-                // loadTasks() 后续会读取 Preferences，这里不需要重复读取
-                
-                // 🔧 修复孤儿任务（文件夹被删除但任务仍引用）
-                this.fixOrphanTasks()
-              }
+          const { mysqlSyncService } = await import('../services/mysqlSync')
+          const config = await mysqlConfigService.getConfig()
+          if (config) {
+            console.log('🔽 从MySQL拉取最新数据...')
+            const result = await mysqlSyncService.restoreFromMySQL(config, this.currentUser)
+            if (result.success) {
+              console.log('✅ 数据拉取成功，已自动合并到本地')
+              // restoreFromMySQL 已经将数据合并并保存到 Preferences
+              // loadTasks() 后续会读取 Preferences，这里不需要重复读取
+              
+              // 🔧 修复孤儿任务（文件夹被删除但任务仍引用）
+              this.fixOrphanTasks()
             }
+          }
+        } else if (dbType === 'sqlite') {
+          const { sqliteService } = await import('../services/sqliteService')
+          console.log('🔽 从SQLite拉取最新数据...')
+          const result = await sqliteService.restore(this.currentUser)
+          if (result.success) {
+            console.log('✅ 数据拉取成功')
+            this.fixOrphanTasks()
           }
         }
       } catch (error) {
@@ -917,8 +985,6 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       return filtered.sort((a, b) => {
         // 计算任务权重（数字越小越靠前）
         const getWeight = (task) => {
-          let weight = 0
-          
           // 已完成任务：权重最低
           if (task.status === 'completed') return 10000
           
@@ -930,31 +996,50 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
           
           // 计算距离截止时间（小时）
           const deadline = this.calculateDeadline(task)
-          const hoursUntilDeadline = deadline ? (new Date(deadline) - new Date()) / 3600000 : 999999
+          const hoursUntilDeadline = deadline ? (new Date(deadline) - new Date()) / 3600000 : null
           
-          // 逾期任务：权重 100-500
+          // 逾期任务：权重 100-399（时间越久权重越大）
           if (task.status === 'overdue') {
             const daysOverdue = Math.abs(hoursUntilDeadline) / 24
-            // 逾期3天内：100-200（高危区）
-            // 逾期3天以上：200-500（衰减区）
-            if (daysOverdue <= 3) {
-              weight = 100 + (task.priority === 'high' ? 0 : task.priority === 'medium' ? 30 : 60)
+            
+            // 基础权重：按优先级分层
+            const baseOverdue = { high: 100, medium: 150, low: 200 }
+            let weight = baseOverdue[task.priority] || 200
+            
+            // 衰减惩罚：每天+5分，上限+150分（30天封顶）
+            const decayPenalty = Math.min(daysOverdue * 5, 150)
+            weight += decayPenalty
+            
+            return weight
+          }
+          
+          // 待办任务：权重 400-9999
+          // 核心逻辑：时间紧迫性 > 优先级
+          
+          if (hoursUntilDeadline !== null) {
+            // 有截止时间的任务：按时间远近排序
+            let weight = 400
+            
+            // 时间权重：0-24小时内每小时+10分，24小时后每天+20分
+            if (hoursUntilDeadline <= 24) {
+              // 24小时内：400-640（每小时+10分）
+              weight += Math.floor(hoursUntilDeadline * 10)
             } else {
-              weight = 200 + Math.min(daysOverdue * 10, 300) + (task.priority === 'low' ? 100 : 0)
+              // 24小时后：640+（每天+20分，上限+2000分）
+              const daysUntilDeadline = hoursUntilDeadline / 24
+              weight += 240 + Math.min(Math.floor(daysUntilDeadline * 20), 2000)
             }
+            
+            // 优先级微调：在时间权重基础上微调（不改变时间顺序）
+            const priorityAdjust = { high: -3, medium: 0, low: 3 }
+            weight += priorityAdjust[task.priority] || 0
+            
             return weight
+          } else {
+            // 无截止时间的任务：权重 3000-3200（只按优先级排序）
+            const noDuePriority = { high: 3000, medium: 3100, low: 3200 }
+            return noDuePriority[task.priority] || 3200
           }
-          
-          // 待办任务：权重 600-900
-          // 2小时内到期：紧急预警区（600-650）
-          if (hoursUntilDeadline <= 2) {
-            weight = 600 + (task.priority === 'high' ? 0 : task.priority === 'medium' ? 20 : 40)
-            return weight
-          }
-          
-          // 正常待办：按优先级（700-900）
-          weight = 700 + (task.priority === 'high' ? 0 : task.priority === 'medium' ? 100 : 200)
-          return weight
         }
         
         const weightA = getWeight(a)

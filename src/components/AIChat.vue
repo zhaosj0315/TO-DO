@@ -781,7 +781,9 @@ const analyzeQuestion = (question) => {
     needLogs,
     needPomodoro,
     needStats,
-    isSimple: isToday || isWeek || needCompleted || needPending // 简单查询
+    isSimple: isToday || isWeek || needCompleted || needPending, // 简单查询
+    // 🆕 时间字段选择逻辑
+    timeField: needCompleted ? 'completed_at' : 'created_at'  // 完成类问题看完成时间，其他看创建时间
   }
 }
 
@@ -799,17 +801,23 @@ const buildSmartContext = (question) => {
   let filteredTasks = tasks
   if (analysis.timeScope === 'today') {
     filteredTasks = tasks.filter(t => {
-      const date = new Date(t.completed_at || t.created_at)
+      const dateField = t[analysis.timeField]  // 🔧 使用正确的时间字段
+      if (!dateField) return false  // 如果字段不存在，排除该任务
+      const date = new Date(dateField)
       return date >= today
     })
   } else if (analysis.timeScope === 'week') {
     filteredTasks = tasks.filter(t => {
-      const date = new Date(t.completed_at || t.created_at)
+      const dateField = t[analysis.timeField]
+      if (!dateField) return false
+      const date = new Date(dateField)
       return date >= weekStart
     })
   } else if (analysis.timeScope === 'month') {
     filteredTasks = tasks.filter(t => {
-      const date = new Date(t.completed_at || t.created_at)
+      const dateField = t[analysis.timeField]
+      if (!dateField) return false
+      const date = new Date(dateField)
       return date >= monthStart
     })
   }

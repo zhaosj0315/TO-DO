@@ -7547,6 +7547,9 @@ const mainContent = ref(null)
 const showFilterModal = ref(false)
 const isRefreshing = ref(false)
 
+// 🔔 通知提醒记录（防止重复提醒）
+const notifiedTasks = new Set()
+
 // 撤销Toast相关
 const showUndoToast = ref(false)
 const undoToastMessage = ref('')

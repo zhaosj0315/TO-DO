@@ -389,13 +389,13 @@ const getApiUrl = (baseUrl, type, endpoint) => {
   return baseUrl
 }
 
-// 从localStorage加载配置（按用户隔离）
-const username = getCurrentUsername()
-const models = ref(JSON.parse(localStorage.getItem(`ai_models_${username}`) || '[]'))
-const defaultModelId = ref(localStorage.getItem(`ai_default_model_${username}`) || '')
+// 从localStorage加载配置（全局，不按用户隔离）
+// ⚠️ AI配置是全局的，所有用户共享（因为其他服务使用 ai_models 而非 ai_models_${username}）
+const models = ref(JSON.parse(localStorage.getItem('ai_models') || '[]'))
+const defaultModelId = ref(localStorage.getItem('ai_default_model') || '')
 
-// 厂商配置（持久化，按用户隔离）
-const providerConfigs = ref(JSON.parse(localStorage.getItem(`ai_provider_configs_${username}`) || '[]'))
+// 厂商配置（持久化，全局）
+const providerConfigs = ref(JSON.parse(localStorage.getItem('ai_provider_configs') || '[]'))
 const selectedProviderId = ref('')
 const showProviderManager = ref(false)
 
@@ -581,12 +581,11 @@ watch(() => newModel.value.modelName, (modelName) => {
   }
 })
 
-// 保存到localStorage（按用户隔离）
+// 保存到localStorage（全局）
 watch([models, defaultModelId, providerConfigs], () => {
-  const username = getCurrentUsername()
-  localStorage.setItem(`ai_models_${username}`, JSON.stringify(models.value))
-  localStorage.setItem(`ai_default_model_${username}`, defaultModelId.value)
-  localStorage.setItem(`ai_provider_configs_${username}`, JSON.stringify(providerConfigs.value))
+  localStorage.setItem('ai_models', JSON.stringify(models.value))
+  localStorage.setItem('ai_default_model', defaultModelId.value)
+  localStorage.setItem('ai_provider_configs', JSON.stringify(providerConfigs.value))
   emit('update', { models: models.value, defaultModelId: defaultModelId.value })
 }, { deep: true })
 

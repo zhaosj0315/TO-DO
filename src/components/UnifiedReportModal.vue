@@ -340,10 +340,18 @@ const generateUnifiedReport = async (startDate, endDate) => {
   const generator = new AIReportGenerator(props.tasks)
   const textData = generator.generateReport(startDate, endDate, selectedType.value)
   
-  // 筛选时间范围内的任务（按完成时间筛选）
+  // 筛选时间范围内的任务（混合时间维度）
   const filteredTasks = props.tasks.filter(task => {
+    const createdAt = new Date(task.created_at)
     const completedAt = task.completed_at ? new Date(task.completed_at) : null
-    return completedAt && completedAt >= startDate && completedAt <= endDate
+    
+    // 已完成任务：按完成时间筛选
+    if (task.status === 'completed' && completedAt) {
+      return completedAt >= startDate && completedAt <= endDate
+    }
+    
+    // 待办/逾期任务：按创建时间筛选
+    return createdAt >= startDate && createdAt <= endDate
   })
   
   const completed = filteredTasks.filter(t => t.status === 'completed')
@@ -357,6 +365,7 @@ const generateUnifiedReport = async (startDate, endDate) => {
   const visualData = {
     period: textData.period,
     totalPomodoros,
+    totalTasks: filteredTasks.length,  // 🆕 添加总任务数
     completedTasks: textData.overview.totalTasks,
     completionRate: textData.overview.completionRate,
     executiveSummary: textData.summary,
