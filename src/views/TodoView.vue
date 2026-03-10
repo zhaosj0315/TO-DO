@@ -416,7 +416,8 @@
                   [`description-priority-${task.priority}`]: true
                 }"
               >
-                {{ task.description }}
+                <!-- 🆕 Markdown 渲染 -->
+                <MarkdownRenderer :content="task.description" :media="task.media" />
               </div>
               <div class="task-meta">
                 <!-- 父任务（AI拆分） -->
@@ -2213,6 +2214,13 @@
       :sub-text="aiLoadingSubText"
     />
 
+    <!-- 文件预览弹窗 -->
+    <FilePreviewModal
+      :visible="showFilePreview"
+      :file="previewFile"
+      @close="showFilePreview = false"
+    />
+
     <!-- 全屏任务描述编辑 (三段式移动端布局) -->
     <div v-if="showFullscreenDesc" class="fullscreen-desc-overlay">
       <div class="fullscreen-desc-header">
@@ -2233,11 +2241,20 @@
           </div>
         </div>
         
-        <!-- 中层：状态栏 -->
+        <!-- 中层：状态栏 + Markdown切换 -->
         <div class="status-bar">
           <div class="status-left">
             <span v-if="descEditDuration > 0" class="status-text">编辑 {{ descEditDuration }} 秒</span>
             <span v-if="newTaskDescription.length > 0" class="status-text">{{ newTaskDescription.length }} 字</span>
+            <!-- 🆕 Markdown 切换按钮 -->
+            <button 
+              v-if="newTaskDescription.length > 0"
+              class="markdown-toggle-btn" 
+              @click="toggleMarkdownPreview"
+              :class="{ active: isMarkdownPreview }"
+            >
+              {{ isMarkdownPreview ? '✏️ 编辑' : '👁️ 预览' }}
+            </button>
           </div>
           <div class="status-right">
             <span class="status-text">{{ currentDateTime }}</span>
@@ -2353,10 +2370,18 @@
         </div>
         
         <!-- 悬浮提示标签 -->
-        <div v-if="newTaskDescription.length < 50" class="floating-hint">
+        <div v-if="newTaskDescription.length < 50 && !isMarkdownPreview" class="floating-hint">
           {{ getWordCountHint() }}
         </div>
+        
+        <!-- 🆕 Markdown 预览模式 -->
+        <div v-if="isMarkdownPreview" class="markdown-preview-container">
+          <MarkdownRenderer :content="newTaskDescription" :media="tempMedia" />
+        </div>
+        
+        <!-- 编辑模式 -->
         <textarea
+          v-else
           v-model="newTaskDescription"
           class="fullscreen-desc-textarea"
           placeholder="输入任务描述（可选）..."
@@ -2378,8 +2403,11 @@
         <button class="toolbar-btn" @click="clearDescription">
           🔄 清空
         </button>
-        <button class="toolbar-btn" @click="scanTextFromCamera" :disabled="aiLoading">
-          📸 拍照
+        <button class="toolbar-btn" @click="pickImageForTask" :disabled="aiLoading">
+          🖼️ 图片
+        </button>
+        <button class="toolbar-btn" @click="pickFileForTask" :disabled="aiLoading">
+          📎 文件
         </button>
         <button 
           class="toolbar-btn" 
@@ -3855,6 +3883,7 @@ import html2canvas from 'html2canvas'
 import EChart from '../components/EChart.vue'
 import AddLogModal from '../components/AddLogModal.vue'
 import TaskDetailModal from '../components/TaskDetailModal.vue'
+import FilePreviewModal from '../components/FilePreviewModal.vue'
 import UnifiedReportModal from '../components/UnifiedReportModal.vue'
 import TutorialMode from '../components/TutorialMode.vue'
 import AIChat from '../components/AIChat.vue'
@@ -3872,6 +3901,7 @@ import RenameCollectionModal from '../components/RenameCollectionModal.vue'  // 
 import CollectionManageModal from '../components/CollectionManageModal.vue'  // 🆕
 import MoveCollectionModal from '../components/MoveCollectionModal.vue'  // 🆕
 import MoreCollectionsModal from '../components/MoreCollectionsModal.vue'  // 🆕
+import MarkdownRenderer from '../components/MarkdownRenderer.vue'  // 🆕 Markdown渲染器
 import { CountUp } from 'countup.js'
 import { manualBackup, listBackups, restoreBackup, deleteBackup } from '../utils/autoBackup'
 import { taskToExcelRow, generateTemplateData, excelRowToTask } from '../utils/excelFormat'
@@ -4283,6 +4313,10 @@ const newTaskDescription = ref('')
 const quickTaskInput = ref('')  // 单行输入框内容（标题）
 const tempDescription = ref('')  // 临时保存的描述
 
+// 🆕 媒体资源相关
+const tempMedia = ref([])  // 临时媒体数组（创建任务前）
+const currentTaskId = ref(null)  // 当前编辑的任务ID
+
 // 🌳 子任务快速创建相关（仅自动识别）
 const showSubtaskSuggestion = ref(false)  // 显示自动识别的子任务建议
 const detectedSubtasks = ref([])  // 自动识别的子任务列表
@@ -4313,6 +4347,10 @@ const showAIPreview = ref(false)
 const aiPreviewContent = ref('')
 const aiPreviewTitle = ref('✨ AI生成预览')
 const showTemplateSelector = ref(false)
+
+// 🆕 文件预览状态
+const showFilePreview = ref(false)
+const previewFile = ref(null)
 const currentAITemplate = ref(null)
 const currentAIMode = ref('') // 'suggestion' 或 'continue'
 
@@ -4927,6 +4965,12 @@ const handleReportGenerated = (data) => {
   // 保存到localStorage
   const history = JSON.parse(localStorage.getItem('weekly_reports') || '[]')
   history.unshift(historyItem) // 最新的在前面
+  
+  // 🔧 只保留最近 50 个报告，防止超出配额
+  if (history.length > 50) {
+    history.splice(50)
+  }
+  
   localStorage.setItem('weekly_reports', JSON.stringify(history))
   
   console.log('报告已保存到历史', historyItem)
@@ -5073,7 +5117,7 @@ const batchDeleteReports = () => {
 const showVersionModal = ref(false) // 版本历史弹窗
 const versionHistory = ref([]) // 版本历史列表
 const hasUnreadVersions = ref(false) // 是否有未读版本
-const CURRENT_VERSION = '0.8.6' // 当前应用版本
+const CURRENT_VERSION = '0.8.9' // 当前应用版本
 const versionModalTitle = ref('🎉 版本更新') // 弹窗标题（动态）
 
 // 版本历史数据
@@ -5082,6 +5126,26 @@ const showAllVersions = ref(false) // 是否展开全部历史
 const initVersionHistory = () => {
   // 完整版本历史
   const allVersions = [
+    {
+      version: '0.8.9',
+      date: '2026-03-10',
+      features: [
+        '📎 富媒体附件系统：支持图片、PDF、Word、Excel、PPT、视频、压缩包等多种文件类型',
+        '👁️ 文件预览功能：全屏预览弹窗，支持图片、PDF、视频在线预览',
+        '📝 Markdown 编辑器：双模式切换（编辑/预览），GitHub 风格样式',
+        '🖼️ 智能上传：🖼️ 图片按钮 + 📎 文件按钮，自动识别文件类型'
+      ],
+      improvements: [
+        '🎨 用户体验优化：图片默认 300px 显示，点击全屏预览',
+        '📱 移动端适配：完美支持手机和桌面端，紫色主题统一',
+        '🖱️ 交互优化：文件卡片悬停效果，预览模式智能切换'
+      ],
+      fixes: [
+        '🐛 修复文件预览事件绑定问题',
+        '🐛 修复媒体资源保存和传递问题',
+        '🐛 修复预览容器滚动问题'
+      ]
+    },
     {
       version: '0.8.6',
       date: '2026-03-09',
@@ -5484,6 +5548,7 @@ initVersionHistory()
 
 // 全屏任务描述编辑
 const showFullscreenDesc = ref(false)
+const isMarkdownPreview = ref(false)  // 🆕 Markdown预览模式
 const descEditStartTime = ref(null)
 const descEditDuration = ref(0)
 let descEditTimer = null
@@ -5578,6 +5643,7 @@ const closeFullscreenDesc = () => {
   showFullscreenDesc.value = false
   showAISuggestions.value = false
   aiSuggestionsList.value = []
+  isMarkdownPreview.value = false  // 🆕 重置预览模式
   
   if (descEditTimer) {
     clearInterval(descEditTimer)
@@ -5590,6 +5656,11 @@ const closeFullscreenDesc = () => {
     detectedSubtasks.value = subtasks
     showSubtaskSuggestion.value = true
   }
+}
+
+// 🆕 切换 Markdown 预览模式
+const toggleMarkdownPreview = () => {
+  isMarkdownPreview.value = !isMarkdownPreview.value
 }
 
 // 🌳 从描述中检测子任务列表
@@ -5665,7 +5736,8 @@ const previewTask = () => {
       totalDuration: 0,
       averageDuration: 0,
       blocksResolved: 0
-    }
+    },
+    media: tempMedia.value  // 🆕 添加媒体资源
   }
   
   // 关闭全屏编辑，打开预览
@@ -5705,10 +5777,12 @@ const saveTaskFromPreview = async () => {
       customTime: previewTaskData.value.customTime,
       enableReminder: previewTaskData.value.enableReminder,
       reminderTime: previewTaskData.value.reminderTime,
-      forceReminder: previewTaskData.value.forceReminder
+      forceReminder: previewTaskData.value.forceReminder,
+      media: tempMedia.value  // 🆕 添加媒体资源
     }
     
     console.log('创建任务:', task)
+    console.log('📝 tempMedia:', tempMedia.value)
     const createdTask = await taskStore.addTask(task)
     console.log('✅ 任务创建成功，ID:', createdTask.id)
     
@@ -5736,6 +5810,10 @@ const saveTaskFromPreview = async () => {
     // 清空子任务相关状态
     showSubtaskSuggestion.value = false
     detectedSubtasks.value = []
+    
+    // 🆕 清空媒体资源
+    tempMedia.value = []
+    currentTaskId.value = null
     
     // 延迟显示成功提示
     setTimeout(() => {
@@ -5985,6 +6063,201 @@ const clearDescription = () => {
     newTaskDescription.value = ''
     showNotification('✅ 已清空', 'success')
   }
+}
+
+// 🖼️ 选择图片并插入
+const pickImageForTask = async () => {
+  try {
+    // 1. 选择图片
+    const photo = await Camera.getPhoto({
+      quality: 80,
+      allowEditing: false,
+      resultType: CameraResultType.Base64,
+      source: CameraSource.Photos
+    })
+    
+    if (!photo.base64String) {
+      showNotification('图片选择失败', 'error')
+      return
+    }
+    
+    // 2. 生成媒体ID和文件名
+    const mediaId = `img_${Date.now()}`
+    const fileName = `${mediaId}.jpg`
+    const taskId = currentTaskId.value || 'temp'
+    
+    // 3. 确保目录存在
+    try {
+      await Filesystem.mkdir({
+        path: `media/${taskId}`,
+        directory: Directory.Data,
+        recursive: true
+      })
+    } catch (e) {
+      // 目录可能已存在，忽略错误
+      console.log('目录已存在或创建失败:', e)
+    }
+    
+    // 4. 保存到本地
+    await Filesystem.writeFile({
+      path: `media/${taskId}/${fileName}`,
+      data: photo.base64String,
+      directory: Directory.Data
+    })
+    
+    // 5. 保存元数据到临时数组
+    tempMedia.value.push({
+      id: mediaId,
+      type: 'image',
+      name: fileName,
+      path: `media/${taskId}/${fileName}`,
+      size: photo.base64String.length,
+      uploadedAt: new Date().toISOString()
+    })
+    
+    // 6. 插入 Markdown 语法到光标位置
+    const syntax = `\n![图片](local://${mediaId})\n`
+    const textarea = document.querySelector('.fullscreen-desc-textarea')
+    if (textarea) {
+      const start = textarea.selectionStart
+      const end = textarea.selectionEnd
+      const text = newTaskDescription.value
+      newTaskDescription.value = text.substring(0, start) + syntax + text.substring(end)
+      
+      // 移动光标到插入内容后面
+      await nextTick()
+      textarea.selectionStart = textarea.selectionEnd = start + syntax.length
+      textarea.focus()
+    } else {
+      // 如果找不到textarea，直接追加到末尾
+      newTaskDescription.value += syntax
+    }
+    
+    showNotification('✅ 图片已插入', 'success')
+  } catch (error) {
+    console.error('图片上传失败:', error)
+    showNotification('图片上传失败: ' + error.message, 'error')
+  }
+}
+
+// 📎 选择文件并插入（PDF、文档、视频等）
+const pickFileForTask = async () => {
+  try {
+    // 创建文件选择器
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.mp4,.mov,.avi,.zip,.txt'
+    
+    input.onchange = async (e) => {
+      const file = e.target.files[0]
+      if (!file) return
+      
+      // 文件大小限制 10MB
+      const maxSize = 10 * 1024 * 1024
+      if (file.size > maxSize) {
+        showNotification('文件大小不能超过 10MB', 'error')
+        return
+      }
+      
+      // 读取文件为 base64
+      const reader = new FileReader()
+      reader.onload = async (event) => {
+        try {
+          const base64Data = event.target.result.split(',')[1]
+          
+          // 生成媒体ID和文件名
+          const mediaId = `file_${Date.now()}`
+          const ext = file.name.split('.').pop()
+          const fileName = `${mediaId}.${ext}`
+          const taskId = currentTaskId.value || 'temp'
+          
+          // 确定文件类型
+          const fileType = getFileType(ext)
+          
+          // 确保目录存在
+          try {
+            await Filesystem.mkdir({
+              path: `media/${taskId}`,
+              directory: Directory.Data,
+              recursive: true
+            })
+          } catch (e) {
+            console.log('目录已存在或创建失败:', e)
+          }
+          
+          // 保存到本地
+          await Filesystem.writeFile({
+            path: `media/${taskId}/${fileName}`,
+            data: base64Data,
+            directory: Directory.Data
+          })
+          
+          // 保存元数据
+          tempMedia.value.push({
+            id: mediaId,
+            type: fileType,
+            name: file.name,
+            originalName: file.name,
+            path: `media/${taskId}/${fileName}`,
+            size: file.size,
+            ext: ext,
+            uploadedAt: new Date().toISOString()
+          })
+          
+          // 插入 Markdown 语法
+          const syntax = `\n[📎 ${file.name}](local://${mediaId})\n`
+          const textarea = document.querySelector('.fullscreen-desc-textarea')
+          if (textarea) {
+            const start = textarea.selectionStart
+            const end = textarea.selectionEnd
+            const text = newTaskDescription.value
+            newTaskDescription.value = text.substring(0, start) + syntax + text.substring(end)
+            
+            await nextTick()
+            textarea.selectionStart = textarea.selectionEnd = start + syntax.length
+            textarea.focus()
+          } else {
+            newTaskDescription.value += syntax
+          }
+          
+          showNotification(`✅ ${file.name} 已插入`, 'success')
+        } catch (error) {
+          console.error('文件上传失败:', error)
+          showNotification('文件上传失败: ' + error.message, 'error')
+        }
+      }
+      
+      reader.readAsDataURL(file)
+    }
+    
+    input.click()
+  } catch (error) {
+    console.error('文件选择失败:', error)
+    showNotification('文件选择失败: ' + error.message, 'error')
+  }
+}
+
+// 🔍 根据扩展名判断文件类型
+const getFileType = (ext) => {
+  const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']
+  const videoExts = ['mp4', 'mov', 'avi', 'mkv', 'flv', 'wmv']
+  const docExts = ['doc', 'docx', 'txt', 'rtf']
+  const excelExts = ['xls', 'xlsx', 'csv']
+  const pptExts = ['ppt', 'pptx']
+  const pdfExts = ['pdf']
+  const zipExts = ['zip', 'rar', '7z', 'tar', 'gz']
+  
+  ext = ext.toLowerCase()
+  
+  if (imageExts.includes(ext)) return 'image'
+  if (videoExts.includes(ext)) return 'video'
+  if (docExts.includes(ext)) return 'document'
+  if (excelExts.includes(ext)) return 'excel'
+  if (pptExts.includes(ext)) return 'powerpoint'
+  if (pdfExts.includes(ext)) return 'pdf'
+  if (zipExts.includes(ext)) return 'archive'
+  
+  return 'file'
 }
 
 // 💡 生成 AI 智能建议（新版：模板选择 + 预览）
@@ -8295,9 +8568,13 @@ const addTask = async () => {
     customTime: customTime,
     enableReminder: enableReminder.value,
     reminderTime: enableReminder.value && reminderDateTime.value ? new Date(reminderDateTime.value).toISOString() : null,
-    forceReminder: enableReminder.value // 启用提醒就是强制提醒
+    forceReminder: enableReminder.value, // 启用提醒就是强制提醒
+    media: tempMedia.value  // 🆕 媒体资源
   }
   
+  console.log('📝 创建任务 - tempMedia:', tempMedia.value)
+  console.log('📝 创建任务 - task.media:', task.media)
+  console.log('📝 创建任务 - description:', description)
   console.log('📝 创建任务:', { 
     title, 
     selectedCollectionId: selectedCollectionId.value, 
@@ -8343,6 +8620,10 @@ const addTask = async () => {
   // 🌳 清空子任务相关状态
   showSubtaskSuggestion.value = false
   detectedSubtasks.value = []
+  
+  // 🆕 清空媒体资源
+  tempMedia.value = []
+  currentTaskId.value = null
   
   // 更新每日摘要通知
   await scheduleDailySummaryNotification()
@@ -12676,7 +12957,18 @@ const autoGenerateReports = async () => {
     const lastYearStartStr = lastYearStart.toISOString().split('T')[0]
     
     // 获取历史报告
-    const history = JSON.parse(localStorage.getItem('weekly_reports') || '[]')
+    let history = JSON.parse(localStorage.getItem('weekly_reports') || '[]')
+    
+    // 🔧 立即清理，确保有足够空间
+    if (history.length > 30) {
+      console.log(`🧹 清理报告历史：${history.length} → 30`)
+      history = history.slice(0, 30)
+      try {
+        localStorage.setItem('weekly_reports', JSON.stringify(history))
+      } catch (e) {
+        console.warn('清理时保存失败，继续执行')
+      }
+    }
     
     // 检查是否已生成各类报告
     const hasYesterdayDaily = history.some(r => 
@@ -12856,8 +13148,22 @@ const autoGenerateReports = async () => {
       showNotification(`🎯 已为您生成去年的年报（${yearlyReport.period.start} 至 ${yearlyReport.period.end}）`, 'success')
     }
     
+    // 🔧 保存前先清理，确保有足够空间
+    if (history.length > 50) {
+      history.splice(50)
+      console.log('🧹 自动裁剪报告历史到 50 个')
+    }
+    
     // 保存更新后的历史
-    localStorage.setItem('weekly_reports', JSON.stringify(history))
+    try {
+      localStorage.setItem('weekly_reports', JSON.stringify(history))
+      console.log('✅ 报告生成完成，已保存')
+    } catch (quotaError) {
+      // 如果还是超限，强制清理到 20 个
+      console.warn('⚠️ 配额不足，强制清理到 20 个报告')
+      history.splice(20)
+      localStorage.setItem('weekly_reports', JSON.stringify(history))
+    }
     
     // 记录今天已经提醒过
     localStorage.setItem('last_report_notify_date', todayStr)
@@ -12939,7 +13245,39 @@ const formatReportAsText = (report, type) => {
   return text
 }
 
+// 🔧 清理 LocalStorage 旧数据，防止配额超限
+const cleanupOldReports = () => {
+  try {
+    // 清理 weekly_reports（只保留最近 20 个）
+    const weeklyReports = JSON.parse(localStorage.getItem('weekly_reports') || '[]')
+    if (weeklyReports.length > 20) {
+      localStorage.setItem('weekly_reports', JSON.stringify(weeklyReports.slice(0, 20)))
+      console.log(`🧹 清理旧周报：${weeklyReports.length} → 20`)
+    }
+    
+    // 清理 unified_reports（只保留最近 20 个）
+    const unifiedReports = JSON.parse(localStorage.getItem('unified_reports') || '[]')
+    if (unifiedReports.length > 20) {
+      localStorage.setItem('unified_reports', JSON.stringify(unifiedReports.slice(0, 20)))
+      console.log(`🧹 清理旧统一报告：${unifiedReports.length} → 20`)
+    }
+  } catch (error) {
+    console.error('清理旧数据失败:', error)
+    // 如果清理失败，尝试清空
+    try {
+      localStorage.setItem('weekly_reports', '[]')
+      localStorage.setItem('unified_reports', '[]')
+      console.log('🧹 强制清空所有报告')
+    } catch (e) {
+      console.error('强制清空失败:', e)
+    }
+  }
+}
+
 onMounted(async () => {
+  // 🔧 首先清理旧数据
+  cleanupOldReports()
+  
   await userStore.checkLogin()
   await loadUserInfo()
   
@@ -12954,6 +13292,13 @@ onMounted(async () => {
   if (savedPriorityMode) {
     priorityMode.value = savedPriorityMode
   }
+  
+  // 🆕 监听文件预览事件
+  window.addEventListener('preview-file', (e) => {
+    console.log('📎 收到预览事件:', e.detail)
+    previewFile.value = e.detail
+    showFilePreview.value = true
+  })
   
   // 检查版本更新（首次打开或版本升级时自动弹出）
   checkVersionUpdate()
@@ -14901,6 +15246,52 @@ watch(() => reportData.value, (newData) => {
   cursor: pointer; /* 可点击 */
   transition: all 0.2s;
   position: relative;
+}
+
+/* 🆕 任务卡片中的 Markdown 样式（紧凑版） */
+.task-description :deep(.markdown-renderer) {
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.task-description :deep(.markdown-renderer h1),
+.task-description :deep(.markdown-renderer h2),
+.task-description :deep(.markdown-renderer h3) {
+  font-size: 0.85rem;
+  margin: 0.3rem 0;
+  border: none;
+  color: #333;
+}
+
+.task-description :deep(.markdown-renderer p) {
+  margin: 0.2rem 0;
+}
+
+.task-description :deep(.markdown-renderer ul),
+.task-description :deep(.markdown-renderer ol) {
+  margin: 0.2rem 0;
+  padding-left: 1.2rem;
+}
+
+.task-description :deep(.markdown-renderer li) {
+  margin: 0.1rem 0;
+}
+
+.task-description :deep(.markdown-renderer code) {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.3rem;
+}
+
+.task-description :deep(.markdown-renderer pre) {
+  margin: 0.3rem 0;
+  padding: 0.5rem;
+  font-size: 0.7rem;
+}
+
+.task-description :deep(.markdown-renderer blockquote) {
+  margin: 0.3rem 0;
+  padding-left: 0.5rem;
+  font-size: 0.7rem;
 }
 
 /* 已完成任务的描述 */
@@ -19641,6 +20032,7 @@ watch(() => reportData.value, (newData) => {
   display: flex;
   flex-direction: column;
   padding-top: env(safe-area-inset-top, 0px); /* iOS刘海屏适配 */
+  overflow: hidden; /* 关键：防止整体滚动 */
 }
 
 .fullscreen-desc-header {
@@ -19772,6 +20164,32 @@ watch(() => reportData.value, (newData) => {
   align-items: center;
 }
 
+/* 🆕 Markdown 切换按钮 */
+.markdown-toggle-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.markdown-toggle-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.markdown-toggle-btn:active {
+  transform: translateY(0);
+}
+
+.markdown-toggle-btn.active {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
 .status-right {
   display: flex;
   align-items: center;
@@ -19789,6 +20207,19 @@ watch(() => reportData.value, (newData) => {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-height: 0; /* 关键：允许flex子元素滚动 */
+  overflow: hidden; /* 防止wrapper本身滚动 */
+}
+
+/* 🆕 Markdown 预览容器 */
+.markdown-preview-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1.5rem;
+  background: #ffffff;
+  min-height: 0; /* 关键：允许flex子元素滚动 */
+  -webkit-overflow-scrolling: touch; /* iOS平滑滚动 */
 }
 
 /* 悬浮提示标签 */

@@ -78,7 +78,7 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         }
       }
       
-      // 数据迁移：为旧任务添加 logs、stats、waitFor 和 collectionId 字段
+      // 数据迁移：为旧任务添加 logs、stats、waitFor、collectionId 和 media 字段
       this.tasks = this.tasks.map(task => {
         let waitFor = task.waitFor
         // 兼容旧数据：null → []，单个ID → [ID]
@@ -93,7 +93,8 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
           logs: task.logs || [],
           stats: task.stats || this.calculateTaskStats([]),
           waitFor,
-          collectionId: task.collectionId !== undefined ? task.collectionId : null  // 🆕 文件夹ID
+          collectionId: task.collectionId !== undefined ? task.collectionId : null,  // 🆕 文件夹ID
+          media: task.media || []  // 🆕 媒体资源数组
         }
       })
       
@@ -281,7 +282,8 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         parentTaskId: taskData.parentTaskId || null, // 父任务ID（AI拆分）
         subtasks: taskData.subtasks || [], // 子任务ID列表
         aiSummary: taskData.aiSummary || null, // AI生成的任务总结
-        collectionId: taskData.collectionId !== undefined ? taskData.collectionId : null  // 🆕 所属文件夹ID
+        collectionId: taskData.collectionId !== undefined ? taskData.collectionId : null,  // 🆕 所属文件夹ID
+        media: taskData.media || []  // 🆕 媒体资源
       }
       this.tasks.push(task)
       

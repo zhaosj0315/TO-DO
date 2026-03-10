@@ -116,14 +116,34 @@
 
         <!-- 任务描述 -->
         <section class="description-section">
-          <h3>📝 任务描述</h3>
+          <div class="section-header">
+            <h3>📝 任务描述</h3>
+            <button 
+              v-if="localTask.description && localTask.description.trim()"
+              class="markdown-toggle-btn-small" 
+              @click="toggleDescriptionEdit"
+            >
+              {{ isDescriptionPreview ? '✏️ 编辑' : '👁️ 预览' }}
+            </button>
+          </div>
+          
+          <!-- 🆕 Markdown 预览模式（默认） -->
+          <div v-if="!isDescriptionPreview && localTask.description && localTask.description.trim()" 
+               class="markdown-preview-box" 
+               @click.self="toggleDescriptionEdit">
+            <MarkdownRenderer :content="localTask.description" :media="localTask.media" />
+          </div>
+          
+          <!-- 编辑模式 -->
           <textarea 
+            v-else
             v-model="localTask.description"
             @input="autoResizeTextarea($event)"
-            @blur="saveField('description')"
+            @blur="saveField('description'); isDescriptionPreview = false"
             class="description-textarea"
             placeholder="输入任务描述..."
             rows="3"
+            ref="descriptionTextarea"
           ></textarea>
         </section>
 
@@ -308,13 +328,29 @@
         <section v-if="task.aiSummary && localTask.aiSummary" class="ai-summary-section">
           <div class="summary-header">
             <h3>✨ AI智能总结</h3>
+            <button 
+              v-if="localTask.aiSummary.content && localTask.aiSummary.content.trim()"
+              class="markdown-toggle-btn-small" 
+              @click="isAISummaryPreview = !isAISummaryPreview"
+            >
+              {{ isAISummaryPreview ? '✏️ 编辑' : '👁️ 预览' }}
+            </button>
             <span class="summary-time">{{ formatDateTime(task.aiSummary.createdAt) }}</span>
           </div>
           <div class="summary-content">
+            <!-- 🆕 Markdown 预览模式（默认） -->
+            <div v-if="!isAISummaryPreview && localTask.aiSummary.content && localTask.aiSummary.content.trim()" 
+                 class="summary-markdown-preview" 
+                 @click="isAISummaryPreview = true">
+              <MarkdownRenderer :content="localTask.aiSummary.content" />
+            </div>
+            
+            <!-- 编辑模式 -->
             <textarea 
+              v-else
               v-model="localTask.aiSummary.content"
               @input="autoResizeTextarea($event)"
-              @blur="saveAISummary"
+              @blur="saveAISummary; isAISummaryPreview = false"
               class="summary-textarea"
               placeholder="AI总结内容..."
               rows="3"
@@ -456,9 +492,28 @@
               
               <!-- 日志内容 -->
               <div class="log-content-edit">
+                <div class="log-content-header">
+                  <button 
+                    v-if="log.content && log.content.trim()"
+                    class="markdown-toggle-btn-tiny" 
+                    @click="logPreviewStates[log.timestamp] = !logPreviewStates[log.timestamp]"
+                  >
+                    {{ logPreviewStates[log.timestamp] ? '✏️' : '👁️' }}
+                  </button>
+                </div>
+                
+                <!-- 🆕 Markdown 预览模式（默认） -->
+                <div v-if="!logPreviewStates[log.timestamp] && log.content && log.content.trim()" 
+                     class="log-markdown-preview" 
+                     @click="logPreviewStates[log.timestamp] = true">
+                  <MarkdownRenderer :content="log.content" />
+                </div>
+                
+                <!-- 编辑模式 -->
                 <textarea 
+                  v-else
                   v-model="log.content"
-                  @blur="saveLogContent(log)"
+                  @blur="saveLogContent(log); logPreviewStates[log.timestamp] = false"
                   @input="autoResizeTextarea($event); updateLogContent(log)"
                   class="input textarea log-content-textarea" 
                   placeholder="输入日志内容..."
@@ -611,6 +666,7 @@ import AddLogModal from './AddLogModal.vue'
 import AITextMenu from './AITextMenu.vue'
 import AITextResultSheet from './AITextResultSheet.vue'
 import WaitForSelector from './WaitForSelector.vue'
+import MarkdownRenderer from './MarkdownRenderer.vue'  // 🆕 Markdown渲染器
 import { useTextSelection } from '../composables/useTextSelection'
 import { AITextService } from '../services/aiTextService'
 import { Capacitor } from '@capacitor/core'
@@ -637,6 +693,8 @@ const showAddLogModal = ref(false)
 const showTimeline = ref(false)
 const showWaitForSelector = ref(false)
 const showDeleteConfirm = ref(false)
+const logPreviewStates = ref({})  // 🆕 日志预览状态 { logId: boolean }
+const isAISummaryPreview = ref(false)  // 🆕 AI总结预览状态
 
 // 暴露内部状态给父组件
 defineExpose({
@@ -778,6 +836,25 @@ const localTask = ref({
   ...props.task,
   aiSummary: props.task.aiSummary ? { ...props.task.aiSummary } : null
 })
+
+// 🆕 Markdown 预览模式
+const isDescriptionPreview = ref(false)
+const descriptionTextarea = ref(null)
+
+// 🆕 切换描述编辑模式
+const toggleDescriptionEdit = async () => {
+  isDescriptionPreview.value = !isDescriptionPreview.value
+  if (isDescriptionPreview.value) {
+    // 进入编辑模式，聚焦输入框并自动调整高度
+    await nextTick()
+    if (descriptionTextarea.value) {
+      descriptionTextarea.value.focus()
+      // 自动调整高度以适应内容
+      descriptionTextarea.value.style.height = 'auto'
+      descriptionTextarea.value.style.height = descriptionTextarea.value.scrollHeight + 'px'
+    }
+  }
+}
 
 // 监听props.task变化，同步更新localTask
 watch(() => props.task, (newTask) => {
@@ -1622,11 +1699,13 @@ section h3 {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0.75rem;
+  gap: 0.5rem;
 }
 
 .summary-header h3 {
   margin: 0;
   color: #d97706;
+  flex: 1;
 }
 
 .summary-time {
@@ -1640,6 +1719,23 @@ section h3 {
   border-radius: 8px;
   margin-bottom: 0.75rem;
   line-height: 1.6;
+}
+
+/* 🆕 AI总结 Markdown 预览 */
+.summary-markdown-preview {
+  background: white;
+  border: 1px solid rgba(217, 119, 6, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  min-height: 80px;
+  /* 🔧 移除 max-height，改为自适应 */
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.summary-markdown-preview:hover {
+  border-color: #d97706;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
 }
 
 .summary-textarea {
@@ -1893,6 +1989,57 @@ section h3 {
 /* 描述卡片 */
 .description-section {
   margin-bottom: 1.5rem;
+}
+
+/* 🆕 Section Header with Toggle Button */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.section-header h3 {
+  margin: 0;
+}
+
+/* 🆕 Markdown Toggle Button (Small) */
+.markdown-toggle-btn-small {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.markdown-toggle-btn-small:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
+}
+
+.markdown-toggle-btn-small:active {
+  transform: translateY(0);
+}
+
+/* 🆕 Markdown Preview Box */
+.markdown-preview-box {
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 1rem;
+  min-height: 80px;
+  /* 🔧 移除 max-height，改为自适应 */
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.markdown-preview-box:hover {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .description-textarea {
@@ -2471,6 +2618,55 @@ section h3 {
 
 .log-content-edit {
   margin: 0.4rem 0;
+  position: relative;
+}
+
+/* 🆕 日志内容头部 */
+.log-content-header {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 1;
+}
+
+/* 🆕 Markdown 切换按钮（超小） */
+.markdown-toggle-btn-tiny {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.markdown-toggle-btn-tiny:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
+}
+
+.markdown-toggle-btn-tiny:active {
+  transform: translateY(0);
+}
+
+/* 🆕 日志 Markdown 预览 */
+.log-markdown-preview {
+  background: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 0.75rem;
+  min-height: 80px;
+  /* 🔧 移除 max-height，改为自适应 */
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.log-markdown-preview:hover {
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
 }
 
 .log-content-edit .edit-field {
@@ -2484,10 +2680,9 @@ section h3 {
   border-radius: 6px;
   font-size: 0.9rem;
   font-family: inherit;
-  resize: none;
+  resize: vertical;  /* 🔧 改为 vertical，允许手动调整 */
   min-height: 80px;
-  max-height: 300px;
-  overflow-y: auto;
+  /* 🔧 移除 max-height 和 overflow-y，改为自适应 */
   transition: border-color 0.2s;
   line-height: 1.6;
 }
