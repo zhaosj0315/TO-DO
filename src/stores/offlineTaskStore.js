@@ -652,6 +652,7 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
     checkOverdueTasks() {
       const now = new Date()
       let hasChanges = false
+      const tasksToResetReminders = [] // 记录需要取消提醒的任务
       
       this.tasks.forEach(task => {
         // 🔧 检查所有未完成任务是否逾期（不仅仅是"今天"类型）
@@ -685,6 +686,7 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
             task.status = 'pending'
             task.completed_at = null
             hasChanges = true
+            tasksToResetReminders.push(task.id)
           }
           
           // 工作日重复：如果今天是工作日且完成日期不是今天，重置为待办
@@ -695,6 +697,7 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
               task.status = 'pending'
               task.completed_at = null
               hasChanges = true
+              tasksToResetReminders.push(task.id)
             }
           }
           
@@ -706,6 +709,7 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
               task.status = 'pending'
               task.completed_at = null
               hasChanges = true
+              tasksToResetReminders.push(task.id)
             }
           }
         }
@@ -713,6 +717,24 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       
       if (hasChanges) {
         this.saveTasks()
+        // 取消重置任务的旧提醒
+        this.cancelRemindersForTasks(tasksToResetReminders)
+      }
+    },
+
+    // 取消指定任务的提醒
+    async cancelRemindersForTasks(taskIds) {
+      try {
+        if (taskIds.length === 0) return
+        
+        const notificationsToCancel = taskIds.map(taskId => ({
+          id: (Math.abs(taskId) % 100000) * 10 + 3 // 使用 reminder 类型的 ID
+        }))
+        
+        await LocalNotifications.cancel({ notifications: notificationsToCancel })
+        console.log('✅ 已取消重复任务的提醒:', taskIds)
+      } catch (error) {
+        console.error('取消提醒失败:', error)
       }
     },
 

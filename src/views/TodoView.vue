@@ -1272,13 +1272,13 @@
             <div class="entry-arrow">›</div>
           </div>
 
-          <!-- MySQL数据库配置入口 -->
-          <div class="pomodoro-entry" @click="showMySQLConfig = true">
+          <!-- 数据库配置入口 -->
+          <div class="pomodoro-entry" @click="showDatabaseConfig = true">
             <div class="entry-icon">🗄️</div>
             <div class="entry-content">
               <div class="entry-title">数据库配置</div>
               <div class="entry-summary">
-                可选：同步数据到MySQL数据库
+                本地存储 + 可选备份（SQLite/MySQL）
               </div>
             </div>
             <div class="entry-arrow">›</div>
@@ -1301,6 +1301,18 @@
               <div class="entry-title">{{ t('bindPhone') }}</div>
               <div class="entry-summary">
                 {{ userProfileInfo.boundPhone ? userProfileInfo.boundPhone : t('notBound') }}
+              </div>
+            </div>
+            <div class="entry-arrow">›</div>
+          </div>
+
+          <!-- 通知设置入口 -->
+          <div class="settings-entry" @click="showNotificationSettings = true">
+            <div class="entry-icon">🔔</div>
+            <div class="entry-content">
+              <div class="entry-title">通知设置</div>
+              <div class="entry-summary">
+                配置每日摘要通知时间
               </div>
             </div>
             <div class="entry-arrow">›</div>
@@ -1445,8 +1457,54 @@
     <!-- AI配置弹窗 -->
     <AIConfigModal v-if="showAIConfig" @close="showAIConfig = false" @saved="handleAIConfigSaved" />
 
-    <!-- MySQL数据库配置弹窗 -->
-    <MySQLConfigModal :show="showMySQLConfig" @close="showMySQLConfig = false" />
+    <!-- 数据库配置弹窗 -->
+    <DatabaseConfigModal v-if="showDatabaseConfig" @close="showDatabaseConfig = false" @save="handleDatabaseConfigSaved" />
+
+    <!-- 通知设置弹窗 -->
+    <div v-if="showNotificationSettings" class="modal-overlay" @click.self="showNotificationSettings = false">
+      <div class="profile-bottom-sheet">
+        <div class="modal-header">
+          <button class="back-btn" @click="showNotificationSettings = false">
+            <span>← 返回</span>
+          </button>
+          <h3>🔔 通知设置</h3>
+          <div style="width: 80px;"></div>
+        </div>
+        <div class="modal-body">
+          <!-- 每日摘要通知 -->
+          <div class="settings-section">
+            <h4 class="section-title">📅 每日摘要通知</h4>
+            
+            <div class="setting-item">
+              <label class="setting-checkbox">
+                <input type="checkbox" v-model="notificationSettings.dailySummaryEnabled">
+                <span class="checkbox-visual"></span>
+                <span class="setting-text">
+                  <strong>启用每日摘要</strong>
+                  <p class="setting-desc">每天指定时间发送任务摘要</p>
+                </span>
+              </label>
+            </div>
+
+            <div v-if="notificationSettings.dailySummaryEnabled" class="setting-item">
+              <label class="setting-label">通知时间</label>
+              <input 
+                type="time" 
+                v-model="notificationSettings.dailySummaryTime"
+                class="time-input"
+              >
+              <p class="setting-desc">设置每天接收摘要通知的时间</p>
+            </div>
+          </div>
+
+          <!-- 保存按钮 -->
+          <div class="modal-footer">
+            <button class="btn-cancel" @click="showNotificationSettings = false">取消</button>
+            <button class="btn-save" @click="saveNotificationSettings">保存设置</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- 联系与支持详情弹窗 -->
     <!-- 联系与支持 (Bottom Sheet) -->
@@ -3855,7 +3913,7 @@ import { AIReportGenerator } from '../services/aiReportGenerator'
 import { AIChatService } from '../services/aiChatService'
 import { AITextEnhancer } from '../services/aiTextEnhancer'
 import AIConfigModal from '../components/AIConfigModal.vue'
-import MySQLConfigModal from '../components/MySQLConfigModal.vue'
+import DatabaseConfigModal from '../components/DatabaseConfigModal.vue'
 import TaskPreviewModal from '../components/TaskPreviewModal.vue'
 import SubtaskPreviewModal from '../components/SubtaskPreviewModal.vue'
 import AddSubtaskModal from '../components/AddSubtaskModal.vue'
@@ -4364,8 +4422,9 @@ const showTrash = ref(false)
 const showProfile = ref(false)
 const showSupport = ref(false)
 const showAIConfig = ref(false)
-const showMySQLConfig = ref(false)
+const showDatabaseConfig = ref(false)
 const showAIChat = ref(false)
+const showNotificationSettings = ref(false)
 
 // 🆕 文件夹相关状态
 const showCollectionList = ref(false)  // 是否展开文件夹列表（已废弃）
@@ -6998,6 +7057,48 @@ const copyAIResult = () => {
 const handleAIConfigSaved = () => {
   alert('AI配置已保存')
 }
+
+// 数据库配置保存处理
+const handleDatabaseConfigSaved = (config) => {
+  console.log('✅ 数据库配置已保存:', config)
+  // TODO: 根据配置初始化对应的数据库连接
+}
+
+// 通知设置
+const notificationSettings = ref({
+  dailySummaryEnabled: true,
+  dailySummaryTime: '09:00'
+})
+
+// 加载通知设置
+const loadNotificationSettings = async () => {
+  try {
+    const { value } = await Preferences.get({ key: `notification_settings_${userStore.currentUser}` })
+    if (value) {
+      notificationSettings.value = JSON.parse(value)
+    }
+  } catch (error) {
+    console.error('加载通知设置失败:', error)
+  }
+}
+
+// 保存通知设置
+const saveNotificationSettings = async () => {
+  try {
+    await Preferences.set({
+      key: `notification_settings_${userStore.currentUser}`,
+      value: JSON.stringify(notificationSettings.value)
+    })
+    showNotification('✅ 通知设置已保存', 'success')
+    showNotificationSettings.value = false
+    // 重新调度每日摘要通知
+    await scheduleDailySummaryNotification()
+  } catch (error) {
+    console.error('保存通知设置失败:', error)
+    showNotification('❌ 保存失败', 'error')
+  }
+}
+
 const showPrivacyPolicy = ref(false)
 const showDataInfo = ref(false)
 const showUserGuide = ref(false) // 使用指南弹窗
@@ -7595,7 +7696,7 @@ const categories = [
 const weekdays = ['日', '一', '二', '三', '四', '五', '六']
 
 // 提醒记录（防止重复提醒）
-const notifiedTasks = new Set() // 存储已提醒的任务ID
+// 已提醒记录已迁移到 Preferences，不再使用内存 Set
 
 // 计算属性：按分类和时间筛选的任务（不按状态筛选，用于统计）
 const baseFilteredTasks = computed(() => {
@@ -12591,6 +12692,143 @@ const disableBackupReminder = async () => {
 }
 
 // 检查并发送逾期提醒
+// 检查通知权限
+// 清理过期的提醒记录（7天前的记录）
+// 初始化通知渠道
+const initializeNotificationChannels = async () => {
+  try {
+    if (!Capacitor.isPluginAvailable('LocalNotifications')) return
+    
+    // Web 平台不支持创建渠道，仅在原生平台执行
+    const platform = Capacitor.getPlatform()
+    if (platform === 'web') {
+      console.log('⏭️ Web 平台不支持通知渠道，跳过初始化')
+      return
+    }
+    
+    // 创建通知渠道（Android 8.0+）
+    await LocalNotifications.createChannel({
+      id: 'task-reminders-v3',
+      name: '任务提醒',
+      description: '普通任务提醒通知',
+      importance: 4,
+      sound: 'default',
+      vibration: true,
+      lightColor: '#667eea'
+    })
+    
+    await LocalNotifications.createChannel({
+      id: 'task-urgent-alarm',
+      name: '紧急提醒',
+      description: '紧急任务全屏提醒',
+      importance: 5,
+      sound: 'default',
+      vibration: true,
+      lightColor: '#FF0000'
+    })
+    
+    await LocalNotifications.createChannel({
+      id: 'task-deadline-warning',
+      name: '截止时间预警',
+      description: '任务即将逾期的预警通知',
+      importance: 4,
+      sound: 'default',
+      vibration: true,
+      lightColor: '#FF6B6B'
+    })
+    
+    await LocalNotifications.createChannel({
+      id: 'task-daily-summary',
+      name: '每日摘要',
+      description: '每日任务摘要通知',
+      importance: 3,
+      sound: 'default',
+      vibration: false,
+      lightColor: '#667eea'
+    })
+    
+    console.log('✅ 通知渠道已初始化')
+  } catch (error) {
+    console.error('初始化通知渠道失败:', error)
+  }
+}
+
+const cleanupExpiredNotifications = async () => {
+  try {
+    const notifyKey = `notified_deadlines_${userStore.currentUser}`
+    const { value: notifiedValue } = await Preferences.get({ key: notifyKey })
+    if (!notifiedValue) return
+    
+    const notifiedIds = JSON.parse(notifiedValue)
+    const now = Date.now()
+    const sevenDaysAgo = now - (7 * 24 * 60 * 60 * 1000)
+    
+    // 获取所有任务ID
+    const taskIds = new Set(taskStore.tasks.map(t => t.id))
+    
+    // 删除已完成或已删除的任务的提醒记录
+    let cleaned = false
+    for (const key in notifiedIds) {
+      const taskId = parseInt(key.split('_')[1])
+      if (!taskIds.has(taskId)) {
+        delete notifiedIds[key]
+        cleaned = true
+      }
+    }
+    
+    if (cleaned) {
+      await Preferences.set({
+        key: notifyKey,
+        value: JSON.stringify(notifiedIds)
+      })
+      console.log('✅ 已清理过期的提醒记录')
+    }
+  } catch (error) {
+    console.error('清理提醒记录失败:', error)
+  }
+}
+
+const checkNotificationPermission = async () => {
+  try {
+    if (!Capacitor.isPluginAvailable('LocalNotifications')) {
+      console.warn('⚠️ 通知功能不可用')
+      return false
+    }
+
+    // Web 平台不需要请求权限
+    const platform = Capacitor.getPlatform()
+    if (platform === 'web') {
+      console.log('ℹ️ Web 平台通知权限检查跳过')
+      return true
+    }
+
+    // 请求通知权限
+    const result = await LocalNotifications.requestPermissions()
+    
+    if (result.display === 'granted') {
+      console.log('✅ 通知权限已授予')
+      return true
+    } else {
+      console.warn('⚠️ 通知权限被拒绝')
+      showNotification('请在系统设置中启用通知权限', 'warning')
+      return false
+    }
+  } catch (error) {
+    console.error('检查通知权限失败:', error)
+    return false
+  }
+}
+
+// 生成安全的通知ID（避免冲突）
+const generateNotificationId = (taskId, type) => {
+  // 使用哈希算法生成唯一ID
+  // type: 'urgent' | 'overdue' | 'reminder'
+  const typeMap = { urgent: 1, overdue: 2, reminder: 3 }
+  const typeCode = typeMap[type] || 0
+  // 格式：taskId的后5位 + 类型代码（1位）
+  return (Math.abs(taskId) % 100000) * 10 + typeCode
+}
+
 const checkAndNotifyDeadline = async () => {
   const now = new Date()
   const notifications = []
@@ -12612,6 +12850,11 @@ const checkAndNotifyDeadline = async () => {
     '😢 番茄等累了已经走了，快去挽回！'
   ]
   
+  // 从 Preferences 加载已提醒记录
+  const notifyKey = `notified_deadlines_${userStore.currentUser}`
+  const { value: notifiedValue } = await Preferences.get({ key: notifyKey })
+  const notifiedIds = notifiedValue ? JSON.parse(notifiedValue) : {}
+  
   taskStore.tasks.forEach(task => {
     if (task.status === 'completed') return
     
@@ -12624,13 +12867,12 @@ const checkAndNotifyDeadline = async () => {
     
     // 1小时内即将逾期的任务
     if (hoursLeft > 0 && hoursLeft <= 1) {
-      const notifyKey = `urgent_${task.id}`
-      if (notifiedTasks.has(notifyKey)) return // 已提醒过，跳过
+      const notifyKeyId = `urgent_${task.id}`
+      if (notifiedIds[notifyKeyId]) return // 已提醒过，跳过
       
       const minutes = Math.floor((timeLeft / (1000 * 60)) % 60)
       const randomMsg = urgentMessages[Math.floor(Math.random() * urgentMessages.length)]
       
-      // 格式化截止时间
       const deadlineDate = new Date(deadline)
       const month = deadlineDate.getMonth() + 1
       const day = deadlineDate.getDate()
@@ -12640,19 +12882,19 @@ const checkAndNotifyDeadline = async () => {
       notifications.push({
         title: `${task.text} (还剩${minutes}分钟)`,
         body: `⏰ 截止：${month}/${day} ${hours}:${mins}\n${randomMsg}\n${tomatoCount}个番茄岌岌可危 ${'🍅'.repeat(tomatoCount)}`,
-        id: task.id,
-        schedule: { at: new Date(Date.now() + 100) }
+        id: generateNotificationId(task.id, 'urgent'),
+        schedule: { at: new Date(Date.now() + 100) },
+        channelId: 'task-deadline-warning'
       })
-      notifiedTasks.add(notifyKey) // 记录已提醒
+      notifiedIds[notifyKeyId] = true
     }
     // 已逾期但还未标记的任务
     else if (timeLeft < 0 && task.status !== 'overdue') {
-      const notifyKey = `overdue_${task.id}`
-      if (notifiedTasks.has(notifyKey)) return // 已提醒过，跳过
+      const notifyKeyId = `overdue_${task.id}`
+      if (notifiedIds[notifyKeyId]) return // 已提醒过，跳过
       
       const randomMsg = overdueMessages[Math.floor(Math.random() * overdueMessages.length)]
       
-      // 格式化截止时间
       const deadlineDate = new Date(deadline)
       const month = deadlineDate.getMonth() + 1
       const day = deadlineDate.getDate()
@@ -12662,11 +12904,21 @@ const checkAndNotifyDeadline = async () => {
       notifications.push({
         title: `${task.text} (已逾期)`,
         body: `⏰ 截止：${month}/${day} ${hours}:${mins}\n${randomMsg}\n损失 ${tomatoCount}个番茄 ${'💔'.repeat(tomatoCount)}`,
-        id: task.id + 100000,
-        schedule: { at: new Date(Date.now() + 100) }
+        id: generateNotificationId(task.id, 'overdue'),
+        schedule: { at: new Date(Date.now() + 100) },
+        channelId: 'task-urgent-alarm'
       })
+      notifiedIds[notifyKeyId] = true
     }
   })
+  
+  // 保存更新后的提醒记录
+  if (Object.keys(notifiedIds).length > 0) {
+    await Preferences.set({ 
+      key: notifyKey, 
+      value: JSON.stringify(notifiedIds) 
+    })
+  }
   
   if (notifications.length > 0) {
     await LocalNotifications.schedule({ notifications })
@@ -12707,8 +12959,8 @@ const scheduleTaskReminder = async (task) => {
       bodyPrefix = `⏰ 截止：${month}月${day}日 ${hours}:${minutes}\n`
     }
     
-    // Android通知ID必须是小整数（使用任务ID的后6位）
-    const notificationId = task.id % 1000000
+    // Android通知ID必须是小整数（使用生成函数）
+    const notificationId = generateNotificationId(task.id, 'reminder')
     
     await LocalNotifications.schedule({
       notifications: [{
@@ -12743,7 +12995,7 @@ const scheduleTaskReminder = async (task) => {
 // 取消任务提醒
 const cancelTaskReminder = async (taskId) => {
   try {
-    const notificationId = taskId % 1000000
+    const notificationId = generateNotificationId(taskId, 'reminder')
     await LocalNotifications.cancel({ notifications: [{ id: notificationId }] })
   } catch (error) {
     console.error('取消提醒失败:', error)
@@ -12784,6 +13036,12 @@ const scheduleDailySummaryNotification = async () => {
     // 取消之前的每日摘要通知
     await LocalNotifications.cancel({ notifications: [{ id: 999999 }] })
     
+    // 如果禁用了每日摘要，直接返回
+    if (!notificationSettings.value.dailySummaryEnabled) {
+      console.log('⏭️ 每日摘要通知已禁用')
+      return
+    }
+    
     // 计算今日任务统计
     const now = new Date()
     const pendingTasks = taskStore.tasks.filter(t => t.status === 'pending')
@@ -12817,10 +13075,11 @@ const scheduleDailySummaryNotification = async () => {
       body += '\n✨ 新的一天，加油完成任务！'
     }
     
-    // 设置明天早上9点的通知
+    // 设置明天指定时间的通知
     const tomorrow = new Date()
     tomorrow.setDate(tomorrow.getDate() + 1)
-    tomorrow.setHours(9, 0, 0, 0)
+    const [hours, minutes] = notificationSettings.value.dailySummaryTime.split(':')
+    tomorrow.setHours(parseInt(hours), parseInt(minutes), 0, 0)
     
     await LocalNotifications.schedule({
       notifications: [{
@@ -12831,14 +13090,14 @@ const scheduleDailySummaryNotification = async () => {
           at: tomorrow,
           allowWhileIdle: true
         },
-        channelId: 'task-reminders-v3',
+        channelId: 'task-daily-summary',
         sound: 'default',
         autoCancel: true,
         vibrate: [0, 1000, 500, 1000, 500, 1000, 500, 1000]
       }]
     })
     
-    console.log('每日摘要通知已设置:', tomorrow)
+    console.log('✅ 每日摘要通知已设置:', tomorrow)
   } catch (error) {
     console.error('设置每日摘要通知失败:', error)
   }
@@ -13585,6 +13844,18 @@ onMounted(async () => {
   
   // 设置每日任务摘要通知
   await scheduleDailySummaryNotification()
+  
+  // 初始化通知渠道
+  await initializeNotificationChannels()
+  
+  // 检查通知权限
+  await checkNotificationPermission()
+  
+  // 加载通知设置
+  await loadNotificationSettings()
+  
+  // 清理过期的提醒记录
+  await cleanupExpiredNotifications()
   
   countdownInterval.value = setInterval(() => {
     taskStore.checkOverdueTasks()
@@ -16640,6 +16911,106 @@ watch(() => reportData.value, (newData) => {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   background: rgba(255, 255, 255, 0.7);
+}
+
+/* 通知设置样式 */
+.settings-section {
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.section-title {
+  margin: 0 0 0.8rem 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.setting-item {
+  margin-bottom: 1rem;
+}
+
+.setting-item:last-child {
+  margin-bottom: 0;
+}
+
+.setting-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+.setting-checkbox input[type="checkbox"] {
+  display: none;
+}
+
+.checkbox-visual {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #d1d5db;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+  margin-top: 0.2rem;
+}
+
+.setting-checkbox input:checked + .checkbox-visual {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #667eea;
+}
+
+.setting-checkbox input:checked + .checkbox-visual::after {
+  content: '✓';
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.setting-text {
+  flex: 1;
+}
+
+.setting-text strong {
+  display: block;
+  font-size: 0.9rem;
+  color: #1f2937;
+  margin-bottom: 0.2rem;
+}
+
+.setting-label {
+  display: block;
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.time-input {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.time-input:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.setting-desc {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.8rem;
+  color: #6b7280;
 }
 
 /* 弹窗表单样式 */
