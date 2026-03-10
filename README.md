@@ -14,6 +14,18 @@
 This is an **offline Android To-Do management application** built with **Vue 3** and **Capacitor**. All data is stored locally on the device using Capacitor Preferences API, requiring **no internet connection or backend server**.
 
 ### 🌟 Key Features
+- **Rich Media Attachment System** 📎 (v0.8.9):
+  - **Multi-file Type Support**: Images, PDF, Word, Excel, PPT, videos, archives - 8 major types
+  - **Dual Upload Methods**: 🖼️ Image button (photo gallery) + 📎 File button (document upload)
+  - **File Preview System**: Full-screen preview modal with support for images, PDF, video preview
+  - **Smart File Recognition**: Auto-detect 20+ file extensions with corresponding icons
+  - **Local Storage**: All files saved locally on device for offline access
+  - **Markdown Integration**: Seamless integration with Markdown editor
+- **Markdown Editor** 📝 (v0.8.9):
+  - **Dual Mode Toggle**: Edit/Preview mode with one-click switching
+  - **GitHub Style**: Familiar Markdown rendering with complete syntax support
+  - **Security Protection**: DOMPurify prevents XSS attacks
+  - **Mobile Optimized**: Perfect adaptation for mobile and desktop
 - **Task Growth Tree** 🌳 (v0.8.1):
   - **Ant Forest-style Incentive**: Visualize your progress with a growing tree
   - **10-Level System**: Seed🌱 → Sprout🌿 → Sapling🪴 → Small Tree🌳 → Big Tree🌲 → Blooming🌸 → Flourishing🌺 → Lush🌻 → Towering🏵️ → Divine Tree🎋
@@ -199,6 +211,18 @@ This is an **offline Android To-Do management application** built with **Vue 3**
 这是一个基于 **Vue 3** 和 **Capacitor** 构建的 **Android离线待办事项管理应用**。所有数据使用 Capacitor Preferences API 存储在设备本地，**无需网络连接或后端服务器**。
 
 ### 🌟 核心功能
+- **富媒体附件系统** 📎 (v0.8.9 新增):
+  - **多种文件类型支持**：图片、PDF、Word、Excel、PPT、视频、压缩包等 8 大类型
+  - **双重上传方式**：🖼️ 图片按钮（相册选择）+ 📎 文件按钮（文档上传）
+  - **文件预览系统**：全屏预览弹窗，支持图片、PDF、视频预览
+  - **智能文件识别**：自动识别 20+ 种文件扩展名，显示对应图标
+  - **本地存储**：所有文件保存在设备本地，支持离线访问
+  - **Markdown 集成**：无缝集成到 Markdown 编辑器中
+- **Markdown 编辑器** 📝 (v0.8.9 新增):
+  - **双模式切换**：编辑/预览模式一键切换
+  - **GitHub 风格**：熟悉的 Markdown 渲染效果，完整语法支持
+  - **安全防护**：使用 DOMPurify 防止 XSS 攻击
+  - **移动端优化**：完美适配手机和桌面端
 - **任务树成长系统** 🌳 (v0.8.1 新增):
   - **蚂蚁森林式激励**：通过可视化的树木成长激励任务完成
   - **10级成长体系**：种子🌱→幼苗🌿→树苗🪴→小树🌳→大树🌲→开花结果🌸→繁茂之树🌺→茂盛大树🌻→参天大树🏵️→神树🎋

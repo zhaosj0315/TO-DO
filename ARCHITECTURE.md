@@ -1,7 +1,7 @@
 # 系统架构文档 | Architecture Documentation
 
-**版本**: v0.7.8  
-**更新日期**: 2026-03-01
+**版本**: v0.8.9  
+**更新日期**: 2026-03-10
 
 ---
 
@@ -12,7 +12,8 @@
 3. [系统架构](#系统架构)
 4. [数据流向](#数据流向)
 5. [模块划分](#模块划分)
-6. [设计模式](#设计模式)
+6. [富媒体架构](#富媒体架构)
+7. [设计模式](#设计模式)
 
 ---
 
@@ -23,9 +24,9 @@
 **单体离线应用架构 (Offline-First Monolithic Architecture)**
 
 - **前端**: Vue 3 单页应用 (SPA)
-- **存储**: 本地存储 (Capacitor Preferences)
+- **存储**: 本地存储 (Capacitor Preferences + Filesystem)
 - **打包**: Capacitor (移动端) + Electron (桌面端)
-- **特点**: 完全离线、无后端、数据本地化
+- **特点**: 完全离线、无后端、数据本地化、富媒体支持
 
 ### 架构演进
 
@@ -34,7 +35,63 @@ v1.0 - v1.2: CS架构（前后端分离）
     ↓
 v1.3 - v1.7: 纯前端架构（完全离线）
     ↓
-v0.7.8: 当前架构（离线优先 + AI增强）
+v0.8.8: Markdown编辑器集成
+    ↓
+v0.8.9: 富媒体附件系统（当前架构）
+```
+
+---
+
+## 📎 富媒体架构
+
+### 组件架构图
+
+```
+TodoView.vue (主界面)
+    ├── 🖼️ pickImageForTask() ──┐
+    ├── 📎 pickFileForTask() ───┤
+    │                          │
+    └── MarkdownRenderer ──────┼── FilePreviewModal
+            │                  │        │
+            ├── processLocalImages()     │
+            ├── bindFileCardEvents() ────┘
+            └── getFileIcon()
+```
+
+### 数据流架构
+
+```
+用户操作 → 文件选择 → Base64转换 → 本地存储 → 元数据保存 → Markdown渲染 → 预览显示
+    ↓           ↓          ↓         ↓         ↓           ↓         ↓
+  UI交互    Camera/File   内存处理   Filesystem  Task.media  DOM更新   用户查看
+```
+
+### 存储架构
+
+```
+Directory.Data/
+└── media/
+    └── {taskId}/
+        ├── img_1773104018300.jpg
+        ├── file_1773104018301.pdf
+        └── file_1773104018302.docx
+
+Task Object:
+{
+  id: 123,
+  text: "任务标题",
+  description: "![图片](local://img_1773104018300)\n[📎 文档](local://file_1773104018301)",
+  media: [
+    {
+      id: "img_1773104018300",
+      type: "image",
+      name: "img_1773104018300.jpg",
+      originalName: "照片.jpg",
+      path: "media/123/img_1773104018300.jpg",
+      size: 1024000
+    }
+  ]
+}
 ```
 
 ---
@@ -51,6 +108,14 @@ v0.7.8: 当前架构（离线优先 + AI增强）
 - ✅ 生态系统成熟（Pinia、Vue Router）
 - ✅ 学习曲线平缓
 - ✅ 打包体积小
+
+### 富媒体处理
+
+**新增依赖 (v0.8.9)**:
+- **marked 14.1.3**: Markdown 解析和渲染
+- **dompurify 3.1.7**: XSS 防护和 HTML 净化
+- **@capacitor/camera 6.0.2**: 图片选择和拍照
+- **@capacitor/filesystem 6.0.1**: 本地文件存储
 
 ### 状态管理
 

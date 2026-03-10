@@ -1,13 +1,190 @@
 # API 参考文档 | API Reference
 
-**版本**: v0.7.8  
-**更新日期**: 2026-03-01
+**版本**: v0.8.9  
+**更新日期**: 2026-03-10
 
 ---
 
 ## 📋 概述
 
 TO-DO App 是一个完全离线的应用，所有数据存储在本地设备。本文档描述应用内部使用的数据存储 API 和组件接口。
+
+**v0.8.9 新增**：富媒体附件系统 API
+
+---
+
+## 📎 富媒体附件 API
+
+### 图片上传 API
+
+**方法**: `pickImageForTask()`  
+**位置**: `src/views/TodoView.vue:6069`  
+**功能**: 从相册选择图片并上传到任务
+
+```javascript
+const pickImageForTask = async () => {
+  try {
+    // 1. 使用 Capacitor Camera 选择图片
+    const photo = await Camera.getPhoto({
+      quality: 80,
+      allowEditing: false,
+      resultType: CameraResultType.Base64,
+      source: CameraSource.Photos
+    })
+    
+    // 2. 生成媒体ID和文件名
+    const mediaId = `img_${Date.now()}`
+    const fileName = `${mediaId}.jpg`
+    
+    // 3. 保存到本地存储
+    await Filesystem.writeFile({
+      path: `media/${taskId}/${fileName}`,
+      data: photo.base64String,
+      directory: Directory.Data
+    })
+    
+    // 4. 插入 Markdown 语法
+    const syntax = `\n![图片](local://${mediaId})\n`
+    // 插入到光标位置...
+    
+  } catch (error) {
+    console.error('图片上传失败:', error)
+  }
+}
+```
+
+### 文件上传 API
+
+**方法**: `pickFileForTask()`  
+**位置**: `src/views/TodoView.vue:6144`  
+**功能**: 选择文档文件并上传到任务
+
+```javascript
+const pickFileForTask = async () => {
+  try {
+    // 1. 创建文件选择器
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.mp4,.mov,.avi,.zip,.txt'
+    
+    input.onchange = async (e) => {
+      const file = e.target.files[0]
+      
+      // 2. 文件大小检查（10MB限制）
+      if (file.size > 10 * 1024 * 1024) {
+        showNotification('文件大小不能超过 10MB', 'error')
+        return
+      }
+      
+      // 3. 读取文件为 base64
+      const reader = new FileReader()
+      reader.onload = async (event) => {
+        const base64Data = event.target.result.split(',')[1]
+        
+        // 4. 保存文件和元数据
+        // ... 保存逻辑
+      }
+      reader.readAsDataURL(file)
+    }
+    
+    input.click()
+  } catch (error) {
+    console.error('文件上传失败:', error)
+  }
+}
+```
+
+### 文件类型判断 API
+
+**方法**: `getFileType(ext)`  
+**位置**: `src/views/TodoView.vue:6240`  
+**功能**: 根据文件扩展名判断文件类型
+
+```javascript
+const getFileType = (ext) => {
+  const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']
+  const videoExts = ['mp4', 'mov', 'avi', 'mkv', 'flv', 'wmv']
+  const docExts = ['doc', 'docx', 'txt', 'rtf']
+  const excelExts = ['xls', 'xlsx', 'csv']
+  const pptExts = ['ppt', 'pptx']
+  const pdfExts = ['pdf']
+  const zipExts = ['zip', 'rar', '7z', 'tar', 'gz']
+  
+  ext = ext.toLowerCase()
+  
+  if (imageExts.includes(ext)) return 'image'
+  if (videoExts.includes(ext)) return 'video'
+  if (docExts.includes(ext)) return 'document'
+  if (excelExts.includes(ext)) return 'excel'
+  if (pptExts.includes(ext)) return 'powerpoint'
+  if (pdfExts.includes(ext)) return 'pdf'
+  if (zipExts.includes(ext)) return 'archive'
+  
+  return 'file'
+}
+```
+
+---
+
+## 🖼️ 组件 API
+
+### MarkdownRenderer 组件
+
+**位置**: `src/components/MarkdownRenderer.vue`  
+**功能**: 渲染 Markdown 内容，支持富媒体附件
+
+#### Props
+```javascript
+const props = defineProps({
+  content: {
+    type: String,
+    default: ''
+  },
+  media: {
+    type: Array,
+    default: () => []
+  }
+})
+```
+
+#### 主要方法
+```javascript
+// 处理本地媒体文件
+const processLocalImages = async (html) => {
+  // 处理图片和文件链接
+  // 转换 local:// 协议为实际文件内容
+}
+
+// 重新绑定事件
+const bindFileCardEvents = () => {
+  // 绑定文件卡片点击事件
+  // 绑定图片点击事件
+}
+```
+
+### FilePreviewModal 组件
+
+**位置**: `src/components/FilePreviewModal.vue`  
+**功能**: 文件预览弹窗
+
+#### Props
+```javascript
+const props = defineProps({
+  visible: {
+    type: Boolean,
+    default: false
+  },
+  file: {
+    type: Object,
+    default: null
+  }
+})
+```
+
+#### Events
+```javascript
+const emit = defineEmits(['close', 'download'])
+```
 
 ---
 
