@@ -1,7 +1,7 @@
 # TO-DO App | 跨平台离线待办事项管理应用
 
-**当前版本**: v0.8.9  
-**更新日期**: 2026-03-11  
+**当前版本**: v0.9.0  
+**更新日期**: 2026-03-12  
 **支持平台**: Android / Windows / iOS / Mac
 
 [English](#english) | [中文](#中文)
@@ -14,6 +14,13 @@
 This is an **offline Android To-Do management application** built with **Vue 3** and **Capacitor**. All data is stored locally on the device using Capacitor Preferences API, requiring **no internet connection or backend server**.
 
 ### 🌟 Key Features
+- **Obsidian-style Task Relations** 🔗 (v0.9.0):
+  - **Bidirectional Links**: Use `[[Task Name]]` to create links between tasks
+  - **Hierarchical Tags**: Organize tasks with nested tags like `#work/project-a`
+  - **Backlinks Panel**: Automatically shows which tasks reference the current task
+  - **Smart Rendering**: Links and tags rendered as clickable elements in Markdown
+  - **Context Preview**: See the context where tasks are referenced
+  - **Knowledge Graph**: Transform isolated tasks into an interconnected knowledge network
 - **Rich Media Attachment System** 📎 (v0.8.9):
   - **Multi-file Type Support**: Images, PDF, Word, Excel, PPT, videos, archives - 8 major types
   - **Dual Upload Methods**: 🖼️ Image button (photo gallery) + 📎 File button (document upload)

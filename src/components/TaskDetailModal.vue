@@ -304,6 +304,38 @@
           </div>
         </section>
 
+        <!-- 🆕 反向链接面板（v0.9.0 Obsidian 风格）-->
+        <section v-if="backlinks.length > 0" class="backlinks-section">
+          <h3>🔙 反向链接</h3>
+          <div class="backlinks-hint">以下任务引用了当前任务</div>
+          
+          <div class="backlink-list">
+            <div 
+              v-for="backlink in backlinks" 
+              :key="backlink.id"
+              class="backlink-item"
+              @click="handleNavigateToTask(backlink.id)"
+            >
+              <div class="backlink-header">
+                <span class="backlink-title">{{ backlink.text }}</span>
+                <span :class="['priority-badge', backlink.priority]">
+                  {{ getPriorityText(backlink.priority) }}
+                </span>
+              </div>
+              <div class="backlink-context">
+                {{ getBacklinkContext(backlink) }}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 🆕 关系图谱入口（v0.9.0）-->
+        <section v-if="hasRelations" class="graph-entry-section">
+          <button class="btn-view-graph" @click="handleViewGraph">
+            🕸️ 查看关系图谱
+          </button>
+        </section>
+
         <!-- 执行统计 -->
         <section v-if="task.stats && task.stats.totalLogs > 0" class="stats-section">
           <h3>📈 执行统计</h3>
@@ -749,6 +781,60 @@ const waitForTasks = computed(() => {
 const waitingTasks = computed(() => {
   return taskStore.getWaitingTasks(props.task.id)
 })
+
+// 🆕 反向链接（v0.9.0 Obsidian 风格）
+const backlinks = computed(() => {
+  return taskStore.getBacklinks(props.task.id)
+})
+
+// 🆕 获取反向链接上下文
+const getBacklinkContext = (task) => {
+  const regex = new RegExp(`\\[\\[${props.task.text}\\]\\]`, 'i')
+  const match = task.description.match(regex)
+  
+  if (match) {
+    const start = Math.max(0, match.index - 30)
+    const end = Math.min(task.description.length, match.index + match[0].length + 30)
+    let context = task.description.substring(start, end)
+    
+    if (start > 0) context = '...' + context
+    if (end < task.description.length) context = context + '...'
+    
+    return context
+  }
+  
+  return task.description.substring(0, 80) + (task.description.length > 80 ? '...' : '')
+}
+
+// 🆕 导航到任务
+const handleNavigateToTask = (taskId) => {
+  emit('close')
+  setTimeout(() => {
+    window.dispatchEvent(new CustomEvent('open-task-detail', { 
+      detail: { taskId } 
+    }))
+  }, 300)
+}
+
+// 🆕 查看关系图谱（v0.9.0）
+const hasRelations = computed(() => {
+  return (
+    (props.task.linkedTasks?.length > 0) ||
+    (backlinks.value.length > 0) ||
+    (props.task.waitFor?.length > 0) ||
+    (props.task.parentTaskId) ||
+    (props.task.subtasks?.length > 0)
+  )
+})
+
+const handleViewGraph = () => {
+  emit('close')
+  setTimeout(() => {
+    window.dispatchEvent(new CustomEvent('open-task-graph', { 
+      detail: { taskId: props.task.id } 
+    }))
+  }, 300)
+}
 
 // 父任务（AI拆分来源）
 const parentTask = computed(() => {
@@ -3087,5 +3173,99 @@ section h3 {
 .btn-confirm-delete:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+/* 🆕 反向链接面板样式（v0.9.0 Obsidian 风格）*/
+.backlinks-section {
+  margin-top: 20px;
+  padding: 16px;
+  background: rgba(139, 92, 246, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(139, 92, 246, 0.1);
+}
+
+.backlinks-section h3 {
+  margin: 0 0 8px 0;
+  font-size: 1rem;
+  color: #8b5cf6;
+}
+
+.backlinks-hint {
+  font-size: 0.85rem;
+  color: #999;
+  margin-bottom: 12px;
+}
+
+.backlink-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.backlink-item {
+  padding: 12px;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid #f0f0f0;
+}
+
+.backlink-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+  border-color: #8b5cf6;
+}
+
+.backlink-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.backlink-title {
+  font-weight: 600;
+  color: #333;
+  flex: 1;
+}
+
+.backlink-context {
+  font-size: 0.9rem;
+  color: #666;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* 🆕 关系图谱入口样式（v0.9.0）*/
+.graph-entry-section {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.btn-view-graph {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-view-graph:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.btn-view-graph:active {
+  transform: translateY(0);
 }
 </style>

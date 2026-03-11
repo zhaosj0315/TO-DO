@@ -19,6 +19,30 @@
               <span class="item-label">笔记本</span>
             </div>
             
+            <!-- 🆕 标签浏览器（v0.9.0）-->
+            <div class="header-item">
+              <button 
+                class="btn-icon-circle btn-tags" 
+                @click="showTagBrowser = true" 
+                title="标签浏览器"
+              >
+                🏷️
+              </button>
+              <span class="item-label">标签</span>
+            </div>
+            
+            <!-- 🆕 关系图谱（v0.9.0）-->
+            <div class="header-item">
+              <button 
+                class="btn-icon-circle btn-graph" 
+                @click="showTaskGraph = true; graphCenterTaskId = null" 
+                title="任务关系图谱"
+              >
+                🕸️
+              </button>
+              <span class="item-label">图谱</span>
+            </div>
+            
             <!-- 成长树 -->
             <div class="header-item">
               <div class="growth-tree" @click="showGrowthDetail = true" :title="`成长等级 ${treeLevel} - 点击查看详情`">
@@ -2534,10 +2558,12 @@
         <!-- 编辑模式 -->
         <textarea
           v-else
+          ref="descriptionTextarea"
           v-model="newTaskDescription"
           class="fullscreen-desc-textarea"
-          placeholder="输入任务描述（可选）..."
+          placeholder="输入任务描述（可选）... 提示：输入 # 添加标签，输入 [[ 链接任务"
           autofocus
+          @input="handleAutocompleteInput"
         ></textarea>
       </div>
       
@@ -3957,6 +3983,30 @@
       @batchDelete="handleBatchDelete"
     />
 
+    <!-- 🆕 标签浏览器（v0.9.0）-->
+    <TagBrowser
+      v-if="showTagBrowser"
+      @close="showTagBrowser = false"
+      @filter="handleTagFilter"
+    />
+
+    <!-- 🆕 任务关系图谱（v0.9.0）-->
+    <TaskGraphView
+      v-if="showTaskGraph"
+      :center-task-id="graphCenterTaskId"
+      @close="showTaskGraph = false"
+      @navigate="handleGraphNavigate"
+    />
+
+    <!-- 🆕 自动补全下拉（v0.9.0）-->
+    <AutocompleteDropdown
+      :show="showAutocomplete"
+      :suggestions="autocompleteSuggestions"
+      :position="autocompletePosition"
+      @select="selectAutocompleteSuggestion"
+      @close="closeAutocomplete"
+    />
+
     <!-- 🆕 重命名文件夹弹窗 -->
     <RenameCollectionModal
       v-if="showRenameCollectionModal"
@@ -4001,6 +4051,7 @@ import AITextMenu from '../components/AITextMenu.vue'
 import AITextResultSheet from '../components/AITextResultSheet.vue'
 import LoadingSpinner from '../components/LoadingSpinner.vue'
 import { useTextSelection } from '../composables/useTextSelection'
+import { useAutocomplete } from '../composables/useAutocomplete'  // 🆕 自动补全（v0.9.0）
 import { AITextService } from '../services/aiTextService'
 import { AITaskExtractor } from '../services/aiTaskExtractor'
 import { AITaskGenerator } from '../services/aiTaskGenerator'
@@ -4021,6 +4072,9 @@ import DailySummaryModal from '../components/DailySummaryModal.vue'
 import AIReportModal from '../components/AIReportModal.vue'
 import SmartTaskSplitter from '../components/SmartTaskSplitter.vue'
 import CalendarPicker from '../components/CalendarPicker.vue'  // 🆕 日历选择器
+import TagBrowser from '../components/TagBrowser.vue'  // 🆕 标签浏览器（v0.9.0）
+import TaskGraphView from '../components/TaskGraphView.vue'  // 🆕 任务关系图谱（v0.9.0）
+import AutocompleteDropdown from '../components/AutocompleteDropdown.vue'  // 🆕 自动补全（v0.9.0）
 import { Filesystem, Directory } from '@capacitor/filesystem'
 import { LocalNotifications } from '@capacitor/local-notifications'
 import { Capacitor } from '@capacitor/core'
@@ -4476,6 +4530,17 @@ const tempDescription = ref('')  // 临时保存的描述
 const tempMedia = ref([])  // 临时媒体数组（创建任务前）
 const currentTaskId = ref(null)  // 当前编辑的任务ID
 
+// 🆕 自动补全相关（v0.9.0）
+const descriptionTextarea = ref(null)
+const {
+  showAutocomplete,
+  suggestions: autocompleteSuggestions,
+  autocompletePosition,
+  handleInput: handleAutocompleteInput,
+  selectSuggestion: selectAutocompleteSuggestion,
+  closeAutocomplete
+} = useAutocomplete(descriptionTextarea)
+
 // 🌳 子任务快速创建相关（仅自动识别）
 const showSubtaskSuggestion = ref(false)  // 显示自动识别的子任务建议
 const detectedSubtasks = ref([])  // 自动识别的子任务列表
@@ -4545,6 +4610,14 @@ const collectionToDelete = ref(null)  // 待删除的文件夹
 const showMoveToCollectionModal = ref(false)  // 🆕 移动任务到文件夹弹窗
 const showMoveCollectionModal = ref(false)  // 🆕 移动笔记本弹窗
 const taskToMove = ref(null)  // 🆕 待移动的任务
+
+// 🆕 标签浏览器状态（v0.9.0）
+const showTagBrowser = ref(false)
+const selectedTag = ref(null)  // 当前选中的标签
+
+// 🆕 任务关系图谱状态（v0.9.0）
+const showTaskGraph = ref(false)
+const graphCenterTaskId = ref(null)  // 图谱中心任务ID
 const collectionToMove = ref(null)  // 🆕 待移动的笔记本
 const editingCollectionId = ref(null)  // 🆕 正在编辑名称的文件夹ID
 const editingCollectionName = ref('')  // 🆕 编辑中的文件夹名称
@@ -8102,6 +8175,15 @@ const filteredTasks = computed(() => {
       // 只显示选中文件夹的任务
       tasks = tasks.filter(t => t.collectionId === selectedCollectionId.value)
     }
+  }
+  
+  // 🆕 标签筛选（v0.9.0）
+  if (selectedTag.value) {
+    tasks = tasks.filter(t => 
+      t.tags?.some(tag => 
+        tag === selectedTag.value || tag.startsWith(selectedTag.value + '/')
+      )
+    )
   }
   
   // 优先级筛选
@@ -12786,6 +12868,7 @@ const selectCollection = (collectionId) => {
   }
   
   selectedCollectionId.value = collectionId
+  selectedTag.value = null  // 🆕 清除标签筛选（v0.9.0）
   
   console.log('📁 选择文件夹:', { 
     collectionId, 
@@ -12794,6 +12877,24 @@ const selectCollection = (collectionId) => {
   
   // 可选：选择后自动收起列表
   // showCollectionList.value = false
+}
+
+// 🆕 标签过滤处理（v0.9.0）
+const handleTagFilter = (tagPath) => {
+  selectedTag.value = tagPath
+  selectedCollectionId.value = null  // 清除文件夹筛选
+  console.log('🏷️ 选择标签:', tagPath)
+}
+
+// 🆕 图谱导航处理（v0.9.0）
+const handleGraphNavigate = (taskId) => {
+  const task = taskStore.tasks.find(t => t.id === taskId)
+  if (task) {
+    showTaskGraph.value = false
+    setTimeout(() => {
+      openTaskDetail(task)
+    }, 300)
+  }
 }
 
 // 🆕 开始编辑文件夹名称
@@ -14275,10 +14376,22 @@ onMounted(async () => {
   
   // 监听打开任务详情事件（从子任务跳转）
   window.addEventListener('open-task-detail', (event) => {
-    const { task } = event.detail
+    const { taskId, task } = event.detail
     if (task) {
       openTaskDetail(task)
+    } else if (taskId) {
+      const foundTask = taskStore.tasks.find(t => t.id === taskId)
+      if (foundTask) {
+        openTaskDetail(foundTask)
+      }
     }
+  })
+
+  // 🆕 监听打开任务图谱事件（v0.9.0）
+  window.addEventListener('open-task-graph', (event) => {
+    const { taskId } = event.detail
+    graphCenterTaskId.value = taskId
+    showTaskGraph.value = true
   })
 
   // Android 返回手势监听

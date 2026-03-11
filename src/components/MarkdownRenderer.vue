@@ -7,6 +7,9 @@ import { computed, ref, watch, nextTick } from 'vue'
 import * as markedLib from 'marked'
 import DOMPurify from 'dompurify'
 import { Filesystem, Directory } from '@capacitor/filesystem'
+import { useOfflineTaskStore } from '@/stores/offlineTaskStore'
+
+const taskStore = useOfflineTaskStore()
 
 // 兼容不同版本的 marked
 const parseMarkdown = (text) => {
@@ -70,6 +73,53 @@ const processLocalImages = async (html) => {
   
   const parser = new DOMParser()
   const doc = parser.parseFromString(html, 'text/html')
+  
+  // 🆕 处理 [[任务链接]]（v0.9.0 Obsidian 风格）
+  const textNodes = []
+  const walker = document.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT, null, false)
+  let node
+  while (node = walker.nextNode()) {
+    textNodes.push(node)
+  }
+  
+  textNodes.forEach(textNode => {
+    const text = textNode.textContent
+    if (text.includes('[[')) {
+      const span = doc.createElement('span')
+      span.innerHTML = text.replace(/\[\[([^\]]+)\]\]/g, (match, title) => {
+        const task = taskStore.tasks.find(t => 
+          t.text.toLowerCase() === title.trim().toLowerCase()
+        )
+        
+        if (task) {
+          return `<a href="#" class="task-link" data-task-id="${task.id}">
+            <span class="link-icon">🔗</span>${title}
+          </a>`
+        }
+        return `<span class="broken-link">[[${title}]]</span>`
+      })
+      textNode.replaceWith(span)
+    }
+  })
+  
+  // 🆕 处理层级标签（v0.9.0 Obsidian 风格）
+  const allTextNodes = []
+  const walker2 = document.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT, null, false)
+  let node2
+  while (node2 = walker2.nextNode()) {
+    allTextNodes.push(node2)
+  }
+  
+  allTextNodes.forEach(textNode => {
+    const text = textNode.textContent
+    if (text.includes('#')) {
+      const span = doc.createElement('span')
+      span.innerHTML = text.replace(/#([\w\u4e00-\u9fa5]+(?:\/[\w\u4e00-\u9fa5]+)*)/g, (match, tag) => {
+        return `<span class="tag-badge" data-tag="${tag}">#${tag}</span>`
+      })
+      textNode.replaceWith(span)
+    }
+  })
   
   // 处理图片
   const images = doc.querySelectorAll('img[src^="local://"]')
@@ -299,6 +349,20 @@ const renderMarkdown = async () => {
 
 // 重新绑定文件卡片和图片事件
 const bindFileCardEvents = () => {
+  // 🆕 绑定任务链接点击事件（v0.9.0）
+  const taskLinks = document.querySelectorAll('.task-link')
+  taskLinks.forEach(link => {
+    link.onclick = (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      const taskId = parseInt(link.getAttribute('data-task-id'))
+      console.log('🔗 任务链接被点击:', taskId)
+      window.dispatchEvent(new CustomEvent('navigate-to-task', { 
+        detail: { taskId } 
+      }))
+    }
+  })
+  
   // 绑定文件卡片事件
   const fileCards = document.querySelectorAll('.file-card')
   fileCards.forEach(card => {
@@ -487,5 +551,45 @@ watch(() => [props.content, props.media], () => {
 /* 任务列表 */
 .markdown-renderer :deep(input[type="checkbox"]) {
   margin-right: 0.5rem;
+}
+
+/* 🆕 Obsidian 风格样式（v0.9.0）*/
+.markdown-renderer :deep(.task-link) {
+  color: #8b5cf6;
+  text-decoration: none;
+  border-bottom: 1px dashed #8b5cf6;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.markdown-renderer :deep(.task-link:hover) {
+  background: rgba(139, 92, 246, 0.1);
+  border-bottom-style: solid;
+}
+
+.markdown-renderer :deep(.link-icon) {
+  font-size: 0.85em;
+  margin-right: 2px;
+}
+
+.markdown-renderer :deep(.broken-link) {
+  color: #999;
+  text-decoration: line-through;
+}
+
+.markdown-renderer :deep(.tag-badge) {
+  display: inline-block;
+  padding: 2px 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px;
+  font-size: 0.85em;
+  margin: 0 4px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.markdown-renderer :deep(.tag-badge:hover) {
+  opacity: 0.8;
 }
 </style>

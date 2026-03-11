@@ -94,7 +94,7 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         }
       }
       
-      // 数据迁移：为旧任务添加 logs、stats、waitFor、collectionId 和 media 字段
+      // 数据迁移：为旧任务添加 logs、stats、waitFor、collectionId、media、linkedTasks 和 tags 字段
       this.tasks = this.tasks.map(task => {
         let waitFor = task.waitFor
         // 兼容旧数据：null → []，单个ID → [ID]
@@ -110,7 +110,9 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
           stats: task.stats || this.calculateTaskStats([]),
           waitFor,
           collectionId: task.collectionId !== undefined ? task.collectionId : null,  // 🆕 文件夹ID
-          media: task.media || []  // 🆕 媒体资源数组
+          media: task.media || [],  // 🆕 媒体资源数组
+          linkedTasks: task.linkedTasks || [],  // 🆕 Obsidian 链接（v0.9.0）
+          tags: task.tags || []  // 🆕 Obsidian 标签（v0.9.0）
         }
       })
       
@@ -142,7 +144,7 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         }
       }
       
-      // 数据迁移：为旧任务添加 logs、stats、waitFor 和 collectionId 字段
+      // 数据迁移：为旧任务添加 logs、stats、waitFor、collectionId、linkedTasks 和 tags 字段
       this.deletedTasks = this.deletedTasks.map(task => {
         let waitFor = task.waitFor
         if (waitFor === null || waitFor === undefined) {
@@ -156,7 +158,9 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
           logs: task.logs || [],
           stats: task.stats || this.calculateTaskStats([]),
           waitFor,
-          collectionId: task.collectionId !== undefined ? task.collectionId : null
+          collectionId: task.collectionId !== undefined ? task.collectionId : null,
+          linkedTasks: task.linkedTasks || [],  // 🆕 Obsidian 链接（v0.9.0）
+          tags: task.tags || []  // 🆕 Obsidian 标签（v0.9.0）
         }
       })
       
@@ -326,7 +330,54 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       }
     },
 
+    // ========== Obsidian 风格增强（v0.9.0）==========
+    
+    // 🔗 解析 [[任务名]] 链接
+    parseTaskLinks(text) {
+      if (!text) return []
+      
+      const linkRegex = /\[\[([^\]]+)\]\]/g
+      const linkedIds = []
+      let match
+      
+      while ((match = linkRegex.exec(text)) !== null) {
+        const title = match[1].trim()
+        const task = this.tasks.find(t => 
+          t.text.toLowerCase() === title.toLowerCase()
+        )
+        if (task) linkedIds.push(task.id)
+      }
+      
+      return [...new Set(linkedIds)] // 去重
+    },
+    
+    // 🏷️ 解析层级标签 #work/project
+    parseHierarchicalTags(text) {
+      if (!text) return []
+      
+      const tagRegex = /#([\w\u4e00-\u9fa5]+(?:\/[\w\u4e00-\u9fa5]+)*)/g
+      const tags = []
+      let match
+      
+      while ((match = tagRegex.exec(text)) !== null) {
+        tags.push(match[1])
+      }
+      
+      return [...new Set(tags)] // 去重
+    },
+    
+    // 🔙 获取反向链接（谁引用了我）
+    getBacklinks(taskId) {
+      return this.tasks.filter(t => 
+        Array.isArray(t.linkedTasks) && t.linkedTasks.includes(taskId)
+      )
+    },
+
     async addTask(taskData) {
+      // 🔍 解析 Obsidian 风格链接和标签（v0.9.0）
+      const linkedTasks = this.parseTaskLinks(taskData.description)
+      const tags = this.parseHierarchicalTags(taskData.description)
+      
       const task = {
         id: taskData.id || Math.floor(Math.random() * 2147483647), // Java int范围内的随机ID
         text: taskData.text,
@@ -351,7 +402,9 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         subtasks: taskData.subtasks || [], // 子任务ID列表
         aiSummary: taskData.aiSummary || null, // AI生成的任务总结
         collectionId: taskData.collectionId !== undefined ? taskData.collectionId : null,  // 🆕 所属文件夹ID
-        media: taskData.media || []  // 🆕 媒体资源
+        media: taskData.media || [],  // 🆕 媒体资源
+        linkedTasks: linkedTasks,  // 🆕 Obsidian 引用链接（v0.9.0）
+        tags: tags  // 🆕 Obsidian 层级标签（v0.9.0）
       }
       this.tasks.push(task)
       
