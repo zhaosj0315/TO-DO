@@ -14,7 +14,12 @@
         <div class="summary-section">
           <div class="section-title">💡 AI 建议</div>
           <div class="summary-card">
-            {{ plan?.summary || '暂无规划' }}
+            <MarkdownRenderer 
+              v-if="plan?.summary" 
+              :content="plan.summary" 
+              :media="[]" 
+            />
+            <div v-else class="empty-text">暂无规划</div>
           </div>
         </div>
 
@@ -67,6 +72,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import MarkdownRenderer from './MarkdownRenderer.vue'
 
 const props = defineProps({
   visible: Boolean,

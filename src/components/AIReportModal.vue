@@ -64,7 +64,11 @@
           <!-- 智能总结 -->
           <div v-if="report.summary" class="report-section summary-section">
             <div class="section-title">📝 智能总结</div>
-            <div class="summary-text">{{ report.summary }}</div>
+            <MarkdownRenderer 
+              :content="report.summary" 
+              :media="[]" 
+              class="summary-text"
+            />
           </div>
 
           <!-- 数据概览 -->
@@ -254,6 +258,7 @@
 import { ref, computed, watch } from 'vue'
 import { AIReportGenerator } from '@/services/aiReportGenerator'
 import LoadingSpinner from './LoadingSpinner.vue'
+import MarkdownRenderer from './MarkdownRenderer.vue'
 
 const props = defineProps({
   visible: Boolean,

@@ -56,7 +56,12 @@
           <div class="insight-icon">💡</div>
           <div class="insight-content">
             <strong>AI 建议：</strong>
-            <p>{{ summary.aiInsight }}</p>
+            <MarkdownRenderer 
+              v-if="summary?.aiInsight" 
+              :content="summary.aiInsight" 
+              :media="[]" 
+            />
+            <p v-else>暂无建议</p>
           </div>
         </div>
         
@@ -82,6 +87,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useOfflineTaskStore } from '@/stores/offlineTaskStore'
 import LoadingSpinner from './LoadingSpinner.vue'
+import MarkdownRenderer from './MarkdownRenderer.vue'
 
 const props = defineProps({
   visible: Boolean
