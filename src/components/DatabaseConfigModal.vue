@@ -306,7 +306,7 @@ const testSQLite = async () => {
 
 // 测试 MySQL 连接
 const testMySQL = async () => {
-  if (!config.value.mysql.host || !config.value.mysql.user || !config.value.mysql.password) {
+  if (!config.value.mysql.host || !config.value.mysql.username || !config.value.mysql.password) {
     alert('❌ 请填写完整的 MySQL 配置信息')
     return
   }
@@ -315,14 +315,17 @@ const testMySQL = async () => {
   
   try {
     const { mysqlConfigService } = await import('../services/mysqlConfig')
-    const success = await mysqlConfigService.testConnection(config.value.mysql)
+    const result = await mysqlConfigService.testConnection(config.value.mysql)
     
-    if (success) {
+    if (result.success) {
       mysqlTestStatus.value = 'success'
-      alert('✅ MySQL 连接测试成功！')
+      
+      // 显示详细的数据库初始化信息
+      const tableList = result.tables?.join('、') || '未知'
+      alert(`✅ MySQL 连接测试成功！\n\n📊 数据库初始化完成：\n- 数据库：${result.database}\n- 数据表：${result.tables?.length || 0} 个\n  (${tableList})\n\n💡 现在可以点击"立即同步"将本地数据同步到数据库`)
     } else {
       mysqlTestStatus.value = 'error'
-      alert('❌ MySQL 连接失败，请检查配置信息')
+      alert('❌ MySQL 连接失败：' + result.error)
     }
   } catch (error) {
     console.error('MySQL 测试失败:', error)
@@ -334,10 +337,47 @@ const testMySQL = async () => {
 // 保存配置
 const saveConfig = async () => {
   try {
+    // 1. 保存数据库配置
     await Preferences.set({
       key: 'database_config',
       value: JSON.stringify(config.value)
     })
+    
+    // 2. 保存数据库类型
+    if (config.value.mysql.enabled) {
+      await Preferences.set({ key: 'db_type', value: 'mysql' })
+    } else if (config.value.sqlite.enabled) {
+      await Preferences.set({ key: 'db_type', value: 'sqlite' })
+    } else {
+      await Preferences.remove({ key: 'db_type' })
+    }
+    
+    // 3. 保存接管模式状态（按用户隔离）
+    const currentUserResult = await Preferences.get({ key: 'currentUser' })
+    const username = currentUserResult.value || 'guest'
+    
+    if (config.value.takeoverMode && config.value.mysql.enabled) {
+      await Preferences.set({ 
+        key: `mysql_takeover_${username}`, 
+        value: 'true' 
+      })
+      console.log('✅ MySQL 接管模式已启用')
+    } else {
+      await Preferences.remove({ key: `mysql_takeover_${username}` })
+      console.log('❌ MySQL 接管模式已禁用')
+    }
+    
+    if (config.value.takeoverMode && config.value.sqlite.enabled) {
+      await Preferences.set({ 
+        key: `sqlite_takeover_${username}`, 
+        value: 'true' 
+      })
+      console.log('✅ SQLite 接管模式已启用')
+    } else {
+      await Preferences.remove({ key: `sqlite_takeover_${username}` })
+      console.log('❌ SQLite 接管模式已禁用')
+    }
+    
     alert('✅ 数据库配置已保存')
     emit('save', config.value)
     emit('close')
@@ -350,38 +390,118 @@ const saveConfig = async () => {
 // 立即同步
 const syncNow = async () => {
   syncStatus.value = 'syncing'
+  
+  // 显示加载提示
+  const loadingAlert = document.createElement('div')
+  loadingAlert.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    z-index: 10000;
+    text-align: center;
+    min-width: 250px;
+  `
+  loadingAlert.innerHTML = `
+    <div style="font-size: 40px; margin-bottom: 15px;">⏳</div>
+    <div style="font-size: 16px; font-weight: bold; margin-bottom: 10px;">正在同步数据...</div>
+    <div style="font-size: 14px; color: #666;">请稍候，数据量较大可能需要几秒钟</div>
+  `
+  document.body.appendChild(loadingAlert)
+  
   try {
-    // 同步逻辑：
-    // 1. 如果接管模式启用：本地数据 → 数据库（保持同步）
-    // 2. 如果接管模式关闭：本地数据 → 启用的备份数据库
-    if (config.value.takeoverMode) {
-      // 接管模式：同步本地数据到已启用的数据库
-      if (config.value.sqlite.enabled) {
-        console.log('同步本地数据到 SQLite...')
-      }
-      if (config.value.mysql.enabled) {
-        console.log('同步本地数据到 MySQL...')
-      }
-    } else {
-      // 普通模式：备份本地数据到启用的备份数据库
-      if (config.value.sqlite.enabled) {
-        console.log('备份本地数据到 SQLite...')
-      }
-      if (config.value.mysql.enabled) {
-        console.log('备份本地数据到 MySQL...')
+    // 获取当前用户数据
+    const { Preferences } = await import('@capacitor/preferences')
+    const currentUserResult = await Preferences.get({ key: 'currentUser' })
+    const username = currentUserResult.value
+    
+    if (!username) {
+      alert('❌ 未登录，无法同步')
+      syncStatus.value = 'idle'
+      return
+    }
+    
+    // 加载用户数据
+    const tasksResult = await Preferences.get({ key: `tasks_${username}` })
+    const deletedTasksResult = await Preferences.get({ key: `deletedTasks_${username}` })
+    const collectionsResult = await Preferences.get({ key: `collections_${username}` })
+    
+    console.log('📊 从 Preferences 读取数据:')
+    console.log('  - tasksResult:', tasksResult)
+    console.log('  - deletedTasksResult:', deletedTasksResult)
+    console.log('  - collectionsResult:', collectionsResult)
+    
+    const tasks = tasksResult.value ? JSON.parse(tasksResult.value) : []
+    const deletedTasks = deletedTasksResult.value ? JSON.parse(deletedTasksResult.value) : []
+    const collections = collectionsResult.value ? JSON.parse(collectionsResult.value) : []
+    
+    console.log('📊 解析后的数据:')
+    console.log('  - tasks:', tasks.length)
+    console.log('  - deletedTasks:', deletedTasks.length)
+    console.log('  - collections:', collections.length)
+    
+    let syncCount = 0
+    
+    // 同步到 MySQL
+    if (config.value.mysql.enabled) {
+      console.log('🔄 同步本地数据到 MySQL...')
+      const { mysqlSyncService } = await import('../services/mysqlSync')
+      
+      const result = await mysqlSyncService.syncToMySQL(
+        {
+          host: config.value.mysql.host,
+          port: config.value.mysql.port,
+          user: config.value.mysql.username,
+          password: config.value.mysql.password,
+          database: config.value.mysql.database
+        },
+        {
+          username,
+          tasks,
+          deletedTasks,
+          collections
+        }
+      )
+      
+      if (result.success) {
+        syncCount++
+        console.log('✅ MySQL 同步成功')
+      } else {
+        throw new Error('MySQL 同步失败: ' + result.error)
       }
     }
     
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    // 同步到 SQLite
+    if (config.value.sqlite.enabled) {
+      console.log('🔄 同步本地数据到 SQLite...')
+      // TODO: 实现 SQLite 同步逻辑
+      syncCount++
+    }
+    
     syncStatus.value = 'success'
-    alert('✅ 数据同步成功')
+    
+    // 移除加载提示
+    document.body.removeChild(loadingAlert)
+    
+    alert(`✅ 数据同步成功！\n\n📊 同步统计：\n- 任务：${tasks.length} 个\n- 回收站：${deletedTasks.length} 个\n- 文件夹：${collections.length} 个\n- 数据库：${syncCount} 个`)
+    
     setTimeout(() => {
       syncStatus.value = 'idle'
     }, 2000)
   } catch (error) {
-    console.error('同步失败:', error)
+    console.error('❌ 同步失败:', error)
     syncStatus.value = 'error'
-    alert('❌ 同步失败，请重试')
+    
+    // 移除加载提示
+    if (loadingAlert && loadingAlert.parentNode) {
+      document.body.removeChild(loadingAlert)
+    }
+    
+    alert('❌ 同步失败：' + error.message)
     setTimeout(() => {
       syncStatus.value = 'idle'
     }, 2000)

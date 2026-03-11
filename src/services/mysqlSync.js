@@ -37,6 +37,12 @@ export const mysqlSyncService = {
       // 收集localStorage数据（按用户隔离）
       const username = userData.username
       
+      console.log('🔍 syncToMySQL 收到的数据:')
+      console.log('  - username:', username)
+      console.log('  - tasks:', userData.tasks?.length || 0)
+      console.log('  - deletedTasks:', userData.deletedTasks?.length || 0)
+      console.log('  - collections:', userData.collections?.length || 0)
+      
       // 数据迁移：检查旧key并迁移到新key
       const migrateData = (oldKey, newKey) => {
         const oldData = localStorage.getItem(oldKey)
@@ -89,29 +95,42 @@ export const mysqlSyncService = {
       console.log('  - 报告:', allReports.length)
       console.log('  - AI模型:', aiModels.length)
       
+      const requestBody = {
+        config: {
+          host: config.host,
+          port: config.port,
+          user: config.user || config.username,  // 字段映射：username → user
+          password: config.password,
+          database: config.database
+        },
+        data: {
+          username: userData.username,
+          tasks: userData.tasks,
+          deletedTasks: userData.deletedTasks,
+          collections: userData.collections,
+          userSettings: {
+            aiModels,
+            aiDefaultModel,
+            aiProviderConfigs,
+            lastVersion,
+            settings: {
+              aiDefaultModel
+            }
+          },
+          aiChatHistory,
+          reports: allReports
+        }
+      }
+      
+      console.log('📤 即将发送的请求体:')
+      console.log('  - data.tasks.length:', requestBody.data.tasks?.length)
+      console.log('  - data.deletedTasks.length:', requestBody.data.deletedTasks?.length)
+      console.log('  - data.collections.length:', requestBody.data.collections?.length)
+      
       const response = await fetch(`${baseUrl}/api/mysql/sync`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          config,
-          data: {
-            username: userData.username,
-            tasks: userData.tasks,
-            deletedTasks: userData.deletedTasks,
-            collections: userData.collections,
-            userSettings: {
-              aiModels,
-              aiDefaultModel,
-              aiProviderConfigs,
-              lastVersion,
-              settings: {
-                aiDefaultModel
-              }
-            },
-            aiChatHistory,
-            reports: allReports
-          }
-        })
+        body: JSON.stringify(requestBody)
       })
       const result = await response.json()
       return result
@@ -132,11 +151,27 @@ export const mysqlSyncService = {
       const response = await fetch(`${baseUrl}/api/mysql/restore`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ config, username })
+        body: JSON.stringify({ 
+          config: {
+            host: config.host,
+            port: config.port,
+            user: config.user || config.username,  // 字段映射：username → user
+            password: config.password,
+            database: config.database
+          }, 
+          username 
+        })
       })
       const result = await response.json()
       
+      console.log('🔍 restoreFromMySQL - 后端响应:', result)
+      
       if (result.success && result.data) {
+        console.log('📊 restoreFromMySQL - 数据统计:')
+        console.log('  - tasks:', result.data.tasks?.length || 0)
+        console.log('  - deletedTasks:', result.data.deletedTasks?.length || 0)
+        console.log('  - collections:', result.data.collections?.length || 0)
+        
         // 恢复到本地存储（合并策略，不覆盖）
         const { Preferences } = await import('@capacitor/preferences')
         

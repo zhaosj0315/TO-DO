@@ -5,6 +5,7 @@ const cors = require('cors')
 const app = express()
 app.use(cors())
 app.use(express.json({ limit: '50mb' }))
+app.use(express.urlencoded({ limit: '50mb', extended: true }))
 
 // 日期格式化函数（保持本地时区）
 function formatDateForMySQL(isoString) {
@@ -47,17 +48,25 @@ app.post('/api/mysql/test', async (req, res) => {
     })
     
     // 初始化表结构
-    await initDatabase(connection)
+    const tables = await initDatabase(connection)
     
     await connection.end()
-    res.json({ success: true, message: `✅ 连接成功！数据库 ${dbName} 已就绪` })
+    res.json({ 
+      success: true, 
+      message: `✅ 连接成功！数据库 ${dbName} 已就绪`,
+      database: dbName,
+      tables: tables
+    })
   } catch (error) {
     res.json({ success: false, error: error.message })
   }
 })
 
 // 初始化数据库表
+// 初始化数据库表
 async function initDatabase(connection) {
+  const tables = []
+  
   // 1. 任务表（扩展字段 + 优化索引）
   await connection.execute(`
     CREATE TABLE IF NOT EXISTS tasks (
@@ -97,6 +106,7 @@ async function initDatabase(connection) {
       INDEX idx_completed_at (completed_at)
     )
   `)
+  tables.push('tasks')
 
   // 2. 文件夹表（优化索引）
   await connection.execute(`
@@ -115,6 +125,7 @@ async function initDatabase(connection) {
       INDEX idx_user_parent (username, parent_id)
     )
   `)
+  tables.push('collections')
 
   // 3. 任务执行日志表（优化索引）
   await connection.execute(`
@@ -134,6 +145,7 @@ async function initDatabase(connection) {
       INDEX idx_user_time (username, created_at)
     )
   `)
+  tables.push('task_logs')
 
   // 4. 回收站表
   await connection.execute(`
@@ -146,6 +158,7 @@ async function initDatabase(connection) {
       INDEX idx_deleted_at (deleted_at)
     )
   `)
+  tables.push('deleted_tasks')
 
   // 5. 用户设置表
   await connection.execute(`
@@ -158,6 +171,7 @@ async function initDatabase(connection) {
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )
   `)
+  tables.push('user_settings')
 
   // 6. AI对话历史表
   await connection.execute(`
@@ -171,6 +185,7 @@ async function initDatabase(connection) {
       INDEX idx_chat_id (chat_id)
     )
   `)
+  tables.push('ai_chat_history')
 
   // 7. 报告历史表
   await connection.execute(`
@@ -184,12 +199,23 @@ async function initDatabase(connection) {
       INDEX idx_type (report_type)
     )
   `)
+  tables.push('reports')
+  
+  return tables
 }
 
 // 同步数据
 app.post('/api/mysql/sync', async (req, res) => {
   const { config, data } = req.body
   let connection
+  
+  console.log('📥 收到同步请求')
+  console.log('  - 请求体大小:', JSON.stringify(req.body).length, 'bytes')
+  console.log('  - config:', { host: config?.host, port: config?.port, user: config?.user, database: config?.database })
+  console.log('  - username:', data?.username)
+  console.log('  - tasks数量:', data?.tasks?.length || 0)
+  console.log('  - collections数量:', data?.collections?.length || 0)
+  console.log('  - deletedTasks数量:', data?.deletedTasks?.length || 0)
   
   try {
     connection = await mysql.createConnection({
@@ -199,8 +225,11 @@ app.post('/api/mysql/sync', async (req, res) => {
       password: config.password,
       database: config.database || 'todo_app'
     })
+    
+    console.log('✅ 数据库连接成功')
 
     await initDatabase(connection)
+    console.log('✅ 表结构初始化完成')
 
     // 0. 先删除远程数据库中已被删除的任务（关键！）
     if (data.deletedTasks && data.deletedTasks.length > 0) {
@@ -217,74 +246,92 @@ app.post('/api/mysql/sync', async (req, res) => {
       }
     }
 
-    // 1. 同步任务（扩展字段）
-    for (const task of data.tasks) {
-      const createdAt = task.created_at ? formatDateForMySQL(task.created_at) : null
-      const completedAt = task.completed_at ? formatDateForMySQL(task.completed_at) : null
-      const reminderTime = task.reminderTime ? formatDateForMySQL(task.reminderTime) : null
+    // 1. 同步任务（批量插入优化）
+    console.log('🔄 开始同步任务...')
+    if (data.tasks && data.tasks.length > 0) {
+      console.log(`  - 准备插入 ${data.tasks.length} 个任务`)
       
-      await connection.execute(
-        `INSERT INTO tasks (
-          id, username, text, description, type, category, priority, status,
-          created_at, completed_at, collection_id, parent_task_id,
-          weekdays, custom_date, custom_time, is_pinned,
-          enable_reminder, reminder_time, force_reminder,
-          wait_for, subtasks, ai_summary, data
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE
-          text=VALUES(text), description=VALUES(description), status=VALUES(status),
-          completed_at=VALUES(completed_at), is_pinned=VALUES(is_pinned),
-          wait_for=VALUES(wait_for), subtasks=VALUES(subtasks), data=VALUES(data)`,
-        [
-          task.id || 0,
-          data.username || '',
-          task.text || '',
-          task.description || '',
-          task.type || '',
-          task.category || '',
-          task.priority || '',
-          task.status || 'pending',
-          createdAt,
-          completedAt,
-          task.collectionId !== undefined ? task.collectionId : null,
-          task.parentTaskId !== undefined ? task.parentTaskId : null,
-          JSON.stringify(task.weekdays || []),
-          task.customDate || null,
-          task.customTime || null,
-          task.is_pinned || false,
-          task.enableReminder || false,
-          reminderTime,
-          task.forceReminder || false,
-          JSON.stringify(task.waitFor || []),
-          JSON.stringify(task.subtasks || []),
-          task.aiSummary || null,
-          JSON.stringify(task)
-        ]
-      )
+      let successCount = 0
+      let errorCount = 0
       
-      // 同步任务日志
-      if (task.logs && task.logs.length > 0) {
-        for (const log of task.logs) {
-          const logCreatedAt = log.timestamp ? formatDateForMySQL(log.timestamp) : null
-          await connection.execute(
-            `INSERT INTO task_logs (id, task_id, username, log_type, content, duration, progress, mood, tags, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE content=VALUES(content), duration=VALUES(duration), progress=VALUES(progress)`,
+      // 批量插入任务
+      for (const task of data.tasks) {
+        try {
+          const createdAt = task.created_at ? formatDateForMySQL(task.created_at) : null
+          const completedAt = task.completed_at ? formatDateForMySQL(task.completed_at) : null
+          const reminderTime = task.reminderTime ? formatDateForMySQL(task.reminderTime) : null
+          
+          const [result] = await connection.execute(
+            `INSERT INTO tasks (
+              id, username, text, description, type, category, priority, status,
+              created_at, completed_at, collection_id, parent_task_id,
+              weekdays, custom_date, custom_time, is_pinned,
+              enable_reminder, reminder_time, force_reminder,
+              wait_for, subtasks, ai_summary, data
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+              text=VALUES(text), description=VALUES(description), status=VALUES(status),
+              completed_at=VALUES(completed_at), is_pinned=VALUES(is_pinned),
+              wait_for=VALUES(wait_for), subtasks=VALUES(subtasks), data=VALUES(data)`,
             [
-              log.id || Date.now(),
-              task.id,
-              data.username,
-              log.type || '',
-              log.content || '',
-              log.duration || 0,
-              log.progress || 0,
-              log.mood || '',
-              JSON.stringify(log.tags || []),
-              logCreatedAt
+              task.id || 0,
+              data.username || '',
+              task.text || '',
+              task.description || '',
+              task.type || '',
+              task.category || '',
+              task.priority || '',
+              task.status || 'pending',
+              createdAt,
+              completedAt,
+              task.collectionId !== undefined ? task.collectionId : null,
+              task.parentTaskId !== undefined ? task.parentTaskId : null,
+              JSON.stringify(task.weekdays || []),
+              task.customDate || null,
+              task.customTime || null,
+              task.is_pinned || false,
+              task.enableReminder || false,
+              reminderTime,
+              task.forceReminder || false,
+              JSON.stringify(task.waitFor || []),
+              JSON.stringify(task.subtasks || []),
+              task.aiSummary || null,
+              JSON.stringify(task)
             ]
           )
+          
+          console.log(`  ✓ 任务 ${task.id}: affectedRows=${result.affectedRows}`)
+          successCount++
+          
+          // 同步任务日志
+          if (task.logs && task.logs.length > 0) {
+            for (const log of task.logs) {
+              const logCreatedAt = log.timestamp ? formatDateForMySQL(log.timestamp) : null
+              await connection.execute(
+                `INSERT INTO task_logs (id, task_id, username, log_type, content, duration, progress, mood, tags, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 ON DUPLICATE KEY UPDATE content=VALUES(content), duration=VALUES(duration), progress=VALUES(progress)`,
+                [
+                  log.id || Date.now(),
+                  task.id,
+                  data.username,
+                  log.type || '',
+                  log.content || '',
+                  log.duration || 0,
+                  log.progress || 0,
+                  log.mood || '',
+                  JSON.stringify(log.tags || []),
+                  logCreatedAt
+                ]
+              )
+            }
+          }
+        } catch (err) {
+          console.error(`  ✗ 任务 ${task.id} 插入失败:`, err.message)
+          errorCount++
         }
       }
+      console.log(`✅ 任务同步完成: 成功 ${successCount} 个, 失败 ${errorCount} 个`)
     }
 
     // 2. 同步文件夹
@@ -376,7 +423,13 @@ app.post('/api/mysql/sync', async (req, res) => {
       }
     }
 
+    // 确保所有数据已写入
+    console.log('💾 提交事务...')
+    await connection.commit()
+    console.log('✅ 事务提交成功')
+    
     await connection.end()
+    console.log('✅ 数据库连接已关闭')
     
     const stats = {
       tasks: data.tasks.length,

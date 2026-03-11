@@ -13,6 +13,22 @@ export const mysqlConfigService = {
 
   // 获取MySQL配置
   async getConfig() {
+    // 优先从 database_config 读取（新版）
+    const { value: dbConfigValue } = await Preferences.get({ key: 'database_config' })
+    if (dbConfigValue) {
+      const dbConfig = JSON.parse(dbConfigValue)
+      if (dbConfig.mysql && dbConfig.mysql.enabled) {
+        return {
+          host: dbConfig.mysql.host,
+          port: dbConfig.mysql.port,
+          user: dbConfig.mysql.username,
+          password: dbConfig.mysql.password,
+          database: dbConfig.mysql.database
+        }
+      }
+    }
+    
+    // 兼容旧版：从 mysql_config 读取
     const { value } = await Preferences.get({ key: MYSQL_CONFIG_KEY })
     return value ? JSON.parse(value) : null
   },
@@ -52,22 +68,31 @@ export const mysqlConfigService = {
       console.log('🔍 开始测试 MySQL 连接:', { 
         host: config.host, 
         port: config.port, 
-        user: config.user, 
+        user: config.username, 
         database: config.database 
       })
       
       // Android需要使用局域网IP
       const baseUrl = config.host === 'localhost' ? 'http://192.168.31.159:3000' : `http://${config.host}:3000`
       
+      // 字段映射：前端 username → 后端 user
+      const requestBody = {
+        host: config.host,
+        port: config.port,
+        user: config.username,
+        password: config.password,
+        database: config.database
+      }
+      
       const response = await fetch(`${baseUrl}/api/mysql/test`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config)
+        body: JSON.stringify(requestBody)
       })
       
       if (!response.ok) {
         console.error('❌ HTTP 请求失败:', response.status, response.statusText)
-        return false
+        return { success: false, error: `HTTP ${response.status}` }
       }
       
       const result = await response.json()
@@ -75,14 +100,14 @@ export const mysqlConfigService = {
       
       if (result.success) {
         console.log('✅ MySQL 连接测试成功')
-        return true
+        return result
       } else {
         console.error('❌ MySQL 连接失败:', result.error)
-        return false
+        return result
       }
     } catch (error) {
       console.error('❌ 测试连接异常:', error)
-      return false
+      return { success: false, error: error.message }
     }
   }
 }
