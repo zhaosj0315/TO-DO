@@ -114,7 +114,11 @@
         />
 
         <div v-else class="ai-report-content">
-          <pre class="report-text">{{ aiReportText }}</pre>
+          <MarkdownRenderer 
+            :content="aiReportText" 
+            :media="[]" 
+            class="report-text"
+          />
         </div>
       </div>
 
@@ -149,6 +153,7 @@ import { App } from '@capacitor/app'
 import { Capacitor } from '@capacitor/core'
 import LoadingSpinner from './LoadingSpinner.vue'
 import CalendarPicker from './CalendarPicker.vue'
+import MarkdownRenderer from './MarkdownRenderer.vue'
 import VisualReportView from './VisualReportView.vue'
 import TextReportView from './TextReportView.vue'
 import { AIReportGenerator } from '../services/aiReportGenerator.js'
