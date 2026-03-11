@@ -1,7 +1,7 @@
 # TO-DO App | 跨平台离线待办事项管理应用
 
 **当前版本**: v0.8.9  
-**更新日期**: 2026-03-10  
+**更新日期**: 2026-03-11  
 **支持平台**: Android / Windows / iOS / Mac
 
 [English](#english) | [中文](#中文)
@@ -530,7 +530,17 @@ userInfo[username] = {
 
 ## 📝 版本历史 | Version History
 
-### v0.8.9 (2026-03-10)
+### v0.8.9 (2026-03-11)
+- 🎨 **AI 助手和报告中心 Markdown 渲染引擎优化**:
+  - **AIChat.vue**: 使用 MarkdownRenderer 组件渲染 AI 消息
+  - **TextReportView.vue**: 使用 MarkdownRenderer 组件渲染智能总结
+  - **UnifiedReportModal.vue**: 使用 MarkdownRenderer 组件渲染 AI 工作汇报
+  - **AIReportModal.vue**: 使用 MarkdownRenderer 组件渲染智能总结
+  - **DailyPlanModal.vue**: 使用 MarkdownRenderer 组件渲染 AI 建议
+  - **DailySummaryModal.vue**: 使用 MarkdownRenderer 组件渲染 AI 建议
+  - **视觉一致性**: AI 生成的内容与任务描述区域渲染效果完全一致
+  - **代码复用**: 删除约 100 行重复的 marked/highlight.js 代码
+  - **功能同步**: 一处修改，全站同步，降低维护成本
 - 🔧 **核心数据持久化修复** 🚨:
   - **修复任务状态丢失问题**：解决刷新页面后任务完成状态重置的严重bug
   - **分批数据清理机制**：saveTasks 时自动清除旧的分批数据，避免加载时读取过期数据
