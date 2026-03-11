@@ -680,6 +680,13 @@
       @close="showCalendar = false"
       @confirm="handleCalendarConfirm"
     />
+    
+    <!-- 🆕 文件预览 -->
+    <FilePreviewModal
+      :visible="showFilePreview"
+      :file="previewFile"
+      @close="showFilePreview = false"
+    />
   </div>
 </template>
 
@@ -694,6 +701,7 @@ import AITextResultSheet from './AITextResultSheet.vue'
 import WaitForSelector from './WaitForSelector.vue'
 import MarkdownRenderer from './MarkdownRenderer.vue'  // 🆕 Markdown渲染器
 import CalendarPicker from './CalendarPicker.vue'  // 🆕 日历选择器
+import FilePreviewModal from './FilePreviewModal.vue'  // 🆕 文件预览
 import { useTextSelection } from '../composables/useTextSelection'
 import { AITextService } from '../services/aiTextService'
 import { Capacitor } from '@capacitor/core'
@@ -721,6 +729,8 @@ const showTimeline = ref(false)
 const showWaitForSelector = ref(false)
 const showDeleteConfirm = ref(false)
 const showCalendar = ref(false)  // 🆕 日历选择器
+const showFilePreview = ref(false)  // 🆕 文件预览
+const previewFile = ref(null)  // 🆕 预览的文件
 const logPreviewStates = ref({})  // 🆕 日志预览状态 { logId: boolean }
 const isAISummaryPreview = ref(false)  // 🆕 AI总结预览状态
 
@@ -1032,7 +1042,22 @@ onMounted(() => {
       textarea.style.height = textarea.scrollHeight + 'px'
     })
   })
+  
+  // 🆕 监听文件预览事件
+  window.addEventListener('preview-file', handlePreviewFile)
 })
+
+// 🆕 清理事件监听
+onUnmounted(() => {
+  window.removeEventListener('preview-file', handlePreviewFile)
+})
+
+// 🆕 处理文件预览
+const handlePreviewFile = (event) => {
+  console.log('📎 TaskDetailModal 收到预览事件:', event.detail)
+  previewFile.value = event.detail
+  showFilePreview.value = true
+}
 
 // 监听弹窗显示，自动调整所有textarea高度
 watch(() => props.visible, (newVal) => {

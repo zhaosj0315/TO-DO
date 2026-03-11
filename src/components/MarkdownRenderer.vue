@@ -84,12 +84,24 @@ const processLocalImages = async (html) => {
     
     if (media) {
       try {
-        const file = await Filesystem.readFile({
-          path: media.path,
-          directory: Directory.Data
-        })
-        console.log('🖼️ 文件读取成功，数据长度:', file.data?.length)
-        img.src = `data:image/jpeg;base64,${file.data}`
+        let base64Data
+        
+        // 优先使用base64Data（Web端）
+        if (media.base64Data) {
+          console.log('🖼️ 使用base64Data（Web端）')
+          base64Data = media.base64Data
+        } else {
+          // 原生端：从文件系统读取
+          console.log('🖼️ 从文件系统读取（原生端）')
+          const file = await Filesystem.readFile({
+            path: media.path,
+            directory: Directory.Data
+          })
+          base64Data = file.data
+        }
+        
+        console.log('🖼️ 文件读取成功，数据长度:', base64Data?.length)
+        img.src = `data:image/jpeg;base64,${base64Data}`
         img.setAttribute('data-media-id', media.id) // 添加 media ID
         img.style.maxWidth = '300px'  // 默认最大宽度300px
         img.style.width = 'auto'
@@ -267,14 +279,17 @@ const renderMarkdown = async () => {
   try {
     const rawHtml = parseMarkdown(props.content)
     const processedHtml = await processLocalImages(rawHtml)
-    // 注意：DOMPurify 会移除事件处理器，所以我们需要在渲染后重新绑定
-    renderedHtml.value = DOMPurify.sanitize(processedHtml, {
-      ADD_ATTR: ['onclick'] // 保留 onclick 属性
-    })
+    // DOMPurify 会移除事件处理器，所以我们需要在渲染后重新绑定
+    renderedHtml.value = DOMPurify.sanitize(processedHtml)
     
-    // 等待 DOM 更新后重新绑定事件
+    // 等待 DOM 更新后重新绑定事件（多次尝试确保绑定成功）
     await nextTick()
     bindFileCardEvents()
+    
+    // 再次延迟绑定（确保任务卡片也能绑定）
+    setTimeout(() => {
+      bindFileCardEvents()
+    }, 100)
   } catch (error) {
     console.error('Markdown 渲染失败:', error)
     // 降级：返回纯文本（保留换行）

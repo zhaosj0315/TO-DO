@@ -21,11 +21,9 @@
         />
         
         <!-- PDF 预览 -->
-        <iframe
-          v-else-if="file?.type === 'pdf' && fileUrl"
-          :src="fileUrl"
-          class="pdf-viewer"
-        ></iframe>
+        <div v-else-if="file?.type === 'pdf' && pdfData" class="pdf-container">
+          <VuePdfEmbed :source="pdfData" class="pdf-viewer" />
+        </div>
         
         <!-- 视频预览 -->
         <video
@@ -63,8 +61,11 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { Filesystem, Directory } from '@capacitor/filesystem'
+import VuePdfEmbed from 'vue-pdf-embed'
+import { Capacitor } from '@capacitor/core'
+import { App } from '@capacitor/app'
 
 const props = defineProps({
   visible: {
@@ -81,31 +82,78 @@ const emit = defineEmits(['close', 'download'])
 
 const fileUrl = ref('')
 const textContent = ref('')
+const pdfData = ref(null)
 
-// 监听文件变化，加载内容
-watch(() => props.file, async (newFile) => {
-  if (!newFile) {
-    fileUrl.value = ''
-    textContent.value = ''
-    return
+// 🆕 Android 返回手势监听
+let backButtonListener = null
+
+onMounted(() => {
+  if (Capacitor.isNativePlatform()) {
+    App.addListener('backButton', handleBackButton)
   }
+})
+
+onUnmounted(() => {
+  if (Capacitor.isNativePlatform()) {
+    App.removeAllListeners()
+  }
+})
+
+const handleBackButton = () => {
+  if (props.visible) {
+    emit('close')
+  }
+}
+
+// 监听弹窗显示状态，重新加载文件
+watch(() => [props.visible, props.file], async ([visible, newFile]) => {
+  // 清理旧数据
+  if (fileUrl.value) {
+    URL.revokeObjectURL(fileUrl.value)
+  }
+  fileUrl.value = ''
+  textContent.value = ''
+  pdfData.value = null
+  
+  if (!visible || !newFile) return
   
   try {
-    const file = await Filesystem.readFile({
-      path: newFile.path,
-      directory: Directory.Data
-    })
+    let base64Data
     
-    // 图片、PDF 和视频：转换为 Blob URL
-    if (newFile.type === 'image' || newFile.type === 'pdf' || newFile.type === 'video') {
+    // 优先使用 base64Data（Web端）
+    if (newFile.base64Data) {
+      console.log('📎 使用 base64Data（Web端）')
+      base64Data = newFile.base64Data
+    } else {
+      // 原生端：从文件系统读取
+      console.log('📎 从文件系统读取（原生端）')
+      const file = await Filesystem.readFile({
+        path: newFile.path,
+        directory: Directory.Data
+      })
+      base64Data = file.data
+    }
+    
+    // PDF：转换为Uint8Array
+    if (newFile.type === 'pdf') {
+      const binary = atob(base64Data)
+      const bytes = new Uint8Array(binary.length)
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i)
+      }
+      pdfData.value = bytes
+    }
+    
+    // 图片和视频：转换为 Blob URL
+    if (newFile.type === 'image' || newFile.type === 'video') {
       const mimeType = getMimeType(newFile.ext)
-      const blob = base64ToBlob(file.data, mimeType)
+      const blob = base64ToBlob(base64Data, mimeType)
       fileUrl.value = URL.createObjectURL(blob)
     }
     
     // 文本文件：直接显示
     if (newFile.type === 'document' && ['txt', 'rtf'].includes(newFile.ext)) {
-      const text = atob(file.data)
+      const text = atob(base64Data)
       textContent.value = text
     }
   } catch (e) {
@@ -203,20 +251,38 @@ const base64ToBlob = (base64, mimeType) => {
   background: rgba(0, 0, 0, 0.8);
   z-index: 10000;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  padding: 1rem;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .file-preview-modal {
   background: #ffffff;
-  border-radius: 12px;
+  border-radius: 12px 12px 0 0;
   width: 100%;
-  max-width: 100%; /* 全屏宽度 */
   max-height: 90vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
 }
 
 .preview-header {
@@ -226,6 +292,20 @@ const base64ToBlob = (base64, mimeType) => {
   padding: 1rem 1.5rem;
   border-bottom: 1px solid #e8e8e8;
   background: #f9f9f9;
+  position: relative;
+}
+
+/* 顶部小横条 */
+.preview-header::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 4px;
+  background: #d0d0d0;
+  border-radius: 2px;
 }
 
 .file-info {
@@ -279,6 +359,18 @@ const base64ToBlob = (base64, mimeType) => {
   justify-content: center;
 }
 
+.pdf-container {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background: #525659;
+}
+
+.pdf-viewer {
+  width: 100%;
+  min-height: 500px;
+}
+
 .image-viewer {
   max-width: 100%;
   max-height: 80vh;
@@ -286,11 +378,11 @@ const base64ToBlob = (base64, mimeType) => {
   background: #000;
 }
 
-.pdf-viewer {
-  width: 100%;
-  height: 100%;
-  min-height: 500px;
-  border: none;
+.image-viewer {
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  background: #000;
 }
 
 .video-player {

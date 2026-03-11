@@ -1135,8 +1135,7 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
               return new Date(now.getFullYear(), now.getMonth() + 1, nextMonthDay, 23, 59, 59)
             }
           }
-          // 如果没有设置日期，返回null表示无效（需要用户设置）
-          console.warn('每月重复任务必须设置monthDay')
+          // 如果没有设置日期，返回null（静默处理，避免日志刷屏）
           return null
         
         case 'weekly':

@@ -28,6 +28,180 @@ export const mysqlSyncService = {
     return Array.from(map.values())
   },
   
+  // 同步媒体文件到服务器
+  async syncMediaFiles(config, username, tasks) {
+    try {
+      const { Filesystem, Directory } = await import('@capacitor/filesystem')
+      const baseUrl = 'http://192.168.31.159:3000'
+      
+      // 收集所有任务中的媒体文件
+      const mediaFiles = []
+      for (const task of tasks) {
+        if (task.media && Array.isArray(task.media)) {
+          mediaFiles.push(...task.media)
+        }
+      }
+      
+      console.log(`📤 准备上传 ${mediaFiles.length} 个媒体文件`)
+      
+      // 逐个上传文件
+      for (const media of mediaFiles) {
+        try {
+          // 读取文件内容
+          const fileData = await Filesystem.readFile({
+            path: media.path,
+            directory: Directory.Data
+          })
+          
+          // 上传到服务器
+          await fetch(`${baseUrl}/api/mysql/upload-media`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              config: {
+                host: config.host,
+                port: config.port,
+                user: config.user || config.username,
+                password: config.password,
+                database: config.database
+              },
+              username,
+              fileId: media.id,
+              fileName: media.name,
+              filePath: media.path,
+              fileData: fileData.data, // base64
+              fileType: media.type
+            })
+          })
+          
+          console.log(`✅ 上传成功: ${media.name}`)
+        } catch (err) {
+          console.warn(`⚠️ 上传失败: ${media.name}`, err)
+        }
+      }
+    } catch (error) {
+      console.error('媒体文件同步失败:', error)
+    }
+  },
+  
+  // 从服务器下载媒体文件
+  async downloadMediaFiles(config, username, tasks) {
+    try {
+      const { Capacitor } = await import('@capacitor/core')
+      const isWeb = Capacitor.getPlatform() === 'web'
+      const baseUrl = 'http://192.168.31.159:3000'
+      
+      // 收集所有任务中的媒体文件
+      const mediaFiles = []
+      for (const task of tasks) {
+        if (task.media && Array.isArray(task.media)) {
+          for (const media of task.media) {
+            mediaFiles.push({ media, taskId: task.id })
+          }
+        }
+      }
+      
+      console.log(`📥 准备下载 ${mediaFiles.length} 个媒体文件`)
+      
+      if (isWeb) {
+        // Web端：将base64数据直接存储到media对象中
+        for (const { media, taskId } of mediaFiles) {
+          try {
+            // 跳过已有base64数据的文件
+            if (media.base64Data) {
+              console.log(`⏭️ 文件已有数据，跳过: ${media.name}`)
+              continue
+            }
+            
+            // 从服务器下载
+            const response = await fetch(`${baseUrl}/api/mysql/download-media`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                config: {
+                  host: config.host,
+                  port: config.port,
+                  user: config.user || config.username,
+                  password: config.password,
+                  database: config.database
+                },
+                username,
+                fileId: media.id
+              })
+            })
+            
+            const result = await response.json()
+            if (result.success && result.fileData) {
+              // 直接存储base64到media对象
+              media.base64Data = result.fileData
+              console.log(`✅ 下载成功: ${media.name}`)
+            }
+          } catch (err) {
+            console.warn(`⚠️ 下载失败: ${media.name}`, err)
+          }
+        }
+        
+        // 保存更新后的任务数据
+        const { Preferences } = await import('@capacitor/preferences')
+        await Preferences.set({
+          key: `tasks_${username}`,
+          value: JSON.stringify(tasks)
+        })
+      } else {
+        // 原生端：保存到文件系统
+        const { Filesystem, Directory } = await import('@capacitor/filesystem')
+        
+        for (const { media } of mediaFiles) {
+          try {
+            // 检查本地是否已存在
+            try {
+              await Filesystem.stat({
+                path: media.path,
+                directory: Directory.Data
+              })
+              console.log(`⏭️ 文件已存在，跳过: ${media.name}`)
+              continue
+            } catch {
+              // 文件不存在，继续下载
+            }
+            
+            // 从服务器下载
+            const response = await fetch(`${baseUrl}/api/mysql/download-media`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                config: {
+                  host: config.host,
+                  port: config.port,
+                  user: config.user || config.username,
+                  password: config.password,
+                  database: config.database
+                },
+                username,
+                fileId: media.id
+              })
+            })
+            
+            const result = await response.json()
+            if (result.success && result.fileData) {
+              // 保存到本地文件系统
+              await Filesystem.writeFile({
+                path: media.path,
+                data: result.fileData,
+                directory: Directory.Data
+              })
+              console.log(`✅ 下载成功: ${media.name}`)
+            }
+          } catch (err) {
+            console.warn(`⚠️ 下载失败: ${media.name}`, err)
+          }
+        }
+      }
+    } catch (error) {
+      console.error('媒体文件下载失败:', error)
+    }
+  },
+
   // 同步所有数据到MySQL
   async syncToMySQL(config, userData) {
     try {
@@ -42,6 +216,9 @@ export const mysqlSyncService = {
       console.log('  - tasks:', userData.tasks?.length || 0)
       console.log('  - deletedTasks:', userData.deletedTasks?.length || 0)
       console.log('  - collections:', userData.collections?.length || 0)
+      
+      // 🆕 同步媒体文件
+      await this.syncMediaFiles(config, username, userData.tasks || [])
       
       // 数据迁移：检查旧key并迁移到新key
       const migrateData = (oldKey, newKey) => {
@@ -230,6 +407,9 @@ export const mysqlSyncService = {
           localStorage.setItem(`weekly_reports_${username}`, JSON.stringify(mergedWeekly))
           localStorage.setItem(`unified_reports_${username}`, JSON.stringify(mergedUnified))
         }
+        
+        // 🆕 7. 下载媒体文件
+        await this.downloadMediaFiles(config, username, result.data.tasks || [])
       }
       
       return result

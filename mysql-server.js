@@ -577,6 +577,82 @@ app.post('/api/mysql/restore', async (req, res) => {
   }
 })
 
+// 上传媒体文件
+app.post('/api/mysql/upload-media', async (req, res) => {
+  const { username, fileId, fileName, filePath, fileData, fileType } = req.body
+  
+  let connection
+  try {
+    connection = await mysql.createConnection(req.body.config || {
+      host: 'localhost',
+      port: 3306,
+      user: 'root',
+      password: '',
+      database: 'todo_app'
+    })
+    
+    // 创建媒体文件表（如果不存在）
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS media_files (
+        id VARCHAR(100) PRIMARY KEY,
+        username VARCHAR(100),
+        file_name VARCHAR(255),
+        file_path VARCHAR(500),
+        file_data LONGTEXT,
+        file_type VARCHAR(50),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_username (username)
+      )
+    `)
+    
+    // 插入或更新文件
+    await connection.execute(
+      `INSERT INTO media_files (id, username, file_name, file_path, file_data, file_type) 
+       VALUES (?, ?, ?, ?, ?, ?) 
+       ON DUPLICATE KEY UPDATE file_data = VALUES(file_data)`,
+      [fileId, username, fileName, filePath, fileData, fileType]
+    )
+    
+    await connection.end()
+    res.json({ success: true })
+  } catch (error) {
+    if (connection) await connection.end()
+    res.json({ success: false, error: error.message })
+  }
+})
+
+// 下载媒体文件
+app.post('/api/mysql/download-media', async (req, res) => {
+  const { username, fileId } = req.body
+  
+  let connection
+  try {
+    connection = await mysql.createConnection(req.body.config || {
+      host: 'localhost',
+      port: 3306,
+      user: 'root',
+      password: '',
+      database: 'todo_app'
+    })
+    
+    const [rows] = await connection.execute(
+      'SELECT file_data FROM media_files WHERE id = ? AND username = ?',
+      [fileId, username]
+    )
+    
+    await connection.end()
+    
+    if (rows.length > 0) {
+      res.json({ success: true, fileData: rows[0].file_data })
+    } else {
+      res.json({ success: false, error: 'File not found' })
+    }
+  } catch (error) {
+    if (connection) await connection.end()
+    res.json({ success: false, error: error.message })
+  }
+})
+
 const PORT = 3000
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ MySQL同步服务运行在:`)
