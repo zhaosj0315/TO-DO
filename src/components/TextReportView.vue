@@ -9,7 +9,11 @@
     <!-- 智能总结 -->
     <div v-if="report.summary" class="report-section summary-section">
       <div class="section-title">📝 智能总结</div>
-      <div class="summary-text">{{ report.summary }}</div>
+      <MarkdownRenderer 
+        :content="report.summary" 
+        :media="[]" 
+        class="summary-text"
+      />
     </div>
 
     <!-- 数据概览 -->
@@ -192,6 +196,8 @@
 </template>
 
 <script setup>
+import MarkdownRenderer from './MarkdownRenderer.vue'
+
 const props = defineProps({
   report: {
     type: Object,
