@@ -202,7 +202,8 @@ const generateSubtasks = async () => {
       title: item.title || item.text || '',
       description: item.description || '',
       priority: item.priority || 'medium',
-      estimatedHours: item.estimatedHours || 1
+      estimatedHours: item.estimatedHours || 1,
+      category: props.parentTask?.category || 'work'  // 继承父任务的分类
     }))
   } catch (err) {
     error.value = err.message

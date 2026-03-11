@@ -63,14 +63,18 @@
                 <option value="life">🏠 生活</option>
               </select>
 
-              <select v-model="subtask.type" class="attr-select">
+              <select v-model="subtask.type" class="attr-select" @change="handleTypeChange(subtask)">
                 <option value="today">📅 今天</option>
                 <option value="tomorrow">📆 明天</option>
+                <option value="day_after_tomorrow">📆 后天</option>
                 <option value="this_week">📋 本周内</option>
+                <option value="next_week">📅 下周</option>
+                <option value="this_month">📅 本月内</option>
                 <option value="custom_date">🗓️ 指定日期</option>
                 <option value="daily">🔄 每天重复</option>
                 <option value="weekday">💼 工作日重复</option>
                 <option value="weekly">📆 每周重复</option>
+                <option value="monthly">🔄 每月重复</option>
               </select>
 
               <input 
@@ -85,15 +89,25 @@
 
             <!-- 指定日期时间 -->
             <div v-if="subtask.type === 'custom_date'" class="subtask-datetime">
+              <button 
+                @click="openCalendar(index)"
+                class="calendar-btn"
+              >
+                {{ formatDateTime(subtask.customDate, subtask.customTime) }}
+              </button>
+            </div>
+
+            <!-- 每月重复选择日期 -->
+            <div v-if="subtask.type === 'monthly'" class="subtask-monthday">
+              <label>每月几号：</label>
               <input 
-                v-model="subtask.customDate" 
-                type="date" 
+                type="number" 
+                v-model.number="subtask.monthDay" 
+                min="1" 
+                max="31" 
+                placeholder="1-31"
                 class="attr-input"
-              />
-              <input 
-                v-model="subtask.customTime" 
-                type="time" 
-                class="attr-input"
+                style="width: 80px; text-align: center;"
               />
             </div>
 
@@ -130,10 +144,19 @@
       </div>
     </div>
   </div>
+
+  <!-- 日历选择器 -->
+  <CalendarPicker
+    v-if="showCalendar"
+    :initial-value="getInitialDateTime()"
+    @close="showCalendar = false"
+    @confirm="handleCalendarConfirm"
+  />
 </template>
 
 <script setup>
 import { ref, watch, computed } from 'vue'
+import CalendarPicker from './CalendarPicker.vue'
 
 const props = defineProps({
   visible: Boolean,
@@ -150,6 +173,43 @@ const props = defineProps({
 const emit = defineEmits(['close', 'create'])
 
 const localSubtasks = ref([])
+const showCalendar = ref(false)
+const editingIndex = ref(-1)
+
+// 打开日历
+const openCalendar = (index) => {
+  editingIndex.value = index
+  showCalendar.value = true
+}
+
+// 获取初始日期时间
+const getInitialDateTime = () => {
+  if (editingIndex.value >= 0) {
+    const subtask = localSubtasks.value[editingIndex.value]
+    if (subtask.customDate && subtask.customTime) {
+      return `${subtask.customDate}T${subtask.customTime}`
+    }
+  }
+  return ''
+}
+
+// 处理日历确认
+const handleCalendarConfirm = (dateTimeStr) => {
+  if (editingIndex.value >= 0) {
+    const [date, time] = dateTimeStr.split('T')
+    localSubtasks.value[editingIndex.value].customDate = date
+    localSubtasks.value[editingIndex.value].customTime = time
+  }
+  showCalendar.value = false
+  editingIndex.value = -1
+}
+
+// 格式化日期时间显示
+const formatDateTime = (date, time) => {
+  if (!date) return '点击选择日期时间'
+  const d = new Date(`${date}T${time || '23:59'}`)
+  return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
 
 // 星期选项
 const weekdayOptions = [
@@ -175,10 +235,18 @@ const toggleWeekday = (subtask, day) => {
   }
 }
 
+// 处理类型变化
+const handleTypeChange = (subtask) => {
+  if (subtask.type === 'monthly' && !subtask.monthDay) {
+    subtask.monthDay = 1
+  }
+}
+
 watch(() => props.subtasks, (newSubtasks) => {
   localSubtasks.value = JSON.parse(JSON.stringify(newSubtasks)).map(task => ({
     ...task,
     type: task.type || 'today',
+    category: task.category || 'work',  // 确保有默认分类
     weekdays: task.weekdays || [],
     customDate: task.customDate || '',
     customTime: task.customTime || '',
@@ -213,7 +281,7 @@ const handleCreate = () => {
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
+  z-index: 10020;
   animation: fadeIn 0.2s ease;
 }
 
@@ -420,13 +488,25 @@ const handleCreate = () => {
 
 /* 日期时间选择 */
 .subtask-datetime {
-  display: flex;
-  gap: 0.5rem;
   margin-top: 0.5rem;
 }
 
-.subtask-datetime .attr-input {
-  flex: 1;
+.subtask-datetime .calendar-btn {
+  width: 100%;
+  padding: 0.4rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  background: white;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #1f2937;
+}
+
+.subtask-datetime .calendar-btn:hover {
+  background: #f9fafb;
+  border-color: #8b5cf6;
 }
 
 /* 星期选择 */
@@ -504,5 +584,19 @@ const handleCreate = () => {
 .btn-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* 每月重复日期选择 */
+.subtask-monthday {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.subtask-monthday label {
+  color: #666;
+  font-weight: 500;
 }
 </style>

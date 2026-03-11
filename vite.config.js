@@ -19,5 +19,13 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src')
     }
+  },
+  optimizeDeps: {
+    include: ['marked', 'dompurify']
+  },
+  build: {
+    commonjsOptions: {
+      include: [/marked/, /dompurify/, /node_modules/]
+    }
   }
 })

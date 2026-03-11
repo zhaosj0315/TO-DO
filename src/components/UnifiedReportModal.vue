@@ -1,9 +1,9 @@
 <template>
   <!-- 主报告弹窗 -->
-  <div v-if="visible" class="modal-overlay" @click.self="$emit('close')" :style="{ zIndex: isHistoryMode ? 10010 : 10008 }">
+  <div v-if="visible" class="modal-overlay" @click.self="handleClose" :style="{ zIndex: isHistoryMode ? 10010 : 10008 }">
     <div class="unified-report-sheet">
       <div class="modal-header">
-        <button class="back-btn" @click="$emit('close')">
+        <button class="back-btn" @click="handleClose">
           <span>← 返回</span>
         </button>
         <h3>📊 报告中心</h3>
@@ -33,9 +33,13 @@
 
         <!-- 自定义日期范围 -->
         <div v-if="selectedType === 'custom'" class="date-range-selector">
-          <input v-model="customStartDate" type="date" class="date-input" />
+          <button @click="showStartCalendar = true" class="date-btn">
+            {{ customStartDate ? formatDate(customStartDate) : '开始日期' }}
+          </button>
           <span>至</span>
-          <input v-model="customEndDate" type="date" class="date-input" />
+          <button @click="showEndCalendar = true" class="date-btn">
+            {{ customEndDate ? formatDate(customEndDate) : '结束日期' }}
+          </button>
           <button class="btn btn-primary" @click="generateReport">生成</button>
         </div>
 
@@ -85,7 +89,7 @@
         <button v-if="isHistoryMode" class="btn btn-secondary" @click="saveAsNew">📋 另存为</button>
         <button class="btn btn-secondary" @click="exportHTML">📄 导出</button>
         <button class="btn btn-secondary" @click="copyText">📋 复制</button>
-        <button class="btn btn-primary" @click="$emit('close')">关闭</button>
+        <button class="btn btn-primary" @click="handleClose">关闭</button>
       </div>
     </div>
   </div>
@@ -121,6 +125,22 @@
       </div>
     </div>
   </div>
+
+  <!-- 日历选择器 - 开始日期 -->
+  <CalendarPicker
+    v-if="showStartCalendar"
+    :initial-value="customStartDate ? `${customStartDate}T00:00` : ''"
+    @close="showStartCalendar = false"
+    @confirm="handleStartDateConfirm"
+  />
+
+  <!-- 日历选择器 - 结束日期 -->
+  <CalendarPicker
+    v-if="showEndCalendar"
+    :initial-value="customEndDate ? `${customEndDate}T23:59` : ''"
+    @close="showEndCalendar = false"
+    @confirm="handleEndDateConfirm"
+  />
 </template>
 
 <script setup>
@@ -128,6 +148,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { App } from '@capacitor/app'
 import { Capacitor } from '@capacitor/core'
 import LoadingSpinner from './LoadingSpinner.vue'
+import CalendarPicker from './CalendarPicker.vue'
 import VisualReportView from './VisualReportView.vue'
 import TextReportView from './TextReportView.vue'
 import { AIReportGenerator } from '../services/aiReportGenerator.js'
@@ -162,11 +183,34 @@ const reportTypes = [
 const selectedType = ref('weekly')
 const customStartDate = ref('')
 const customEndDate = ref('')
+const showStartCalendar = ref(false)
+const showEndCalendar = ref(false)
 const viewMode = ref('visual')
 const generating = ref(false)
 const reportGenerated = ref(false)
 const visualData = ref(null)
 const textData = ref(null)
+
+// 处理开始日期确认
+const handleStartDateConfirm = (dateTimeStr) => {
+  const [date] = dateTimeStr.split('T')
+  customStartDate.value = date
+  showStartCalendar.value = false
+}
+
+// 处理结束日期确认
+const handleEndDateConfirm = (dateTimeStr) => {
+  const [date] = dateTimeStr.split('T')
+  customEndDate.value = date
+  showEndCalendar.value = false
+}
+
+// 格式化日期显示
+const formatDate = (dateStr) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`
+}
 
 // AI工作汇报相关
 const showAIReportModal = ref(false)
@@ -199,12 +243,21 @@ defineExpose({
   reportGenerated,
   showAIReportModal,
   handleBackButton: () => {
-    // 第一层：AI汇报弹窗
+    // 第一层：日历选择器（最上层）
+    if (showStartCalendar.value) {
+      showStartCalendar.value = false
+      return true
+    }
+    if (showEndCalendar.value) {
+      showEndCalendar.value = false
+      return true
+    }
+    // 第二层：AI汇报弹窗
     if (showAIReportModal.value) {
       showAIReportModal.value = false
       return true
     }
-    // 第二层：报告详情
+    // 第三层：报告详情
     if (reportGenerated.value) {
       reportGenerated.value = false
       visualData.value = null
@@ -214,6 +267,20 @@ defineExpose({
     return false // 关闭整个弹窗
   }
 })
+
+// 关闭弹窗时清理状态
+const handleClose = () => {
+  // 清理日历选择器状态
+  showStartCalendar.value = false
+  showEndCalendar.value = false
+  // 清理报告状态
+  showAIReportModal.value = false
+  reportGenerated.value = false
+  visualData.value = null
+  textData.value = null
+  // 触发关闭事件
+  emit('close')
+}
 
 // 选择报告类型
 const selectType = (type) => {
@@ -1225,12 +1292,22 @@ watch(() => props.visible, (newVal) => {
   border-radius: 8px;
 }
 
-.date-input {
+/* 日期按钮 */
+.date-btn {
   flex: 1;
   padding: 0.5rem;
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 0.9rem;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #1f2937;
+}
+
+.date-btn:hover {
+  background: #f9fafb;
+  border-color: #8b5cf6;
 }
 
 /* 视图切换器 */

@@ -636,9 +636,33 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
     },
 
     async clearAllTasks() {
+      // 1. 清空任务数据
       this.tasks = []
       this.deletedTasks = []
+      
+      // 2. 清空笔记本数据
+      this.collections = []
+      
+      // 3. 保存到 Preferences
       await this.saveTasks()
+      await this.saveCollections()  // 🔧 修复：保存笔记本清空状态
+      
+      // 4. 清空 localStorage 中的用户数据
+      if (this.currentUser) {
+        const username = this.currentUser
+        
+        // 清空 AI 报告历史
+        localStorage.removeItem(`unified_reports_${username}`)
+        localStorage.removeItem(`weekly_reports_${username}`)
+        
+        // 清空 AI 对话历史
+        localStorage.removeItem(`ai_chat_list_${username}`)
+        
+        // 清空番茄钟通知记录
+        await Preferences.remove({ key: `notified_reminders_${username}` })
+        
+        console.log(`✅ 已清空用户 ${username} 的所有数据`)
+      }
     },
 
     // ========== 依赖关系管理 ==========
@@ -1072,12 +1096,48 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
           tomorrow.setDate(tomorrow.getDate() + 1)
           return new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 23, 59, 59)
         
+        case 'day_after_tomorrow':
+          // 后天：后天23:59:59截止
+          const dayAfterTomorrow = new Date(now)
+          dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2)
+          return new Date(dayAfterTomorrow.getFullYear(), dayAfterTomorrow.getMonth(), dayAfterTomorrow.getDate(), 23, 59, 59)
+        
         case 'this_week':
           const endOfWeek = new Date(now)
           const dayOfWeek = now.getDay()
           const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek
           endOfWeek.setDate(endOfWeek.getDate() + daysUntilSunday)
           return new Date(endOfWeek.getFullYear(), endOfWeek.getMonth(), endOfWeek.getDate(), 23, 59, 59)
+        
+        case 'next_week':
+          // 下周：下周日23:59:59截止
+          const nextWeekEnd = new Date(now)
+          const currentDay = now.getDay()
+          const daysUntilNextSunday = currentDay === 0 ? 7 : 14 - currentDay
+          nextWeekEnd.setDate(nextWeekEnd.getDate() + daysUntilNextSunday)
+          return new Date(nextWeekEnd.getFullYear(), nextWeekEnd.getMonth(), nextWeekEnd.getDate(), 23, 59, 59)
+        
+        case 'this_month':
+          // 本月内：本月最后一天23:59:59截止
+          const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+          return new Date(endOfMonth.getFullYear(), endOfMonth.getMonth(), endOfMonth.getDate(), 23, 59, 59)
+        
+        case 'monthly':
+          // 每月重复：每月指定日期23:59:59截止（必须设置monthDay）
+          if (task.monthDay) {
+            const targetDay = Math.min(task.monthDay, new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate())
+            if (now.getDate() <= targetDay) {
+              // 本月还没到指定日期
+              return new Date(now.getFullYear(), now.getMonth(), targetDay, 23, 59, 59)
+            } else {
+              // 本月已过，下月指定日期
+              const nextMonthDay = Math.min(task.monthDay, new Date(now.getFullYear(), now.getMonth() + 2, 0).getDate())
+              return new Date(now.getFullYear(), now.getMonth() + 1, nextMonthDay, 23, 59, 59)
+            }
+          }
+          // 如果没有设置日期，返回null表示无效（需要用户设置）
+          console.warn('每月重复任务必须设置monthDay')
+          return null
         
         case 'weekly':
           // 每周重复：找到下一个指定的星期几

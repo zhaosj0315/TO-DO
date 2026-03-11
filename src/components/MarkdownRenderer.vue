@@ -4,9 +4,41 @@
 
 <script setup>
 import { computed, ref, watch, nextTick } from 'vue'
-import { marked } from 'marked'
+import * as markedLib from 'marked'
 import DOMPurify from 'dompurify'
 import { Filesystem, Directory } from '@capacitor/filesystem'
+
+// 兼容不同版本的 marked
+const parseMarkdown = (text) => {
+  // 检查各种可能的导出方式
+  if (typeof markedLib.marked === 'function') {
+    return markedLib.marked(text)
+  } else if (typeof markedLib.parse === 'function') {
+    return markedLib.parse(text)
+  } else if (typeof markedLib.default === 'function') {
+    return markedLib.default(text)
+  } else if (typeof markedLib === 'function') {
+    return markedLib(text)
+  } else {
+    // 最后的降级方案：简单的文本转换
+    console.warn('⚠️ marked 库不可用，使用简单文本转换')
+    return simpleMarkdownFallback(text)
+  }
+}
+
+// 简单的 Markdown 降级方案
+const simpleMarkdownFallback = (text) => {
+  return text
+    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/`(.*?)`/g, '<code>$1</code>')
+    .replace(/^- (.*$)/gim, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+    .replace(/\n/g, '<br>')
+}
 
 const props = defineProps({
   content: {
@@ -20,10 +52,12 @@ const props = defineProps({
 })
 
 // 配置 marked
-marked.setOptions({
-  breaks: true, // 支持换行
-  gfm: true, // GitHub Flavored Markdown
-})
+if (markedLib.marked && markedLib.marked.setOptions) {
+  markedLib.marked.setOptions({
+    breaks: true, // 支持换行
+    gfm: true, // GitHub Flavored Markdown
+  })
+}
 
 const renderedHtml = ref('')
 
@@ -230,16 +264,22 @@ const renderMarkdown = async () => {
     return
   }
   
-  const rawHtml = marked(props.content)
-  const processedHtml = await processLocalImages(rawHtml)
-  // 注意：DOMPurify 会移除事件处理器，所以我们需要在渲染后重新绑定
-  renderedHtml.value = DOMPurify.sanitize(processedHtml, {
-    ADD_ATTR: ['onclick'] // 保留 onclick 属性
-  })
-  
-  // 等待 DOM 更新后重新绑定事件
-  await nextTick()
-  bindFileCardEvents()
+  try {
+    const rawHtml = parseMarkdown(props.content)
+    const processedHtml = await processLocalImages(rawHtml)
+    // 注意：DOMPurify 会移除事件处理器，所以我们需要在渲染后重新绑定
+    renderedHtml.value = DOMPurify.sanitize(processedHtml, {
+      ADD_ATTR: ['onclick'] // 保留 onclick 属性
+    })
+    
+    // 等待 DOM 更新后重新绑定事件
+    await nextTick()
+    bindFileCardEvents()
+  } catch (error) {
+    console.error('Markdown 渲染失败:', error)
+    // 降级：返回纯文本（保留换行）
+    renderedHtml.value = props.content.replace(/\n/g, '<br>')
+  }
 }
 
 // 重新绑定文件卡片和图片事件

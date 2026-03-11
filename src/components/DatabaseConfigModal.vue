@@ -69,7 +69,7 @@
               >
             </div>
             <button class="btn-test" @click="testSQLite">
-              {{ sqliteTestStatus === 'testing' ? '测试中...' : sqliteTestStatus === 'success' ? '✅ 连接成功' : '测试连接' }}
+              {{ sqliteTestStatus === 'testing' ? '测试中...' : sqliteTestStatus === 'success' ? '✅ 连接成功' : sqliteTestStatus === 'error' ? '❌ 连接失败' : '测试连接' }}
             </button>
           </div>
         </div>
@@ -142,7 +142,7 @@
               >
             </div>
             <button class="btn-test" @click="testMySQL">
-              {{ mysqlTestStatus === 'testing' ? '测试中...' : mysqlTestStatus === 'success' ? '✅ 连接成功' : '测试连接' }}
+              {{ mysqlTestStatus === 'testing' ? '测试中...' : mysqlTestStatus === 'success' ? '✅ 连接成功' : mysqlTestStatus === 'error' ? '❌ 连接失败' : '测试连接' }}
             </button>
           </div>
         </div>
@@ -285,19 +285,50 @@ const handleMySQLToggle = () => {
 // 测试 SQLite 连接
 const testSQLite = async () => {
   sqliteTestStatus.value = 'testing'
-  // TODO: 实际测试逻辑
-  setTimeout(() => {
-    sqliteTestStatus.value = 'success'
-  }, 1000)
+  
+  try {
+    const { sqliteService } = await import('../services/sqliteService')
+    const result = await sqliteService.init()
+    
+    if (result.success) {
+      sqliteTestStatus.value = 'success'
+      alert('✅ SQLite 连接测试成功！')
+    } else {
+      sqliteTestStatus.value = 'error'
+      alert('❌ SQLite 连接失败：' + result.message)
+    }
+  } catch (error) {
+    console.error('SQLite 测试失败:', error)
+    sqliteTestStatus.value = 'error'
+    alert('❌ SQLite 连接测试失败：' + error.message)
+  }
 }
 
 // 测试 MySQL 连接
 const testMySQL = async () => {
+  if (!config.value.mysql.host || !config.value.mysql.user || !config.value.mysql.password) {
+    alert('❌ 请填写完整的 MySQL 配置信息')
+    return
+  }
+  
   mysqlTestStatus.value = 'testing'
-  // TODO: 实际测试逻辑
-  setTimeout(() => {
-    mysqlTestStatus.value = 'success'
-  }, 1000)
+  
+  try {
+    const { mysqlConfigService } = await import('../services/mysqlConfig')
+    const success = await mysqlConfigService.testConnection(config.value.mysql)
+    
+    if (success) {
+      mysqlTestStatus.value = 'success'
+      alert('✅ MySQL 连接测试成功！')
+    } else {
+      mysqlTestStatus.value = 'error'
+      alert('❌ MySQL 连接失败，请检查配置信息')
+    }
+  } catch (error) {
+    console.error('MySQL 测试失败:', error)
+    mysqlTestStatus.value = 'error'
+    alert('❌ MySQL 连接测试失败：' + error.message)
+  }
 }
 
 // 保存配置

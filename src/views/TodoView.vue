@@ -265,20 +265,37 @@
           <template v-if="quickTaskInput.trim()">
             <!-- 属性配置 -->
             <div class="add-form-row-attrs">
-              <!-- 日期类型 -->
+              <!-- 时间安排 -->
               <div class="attr-group">
                 <select v-model="newTaskType" class="attr-select attr-select-date" @change="handleTaskTypeChange">
                   <option value="today">{{ t('today') }}</option>
                   <option value="tomorrow">{{ t('tomorrow') }}</option>
+                  <option value="day_after_tomorrow">{{ t('dayAfterTomorrow') }}</option>
                   <option value="this_week">{{ t('thisWeek') }}</option>
+                  <option value="next_week">{{ t('nextWeek') }}</option>
+                  <option value="this_month">{{ t('thisMonth') }}</option>
                   <option value="daily">{{ t('daily') }}</option>
                   <option value="weekday">{{ t('weekday') }}</option>
                   <option value="custom_date">{{ customDateTime ? formatDisplayDateTime(customDateTime) : t('customDate') }}</option>
                   <option value="weekly">{{ selectedWeekdays.length > 0 ? formatSelectedWeekdays(selectedWeekdays) : t('weekly') }}</option>
+                  <option value="monthly">{{ t('monthly') }}</option>
                 </select>
               </div>
 
               <input ref="hiddenCustomDateTime" type="datetime-local" style="display:none" :min="getTodayDateTime()" @change="handleCustomDateTimeChange">
+
+              <!-- 每月重复日期选择 -->
+              <div class="attr-group" v-if="newTaskType === 'monthly'">
+                <input 
+                  type="number" 
+                  v-model.number="monthDay" 
+                  min="1" 
+                  max="31" 
+                  placeholder="每月几号"
+                  class="attr-select"
+                  style="width: 80px; text-align: center;"
+                />
+              </div>
 
               <!-- 🆕 文件夹选择（显示当前选中的文件夹） -->
               <div class="attr-group" v-if="sortedCollections.length > 0">
@@ -1097,6 +1114,54 @@
         </div>
       </div>
     </div>
+
+    <!-- 筛选日历 - 开始日期 -->
+    <CalendarPicker
+      v-if="showFilterStartCalendar"
+      :initial-value="startDate ? `${startDate}T00:00` : ''"
+      @close="showFilterStartCalendar = false"
+      @confirm="handleFilterStartDateConfirm"
+    />
+
+    <!-- 筛选日历 - 结束日期 -->
+    <CalendarPicker
+      v-if="showFilterEndCalendar"
+      :initial-value="endDate ? `${endDate}T23:59` : ''"
+      @close="showFilterEndCalendar = false"
+      @confirm="handleFilterEndDateConfirm"
+    />
+
+    <!-- 自定义报告日历 - 开始日期 -->
+    <CalendarPicker
+      v-if="showReportStartCalendar"
+      :initial-value="customStartDate ? `${customStartDate}T00:00` : ''"
+      @close="showReportStartCalendar = false"
+      @confirm="handleReportStartDateConfirm"
+    />
+
+    <!-- 自定义报告日历 - 结束日期 -->
+    <CalendarPicker
+      v-if="showReportEndCalendar"
+      :initial-value="customEndDate ? `${customEndDate}T23:59` : ''"
+      @close="showReportEndCalendar = false"
+      @confirm="handleReportEndDateConfirm"
+    />
+
+    <!-- 自定义报告配置日历 - 开始日期 -->
+    <CalendarPicker
+      v-if="showCustomReportStartCalendar"
+      :initial-value="customReportConfig.startDate ? `${customReportConfig.startDate}T00:00` : ''"
+      @close="showCustomReportStartCalendar = false"
+      @confirm="handleCustomReportStartDateConfirm"
+    />
+
+    <!-- 自定义报告配置日历 - 结束日期 -->
+    <CalendarPicker
+      v-if="showCustomReportEndCalendar"
+      :initial-value="customReportConfig.endDate ? `${customReportConfig.endDate}T23:59` : ''"
+      @close="showCustomReportEndCalendar = false"
+      @confirm="handleCustomReportEndDateConfirm"
+    />
 
     <!-- 回收站 -->
     <TrashModal
@@ -1918,28 +1983,13 @@
       </div>
     </div>
 
-    <!-- 自定义日期时间模态框 -->
-    <div v-if="showCustomDateModal" class="modal-overlay" @click.self="confirmCustomDate" style="z-index: 10001;">
-      <div class="modal-content glass-card" style="background: white; max-width: 450px; width: 96%; padding: 1rem;" @click.stop>
-        <div class="modal-header">
-          <h3>选择日期时间</h3>
-          <button class="close-btn" @click="confirmCustomDate">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label>日期和时间</label>
-            <input 
-              v-model="customDateTime" 
-              type="datetime-local" 
-              class="input" 
-              :min="getTodayDateTime()"
-              style="width: 100%; font-size: 1rem;"
-              @change="confirmCustomDate"
-            >
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- 自定义日期时间选择器（日历样式） -->
+    <CalendarPicker
+      v-if="showCustomDateModal"
+      :initial-value="customDateTime"
+      @close="showCustomDateModal = false"
+      @confirm="handleCalendarConfirm"
+    />
 
     <!-- 任务详情 & 编辑 Bottom Sheet（统一入口） -->
     <div v-if="editingTask" class="bottom-sheet-overlay" @click.self="editingTask = null">
@@ -2111,16 +2161,32 @@
               </div>
             </div>
             <div class="edit-field">
-              <label class="field-label">📅 任务类型</label>
+              <label class="field-label">📅 时间安排</label>
               <select v-model="editType" class="input edit-select" @change="handleEditTypeChange">
                 <option value="today">📌 {{ t('today') }}</option>
                 <option value="tomorrow">🌅 {{ t('tomorrow') }}</option>
+                <option value="day_after_tomorrow">📆 {{ t('dayAfterTomorrow') }}</option>
                 <option value="this_week">📆 {{ t('thisWeek') }}</option>
+                <option value="next_week">📅 {{ t('nextWeek') }}</option>
+                <option value="this_month">📅 {{ t('thisMonth') }}</option>
                 <option value="daily">🔄 {{ t('daily') }}</option>
                 <option value="weekday">💼 {{ t('weekday') }}</option>
                 <option value="custom_date">🗓️ {{ editCustomDateTime ? formatDisplayDateTime(editCustomDateTime) : t('customDate') }}</option>
                 <option value="weekly">📊 {{ editWeekdays.length > 0 ? formatSelectedWeekdays(editWeekdays) : t('weekly') }}</option>
+                <option value="monthly">🔄 {{ t('monthly') }}</option>
               </select>
+            </div>
+            <div v-if="editType === 'monthly'" class="edit-field">
+              <label class="field-label">每月几号</label>
+              <input 
+                type="number" 
+                v-model.number="editMonthDay" 
+                min="1" 
+                max="31" 
+                placeholder="1-31"
+                class="input"
+                style="width: 100px; text-align: center;"
+              />
             </div>
           </div>
           <div class="modal-actions edit-actions">
@@ -2218,6 +2284,7 @@
       :visible="showTaskSplitter"
       :task-title="taskToSplit.text"
       :task-description="taskToSplit.description"
+      :parent-task="taskToSplit"
       @close="showTaskSplitter = false; taskToSplit = null"
       @create="handleSubtaskCreate"
     />
@@ -2369,14 +2436,26 @@
             <button @click="showAIMenu = false" class="btn-close-menu">✕</button>
           </div>
           <div class="menu-list">
+            <!-- 第一组：生成内容 -->
+            <button 
+              class="menu-item" 
+              @click="handleAIAction('generateTitle')"
+              :disabled="!newTaskDescription.trim()"
+            >
+              <span class="menu-icon">✨</span>
+              <div class="menu-content">
+                <div class="menu-title">生成标题</div>
+                <div class="menu-desc">根据描述智能生成标题</div>
+              </div>
+            </button>
             <button 
               class="menu-item" 
               @click="handleAIAction('suggestion')"
               :disabled="!quickTaskInput.trim()"
             >
-              <span class="menu-icon">✨</span>
+              <span class="menu-icon">💡</span>
               <div class="menu-content">
-                <div class="menu-title">智能建议</div>
+                <div class="menu-title">生成描述</div>
                 <div class="menu-desc">基于标题生成任务描述</div>
               </div>
             </button>
@@ -2391,6 +2470,8 @@
                 <div class="menu-desc">智能补充当前描述</div>
               </div>
             </button>
+            
+            <!-- 第二组：优化内容 -->
             <button 
               class="menu-item" 
               @click="handleAIAction('polish')"
@@ -2422,6 +2503,19 @@
               <div class="menu-content">
                 <div class="menu-title">改写风格</div>
                 <div class="menu-desc">正式/口语/简洁风格切换</div>
+              </div>
+            </button>
+            
+            <!-- 第三组：格式化 -->
+            <button 
+              class="menu-item" 
+              @click="handleAIAction('markdown')"
+              :disabled="!newTaskDescription.trim()"
+            >
+              <span class="menu-icon">📐</span>
+              <div class="menu-content">
+                <div class="menu-title">Markdown 渲染</div>
+                <div class="menu-desc">一键格式化为 Markdown</div>
               </div>
             </button>
           </div>
@@ -2668,9 +2762,13 @@
             <!-- 自定义日期范围 -->
             <div v-if="reportType === 'custom'" class="config-row" style="margin-top: 0.5rem;">
               <label>{{ currentLanguage === 'zh' ? '开始日期' : 'Start Date' }}:</label>
-              <input type="date" v-model="customStartDate" class="input" style="width: 150px;">
+              <button @click="showReportStartCalendar = true" class="date-btn-inline">
+                {{ customStartDate ? formatDate(customStartDate) : '选择日期' }}
+              </button>
               <label style="margin-left: 1rem;">{{ currentLanguage === 'zh' ? '结束日期' : 'End Date' }}:</label>
-              <input type="date" v-model="customEndDate" class="input" style="width: 150px;">
+              <button @click="showReportEndCalendar = true" class="date-btn-inline">
+                {{ customEndDate ? formatDate(customEndDate) : '选择日期' }}
+              </button>
               <button class="btn btn-primary" @click="generateReportContent" style="margin-left: 1rem;">
                 {{ currentLanguage === 'zh' ? '生成报告' : 'Generate' }}
               </button>
@@ -3355,19 +3453,19 @@
           <div v-if="customReportConfig.type === 'custom'" class="form-group">
             <label class="form-label">📅 时间范围</label>
             <div class="date-range-inputs">
-              <input 
-                v-model="customReportConfig.startDate" 
-                type="date" 
-                class="date-input"
-                placeholder="开始日期"
-              />
+              <button 
+                @click="showCustomReportStartCalendar = true"
+                class="date-btn-inline"
+              >
+                {{ customReportConfig.startDate ? formatDate(customReportConfig.startDate) : '开始日期' }}
+              </button>
               <span style="color: #999;">至</span>
-              <input 
-                v-model="customReportConfig.endDate" 
-                type="date" 
-                class="date-input"
-                placeholder="结束日期"
-              />
+              <button 
+                @click="showCustomReportEndCalendar = true"
+                class="date-btn-inline"
+              >
+                {{ customReportConfig.endDate ? formatDate(customReportConfig.endDate) : '结束日期' }}
+              </button>
             </div>
           </div>
 
@@ -3922,6 +4020,7 @@ import AISuggestionCard from '../components/AISuggestionCard.vue'
 import DailySummaryModal from '../components/DailySummaryModal.vue'
 import AIReportModal from '../components/AIReportModal.vue'
 import SmartTaskSplitter from '../components/SmartTaskSplitter.vue'
+import CalendarPicker from '../components/CalendarPicker.vue'  // 🆕 日历选择器
 import { Filesystem, Directory } from '@capacitor/filesystem'
 import { LocalNotifications } from '@capacitor/local-notifications'
 import { Capacitor } from '@capacitor/core'
@@ -3997,14 +4096,18 @@ const i18n = {
     save: '保存',
     delete: '删除',
     edit: '编辑',
-    // 任务类型
+    // 时间安排
     today: '今天',
     tomorrow: '明天',
+    dayAfterTomorrow: '后天',
     thisWeek: '本周内',
+    nextWeek: '下周',
+    thisMonth: '本月内',
     customDate: '指定日期',
     daily: '每天重复',
     weekday: '工作日重复',
     weekly: '每周重复',
+    monthly: '每月重复',
     // 分类
     work: '工作',
     study: '学习',
@@ -4085,9 +4188,6 @@ const i18n = {
     pomodoros: '个番茄',
     last7DaysTrend: '近7天趋势',
     timeStats: '时间统计',
-    today: '今日',
-    thisWeek: '本周',
-    thisMonth: '本月',
     categoryDistribution: '分类占比',
     categoryDetails: '分类明细',
     priorityStats: '按优先级统计',
@@ -4181,14 +4281,18 @@ const i18n = {
     save: 'Save',
     delete: 'Delete',
     edit: 'Edit',
-    // 任务类型
+    // Schedule
     today: 'Today',
     tomorrow: 'Tomorrow',
+    dayAfterTomorrow: 'Day After Tomorrow',
     thisWeek: 'This Week',
+    nextWeek: 'Next Week',
+    thisMonth: 'This Month',
     customDate: 'Custom Date',
     daily: 'Daily',
     weekday: 'Weekdays',
     weekly: 'Weekly',
+    monthly: 'Monthly',
     // 分类
     work: 'Work',
     study: 'Study',
@@ -4269,9 +4373,6 @@ const i18n = {
     pomodoros: 'pomodoros',
     last7DaysTrend: 'Last 7 Days',
     timeStats: 'Time Stats',
-    today: 'Today',
-    thisWeek: 'This Week',
-    thisMonth: 'This Month',
     categoryDistribution: 'By Category',
     categoryDetails: 'Category Details',
     priorityStats: 'By Priority',
@@ -4385,6 +4486,7 @@ const newTaskCategory = ref('work')
 const newTaskPriority = ref('medium')
 const newTaskCollectionId = ref(null)  // 🆕 文件夹ID
 const selectedWeekdays = ref([])
+const monthDay = ref(1)  // 每月重复的日期（1-31）
 const enableReminder = ref(false)
 const forceReminder = ref(true) // 启用提醒默认就是强制提醒
 const reminderDateTime = ref('')
@@ -4415,6 +4517,8 @@ const currentAIMode = ref('') // 'suggestion' 或 'continue'
 const searchKeyword = ref('')
 const startDate = ref('')
 const endDate = ref('')
+const showFilterStartCalendar = ref(false)
+const showFilterEndCalendar = ref(false)
 const timeDimension = ref('created') // 时间维度：created/deadline/completed
 const activeScene = ref('') // 当前激活的快捷场景
 const countdownInterval = ref(null)
@@ -4753,7 +4857,12 @@ const handleSplitTask = async (task) => {
     const splitResult = await AITaskSplitter.splitTask(task.text, task.description, subtaskCount)
     
     if (splitResult.length > 0) {
-      subtasks.value = splitResult
+      // 添加 category 继承
+      const subtasksWithCategory = splitResult.map(item => ({
+        ...item,
+        category: task.category || 'work'
+      }))
+      subtasks.value = subtasksWithCategory
       showSubtaskPreview.value = true
       showNotification(`✨ AI 已拆解为 ${splitResult.length} 个子任务`, 'success')
     } else {
@@ -5187,38 +5296,38 @@ const initVersionHistory = () => {
   const allVersions = [
     {
       version: '0.8.9',
-      date: '2026-03-10',
+      date: '2026-03-11',
       features: [
-        '🔔 通知逻辑全面优化：7个关键改进，提升通知系统稳定性和用户体验',
-        '🗄️ 数据库配置功能：本地存储必选 + SQLite/MySQL可选备份，支持多选',
-        '⚙️ 接管模式：本地 + 数据库同时使用，实现双重保障和多设备同步',
-        '📚 教程精简优化：从18步精简到12步（3-4分钟），核心功能完整覆盖',
-        '🔔 通知设置面板：用户可配置每日摘要通知时间，支持启用/禁用'
+        '🤖 AI 助手菜单重构：按使用流程分组（生成内容 → 优化内容 → 格式化）',
+        '✨ 生成标题功能：根据任务描述智能生成简洁标题（10-20字）',
+        '📐 Markdown 渲染功能：一键将任务描述格式化为 Markdown',
+        '👁️ Markdown 预览模式：编辑/预览双模式切换，完整渲染效果'
       ],
       improvements: [
-        '📝 通知记录持久化：使用 Preferences 保存已提醒记录，解决刷新页面重复提醒问题',
-        '🔐 通知权限检查：自动请求权限，Web/原生平台兼容处理',
-        '🆔 通知ID冲突修复：使用类型代码区分（urgent/overdue/reminder），避免ID冲突',
-        '🔄 重复任务提醒清理：重复任务重置为待办时自动取消旧提醒',
-        '🧹 过期记录清理：自动删除已完成或已删除任务的提醒记录',
-        '📊 通知渠道分类：创建4个优先级不同的通知渠道（普通/紧急/预警/摘要）',
-        '⏰ 摘要时间配置：用户可自定义每日摘要通知时间（默认09:00）',
-        '🎨 教程UI优化：卡片宽度增至420px，字体更清晰，按钮间距更舒适',
-        '📍 教程位置支持：新增 bottom-right 位置支持，覆盖更多场景',
-        '🌍 平台兼容性：Web/Android/iOS 完整支持，错误处理完善'
+        '🎯 AI 助手菜单逻辑优化：',
+        '  • 第一组：生成内容（生成标题、生成描述、续写内容）',
+        '  • 第二组：优化内容（优化润色、提取要点、改写风格）',
+        '  • 第三组：格式化（Markdown 渲染）',
+        '📝 Markdown 完整支持：',
+        '  • 标题（H1-H6，带下划线）',
+        '  • 加粗/斜体/代码块/行内代码',
+        '  • 列表（有序/无序）',
+        '  • 引用块（紫色左边框）',
+        '  • 表格（斑马纹）',
+        '  • 链接/分隔线',
+        '🎨 GitHub 风格样式：熟悉的 Markdown 渲染效果',
+        '🔄 采纳后自动预览：Markdown 渲染采纳后自动切换到预览模式',
+        '⚡ Ollama API 兼容：智能检测 API 类型，使用正确参数（num_predict/max_tokens）'
       ],
       fixes: [
-        '🐛 修复 Web 平台通知渠道初始化错误：添加平台检查，Web 平台跳过渠道创建',
-        '🐛 修复 Web 平台权限请求错误：Web 平台跳过权限请求',
-        '🐛 修复通知记录内存泄漏：从 Set 迁移到 Preferences 持久化',
-        '🐛 修复重复任务提醒未清理：重置时自动取消旧提醒',
-        '🐛 修复教程步骤过多：精简从18步到12步，保留核心功能',
-        '🐛 修复教程卡片位置计算：添加 bottom-right 位置支持'
+        '🐛 修复 Ollama API 400 错误：使用 num_predict 而非 max_tokens',
+        '🐛 修复 Markdown 渲染后格式丢失：采纳后自动切换到预览模式',
+        '🐛 修复 AI 预览弹窗无法渲染 Markdown：新增双模式切换（编辑/预览）'
       ]
     },
     {
-      version: '0.8.6',
-      date: '2026-03-09',
+      version: '0.8.8',
+      date: '2026-03-10',
       features: [
         '🗄️ 数据库接管模式：MySQL/SQLite实时双写，支持多设备数据同步',
         '☁️ 多设备同步：同一数据库+同一账号=数据自动共享',
@@ -5900,13 +6009,59 @@ const saveTaskFromPreview = async () => {
   }
 }
 
-// 🆕 处理预览模式的AI拆分
-const handlePreviewSplit = () => {
+// 🆕 处理预览模式的AI拆分（复用任务详情的逻辑）
+const handlePreviewSplit = async () => {
   if (!previewTaskData.value) return
   
-  // 设置taskToSplit为预览任务
-  taskToSplit.value = previewTaskData.value
-  showTaskSplitter.value = true
+  // 复用 handleSplitTask 的逻辑
+  currentSplittingTask.value = previewTaskData.value
+  
+  // 询问用户想拆分成几个子任务
+  const countInput = prompt('请输入要拆分的子任务数量（2-10个）：', '5')
+  
+  if (countInput === null) {
+    // 用户取消
+    return
+  }
+  
+  const subtaskCount = parseInt(countInput)
+  
+  if (isNaN(subtaskCount) || subtaskCount < 2 || subtaskCount > 10) {
+    showNotification('请输入2-10之间的数字', 'error')
+    return
+  }
+  
+  try {
+    // 显示loading
+    aiLoading.value = true
+    aiLoadingText.value = `AI 正在拆解为 ${subtaskCount} 个子任务...`
+    aiLoadingSubText.value = '请稍候，正在分析任务内容'
+    
+    const splitResult = await AITaskSplitter.splitTask(
+      previewTaskData.value.text, 
+      previewTaskData.value.description, 
+      subtaskCount
+    )
+    
+    if (splitResult.length > 0) {
+      // 添加 category 继承
+      const subtasksWithCategory = splitResult.map(item => ({
+        ...item,
+        category: previewTaskData.value.category || 'work'
+      }))
+      subtasks.value = subtasksWithCategory
+      showSubtaskPreview.value = true
+      showNotification(`✨ AI 已拆解为 ${splitResult.length} 个子任务`, 'success')
+    } else {
+      showNotification('未能拆解任务，请重试', 'warning')
+    }
+  } catch (error) {
+    console.error('AI拆解失败:', error)
+    showNotification(`AI拆解失败：${error.message}`, 'error')
+  } finally {
+    // 关闭loading
+    aiLoading.value = false
+  }
 }
 
 // 🆕 从预览模式创建子任务
@@ -6508,6 +6663,10 @@ const handleAdoptAIContent = (content) => {
   } else if (currentAIMode.value === 'extract') {
     // 提取要点：替换原内容
     newTaskDescription.value = content
+  } else if (currentAIMode.value === 'markdown') {
+    // Markdown渲染：替换原内容并切换到预览模式
+    newTaskDescription.value = content
+    isMarkdownPreview.value = true
   }
   
   showAIPreview.value = false
@@ -6550,12 +6709,170 @@ const handleAIAction = async (action) => {
     case 'polish':
       await polishDescription()
       break
+    case 'markdown':
+      await renderMarkdown()
+      break
+    case 'generateTitle':
+      await generateTitle()
+      break
     case 'extract':
       await extractKeyPoints()
       break
     case 'rewrite':
       await rewriteStyle()
       break
+  }
+}
+
+// 📐 Markdown 渲染
+const renderMarkdown = async () => {
+  if (!newTaskDescription.value.trim()) {
+    showNotification('请先输入内容', 'error')
+    return
+  }
+  
+  try {
+    aiLoading.value = true
+    aiLoadingText.value = 'AI 正在格式化...'
+    
+    const models = JSON.parse(localStorage.getItem('ai_models') || '[]')
+    const defaultModelId = localStorage.getItem('ai_default_model')
+    const defaultModel = models.find(m => m.id === defaultModelId) || models[0]
+    
+    if (!defaultModel) {
+      showNotification('请先配置 AI 模型', 'error')
+      return
+    }
+    
+    const prompt = `请将以下内容转换为格式良好的 Markdown 格式：
+
+${newTaskDescription.value}
+
+要求：
+1. 自动识别标题、列表、步骤等结构
+2. 使用合适的 Markdown 语法（# 标题、- 列表、\`代码\`、**加粗**等）
+3. 保持内容完整，不要删减
+4. 优化排版和层级结构
+5. 如果有代码，使用代码块包裹
+6. 直接返回 Markdown 格式的内容，不要额外说明`
+    
+    let apiUrl = defaultModel.url
+    if (!apiUrl.includes('/v1/chat/completions')) {
+      apiUrl = apiUrl.replace(/\/api\/.*$/, '').replace(/\/v1.*$/, '').replace(/\/$/, '') + '/v1/chat/completions'
+    }
+    
+    const requestBody = {
+      model: defaultModel.modelName || defaultModel.model,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.3
+    }
+    
+    // Ollama 使用 num_predict，OpenAI 使用 max_tokens
+    if (apiUrl.includes('11434') || apiUrl.includes('ollama')) {
+      requestBody.num_predict = 2000
+    } else {
+      requestBody.max_tokens = 2000
+    }
+    
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${defaultModel.apiKey || 'dummy'}`
+      },
+      body: JSON.stringify(requestBody)
+    })
+    
+    if (!response.ok) throw new Error('AI 请求失败')
+    
+    const data = await response.json()
+    const content = data.choices?.[0]?.message?.content || data.response || ''
+    
+    if (content) {
+      currentAIMode.value = 'markdown'
+      aiPreviewContent.value = content
+      aiPreviewTitle.value = '📐 Markdown 渲染预览'
+      showAIPreview.value = true
+      showNotification('✨ 格式化完成', 'success')
+    }
+  } catch (error) {
+    console.error('格式化失败:', error)
+    showNotification('格式化失败', 'error')
+  } finally {
+    aiLoading.value = false
+  }
+}
+
+// ✨ 生成标题
+const generateTitle = async () => {
+  if (!newTaskDescription.value.trim()) {
+    showNotification('请先输入描述内容', 'error')
+    return
+  }
+  
+  try {
+    aiLoading.value = true
+    aiLoadingText.value = 'AI 正在生成标题...'
+    
+    const models = JSON.parse(localStorage.getItem('ai_models') || '[]')
+    const defaultModelId = localStorage.getItem('ai_default_model')
+    const defaultModel = models.find(m => m.id === defaultModelId) || models[0]
+    
+    if (!defaultModel) {
+      showNotification('请先配置 AI 模型', 'error')
+      return
+    }
+    
+    const prompt = `请根据以下任务描述，生成一个简洁、准确的任务标题（10-20字）：
+
+${newTaskDescription.value}
+
+要求：
+1. 标题要简洁明了，突出核心内容
+2. 长度控制在10-20字
+3. 使用动词开头（如：完成、编写、学习、优化等）
+4. 只返回标题文本，不要额外说明`
+    
+    let apiUrl = defaultModel.url
+    if (!apiUrl.includes('/v1/chat/completions')) {
+      apiUrl = apiUrl.replace(/\/api\/.*$/, '').replace(/\/v1.*$/, '').replace(/\/$/, '') + '/v1/chat/completions'
+    }
+    
+    const requestBody = {
+      model: defaultModel.modelName || defaultModel.model,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.7
+    }
+    
+    if (apiUrl.includes('11434') || apiUrl.includes('ollama')) {
+      requestBody.num_predict = 100
+    } else {
+      requestBody.max_tokens = 100
+    }
+    
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${defaultModel.apiKey || 'dummy'}`
+      },
+      body: JSON.stringify(requestBody)
+    })
+    
+    if (!response.ok) throw new Error('AI 请求失败')
+    
+    const data = await response.json()
+    const title = (data.choices?.[0]?.message?.content || data.response || '').trim()
+    
+    if (title) {
+      quickTaskInput.value = title
+      showNotification('✨ 标题已生成', 'success')
+    }
+  } catch (error) {
+    console.error('生成标题失败:', error)
+    showNotification('生成标题失败', 'error')
+  } finally {
+    aiLoading.value = false
   }
 }
 
@@ -7292,6 +7609,10 @@ const backupFiles = ref([]) // 备份文件列表
 const reportType = ref('weekly') // 报告类型（默认：周报）
 const customStartDate = ref('') // 自定义开始日期
 const customEndDate = ref('') // 自定义结束日期
+const showReportStartCalendar = ref(false) // 自定义报告开始日期日历
+const showReportEndCalendar = ref(false) // 自定义报告结束日期日历
+const showCustomReportStartCalendar = ref(false) // 自定义报告配置开始日期日历
+const showCustomReportEndCalendar = ref(false) // 自定义报告配置结束日期日历
 const reportContent = ref('') // 报告内容（文本格式）
 const reportData = ref({}) // 报告数据（结构化）
 const showWeeklyReportModal = ref(false) // 周报弹窗显示状态
@@ -7334,6 +7655,7 @@ const editPriority = ref('medium')
 const editType = ref('today')
 const editCustomDateTime = ref('')
 const editWeekdays = ref([])
+const editMonthDay = ref(1)
 const showAddForm = ref(true)
 const currentPage = ref(1)
 const pageSize = ref(7) // 改为响应式
@@ -8409,16 +8731,25 @@ const applyScene = (scene) => {
 
 // 显示日期选择器
 const showDatePicker = (type) => {
-  const pickerRef = type === 'start' ? hiddenStartDate : hiddenEndDate
-  pickerRef.value?.showPicker()
+  if (type === 'start') {
+    showFilterStartCalendar.value = true
+  } else {
+    showFilterEndCalendar.value = true
+  }
 }
 
 // 显示自定义日期时间选择器
 const showCustomDateTimePicker = () => {
-  hiddenCustomDateTime.value?.showPicker()
+  showCustomDateModal.value = true
 }
 
-// 处理自定义日期时间变更
+// 处理日历选择器确认
+const handleCalendarConfirm = (dateTimeStr) => {
+  customDateTime.value = dateTimeStr
+  showCustomDateModal.value = false
+}
+
+// 处理自定义日期时间变更（保留用于其他地方）
 const handleCustomDateTimeChange = (e) => {
   customDateTime.value = e.target.value
 }
@@ -8432,6 +8763,55 @@ const getTodayDateTime = () => {
   const hours = String(now.getHours()).padStart(2, '0')
   const minutes = String(now.getMinutes()).padStart(2, '0')
   return `${year}-${month}-${day}T${hours}:${minutes}`
+}
+
+// 处理筛选开始日期确认
+const handleFilterStartDateConfirm = (dateTimeStr) => {
+  const [date] = dateTimeStr.split('T')
+  startDate.value = date
+  showFilterStartCalendar.value = false
+}
+
+// 处理筛选结束日期确认
+const handleFilterEndDateConfirm = (dateTimeStr) => {
+  const [date] = dateTimeStr.split('T')
+  endDate.value = date
+  showFilterEndCalendar.value = false
+}
+
+// 处理自定义报告开始日期确认
+const handleReportStartDateConfirm = (dateTimeStr) => {
+  const [date] = dateTimeStr.split('T')
+  customStartDate.value = date
+  showReportStartCalendar.value = false
+}
+
+// 处理自定义报告结束日期确认
+const handleReportEndDateConfirm = (dateTimeStr) => {
+  const [date] = dateTimeStr.split('T')
+  customEndDate.value = date
+  showReportEndCalendar.value = false
+}
+
+// 处理自定义报告配置开始日期确认
+const handleCustomReportStartDateConfirm = (dateTimeStr) => {
+  const [date] = dateTimeStr.split('T')
+  customReportConfig.value.startDate = date
+  showCustomReportStartCalendar.value = false
+}
+
+// 处理自定义报告配置结束日期确认
+const handleCustomReportEndDateConfirm = (dateTimeStr) => {
+  const [date] = dateTimeStr.split('T')
+  customReportConfig.value.endDate = date
+  showCustomReportEndCalendar.value = false
+}
+
+// 格式化日期显示（YYYY/MM/DD）
+const formatDate = (dateStr) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`
 }
 
 // 快捷设置提醒时间
@@ -8656,6 +9036,12 @@ const addTask = async () => {
     return
   }
   
+  // 验证每月重复
+  if (newTaskType.value === 'monthly' && (!monthDay.value || monthDay.value < 1 || monthDay.value > 31)) {
+    showNotification('请选择每月几号（1-31）！', 'error')
+    return
+  }
+  
   // 解析日期时间
   let customDate = null
   let customTime = null
@@ -8679,6 +9065,7 @@ const addTask = async () => {
     priority: newTaskPriority.value,
     collectionId: collectionId,  // 🆕 文件夹ID
     weekdays: newTaskType.value === 'weekly' ? selectedWeekdays.value : null,
+    monthDay: newTaskType.value === 'monthly' ? monthDay.value : null,
     customDate: customDate,
     customTime: customTime,
     enableReminder: enableReminder.value,
@@ -8728,6 +9115,7 @@ const addTask = async () => {
   newTaskCategory.value = 'work'
   newTaskPriority.value = 'medium'
   selectedWeekdays.value = []
+  monthDay.value = 1
   enableReminder.value = false
   forceReminder.value = false
   reminderDateTime.value = ''
@@ -8766,6 +9154,10 @@ const handleTaskTypeChange = () => {
   } else {
     // 如果选择了每周重复，弹出星期选择模态框
     showWeeklyModal.value = true
+  }
+  
+  if (newTaskType.value === 'monthly' && !monthDay.value) {
+    monthDay.value = 1
   }
 }
 
@@ -9060,10 +9452,11 @@ const clearAllTrash = async () => {
 const clearAllTasks = async () => {
   const totalCount = taskStore.tasks.length
   const deletedCount = taskStore.deletedTasks.length
+  const collectionsCount = taskStore.collections.length
   const total = totalCount + deletedCount
   
-  if (total === 0) {
-    showNotification('当前没有任务', 'info')
+  if (total === 0 && collectionsCount === 0) {
+    showNotification('当前没有任务和笔记本', 'info')
     return
   }
   
@@ -9071,7 +9464,10 @@ const clearAllTasks = async () => {
     `即将清空所有数据：\n` +
     `• 当前任务：${totalCount} 个\n` +
     `• 回收站任务：${deletedCount} 个\n` +
-    `• 总计：${total} 个\n\n` +
+    `• 笔记本/文件夹：${collectionsCount} 个\n` +
+    `• AI报告历史：将被清空\n` +
+    `• AI对话历史：将被清空\n` +
+    `• 总计：${total} 个任务 + ${collectionsCount} 个笔记本\n\n` +
     `⚠️ 此操作不可撤销！\n` +
     `⚠️ 所有执行日志、番茄钟历史将永久丢失！\n\n` +
     `💡 强烈建议先点击"完整备份"保存数据！\n\n` +
@@ -9087,7 +9483,7 @@ const clearAllTasks = async () => {
   
   if (userInput === '删除') {
     await taskStore.clearAllTasks()
-    showNotification(`已清空所有任务（${total} 个）`, 'success')
+    showNotification(`已清空所有数据（${total} 个任务 + ${collectionsCount} 个笔记本）`, 'success')
   } else {
     showNotification('已取消清空操作', 'info')
   }
@@ -9111,6 +9507,7 @@ const openEditModal = (task) => {
   }
   
   editWeekdays.value = task.weekdays ? [...task.weekdays] : []
+  editMonthDay.value = task.monthDay || 1
   
   // 初始化所有textarea的自适应高度
   nextTick(() => {
@@ -9174,6 +9571,12 @@ const handleEditTypeChange = () => {
     selectedWeekdays.value = [...editWeekdays.value]
     showWeeklyModal.value = true
   }
+  // 如果选择每月重复，设置默认值
+  else if (editType.value === 'monthly') {
+    if (!editMonthDay.value) {
+      editMonthDay.value = 1
+    }
+  }
   // 其他类型清空相关数据
   else {
     editCustomDateTime.value = ''
@@ -9236,7 +9639,8 @@ const saveTaskEdit = async () => {
     type: editType.value,
     customDate: customDate,
     customTime: customTime,
-    weekdays: editType.value === 'weekly' ? editWeekdays.value : []
+    weekdays: editType.value === 'weekly' ? editWeekdays.value : [],
+    monthDay: editType.value === 'monthly' ? editMonthDay.value : null
   })
   
   editingTask.value = null
@@ -10778,18 +11182,6 @@ const loadUserInfo = async () => {
     userInfo[username] = userProfileInfo.value
     await Preferences.set({ key: 'userInfo', value: JSON.stringify(userInfo) })
   }
-}
-
-// 方法：格式化日期
-const formatDate = (dateString) => {
-  if (!dateString) return '未知'
-  const date = new Date(dateString)
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  const hour = String(date.getHours()).padStart(2, '0')
-  const minute = String(date.getMinutes()).padStart(2, '0')
-  return `${year}/${month}/${day} ${hour}:${minute}`
 }
 
 // 格式化报告类型
@@ -13949,6 +14341,14 @@ onMounted(async () => {
         console.log('✅ 关闭AI配置')
         showAIConfig.value = false
         return
+      } else if (showDatabaseConfig.value) {
+        console.log('✅ 关闭数据库配置')
+        showDatabaseConfig.value = false
+        return
+      } else if (showNotificationSettings.value) {
+        console.log('✅ 关闭通知设置')
+        showNotificationSettings.value = false
+        return
       } else if (showVersionModal.value) {
         console.log('✅ 关闭版本更新')
         showVersionModal.value = false
@@ -14157,6 +14557,15 @@ onMounted(async () => {
           showCollectionManage.value = true
           fromCollectionManage.value = false
         }
+        return
+      } else if (showFilePreview.value) {
+        console.log('✅ 关闭文件预览')
+        showFilePreview.value = false
+        return
+      } else if (showMoveCollectionModal.value) {
+        console.log('✅ 关闭移动笔记本')
+        showMoveCollectionModal.value = false
+        collectionToMove.value = null
         return
       }
       // 🆕 第二层：文件夹管理页面
@@ -18904,10 +19313,10 @@ watch(() => reportData.value, (newData) => {
 
 .date-input-box {
   flex: 1;
-  padding: 0.6rem 0.8rem; /* 从0.8rem 1rem减至0.6rem 0.8rem，压缩高度 */
+  padding: 0.6rem 0.8rem;
   border: 2px solid #d0d0d0;
   border-radius: 10px;
-  font-size: 0.85rem; /* 从0.9rem减至0.85rem */
+  font-size: 0.85rem;
   color: #999;
   cursor: pointer;
   transition: all 0.3s;
@@ -18927,9 +19336,26 @@ watch(() => reportData.value, (newData) => {
   background: rgba(102, 126, 234, 0.03);
 }
 
+/* 内联日期按钮 */
+.date-btn-inline {
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #1f2937;
+}
+
+.date-btn-inline:hover {
+  background: #f9fafb;
+  border-color: #8b5cf6;
+}
+
 .date-separator {
   color: #999;
-  font-size: 0.8rem; /* 从0.85rem减至0.8rem */
+  font-size: 0.8rem;
   font-weight: 500;
   flex-shrink: 0;
 }

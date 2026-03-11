@@ -49,6 +49,13 @@ export const mysqlConfigService = {
   // 测试连接
   async testConnection(config) {
     try {
+      console.log('🔍 开始测试 MySQL 连接:', { 
+        host: config.host, 
+        port: config.port, 
+        user: config.user, 
+        database: config.database 
+      })
+      
       // Android需要使用局域网IP
       const baseUrl = config.host === 'localhost' ? 'http://192.168.31.159:3000' : `http://${config.host}:3000`
       
@@ -57,10 +64,24 @@ export const mysqlConfigService = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config)
       })
+      
+      if (!response.ok) {
+        console.error('❌ HTTP 请求失败:', response.status, response.statusText)
+        return false
+      }
+      
       const result = await response.json()
-      return result.success
+      console.log('🔍 服务器响应:', result)
+      
+      if (result.success) {
+        console.log('✅ MySQL 连接测试成功')
+        return true
+      } else {
+        console.error('❌ MySQL 连接失败:', result.error)
+        return false
+      }
     } catch (error) {
-      console.error('测试连接失败:', error)
+      console.error('❌ 测试连接异常:', error)
       return false
     }
   }

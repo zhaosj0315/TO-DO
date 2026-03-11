@@ -59,27 +59,57 @@
           </div>
         </div>
 
-        <!-- 任务类型 -->
+        <!-- 时间安排 -->
         <div class="form-group">
-          <label>任务类型</label>
-          <select v-model="formData.type">
+          <label>时间安排</label>
+          <select v-model="formData.type" @change="handleTypeChange">
             <option value="today">今天</option>
             <option value="tomorrow">明天</option>
+            <option value="day_after_tomorrow">后天</option>
             <option value="this_week">本周内</option>
+            <option value="next_week">下周</option>
+            <option value="this_month">本月内</option>
             <option value="custom_date">指定日期</option>
+            <option value="daily">每天重复</option>
+            <option value="weekday">工作日重复</option>
+            <option value="weekly">每周重复</option>
+            <option value="monthly">每月重复</option>
           </select>
         </div>
 
         <!-- 自定义日期时间 -->
-        <div v-if="formData.type === 'custom_date'" class="form-row">
-          <div class="form-group">
-            <label>日期</label>
-            <input v-model="formData.customDate" type="date">
-          </div>
-          <div class="form-group">
-            <label>时间</label>
-            <input v-model="formData.customTime" type="time">
-          </div>
+        <div v-if="formData.type === 'custom_date'" class="form-group">
+          <label>截止时间</label>
+          <button 
+            @click="showCalendar = true"
+            class="calendar-btn"
+          >
+            {{ formatDateTime(formData.customDate, formData.customTime) }}
+          </button>
+        </div>
+
+        <!-- 每周重复 - 选择星期 -->
+        <div v-if="formData.type === 'weekly'" class="form-group">
+          <label>重复周期</label>
+          <button 
+            @click="showWeekdaySelector = true"
+            class="calendar-btn"
+          >
+            {{ formatWeekdays(formData.weekdays) }}
+          </button>
+        </div>
+
+        <!-- 每月重复 - 选择日期 -->
+        <div v-if="formData.type === 'monthly'" class="form-group">
+          <label>每月几号</label>
+          <input 
+            type="number" 
+            v-model.number="formData.monthDay" 
+            min="1" 
+            max="31" 
+            placeholder="1-31"
+            class="month-day-input"
+          />
         </div>
 
         <!-- 继承设置提示 -->
@@ -98,11 +128,39 @@
         </button>
       </div>
     </div>
+
+    <!-- 日历选择器 -->
+    <CalendarPicker
+      v-if="showCalendar"
+      :initial-value="getInitialDateTime()"
+      @close="showCalendar = false"
+      @confirm="handleCalendarConfirm"
+    />
+
+    <!-- 星期选择器 -->
+    <div v-if="showWeekdaySelector" class="modal-overlay" @click.self="showWeekdaySelector = false">
+      <div class="weekday-selector-modal">
+        <div class="modal-header">
+          <h3>选择重复周期</h3>
+          <button class="btn-close" @click="showWeekdaySelector = false">✕</button>
+        </div>
+        <div class="weekday-grid">
+          <label v-for="(day, index) in weekdayOptions" :key="index" class="weekday-item">
+            <input type="checkbox" :value="index" v-model="formData.weekdays">
+            <span>{{ day }}</span>
+          </label>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-primary" @click="showWeekdaySelector = false">确定</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, watch } from 'vue'
+import CalendarPicker from './CalendarPicker.vue'
 
 const props = defineProps({
   visible: Boolean,
@@ -118,6 +176,10 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'submit'])
 
+const showCalendar = ref(false)
+const showWeekdaySelector = ref(false)
+const weekdayOptions = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+
 const formData = ref({
   text: '',
   description: '',
@@ -125,8 +187,55 @@ const formData = ref({
   category: props.parentTask.category || 'work',
   type: 'today',
   customDate: '',
-  customTime: ''
+  customTime: '',
+  weekdays: [],
+  monthDay: 1
 })
+
+// 处理类型变化
+const handleTypeChange = () => {
+  if (formData.value.type === 'weekly' && formData.value.weekdays.length === 0) {
+    showWeekdaySelector.value = true
+  }
+  // monthly类型切换时，如果没有设置日期，设置默认值为1号
+  if (formData.value.type === 'monthly' && !formData.value.monthDay) {
+    formData.value.monthDay = 1
+  }
+}
+
+// 格式化星期显示
+const formatWeekdays = (weekdays) => {
+  if (!weekdays || weekdays.length === 0) return '点击选择星期'
+  return weekdays.map(i => weekdayOptions[i]).join('、')
+}
+
+// 获取初始日期时间
+const getInitialDateTime = () => {
+  if (formData.value.customDate && formData.value.customTime) {
+    return `${formData.value.customDate}T${formData.value.customTime}`
+  }
+  return ''
+}
+
+// 处理日历确认
+const handleCalendarConfirm = (dateTimeStr) => {
+  const [date, time] = dateTimeStr.split('T')
+  formData.value.customDate = date
+  formData.value.customTime = time
+  showCalendar.value = false
+}
+
+// 格式化日期时间显示
+const formatDateTime = (date, time) => {
+  if (!date) return '点击选择日期时间'
+  const d = new Date(`${date}T${time || '23:59'}`)
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  const hour = String(d.getHours()).padStart(2, '0')
+  const minute = String(d.getMinutes()).padStart(2, '0')
+  return `${year}/${month}/${day} ${hour}:${minute}`
+}
 
 // 重置表单
 watch(() => props.visible, (newVal) => {
@@ -139,6 +248,8 @@ watch(() => props.visible, (newVal) => {
       type: 'today',
       customDate: '',
       customTime: '',
+      weekdays: [],
+      monthDay: 1,
       estimatedDuration: props.initialData?.estimatedDuration || 60
     }
   }
@@ -298,6 +409,25 @@ const handleSubmit = () => {
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
+/* 日历按钮 */
+.calendar-btn {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: white;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #1f2937;
+}
+
+.calendar-btn:hover {
+  background: #f9fafb;
+  border-color: #8b5cf6;
+}
+
 .form-group textarea {
   resize: vertical;
   font-family: inherit;
@@ -380,5 +510,68 @@ const handleSubmit = () => {
 .btn-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* 星期选择器 */
+.weekday-selector-modal {
+  background: white;
+  border-radius: 16px 16px 0 0;
+  width: 100%;
+  max-width: 500px;
+  animation: slideUp 0.3s ease-out;
+}
+
+.weekday-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  padding: 1.25rem;
+}
+
+.weekday-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.weekday-item input[type="checkbox"] {
+  display: none;
+}
+
+.weekday-item input[type="checkbox"]:checked + span {
+  color: white;
+}
+
+.weekday-item:has(input:checked) {
+  background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+  border-color: #8b5cf6;
+}
+
+.weekday-item span {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #666;
+  transition: color 0.2s;
+}
+
+/* 每月重复日期输入 */
+.month-day-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.month-day-input:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 </style>

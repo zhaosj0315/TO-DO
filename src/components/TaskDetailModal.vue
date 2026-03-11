@@ -42,25 +42,43 @@
             </div>
             
             <div class="overview-item">
-              <span class="label">类型</span>
+              <span class="label">时间安排</span>
               <select v-model="localTask.type" @change="handleTypeChange" class="field-select">
                 <option value="today">📅 今天</option>
                 <option value="tomorrow">📆 明天</option>
+                <option value="day_after_tomorrow">📆 后天</option>
                 <option value="this_week">📋 本周内</option>
+                <option value="next_week">📅 下周</option>
+                <option value="this_month">📅 本月内</option>
                 <option value="custom_date">🗓️ 指定日期</option>
                 <option value="daily">🔄 每天重复</option>
                 <option value="weekday">💼 工作日重复</option>
                 <option value="weekly">📆 每周重复</option>
+                <option value="monthly">🔄 每月重复</option>
               </select>
             </div>
             
             <div v-if="localTask.type === 'custom_date'" class="overview-item overview-item-full">
               <span class="label">截止时间</span>
+              <button 
+                @click="showCalendar = true"
+                class="field-input calendar-btn"
+              >
+                {{ customDateTime ? formatDateTime(customDateTime) : '点击选择日期时间' }}
+              </button>
+            </div>
+            
+            <div v-if="localTask.type === 'monthly'" class="overview-item">
+              <span class="label">每月几号</span>
               <input 
-                type="datetime-local" 
-                v-model="customDateTime"
-                @change="handleDateTimeChange"
+                type="number" 
+                v-model.number="localTask.monthDay" 
+                min="1" 
+                max="31" 
+                placeholder="1-31"
                 class="field-input"
+                style="width: 80px; text-align: center;"
+                @blur="saveField('monthDay')"
               />
             </div>
             
@@ -654,6 +672,14 @@
         <div class="spinner-text">🤖 AI 处理中...</div>
       </div>
     </div>
+
+    <!-- 日历选择器 -->
+    <CalendarPicker
+      v-if="showCalendar"
+      :initial-value="customDateTime"
+      @close="showCalendar = false"
+      @confirm="handleCalendarConfirm"
+    />
   </div>
 </template>
 
@@ -667,6 +693,7 @@ import AITextMenu from './AITextMenu.vue'
 import AITextResultSheet from './AITextResultSheet.vue'
 import WaitForSelector from './WaitForSelector.vue'
 import MarkdownRenderer from './MarkdownRenderer.vue'  // 🆕 Markdown渲染器
+import CalendarPicker from './CalendarPicker.vue'  // 🆕 日历选择器
 import { useTextSelection } from '../composables/useTextSelection'
 import { AITextService } from '../services/aiTextService'
 import { Capacitor } from '@capacitor/core'
@@ -693,6 +720,7 @@ const showAddLogModal = ref(false)
 const showTimeline = ref(false)
 const showWaitForSelector = ref(false)
 const showDeleteConfirm = ref(false)
+const showCalendar = ref(false)  // 🆕 日历选择器
 const logPreviewStates = ref({})  // 🆕 日志预览状态 { logId: boolean }
 const isAISummaryPreview = ref(false)  // 🆕 AI总结预览状态
 
@@ -890,6 +918,14 @@ const handleTypeChange = () => {
     localTask.value.customDate = null
     localTask.value.customTime = null
   }
+  
+  // 处理每月重复
+  if (localTask.value.type === 'monthly') {
+    if (!localTask.value.monthDay) {
+      localTask.value.monthDay = 1
+    }
+  }
+  
   saveField('type')
 }
 
@@ -902,6 +938,25 @@ const handleDateTimeChange = () => {
     saveField('customDate')
     saveField('customTime')
   }
+}
+
+// 🆕 处理日历选择器确认
+const handleCalendarConfirm = (dateTimeStr) => {
+  customDateTime.value = dateTimeStr
+  handleDateTimeChange()
+  showCalendar.value = false
+}
+
+// 🆕 格式化日期时间显示
+const formatDateTime = (dateTimeStr) => {
+  if (!dateTimeStr) return ''
+  const date = new Date(dateTimeStr)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hour = String(date.getHours()).padStart(2, '0')
+  const minute = String(date.getMinutes()).padStart(2, '0')
+  return `${year}/${month}/${day} ${hour}:${minute}`
 }
 
 // 文本选择菜单
@@ -1123,18 +1178,6 @@ const formatDuration = (minutes) => {
   
   if (mins === 0) return `${hours}小时`
   return `${hours}小时${mins}分钟`
-}
-
-// 格式化日期时间
-const formatDateTime = (dateStr) => {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  const hours = String(date.getHours()).padStart(2, '0')
-  const minutes = String(date.getMinutes()).padStart(2, '0')
-  return `${year}/${month}/${day} ${hours}:${minutes}`
 }
 
 // 自适应textarea高度
@@ -1812,6 +1855,19 @@ section h3 {
   outline: none;
   border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* 日历按钮 */
+.calendar-btn {
+  background: white;
+  text-align: left;
+  cursor: pointer;
+  color: #1f2937;
+}
+
+.calendar-btn:hover {
+  background: #f9fafb;
+  border-color: #667eea;
 }
 
 /* 时间轴（横向版） */

@@ -47,12 +47,12 @@
                 <option value="life">🏠 生活</option>
               </select>
 
-              <input 
-                v-model="task.deadline" 
-                type="datetime-local" 
-                class="attr-input"
-                placeholder="截止时间"
-              />
+              <button 
+                @click="showCalendar = true"
+                class="calendar-btn"
+              >
+                {{ task.deadline ? formatDateTime(task.deadline) : '点击选择截止时间' }}
+              </button>
             </div>
           </div>
         </div>
@@ -73,10 +73,19 @@
       </div>
     </div>
   </div>
+
+  <!-- 日历选择器 -->
+  <CalendarPicker
+    v-if="showCalendar"
+    :initial-value="task.deadline || ''"
+    @close="showCalendar = false"
+    @confirm="handleCalendarConfirm"
+  />
 </template>
 
 <script setup>
 import { ref, watch } from 'vue'
+import CalendarPicker from './CalendarPicker.vue'
 
 const props = defineProps({
   visible: Boolean,
@@ -89,9 +98,27 @@ const props = defineProps({
 const emit = defineEmits(['close', 'create'])
 
 const tasks = ref([])
+const showCalendar = ref(false)
+const task = ref({})
+
+// 处理日历确认
+const handleCalendarConfirm = (dateTimeStr) => {
+  task.value.deadline = dateTimeStr
+  showCalendar.value = false
+}
+
+// 格式化日期时间显示
+const formatDateTime = (dateTimeStr) => {
+  if (!dateTimeStr) return ''
+  const date = new Date(dateTimeStr)
+  return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+}
 
 watch(() => props.extractedTasks, (newTasks) => {
   tasks.value = JSON.parse(JSON.stringify(newTasks))
+  if (tasks.value.length > 0) {
+    task.value = tasks.value[0]
+  }
 }, { immediate: true })
 
 const removeTask = (index) => {
@@ -300,6 +327,25 @@ const handleCreateAll = () => {
   outline: none;
   border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* 日历按钮 */
+.calendar-btn {
+  grid-column: 1 / -1;
+  padding: 0.5rem;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  background: white;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #1f2937;
+}
+
+.calendar-btn:hover {
+  background: #f9fafb;
+  border-color: #667eea;
 }
 
 .modal-footer {
