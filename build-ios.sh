@@ -1,7 +1,10 @@
 #!/bin/bash
 
+# 获取版本号
+VERSION=$(node -p "require('./package.json').version")
+
 echo "=========================================="
-echo "  TODO App - iOS 一键打包脚本"
+echo "  TODO App - iOS 一键打包脚本 v${VERSION}"
 echo "=========================================="
 echo ""
 

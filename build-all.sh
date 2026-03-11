@@ -3,8 +3,11 @@
 # 一键打包所有平台脚本
 # 支持: Windows, macOS (x64 + arm64), Android APK
 
+# 获取版本号
+VERSION=$(node -p "require('./package.json').version")
+
 echo "=========================================="
-echo "  TODO App - 全平台一键打包"
+echo "  TODO App - 全平台一键打包 v${VERSION}"
 echo "=========================================="
 echo ""
 
@@ -63,8 +66,8 @@ mkdir -p "$RELEASE_DIR"
 
 # 清理旧的安装包（保留目录结构）
 echo -e "${BLUE}🧹 清理旧的安装包...${NC}"
-rm -f "$RELEASE_DIR/TODO-App.apk"
-rm -f "$RELEASE_DIR/TODO-App-"*"-mac"*.zip
+rm -f "$RELEASE_DIR/TODO-App-v"*".apk"
+rm -f "$RELEASE_DIR/TODO-App-v"*"-mac"*.zip
 rm -f "$RELEASE_DIR/"*.exe "$RELEASE_DIR/"*.exe.blockmap
 rm -f "$RELEASE_DIR/"*.yml "$RELEASE_DIR/"*.yaml
 rm -rf "$RELEASE_DIR/mac" "$RELEASE_DIR/mac-arm64" "$RELEASE_DIR/win-unpacked"
@@ -85,9 +88,9 @@ if [ "$BUILD_APK" = true ]; then
     
     if sh build-apk.sh; then
         # 移动 APK 到 release 目录
-        if [ -f "TODO-App.apk" ]; then
-            mv TODO-App.apk "$RELEASE_DIR/"
-            echo -e "${GREEN}✅ Android APK 打包成功 → release/TODO-App.apk${NC}"
+        if [ -f "TODO-App-v${VERSION}.apk" ]; then
+            mv "TODO-App-v${VERSION}.apk" "$RELEASE_DIR/"
+            echo -e "${GREEN}✅ Android APK 打包成功 → release/TODO-App-v${VERSION}.apk${NC}"
         fi
         SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
     else
@@ -105,13 +108,13 @@ if [ "$BUILD_MAC" = true ]; then
     
     if sh build-mac.sh; then
         # 移动 macOS ZIP 到 release 目录
-        if [ -f "TODO-App-0.7.8-mac-x64.zip" ]; then
-            mv TODO-App-0.7.8-mac-x64.zip "$RELEASE_DIR/"
+        if [ -f "TODO-App-v${VERSION}-mac-x64.zip" ]; then
+            mv "TODO-App-v${VERSION}-mac-x64.zip" "$RELEASE_DIR/"
         fi
-        if [ -f "TODO-App-0.7.8-mac-arm64.zip" ]; then
-            mv TODO-App-0.7.8-mac-arm64.zip "$RELEASE_DIR/"
+        if [ -f "TODO-App-v${VERSION}-mac-arm64.zip" ]; then
+            mv "TODO-App-v${VERSION}-mac-arm64.zip" "$RELEASE_DIR/"
         fi
-        echo -e "${GREEN}✅ macOS 打包成功 → release/TODO-App-0.7.8-mac-*.zip${NC}"
+        echo -e "${GREEN}✅ macOS 打包成功 → release/TODO-App-v${VERSION}-mac-*.zip${NC}"
         SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
     else
         echo -e "${RED}❌ macOS 打包失败${NC}"
@@ -158,19 +161,19 @@ echo -e "${BLUE}📦 生成的安装包 (release/ 目录):${NC}"
 echo "=========================================="
 echo ""
 
-if [ "$BUILD_APK" = true ] && [ -f "$RELEASE_DIR/TODO-App.apk" ]; then
-    APK_SIZE=$(ls -lh "$RELEASE_DIR/TODO-App.apk" | awk '{print $5}')
-    echo -e "📱 Android:  ${GREEN}TODO-App.apk${NC} (${APK_SIZE})"
+if [ "$BUILD_APK" = true ] && [ -f "$RELEASE_DIR/TODO-App-v${VERSION}.apk" ]; then
+    APK_SIZE=$(ls -lh "$RELEASE_DIR/TODO-App-v${VERSION}.apk" | awk '{print $5}')
+    echo -e "📱 Android:  ${GREEN}TODO-App-v${VERSION}.apk${NC} (${APK_SIZE})"
 fi
 
 if [ "$BUILD_MAC" = true ]; then
-    if [ -f "$RELEASE_DIR/TODO-App-0.7.8-mac-x64.zip" ]; then
-        MAC_X64_SIZE=$(ls -lh "$RELEASE_DIR/TODO-App-0.7.8-mac-x64.zip" | awk '{print $5}')
-        echo -e "🍎 macOS x64:  ${GREEN}TODO-App-0.7.8-mac-x64.zip${NC} (${MAC_X64_SIZE})"
+    if [ -f "$RELEASE_DIR/TODO-App-v${VERSION}-mac-x64.zip" ]; then
+        MAC_X64_SIZE=$(ls -lh "$RELEASE_DIR/TODO-App-v${VERSION}-mac-x64.zip" | awk '{print $5}')
+        echo -e "🍎 macOS x64:  ${GREEN}TODO-App-v${VERSION}-mac-x64.zip${NC} (${MAC_X64_SIZE})"
     fi
-    if [ -f "$RELEASE_DIR/TODO-App-0.7.8-mac-arm64.zip" ]; then
-        MAC_ARM_SIZE=$(ls -lh "$RELEASE_DIR/TODO-App-0.7.8-mac-arm64.zip" | awk '{print $5}')
-        echo -e "🍎 macOS arm64:  ${GREEN}TODO-App-0.7.8-mac-arm64.zip${NC} (${MAC_ARM_SIZE})"
+    if [ -f "$RELEASE_DIR/TODO-App-v${VERSION}-mac-arm64.zip" ]; then
+        MAC_ARM_SIZE=$(ls -lh "$RELEASE_DIR/TODO-App-v${VERSION}-mac-arm64.zip" | awk '{print $5}')
+        echo -e "🍎 macOS arm64:  ${GREEN}TODO-App-v${VERSION}-mac-arm64.zip${NC} (${MAC_ARM_SIZE})"
     fi
 fi
 

@@ -5,8 +5,11 @@
 
 set -e  # 遇到错误立即退出
 
+# 获取版本号
+VERSION=$(node -p "require('./package.json').version")
+
 echo "=========================================="
-echo "  TODO App - macOS ZIP 打包脚本"
+echo "  TODO App - macOS ZIP 打包脚本 v${VERSION}"
 echo "=========================================="
 echo ""
 
@@ -38,9 +41,6 @@ echo ""
 echo "📦 步骤 4/5: 打包 macOS ZIP..."
 CSC_IDENTITY_AUTO_DISCOVERY=false npm run electron:build-mac 2>&1 | tee /tmp/build-mac.log
 
-# 获取版本号
-VERSION=$(node -p "require('./package.json').version")
-
 echo "✅ ZIP 打包完成"
 echo ""
 
@@ -49,14 +49,14 @@ echo "📂 步骤 5/5: 复制安装包..."
 
 # 检查并复制 x64 版本
 if [ -f "release/TODO App-${VERSION}-mac.zip" ]; then
-    cp "release/TODO App-${VERSION}-mac.zip" "./TODO-App-${VERSION}-mac-x64.zip"
-    echo "✅ x64 安装包: TODO-App-${VERSION}-mac-x64.zip"
+    cp "release/TODO App-${VERSION}-mac.zip" "./TODO-App-v${VERSION}-mac-x64.zip"
+    echo "✅ x64 安装包: TODO-App-v${VERSION}-mac-x64.zip"
 fi
 
 # 检查并复制 arm64 版本
 if [ -f "release/TODO App-${VERSION}-arm64-mac.zip" ]; then
-    cp "release/TODO App-${VERSION}-arm64-mac.zip" "./TODO-App-${VERSION}-mac-arm64.zip"
-    echo "✅ arm64 安装包: TODO-App-${VERSION}-mac-arm64.zip"
+    cp "release/TODO App-${VERSION}-arm64-mac.zip" "./TODO-App-v${VERSION}-mac-arm64.zip"
+    echo "✅ arm64 安装包: TODO-App-v${VERSION}-mac-arm64.zip"
 fi
 
 echo ""
@@ -67,7 +67,7 @@ echo "  ✅ 打包成功！"
 echo "=========================================="
 echo ""
 echo "📦 安装包信息:"
-ls -lh ./TODO-App-${VERSION}-mac-*.zip 2>/dev/null || echo "未找到安装包"
+ls -lh ./TODO-App-v${VERSION}-mac-*.zip 2>/dev/null || echo "未找到安装包"
 echo ""
 echo "🚀 安装方式:"
 echo "   1. 解压 ZIP 文件"

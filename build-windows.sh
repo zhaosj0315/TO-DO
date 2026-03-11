@@ -5,8 +5,11 @@
 
 set -e  # 遇到错误立即退出
 
+# 获取版本号
+VERSION=$(node -p "require('./package.json').version")
+
 echo "=========================================="
-echo "  TODO App - Windows 安装包打包脚本"
+echo "  TODO App - Windows 安装包打包脚本 v${VERSION}"
 echo "=========================================="
 echo ""
 
@@ -28,9 +31,6 @@ echo ""
 # 3. 打包 Windows 安装程序
 echo "📦 步骤 3/3: 打包 Windows 安装程序..."
 npx electron-builder --win
-
-# 获取版本号
-VERSION=$(node -p "require('./package.json').version")
 
 echo "✅ Windows 打包完成"
 echo ""

@@ -5,8 +5,11 @@
 
 set -e
 
+# 获取版本号
+VERSION=$(node -p "require('./package.json').version")
+
 echo "=========================================="
-echo "  TO-DO App APK 一键打包"
+echo "  TO-DO App APK 一键打包 v${VERSION}"
 echo "=========================================="
 
 # 1. 构建Vue项目
@@ -50,12 +53,12 @@ cd ..
 # 5. 复制APK到项目根目录
 echo ""
 echo "📋 [5/5] 复制APK到项目根目录..."
-cp android/app/build/outputs/apk/debug/app-debug.apk TODO-App.apk
+cp android/app/build/outputs/apk/debug/app-debug.apk "TODO-App-v${VERSION}.apk"
 
 # 完成
 echo ""
 echo "=========================================="
 echo "✅ 打包完成！"
-echo "📦 APK位置: $(pwd)/TODO-App.apk"
-echo "📊 文件大小: $(ls -lh TODO-App.apk | awk '{print $5}')"
+echo "📦 APK位置: $(pwd)/TODO-App-v${VERSION}.apk"
+echo "📊 文件大小: $(ls -lh "TODO-App-v${VERSION}.apk" | awk '{print $5}')"
 echo "=========================================="

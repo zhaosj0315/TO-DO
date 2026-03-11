@@ -1,7 +1,10 @@
 #!/bin/bash
 
+# 获取版本号
+VERSION=$(node -p "require('./package.json').version")
+
 echo "=========================================="
-echo "  TODO App - 生成签名 Release APK"
+echo "  TODO App - 生成签名 Release APK v${VERSION}"
 echo "=========================================="
 echo ""
 
@@ -22,16 +25,16 @@ cd ..
 
 # 复制到项目根目录
 if [ -f "android/app/build/outputs/apk/release/app-release.apk" ]; then
-  cp android/app/build/outputs/apk/release/app-release.apk ./TODO-App-Release.apk
+  cp android/app/build/outputs/apk/release/app-release.apk "./TODO-App-v${VERSION}-Release.apk"
   echo ""
   echo "=========================================="
   echo "✅ Release APK 构建成功！"
   echo ""
   echo "📁 文件位置："
   echo "   - android/app/build/outputs/apk/release/app-release.apk"
-  echo "   - TODO-App-Release.apk (已复制到项目根目录)"
+  echo "   - TODO-App-v${VERSION}-Release.apk (已复制到项目根目录)"
   echo ""
-  ls -lh TODO-App-Release.apk
+  ls -lh "TODO-App-v${VERSION}-Release.apk"
   echo ""
   echo "📝 此 APK 可用于："
   echo "   ✓ 上传到应用商店"

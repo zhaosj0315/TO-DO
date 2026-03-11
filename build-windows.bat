@@ -3,8 +3,11 @@ chcp 65001 >nul
 REM Windows Electron 一键打包脚本
 REM 用途：自动构建 TODO App 的 Windows 安装程序
 
+REM 获取版本号
+for /f "tokens=*" %%i in ('node -p "require('./package.json').version"') do set VERSION=%%i
+
 echo ==========================================
-echo   TODO App - Windows 安装包打包脚本
+echo   TODO App - Windows 安装包打包脚本 v%VERSION%
 echo ==========================================
 echo.
 
@@ -41,7 +44,7 @@ echo ==========================================
 echo   ✅ 打包成功！
 echo ==========================================
 echo.
-echo 📦 安装包位置: release\TODO App Setup 1.6.11.exe
+echo 📦 安装包位置: release\TODO App Setup %VERSION%.exe
 echo.
 echo 🚀 安装方式:
 echo    1. 双击运行 Setup 安装程序
