@@ -1,5 +1,13 @@
 <template>
   <div class="graph-overlay" @click.self="$emit('close')">
+    <!-- 🆕 加载动画 -->
+    <div v-if="isLoading" class="loading-overlay">
+      <div class="loading-spinner">
+        <div class="spinner"></div>
+        <p>🕸️ 正在生成关系图谱...</p>
+      </div>
+    </div>
+
     <div class="graph-sheet">
       <!-- 头部 -->
       <div class="graph-header">
@@ -9,7 +17,12 @@
         <h2>🕸️ 任务关系图谱</h2>
         <div class="graph-stats">
           <span class="stat-item">{{ nodes.length }} 个任务</span>
-          <span class="stat-item">{{ edges.length }} 个关系</span>
+          <span class="stat-item">{{ relationStats.total }} 个关系</span>
+          <span v-if="relationStats.links > 0" class="stat-detail">🔗{{ relationStats.links }}</span>
+          <span v-if="relationStats.deps > 0" class="stat-detail">🔒{{ relationStats.deps }}</span>
+          <span v-if="relationStats.subtasks > 0" class="stat-detail">🌳{{ relationStats.subtasks }}</span>
+          <span v-if="relationStats.logs > 0" class="stat-detail">💡{{ relationStats.logs }}</span>
+          <span v-if="relationStats.tags > 0" class="stat-detail">🏷️{{ relationStats.tags }}</span>
           <span v-if="isLimited" class="stat-item warning">
             已限制显示
           </span>
@@ -68,6 +81,18 @@
           />
         </div>
         
+        <!-- 笔记本筛选 -->
+        <select v-model="selectedCollectionId" class="collection-filter">
+          <option :value="null">📚 全部笔记本</option>
+          <option 
+            v-for="collection in taskStore.sortedCollections" 
+            :key="collection.id"
+            :value="collection.id"
+          >
+            {{ '　'.repeat(getCollectionDepth(collection)) }}📁 {{ collection.name }}
+          </option>
+        </select>
+        
         <button 
           :class="['control-btn', { active: showCompleted }]"
           @click="toggleCompleted"
@@ -97,6 +122,18 @@
           @click="showSubtasks = !showSubtasks"
         >
           🌳<span> 父子</span>
+        </button>
+        <button 
+          :class="['control-btn', { active: showLogRelations }]"
+          @click="showLogRelations = !showLogRelations"
+        >
+          💡<span> 阻碍方案</span>
+        </button>
+        <button 
+          :class="['control-btn', { active: showTagRelations }]"
+          @click="showTagRelations = !showTagRelations"
+        >
+          🏷️<span> 标签关系</span>
         </button>
         <button class="control-btn" @click="resetView">
           🔄<span> 重置</span>
@@ -130,16 +167,24 @@
       <!-- 关系类型图例 -->
       <div class="graph-legend">
         <div class="legend-item">
-          <span class="line-sample solid"></span>
+          <span class="line-sample solid purple"></span>
           <span>🔗 引用链接</span>
         </div>
         <div class="legend-item">
-          <span class="line-sample dashed"></span>
+          <span class="line-sample dashed red"></span>
           <span>🔒 依赖关系</span>
         </div>
         <div class="legend-item">
-          <span class="line-sample dotted"></span>
+          <span class="line-sample dotted green"></span>
           <span>🌳 父子关系</span>
+        </div>
+        <div class="legend-item">
+          <span class="line-sample solid orange"></span>
+          <span>💡 阻碍方案</span>
+        </div>
+        <div class="legend-item">
+          <span class="line-sample dotted gray"></span>
+          <span>🏷️ 标签关系</span>
         </div>
       </div>
 
@@ -173,6 +218,7 @@ const emit = defineEmits(['close', 'navigate'])
 
 const taskStore = useOfflineTaskStore()
 const chartRef = ref(null)
+const isLoading = ref(true)  // 🆕 加载状态
 let chartInstance = null
 
 const showCompleted = ref(false)   // 显示已完成任务
@@ -180,6 +226,9 @@ const hideIsolated = ref(false)    // 🆕 隐藏孤立任务
 const showLinks = ref(true)        // 引用链接
 const showDependencies = ref(true) // 依赖关系
 const showSubtasks = ref(true)     // 父子关系
+const showLogRelations = ref(true) // 🆕 阻碍-方案关系（v0.9.1）
+const showTagRelations = ref(false) // 🆕 标签关系（v0.9.2）默认关闭
+const selectedCollectionId = ref(null) // 🆕 笔记本筛选（v0.9.2）
 const searchKeyword = ref('')      // 搜索关键字
 const selectedTaskId = ref(props.centerTaskId) // 选中的任务ID
 const displayLimit = ref(50)       // 显示数量限制
@@ -248,6 +297,11 @@ const graphData = computed(() => {
     ? getRelatedTasks(selectedTaskId.value)
     : taskStore.tasks.filter(t => showCompleted.value || t.status !== 'completed')
 
+  // 🆕 笔记本筛选（v0.9.2）
+  if (selectedCollectionId.value !== null) {
+    tasksToShow = tasksToShow.filter(t => t.collectionId === selectedCollectionId.value)
+  }
+
   // 如果任务数量超过限制，按关系数量排序并截取
   if (tasksToShow.length > displayLimit.value) {
     tasksToShow = tasksToShow
@@ -284,6 +338,18 @@ const graphData = computed(() => {
         borderColor = '#ef4444'  // 逾期红色边框
       }
 
+      // 🆕 检查是否有日志关系（v0.9.1）
+      const logRelations = taskStore.getLogRelations(task.id)
+      const hasUnresolvedBlocks = taskStore.getUnresolvedBlocks(task.id).length > 0
+      
+      if (showLogRelations.value && logRelations.length > 0) {
+        borderWidth = 3
+        borderColor = '#f97316'  // 橙色边框：有阻碍-方案关系
+      } else if (showLogRelations.value && hasUnresolvedBlocks) {
+        borderWidth = 3
+        borderColor = '#ef4444'  // 红色边框：有未解决阻碍
+      }
+
       nodes.push({
         id: String(task.id),
         name: task.text || '未命名任务',
@@ -295,7 +361,10 @@ const graphData = computed(() => {
           opacity: opacity,  // ✨ 状态透明度
           borderWidth: task.id === selectedTaskId.value ? 3 : borderWidth,  // ✨ 状态边框
           borderColor: task.id === selectedTaskId.value ? '#f59e0b' : borderColor
-        }
+        },
+        // 🆕 存储日志关系信息用于tooltip
+        logRelationsCount: logRelations.length,
+        unresolvedBlocksCount: hasUnresolvedBlocks ? taskStore.getUnresolvedBlocks(task.id).length : 0
       })
       nodeMap.add(task.id)
     }
@@ -304,14 +373,19 @@ const graphData = computed(() => {
     if (showLinks.value && task.linkedTasks?.length) {
       task.linkedTasks.forEach(linkedId => {
         if (nodeMap.has(linkedId) || tasksToShow.find(t => t.id === linkedId)) {
+          const linkedTask = taskStore.tasks.find(t => t.id === linkedId)
           edges.push({
             source: String(task.id),
             target: String(linkedId),
             label: { show: false },
             lineStyle: { 
               color: '#8b5cf6',
-              width: 2,
+              width: 3,  // 🔧 引用链接加粗（强关联）
               type: 'solid'
+            },
+            // 🆕 边线tooltip
+            tooltip: {
+              formatter: `🔗 引用链接<br/>${task.text} → ${linkedTask?.text || '未知任务'}`
             }
           })
         }
@@ -322,14 +396,19 @@ const graphData = computed(() => {
     if (showDependencies.value && task.waitFor?.length) {
       task.waitFor.forEach(waitId => {
         if (nodeMap.has(waitId) || tasksToShow.find(t => t.id === waitId)) {
+          const waitTask = taskStore.tasks.find(t => t.id === waitId)
           edges.push({
             source: String(task.id),
             target: String(waitId),
             label: { show: false },
             lineStyle: { 
               color: '#ef4444',
-              width: 2,
+              width: 3,  // 🔧 依赖关系加粗（强关联）
               type: 'dashed'
+            },
+            // 🆕 边线tooltip
+            tooltip: {
+              formatter: `🔒 依赖关系<br/>${task.text} 等待 ${waitTask?.text || '未知任务'}`
             }
           })
         }
@@ -339,17 +418,77 @@ const graphData = computed(() => {
     // 添加父子关系
     if (showSubtasks.value && task.parentTaskId) {
       if (nodeMap.has(task.parentTaskId) || tasksToShow.find(t => t.id === task.parentTaskId)) {
+        const parentTask = taskStore.tasks.find(t => t.id === task.parentTaskId)
         edges.push({
           source: String(task.parentTaskId),
           target: String(task.id),
           label: { show: false },
           lineStyle: { 
             color: '#10b981',
-            width: 2,
+            width: 2,  // 父子关系保持中等粗细
             type: 'dotted'
+          },
+          // 🆕 边线tooltip
+          tooltip: {
+            formatter: `🌳 父子关系<br/>${parentTask?.text || '未知任务'} → ${task.text}`
           }
         })
       }
+    }
+
+    // 🆕 添加日志关系标记（自环边）（v0.9.1）
+    if (showLogRelations.value) {
+      const logRelations = taskStore.getLogRelations(task.id)
+      if (logRelations.length > 0) {
+        // 添加自环边表示任务内部有阻碍-方案关系
+        edges.push({
+          source: String(task.id),
+          target: String(task.id),
+          label: { 
+            show: true,
+            formatter: `💡${logRelations.length}`,
+            fontSize: 10,
+            color: '#f97316'
+          },
+          lineStyle: { 
+            color: '#f97316',
+            width: 2,
+            type: 'solid',
+            curveness: 0.5
+          }
+        })
+      }
+    }
+
+    // 🆕 添加标签关系（v0.9.2）
+    if (showTagRelations.value && task.tags?.length > 0) {
+      // 查找有相同标签的其他任务
+      task.tags.forEach(tag => {
+        tasksToShow.forEach(otherTask => {
+          if (otherTask.id !== task.id && 
+              otherTask.tags?.includes(tag) && 
+              nodeMap.has(otherTask.id)) {
+            // 避免重复边（只添加 id 小的指向 id 大的）
+            if (task.id < otherTask.id) {
+              edges.push({
+                source: String(task.id),
+                target: String(otherTask.id),
+                label: { show: false },
+                lineStyle: { 
+                  color: '#94a3b8',
+                  width: 1,  // 标签关系最细（弱关联）
+                  type: 'dotted',
+                  opacity: 0.3
+                },
+                // 🆕 边线tooltip
+                tooltip: {
+                  formatter: `🏷️ 标签关系<br/>${task.text} ⇄ ${otherTask.text}<br/>共同标签: #${tag}`
+                }
+              })
+            }
+          }
+        })
+      })
     }
   })
 
@@ -358,6 +497,37 @@ const graphData = computed(() => {
 
 const nodes = computed(() => graphData.value.nodes)
 const edges = computed(() => graphData.value.edges)
+
+// 🆕 关系统计（v0.9.2）
+const relationStats = computed(() => {
+  const stats = {
+    total: edges.value.length,
+    links: 0,    // 引用链接
+    deps: 0,     // 依赖关系
+    subtasks: 0, // 父子关系
+    logs: 0,     // 阻碍方案
+    tags: 0      // 标签关系
+  }
+  
+  edges.value.forEach(edge => {
+    // 自环边 = 阻碍方案
+    if (edge.source === edge.target) {
+      stats.logs++
+    }
+    // 根据线条样式判断类型
+    else if (edge.lineStyle.color === '#8b5cf6') {
+      stats.links++  // 紫色 = 引用
+    } else if (edge.lineStyle.color === '#ef4444') {
+      stats.deps++   // 红色 = 依赖
+    } else if (edge.lineStyle.color === '#10b981') {
+      stats.subtasks++ // 绿色 = 父子
+    } else if (edge.lineStyle.color === '#94a3b8') {
+      stats.tags++   // 灰色 = 标签
+    }
+  })
+  
+  return stats
+})
 
 // 🆕 孤立任务（无任何关系）
 const isolatedTasks = computed(() => {
@@ -376,15 +546,17 @@ const isolatedTasks = computed(() => {
   })
 })
 
-// 🆕 判断任务是否孤立
+// 🆕 判断任务是否孤立（v0.9.2 更新：包含日志关系和标签关系）
 function isTaskIsolated(task) {
   const hasLinks = task.linkedTasks?.length > 0
   const hasDeps = task.waitFor?.length > 0
   const hasParent = !!task.parentTaskId
   const hasSubtasks = task.subtasks?.length > 0
   const hasBacklinks = taskStore.getBacklinks(task.id)?.length > 0
+  const hasLogRelations = taskStore.getLogRelations(task.id).length > 0
+  const hasTags = task.tags?.length > 0  // 🆕 标签关系
   
-  return !hasLinks && !hasDeps && !hasParent && !hasSubtasks && !hasBacklinks
+  return !hasLinks && !hasDeps && !hasParent && !hasSubtasks && !hasBacklinks && !hasLogRelations && !hasTags
 }
 
 // 🆕 切换显示已完成任务
@@ -405,7 +577,15 @@ watch(hideIsolated, (newVal) => {
 
 // 🆕 初始化时显示孤立任务提示3秒
 onMounted(() => {
-  initChart()
+  // 🔧 延迟渲染，避免阻塞UI
+  setTimeout(() => {
+    initChart()
+    // 🆕 图表初始化完成后隐藏加载动画
+    setTimeout(() => {
+      isLoading.value = false
+    }, 300)
+  }, 50)
+  
   if (isolatedTasks.value.length > 0) {
     setTimeout(() => {
       showIsolatedHint.value = false
@@ -507,7 +687,19 @@ function getCategoryColor(category) {
     study: '#3b82f6',
     life: '#10b981'
   }
-  return colors[category] || '#999'
+  return colors[category] || '#94a3b8'
+}
+
+// 🆕 获取笔记本层级深度（v0.9.2）
+function getCollectionDepth(collection) {
+  let depth = 0
+  let current = collection
+  while (current.parentId) {
+    depth++
+    current = taskStore.collections.find(c => c.id === current.parentId)
+    if (!current) break
+  }
+  return depth
 }
 
 // 🆕 获取优先级颜色
@@ -531,11 +723,24 @@ function initChart() {
       formatter: (params) => {
         if (params.dataType === 'node') {
           const task = taskStore.tasks.find(t => t.id === parseInt(params.data.id))
-          return `
+          const logRelations = params.data.logRelationsCount || 0
+          const unresolvedBlocks = params.data.unresolvedBlocksCount || 0
+          
+          let tooltip = `
             <strong>${params.data.name}</strong><br/>
             分类：${task?.category === 'work' ? '工作' : task?.category === 'study' ? '学习' : '生活'}<br/>
             优先级：${task?.priority === 'high' ? '高' : task?.priority === 'medium' ? '中' : '低'}
           `
+          
+          // 🆕 添加日志关系信息（v0.9.1）
+          if (logRelations > 0) {
+            tooltip += `<br/>💡 阻碍-方案：${logRelations}个`
+          }
+          if (unresolvedBlocks > 0) {
+            tooltip += `<br/>🚫 未解决阻碍：${unresolvedBlocks}个`
+          }
+          
+          return tooltip
         }
         return ''
       }
@@ -570,9 +775,12 @@ function initChart() {
         fontSize: 12
       },
       force: {
-        repulsion: 200,
-        edgeLength: 150,
-        gravity: 0.1
+        initLayout: 'circular',  // 🔧 圆形初始布局，更快
+        repulsion: 80,           // 🔧 降低斥力（200 → 80）
+        edgeLength: 100,         // 🔧 缩短边长（150 → 100）
+        gravity: 0.1,
+        friction: 0.6            // 🔧 增加摩擦力，快速稳定
+        // 移除 layoutAnimation: false，保留拖动功能
       },
       emphasis: {
         focus: 'adjacency',
@@ -695,6 +903,46 @@ onUnmounted(() => {
   z-index: 2000;
 }
 
+/* 🆕 加载动画 */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 3000;
+  backdrop-filter: blur(5px);
+}
+
+.loading-spinner {
+  text-align: center;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  margin: 0 auto 20px;
+  border: 4px solid #f3f4f6;
+  border-top: 4px solid #8b5cf6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-spinner p {
+  color: #8b5cf6;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
 .graph-sheet {
   width: 100%;
   max-width: 100%;
@@ -755,6 +1003,15 @@ onUnmounted(() => {
   font-weight: 500;
 }
 
+.stat-detail {
+  padding: 2px 8px;
+  background: rgba(139, 92, 246, 0.05);
+  border-radius: 8px;
+  color: #666;
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
 .stat-item.warning {
   background: rgba(245, 158, 11, 0.1);
   color: #f59e0b;
@@ -770,7 +1027,8 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
-.task-selector {
+.task-selector,
+.collection-filter {
   flex: 1;
   min-width: 200px;
   padding: 6px 12px;
@@ -780,6 +1038,10 @@ onUnmounted(() => {
   background: white;
   cursor: pointer;
   transition: border-color 0.2s;
+}
+
+.collection-filter:hover {
+  border-color: #8b5cf6;
 }
 
 .search-input {
@@ -1048,20 +1310,31 @@ onUnmounted(() => {
   display: inline-block;
 }
 
-.line-sample.solid {
+.line-sample.solid.purple {
   background: #8b5cf6;
 }
 
-.line-sample.dashed {
+.line-sample.dashed.red {
   background: linear-gradient(to right, #ef4444 0%, #ef4444 50%, transparent 50%, transparent 100%);
   background-size: 8px 2px;
   background-repeat: repeat-x;
 }
 
-.line-sample.dotted {
+.line-sample.dotted.green {
   background: linear-gradient(to right, #10b981 0%, #10b981 33%, transparent 33%, transparent 100%);
   background-size: 6px 2px;
   background-repeat: repeat-x;
+}
+
+.line-sample.solid.orange {
+  background: #f97316;
+}
+
+.line-sample.dotted.gray {
+  background: linear-gradient(to right, #94a3b8 0%, #94a3b8 33%, transparent 33%, transparent 100%);
+  background-size: 6px 2px;
+  background-repeat: repeat-x;
+  opacity: 0.5;
 }
 
 @media (max-width: 768px) {

@@ -1416,6 +1416,85 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       return task.logs.filter(log => log.type === 'block' && !log.resolved)
     },
 
+    // ========== 🆕 日志关系提取（v0.9.1）==========
+    
+    // 获取任务的阻碍-方案关系
+    getLogRelations(taskId) {
+      const task = this.tasks.find(t => t.id === taskId)
+      if (!task || !task.logs) return []
+      
+      const relations = []
+      task.logs.forEach(log => {
+        if (log.type === 'solution' && log.relatedLogId) {
+          const blockLog = task.logs.find(l => l.id === log.relatedLogId)
+          if (blockLog) {
+            relations.push({
+              id: `${blockLog.id}-${log.id}`,
+              from: blockLog,
+              to: log,
+              taskId: taskId,
+              type: 'block-solution'
+            })
+          }
+        }
+      })
+      return relations
+    },
+
+    // 获取所有任务的日志关系
+    getAllLogRelations() {
+      const allRelations = []
+      this.tasks.forEach(task => {
+        const relations = this.getLogRelations(task.id)
+        allRelations.push(...relations)
+      })
+      return allRelations
+    },
+
+    // 获取有日志关系的任务ID列表
+    getTasksWithLogRelations() {
+      return this.tasks
+        .filter(task => this.getLogRelations(task.id).length > 0)
+        .map(task => task.id)
+    },
+
+    // 统计日志关系数量
+    getLogRelationsStats() {
+      const stats = {
+        totalRelations: 0,
+        tasksWithRelations: 0,
+        avgRelationsPerTask: 0,
+        unresolvedBlocks: 0,
+        resolvedBlocks: 0
+      }
+
+      this.tasks.forEach(task => {
+        const relations = this.getLogRelations(task.id)
+        if (relations.length > 0) {
+          stats.totalRelations += relations.length
+          stats.tasksWithRelations++
+        }
+
+        if (task.logs) {
+          task.logs.forEach(log => {
+            if (log.type === 'block') {
+              if (log.resolved) {
+                stats.resolvedBlocks++
+              } else {
+                stats.unresolvedBlocks++
+              }
+            }
+          })
+        }
+      })
+
+      stats.avgRelationsPerTask = stats.tasksWithRelations > 0
+        ? (stats.totalRelations / stats.tasksWithRelations).toFixed(1)
+        : 0
+
+      return stats
+    },
+
     // ========== 🆕 文件夹/合集管理方法 ==========
     
     // 加载文件夹
