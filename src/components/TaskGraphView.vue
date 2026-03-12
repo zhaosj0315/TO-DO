@@ -15,6 +15,16 @@
 
       <!-- 控制栏 -->
       <div class="graph-controls">
+        <!-- 搜索框 -->
+        <div class="search-box">
+          <input 
+            v-model="searchKeyword" 
+            type="text" 
+            placeholder="🔍 搜索任务..."
+            @input="handleSearch"
+          />
+        </div>
+        
         <button 
           :class="['control-btn', { active: showLinks }]"
           @click="showLinks = !showLinks"
@@ -73,6 +83,33 @@ let chartInstance = null
 const showLinks = ref(true)        // 引用链接
 const showDependencies = ref(true) // 依赖关系
 const showSubtasks = ref(true)     // 父子关系
+const searchKeyword = ref('')      // 搜索关键字
+
+// 🆕 搜索处理
+function handleSearch() {
+  if (!chartInstance) return
+  
+  if (searchKeyword.value.trim()) {
+    // 高亮匹配的节点
+    const keyword = searchKeyword.value.toLowerCase()
+    chartInstance.setOption({
+      series: [{
+        data: nodes.value.map(node => ({
+          ...node,
+          symbolSize: node.name.toLowerCase().includes(keyword) ? 60 : 40,
+          itemStyle: {
+            ...node.itemStyle,
+            borderWidth: node.name.toLowerCase().includes(keyword) ? 4 : 0,
+            borderColor: '#f59e0b'
+          }
+        }))
+      }]
+    })
+  } else {
+    // 重置
+    updateChart()
+  }
+}
 
 // 🆕 构建图谱数据
 const graphData = computed(() => {
@@ -95,7 +132,7 @@ const graphData = computed(() => {
         category: getCategoryIndex(task),
         symbolSize: task.id === props.centerTaskId ? 60 : 40,
         itemStyle: {
-          color: task.id === props.centerTaskId ? '#f59e0b' : getPriorityColor(task.priority)
+          color: task.id === props.centerTaskId ? '#f59e0b' : getCategoryColor(task.category)
         }
       })
       nodeMap.add(task.id)
@@ -195,11 +232,40 @@ function getRelatedTasks(taskId) {
   return Array.from(related)
 }
 
+// 🆕 分类统计
+const categoryStats = computed(() => {
+  const stats = {
+    work: { name: '工作', color: '#8b5cf6', count: 0 },
+    study: { name: '学习', color: '#3b82f6', count: 0 },
+    life: { name: '生活', color: '#10b981', count: 0 }
+  }
+  
+  nodes.value.forEach(node => {
+    const task = taskStore.tasks.find(t => t.id === parseInt(node.id))
+    if (task && stats[task.category]) {
+      stats[task.category].count++
+    }
+  })
+  
+  return Object.values(stats).filter(s => s.count > 0)
+})
+
 // 🆕 获取分类索引
 function getCategoryIndex(task) {
-  if (task.priority === 'high') return 0
-  if (task.priority === 'medium') return 1
-  return 2
+  if (task.category === 'work') return 0
+  if (task.category === 'study') return 1
+  if (task.category === 'life') return 2
+  return 0
+}
+
+// 🆕 获取分类颜色
+function getCategoryColor(category) {
+  const colors = {
+    work: '#8b5cf6',
+    study: '#3b82f6',
+    life: '#10b981'
+  }
+  return colors[category] || '#999'
 }
 
 // 🆕 获取优先级颜色
@@ -222,17 +288,26 @@ function initChart() {
     tooltip: {
       formatter: (params) => {
         if (params.dataType === 'node') {
-          return `<strong>${params.data.name}</strong>`
+          const task = taskStore.tasks.find(t => t.id === parseInt(params.data.id))
+          return `
+            <strong>${params.data.name}</strong><br/>
+            分类：${task?.category === 'work' ? '工作' : task?.category === 'study' ? '学习' : '生活'}<br/>
+            优先级：${task?.priority === 'high' ? '高' : task?.priority === 'medium' ? '中' : '低'}
+          `
         }
         return ''
       }
     },
     legend: [{
-      data: ['高优先级', '中优先级', '低优先级'],
+      data: categoryStats.value.map(s => ({ name: s.name, icon: 'circle', itemStyle: { color: s.color } })),
       orient: 'horizontal',
       left: 'center',
       bottom: 10,
-      textStyle: { color: '#666' }
+      textStyle: { color: '#666' },
+      formatter: (name) => {
+        const stat = categoryStats.value.find(s => s.name === name)
+        return `${name} (${stat?.count || 0})`
+      }
     }],
     series: [{
       type: 'graph',
@@ -240,11 +315,12 @@ function initChart() {
       data: nodes.value,
       links: edges.value,
       categories: [
-        { name: '高优先级' },
-        { name: '中优先级' },
-        { name: '低优先级' }
+        { name: '工作', itemStyle: { color: '#8b5cf6' } },
+        { name: '学习', itemStyle: { color: '#3b82f6' } },
+        { name: '生活', itemStyle: { color: '#10b981' } }
       ],
       roam: true,
+      draggable: true,
       label: {
         show: true,
         position: 'bottom',
@@ -392,6 +468,25 @@ onUnmounted(() => {
   gap: 8px;
   flex-wrap: wrap;
   flex-shrink: 0;
+}
+
+.search-box {
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 6px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.search-box input:focus {
+  border-color: #8b5cf6;
 }
 
 .control-btn {

@@ -89,6 +89,18 @@
               <span class="item-label">图谱</span>
             </div>
             
+            <!-- 🆕 甘特图（v0.9.0）-->
+            <div class="header-item">
+              <button 
+                class="btn-icon-circle btn-gantt" 
+                @click="showGanttChart = true" 
+                title="甘特图"
+              >
+                📊
+              </button>
+              <span class="item-label">甘特图</span>
+            </div>
+            
             <!-- 成长树 -->
             <div class="header-item">
               <div class="growth-tree" @click="showGrowthDetail = true" :title="`成长等级 ${treeLevel} - 点击查看详情`">
@@ -4000,6 +4012,13 @@
       @navigate="handleGraphNavigate"
     />
 
+    <!-- 🆕 甘特图（v0.9.0）-->
+    <GanttChartView
+      v-if="showGanttChart"
+      @close="showGanttChart = false"
+      @navigate="handleGraphNavigate"
+    />
+
     <!-- 🆕 自动补全下拉（v0.9.0）-->
     <AutocompleteDropdown
       :show="showAutocomplete"
@@ -4076,6 +4095,7 @@ import SmartTaskSplitter from '../components/SmartTaskSplitter.vue'
 import CalendarPicker from '../components/CalendarPicker.vue'  // 🆕 日历选择器
 import TagBrowser from '../components/TagBrowser.vue'  // 🆕 标签浏览器（v0.9.0）
 import TaskGraphView from '../components/TaskGraphView.vue'  // 🆕 任务关系图谱（v0.9.0）
+import GanttChartView from '../components/GanttChartView.vue'  // 🆕 甘特图（v0.9.0）
 import AutocompleteDropdown from '../components/AutocompleteDropdown.vue'  // 🆕 自动补全（v0.9.0）
 import { Filesystem, Directory } from '@capacitor/filesystem'
 import { LocalNotifications } from '@capacitor/local-notifications'
@@ -4620,6 +4640,7 @@ const selectedTag = ref(null)  // 当前选中的标签
 // 🆕 任务关系图谱状态（v0.9.0）
 const showTaskGraph = ref(false)
 const graphCenterTaskId = ref(null)  // 图谱中心任务ID
+const showGanttChart = ref(false)  // 🆕 甘特图状态（v0.9.0）
 const collectionToMove = ref(null)  // 🆕 待移动的笔记本
 const editingCollectionId = ref(null)  // 🆕 正在编辑名称的文件夹ID
 const editingCollectionName = ref('')  // 🆕 编辑中的文件夹名称
@@ -14739,6 +14760,12 @@ onMounted(async () => {
       else if (showTaskGraph.value) {
         console.log('✅ 关闭任务关系图谱')
         showTaskGraph.value = false
+        return
+      }
+      // 🆕 第二层：甘特图（v0.9.0）
+      else if (showGanttChart.value) {
+        console.log('✅ 关闭甘特图')
+        showGanttChart.value = false
         return
       }
       // 🆕 第二层：更多文件夹选择
