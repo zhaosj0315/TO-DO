@@ -21,6 +21,23 @@ This is an **offline Android To-Do management application** built with **Vue 3**
   - **Smart Rendering**: Links and tags rendered as clickable elements in Markdown
   - **Context Preview**: See the context where tasks are referenced
   - **Knowledge Graph**: Transform isolated tasks into an interconnected knowledge network
+- **Tag Browser** 🏷️ (v0.9.0):
+  - **Tree Structure**: Hierarchical display of all tags with expand/collapse
+  - **Task Count**: Shows number of tasks for each tag
+  - **Click to Filter**: Tap any tag to filter related tasks
+  - **Bottom Sheet Layout**: Full-width modal with purple gradient header
+- **Task Relationship Graph** 🕸️ (v0.9.0):
+  - **ECharts Visualization**: Interactive network graph of task relationships
+  - **Category Colors**: Work (purple), Study (blue), Life (green)
+  - **Legend Display**: Shows task count for each category
+  - **Search Function**: Highlight matching nodes with keyword search
+  - **Draggable Nodes**: Move individual nodes to adjust layout
+- **Gantt Chart View** 📊 (v0.9.0):
+  - **Timeline Visualization**: View tasks on a time axis
+  - **Multiple Views**: Week / Month / Quarter view modes
+  - **Priority Colors**: High (red), Medium (orange), Low (blue)
+  - **Click to Details**: Tap task bar to open task details
+  - **Bottom Sheet Layout**: Full-screen modal from bottom
 - **Rich Media Attachment System** 📎 (v0.8.9):
   - **Multi-file Type Support**: Images, PDF, Word, Excel, PPT, videos, archives - 8 major types
   - **Dual Upload Methods**: 🖼️ Image button (photo gallery) + 📎 File button (document upload)
@@ -545,12 +562,27 @@ userInfo[username] = {
   - **智能渲染**：链接和标签在 Markdown 中渲染为可点击元素
   - **上下文预览**：查看任务被引用的上下文
   - **知识图谱**：将孤立任务转化为互联的知识网络
-  - **标签浏览器**：树形结构展示所有标签，支持层级导航
-  - **关系图谱**：ECharts 可视化任务关系网络
   - **自动补全**：输入 `[[` 或 `#` 时自动提示任务和标签
+- 🏷️ **标签浏览器**:
+  - **树形结构**：层级展示所有标签，支持展开/折叠
+  - **任务计数**：显示每个标签的任务数量
+  - **点击筛选**：点击标签筛选相关任务
+  - **Bottom Sheet 布局**：全屏弹窗，紫色渐变头部
+- 🕸️ **任务关系图谱**:
+  - **ECharts 可视化**：交互式任务关系网络图
+  - **分类颜色**：工作（紫）、学习（蓝）、生活（绿）
+  - **图例显示**：显示各分类的任务数量
+  - **搜索功能**：关键字搜索并高亮匹配节点
+  - **节点拖动**：移动单个节点调整布局
+- 📊 **甘特图视图**:
+  - **时间轴可视化**：在时间轴上查看任务进度
+  - **多视图模式**：周视图 / 月视图 / 季度视图
+  - **优先级颜色**：高（红）、中（橙）、低（蓝）
+  - **点击查看详情**：点击任务条打开任务详情
+  - **Bottom Sheet 布局**：全屏弹窗从底部滑出
 - 🔙 **Android 返回手势修复**:
-  - 修复标签浏览器、关系图谱、自动补全的返回手势支持
-  - 新增标签筛选清空逻辑
+  - 修复标签浏览器、关系图谱、甘特图的返回手势支持
+  - 修复任务详情弹窗被自动补全拦截
   - 完善多层级返回体验
 
 ### v0.8.9 (2026-03-11)
