@@ -10,6 +10,9 @@
         <div class="graph-stats">
           <span class="stat-item">{{ nodes.length }} 个任务</span>
           <span class="stat-item">{{ edges.length }} 个关系</span>
+          <span v-if="isLimited" class="stat-item warning">
+            已限制显示
+          </span>
         </div>
       </div>
 
@@ -70,6 +73,10 @@ const props = defineProps({
   centerTaskId: {
     type: Number,
     default: null
+  },
+  maxNodes: {
+    type: Number,
+    default: 50  // 默认最多显示50个节点
   }
 })
 
@@ -84,6 +91,13 @@ const showLinks = ref(true)        // 引用链接
 const showDependencies = ref(true) // 依赖关系
 const showSubtasks = ref(true)     // 父子关系
 const searchKeyword = ref('')      // 搜索关键字
+
+// 是否触发了节点数量限制
+const isLimited = computed(() => {
+  if (props.centerTaskId) return false
+  const totalTasks = taskStore.tasks.filter(t => t.status !== 'completed').length
+  return totalTasks > props.maxNodes
+})
 
 // 🆕 搜索处理
 function handleSearch() {
@@ -117,10 +131,24 @@ const graphData = computed(() => {
   const edges = []
   const nodeMap = new Set()
 
-  // 如果指定了中心任务，只显示相关任务
-  const tasksToShow = props.centerTaskId 
+  // 获取要显示的任务
+  let tasksToShow = props.centerTaskId 
     ? getRelatedTasks(props.centerTaskId)
     : taskStore.tasks.filter(t => t.status !== 'completed') // 只显示未完成任务
+
+  // 如果任务数量超过限制，按关系数量排序并截取
+  if (tasksToShow.length > props.maxNodes) {
+    tasksToShow = tasksToShow
+      .map(t => ({
+        ...t,
+        relationCount: (t.linkedTasks?.length || 0) + 
+                      (t.waitFor?.length || 0) + 
+                      (t.subtasks?.length || 0) +
+                      (taskStore.getBacklinks(t.id)?.length || 0)
+      }))
+      .sort((a, b) => b.relationCount - a.relationCount)
+      .slice(0, props.maxNodes)
+  }
 
   tasksToShow.forEach(task => {
     // 添加节点
@@ -459,6 +487,12 @@ onUnmounted(() => {
   border-radius: 12px;
   color: #8b5cf6;
   font-weight: 500;
+}
+
+.stat-item.warning {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  font-size: 0.85rem;
 }
 
 .graph-controls {

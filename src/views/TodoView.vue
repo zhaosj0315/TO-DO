@@ -4008,6 +4008,7 @@
     <TaskGraphView
       v-if="showTaskGraph"
       :center-task-id="graphCenterTaskId"
+      :max-nodes="50"
       @close="showTaskGraph = false"
       @navigate="handleGraphNavigate"
     />
