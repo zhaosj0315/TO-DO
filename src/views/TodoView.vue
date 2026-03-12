@@ -4,8 +4,54 @@
     <main class="main-content glass-card" ref="mainContent">
       <!-- 顶部标题栏 -->
       <header class="header">
-        <div class="header-row">
-          <!-- 左侧按钮组 -->
+        <!-- 第一行：刷新、AI助手、回收站、教程、我的主页 -->
+        <div class="header-row header-row-1">
+          <div class="header-group right-group">
+            <!-- 刷新 -->
+            <div class="header-item">
+              <button class="btn-icon-circle btn-refresh-icon" @click="handleRefresh" :title="t('refresh')">
+                <span :class="{ spinning: isRefreshing }">⟳</span>
+              </button>
+              <span class="item-label">刷新</span>
+            </div>
+            
+            <!-- AI助手 -->
+            <div class="header-item">
+              <button class="btn-icon-circle btn-ai" @click="showAIChat = true" :title="t('aiChat')">
+                🤖
+              </button>
+              <span class="item-label">AI助手</span>
+            </div>
+            
+            <!-- 回收站 -->
+            <div class="header-item">
+              <button class="btn-icon-circle btn-trash" @click="showTrash = true" :title="t('trash')">
+                🗑️
+                <span v-if="taskStore.deletedTasks.length > 0" class="badge-count">{{ taskStore.deletedTasks.length }}</span>
+              </button>
+              <span class="item-label">回收站</span>
+            </div>
+            
+            <!-- 教程 -->
+            <div class="header-item">
+              <button class="btn-icon-circle btn-tutorial" @click="startTutorial" :title="t('tutorial')">
+                💡
+              </button>
+              <span class="item-label">教程</span>
+            </div>
+            
+            <!-- 我的主页 -->
+            <div class="header-item">
+              <button class="btn-avatar" @click="showProfile = true" :title="t('profile')">
+                <span class="username-text">{{ currentUsername }}</span>
+              </button>
+              <span class="item-label">我的主页</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 第二行：笔记本、标签、图谱、成长树 -->
+        <div class="header-row header-row-2">
           <div class="header-group left-group">
             <!-- 笔记本 -->
             <div class="header-item">
@@ -49,50 +95,6 @@
                 <div class="tree-icon" :style="treeStyle">{{ treeIcon }}</div>
               </div>
               <span class="item-label">成长树</span>
-            </div>
-          </div>
-          
-          <!-- 右侧按钮组 -->
-          <div class="header-group right-group">
-            <!-- 刷新 -->
-            <div class="header-item">
-              <button class="btn-icon-circle btn-refresh-icon" @click="handleRefresh" :title="t('refresh')">
-                <span :class="{ spinning: isRefreshing }">⟳</span>
-              </button>
-              <span class="item-label">刷新</span>
-            </div>
-            
-            <!-- AI助手 -->
-            <div class="header-item">
-              <button class="btn-icon-circle btn-ai" @click="showAIChat = true" :title="t('aiChat')">
-                🤖
-              </button>
-              <span class="item-label">AI助手</span>
-            </div>
-            
-            <!-- 回收站 -->
-            <div class="header-item">
-              <button class="btn-icon-circle btn-trash" @click="showTrash = true" :title="t('trash')">
-                🗑️
-                <span v-if="taskStore.deletedTasks.length > 0" class="badge-count">{{ taskStore.deletedTasks.length }}</span>
-              </button>
-              <span class="item-label">回收站</span>
-            </div>
-            
-            <!-- 教程 -->
-            <div class="header-item">
-              <button class="btn-icon-circle btn-tutorial" @click="startTutorial" :title="t('tutorial')">
-                💡
-              </button>
-              <span class="item-label">教程</span>
-            </div>
-            
-            <!-- 我的主页 -->
-            <div class="header-item">
-              <button class="btn-avatar" @click="showProfile = true" :title="t('profile')">
-                <span class="username-text">{{ currentUsername }}</span>
-              </button>
-              <span class="item-label">我的主页</span>
             </div>
           </div>
         </div>
@@ -5358,7 +5360,7 @@ const batchDeleteReports = () => {
 const showVersionModal = ref(false) // 版本历史弹窗
 const versionHistory = ref([]) // 版本历史列表
 const hasUnreadVersions = ref(false) // 是否有未读版本
-const CURRENT_VERSION = '0.8.9' // 当前应用版本
+const CURRENT_VERSION = '0.9.0' // 当前应用版本
 const versionModalTitle = ref('🎉 版本更新') // 弹窗标题（动态）
 
 // 版本历史数据
@@ -5367,6 +5369,38 @@ const showAllVersions = ref(false) // 是否展开全部历史
 const initVersionHistory = () => {
   // 完整版本历史
   const allVersions = [
+    {
+      version: '0.9.0',
+      date: '2026-03-12',
+      features: [
+        '🔗 Obsidian 风格任务关系系统：',
+        '  • 双向链接：使用 [[任务名]] 建立任务关联',
+        '  • 层级标签：使用 #work/project-a 组织任务',
+        '  • 反向链接面板：自动显示哪些任务引用了当前任务',
+        '  • 智能渲染：链接和标签在 Markdown 中渲染为可点击元素',
+        '  • 上下文预览：查看任务被引用的上下文',
+        '  • 知识图谱：将孤立任务转化为互联的知识网络',
+        '🏷️ 标签浏览器：树形结构展示所有标签，支持层级导航',
+        '🕸️ 关系图谱：ECharts 可视化任务关系网络',
+        '✨ 自动补全：输入 [[ 或 # 时自动提示任务和标签'
+      ],
+      improvements: [
+        '🎨 Header 两行布局：第一行右侧功能，第二行左侧功能',
+        '📊 配额管理优化：',
+        '  • 报告历史：30 → 15 → 清空（三重防护）',
+        '  • 回收站：50 → 20（自动清理最旧的）',
+        '  • 删除时间戳：支持按删除时间排序和清理',
+        '🔙 Android 返回手势修复：',
+        '  • 修复标签浏览器、关系图谱、自动补全的返回手势支持',
+        '  • 新增标签筛选清空逻辑',
+        '  • 完善多层级返回体验'
+      ],
+      fixes: [
+        '🐛 修复双向链接点击无法跳转：统一事件名为 open-task-detail',
+        '🐛 修复 localStorage 配额超限：自动清理旧数据',
+        '🐛 修复返回手势优先级问题：任务详情弹窗被自动补全拦截'
+      ]
+    },
     {
       version: '0.8.9',
       date: '2026-03-11',
@@ -13914,10 +13948,11 @@ const autoGenerateReports = async () => {
       showNotification(`🎯 已为您生成去年的年报（${yearlyReport.period.start} 至 ${yearlyReport.period.end}）`, 'success')
     }
     
-    // 🔧 保存前先清理，确保有足够空间
-    if (history.length > 50) {
-      history.splice(50)
-      console.log('🧹 自动裁剪报告历史到 50 个')
+    // 🔧 三重防护：保存前先清理，确保有足够空间
+    // 第一层：限制到 30 个（降低从 50）
+    if (history.length > 30) {
+      history.splice(30)
+      console.log('🧹 自动裁剪报告历史到 30 个')
     }
     
     // 保存更新后的历史
@@ -13925,10 +13960,16 @@ const autoGenerateReports = async () => {
       localStorage.setItem('weekly_reports', JSON.stringify(history))
       console.log('✅ 报告生成完成，已保存')
     } catch (quotaError) {
-      // 如果还是超限，强制清理到 20 个
-      console.warn('⚠️ 配额不足，强制清理到 20 个报告')
-      history.splice(20)
-      localStorage.setItem('weekly_reports', JSON.stringify(history))
+      // 第二层：如果还是超限，强制清理到 15 个
+      console.warn('⚠️ 配额不足，强制清理到 15 个报告')
+      history.splice(15)
+      try {
+        localStorage.setItem('weekly_reports', JSON.stringify(history))
+      } catch (finalError) {
+        // 第三层：最后手段，清空所有报告
+        console.error('❌ 配额严重不足，清空所有报告')
+        localStorage.removeItem('weekly_reports')
+      }
     }
     
     // 记录今天已经提醒过
@@ -16462,14 +16503,25 @@ watch(() => reportData.value, (newData) => {
   margin-bottom: 0.5rem;
   border-bottom: 1px solid var(--glass-border);
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
 }
 
 /* 统一的横向布局 */
 .header-row {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
   width: 100%;
+}
+
+/* 第一行：右对齐 */
+.header-row-1 {
+  justify-content: flex-end;
+}
+
+/* 第二行：左对齐 */
+.header-row-2 {
+  justify-content: flex-start;
 }
 
 /* 左右分组 */

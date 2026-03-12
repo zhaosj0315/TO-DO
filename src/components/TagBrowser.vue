@@ -138,13 +138,13 @@ function handleSelect(path) {
 
 .tag-browser-sheet {
   width: 100%;
-  max-width: 600px;
-  max-height: 80vh;
+  height: 85vh;
   background: white;
   border-radius: 20px 20px 0 0;
   display: flex;
   flex-direction: column;
   animation: slideUp 0.3s ease-out;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
 }
 
 @keyframes slideUp {
@@ -156,49 +156,65 @@ function handleSelect(path) {
   }
 }
 
+/* 🆕 顶部小横条 */
+.tag-browser-sheet::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 4px;
+  background: #ddd;
+  border-radius: 2px;
+}
+
 .browser-header {
-  padding: 16px 20px;
+  padding: 24px 20px 16px;
   border-bottom: 1px solid #f0f0f0;
   display: flex;
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  color: white;
+  border-radius: 20px 20px 0 0;
 }
 
 .back-btn {
-  background: none;
+  background: rgba(255, 255, 255, 0.2);
   border: none;
   font-size: 1rem;
-  color: #8b5cf6;
+  color: white;
   cursor: pointer;
-  padding: 8px;
+  padding: 8px 12px;
   border-radius: 8px;
   transition: background 0.2s;
 }
 
 .back-btn:hover {
-  background: rgba(139, 92, 246, 0.1);
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .browser-header h2 {
   flex: 1;
   margin: 0;
   font-size: 1.2rem;
-  color: #333;
+  color: white;
+  font-weight: 600;
 }
 
 .tag-stats {
   display: flex;
   gap: 12px;
-  font-size: 0.9rem;
-  color: #666;
+  font-size: 0.85rem;
 }
 
 .stat-item {
   padding: 4px 12px;
-  background: rgba(139, 92, 246, 0.1);
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 12px;
-  color: #8b5cf6;
+  color: white;
   font-weight: 500;
 }
 
@@ -206,6 +222,7 @@ function handleSelect(path) {
   flex: 1;
   overflow-y: auto;
   padding: 16px;
+  background: #fafafa;
 }
 
 .empty-state {

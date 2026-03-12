@@ -357,7 +357,7 @@ const bindFileCardEvents = () => {
       e.stopPropagation()
       const taskId = parseInt(link.getAttribute('data-task-id'))
       console.log('🔗 任务链接被点击:', taskId)
-      window.dispatchEvent(new CustomEvent('navigate-to-task', { 
+      window.dispatchEvent(new CustomEvent('open-task-detail', { 
         detail: { taskId } 
       }))
     }

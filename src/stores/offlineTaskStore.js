@@ -190,8 +190,29 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       }
       
       // 1. 本地存储（主数据源，优先保存）
-      await Preferences.set({ key: tasksKey, value: JSON.stringify(this.tasks) })
-      await Preferences.set({ key: `deletedTasks_${this.currentUser}`, value: JSON.stringify(this.deletedTasks) })
+      try {
+        await Preferences.set({ key: tasksKey, value: JSON.stringify(this.tasks) })
+        
+        // 🔧 回收站配额管理：限制到 50 个，超出自动清理最旧的
+        if (this.deletedTasks.length > 50) {
+          console.log(`🧹 回收站超限（${this.deletedTasks.length}个），自动清理到 50 个`)
+          // 按删除时间排序（最新的在前）
+          this.deletedTasks.sort((a, b) => {
+            const timeA = a.deleted_at || a.created_at || 0
+            const timeB = b.deleted_at || b.created_at || 0
+            return new Date(timeB) - new Date(timeA)
+          })
+          // 只保留最新的 50 个
+          this.deletedTasks = this.deletedTasks.slice(0, 50)
+        }
+        
+        await Preferences.set({ key: `deletedTasks_${this.currentUser}`, value: JSON.stringify(this.deletedTasks) })
+      } catch (quotaError) {
+        console.error('❌ 配额不足，尝试紧急清理')
+        // 紧急清理：回收站只保留 20 个
+        this.deletedTasks = this.deletedTasks.slice(0, 20)
+        await Preferences.set({ key: `deletedTasks_${this.currentUser}`, value: JSON.stringify(this.deletedTasks) })
+      }
       
       console.log('✅ saveTasks - 本地 Preferences 保存完成')
       
@@ -1507,6 +1528,8 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       if (action === 'delete') {
         // 级联删除：删除所有任务和子文件夹
         tasksInCollection.forEach(task => {
+          // 🔧 添加删除时间戳
+          task.deleted_at = new Date().toISOString()
           this.deletedTasks.push(task)
         })
         this.tasks = this.tasks.filter(t => t.collectionId !== id)
