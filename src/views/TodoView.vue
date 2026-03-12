@@ -4038,6 +4038,8 @@
     <CalendarView
       v-if="showCalendar"
       @close="showCalendar = false"
+      @openTask="openTaskFromCalendar"
+      @createTask="createTaskFromCalendar"
     />
 
     <!-- 🆕 自动补全下拉（v0.9.0）-->
@@ -5405,7 +5407,7 @@ const batchDeleteReports = () => {
 const showVersionModal = ref(false) // 版本历史弹窗
 const versionHistory = ref([]) // 版本历史列表
 const hasUnreadVersions = ref(false) // 是否有未读版本
-const CURRENT_VERSION = '0.9.0' // 当前应用版本
+const CURRENT_VERSION = '0.9.1' // 当前应用版本
 const versionModalTitle = ref('🎉 版本更新') // 弹窗标题（动态）
 
 // 版本历史数据
@@ -5415,7 +5417,7 @@ const initVersionHistory = () => {
   // 完整版本历史
   const allVersions = [
     {
-      version: '0.9.0',
+      version: '0.9.1',
       date: '2026-03-12',
       features: [
         '🔗 Obsidian 风格任务关系系统：',
@@ -5425,6 +5427,7 @@ const initVersionHistory = () => {
         '  • 智能渲染：链接和标签在 Markdown 中渲染为可点击元素',
         '  • 上下文预览：查看任务被引用的上下文',
         '  • 知识图谱：将孤立任务转化为互联的知识网络',
+        '  • 自动补全：输入 [[ 或 # 时自动提示任务和标签',
         '🏷️ 标签浏览器：',
         '  • 树形结构展示所有标签，支持层级导航',
         '  • Bottom Sheet 全屏布局，紫色渐变头部',
@@ -5441,12 +5444,19 @@ const initVersionHistory = () => {
         '  • 按优先级颜色编码（红/橙/蓝）',
         '  • 点击任务条查看详情',
         '  • Bottom Sheet 全屏布局',
-        '✨ 自动补全：输入 [[ 或 # 时自动提示任务和标签'
+        '📅 日历视图：',
+        '  • 月视图：42天网格展示任务分布',
+        '  • 任务统计：显示每天的任务数量',
+        '  • 优先级标记：红/橙/绿圆点标识高/中/低优先级',
+        '  • 点击查看：点击日期查看当天所有任务',
+        '  • 今天高亮：紫色边框标识今天',
+        '  • 任务下钻：点击任务名称跳转到任务详情页面',
+        '  • Bottom Sheet 布局：从底部滑出，左右全屏'
       ],
       improvements: [
         '🎨 Header 两行布局：',
         '  • 第一行：刷新、AI助手、回收站、教程、我的主页',
-        '  • 第二行：笔记本、标签、图谱、甘特图、成长树',
+        '  • 第二行：笔记本、标签、图谱、甘特图、日历、成长树',
         '📊 配额管理优化：',
         '  • 报告历史：30 → 15 → 清空（三重防护）',
         '  • 回收站：50 → 20（自动清理最旧的）',
@@ -5460,8 +5470,14 @@ const initVersionHistory = () => {
         '  • 删除日视图（对天级别任务无意义）',
         '  • 默认周视图（最常用）',
         '  • 新增季度视图（适合长期规划）',
-        '🔙 Android 返回手势修复：',
-        '  • 修复标签浏览器、关系图谱、甘特图的返回手势',
+        '📅 日历优化：',
+        '  • 已完成任务和待办任务都可以点击查看详情',
+        '  • 移动端响应式布局，完美适配手机',
+        '💾 备份提醒优化：',
+        '  • 按用户隔离，每个用户只在首次登录时提醒一次',
+        '  • 修复多用户场景下备份提醒混乱问题',
+        '🔙 Android 返回手势全面支持：',
+        '  • 标签浏览器、关系图谱、甘特图、日历视图',
         '  • 修复任务详情弹窗被自动补全拦截',
         '  • 完善多层级返回体验'
       ],
@@ -5471,7 +5487,9 @@ const initVersionHistory = () => {
         '🐛 修复返回手势优先级问题：调整判断顺序',
         '🐛 修复甘特图渲染问题：renderItem 数据访问修复',
         '🐛 修复甘特图左边距超出：增加 grid.left 和容器内边距',
-        '🐛 修复视图切换无效：添加时间范围计算逻辑'
+        '🐛 修复视图切换无效：添加时间范围计算逻辑',
+        '🐛 修复日历已完成任务无法点击跳转：添加缺失的 @click 事件',
+        '🐛 修复备份提醒每次刷新都弹出：改为按用户隔离的 key 存储'
       ]
     },
     {
@@ -9734,6 +9752,39 @@ const handleTaskDetailRefresh = () => {
   }
 }
 
+// 方法：从日历打开任务详情
+const openTaskFromCalendar = (task) => {
+  openTaskDetail(task)
+}
+
+// 方法：从日历创建任务
+const createTaskFromCalendar = (date) => {
+  console.log('📅 createTaskFromCalendar 收到日期:', date)
+  
+  // 格式化日期为 YYYY-MM-DD
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const dateStr = `${year}-${month}-${day}`
+  
+  console.log('📅 格式化后的日期:', dateStr)
+  
+  // 设置任务类型为自定义日期，并预填日期
+  newTaskType.value = 'custom_date'
+  customDateTime.value = dateStr
+  
+  console.log('📅 已设置 newTaskType:', newTaskType.value)
+  console.log('📅 已设置 customDateTime:', customDateTime.value)
+  
+  // 滚动到顶部并聚焦输入框
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+  nextTick(() => {
+    const input = document.querySelector('.quick-task-input')
+    console.log('📅 找到输入框:', input)
+    if (input) input.focus()
+  })
+}
+
 // 处理显示loading
 const handleShowLoading = ({ text, subText }) => {
   aiLoading.value = true
@@ -12995,12 +13046,16 @@ const handleTagFilter = (tagPath) => {
 
 // 🆕 图谱导航处理（v0.9.0）
 const handleGraphNavigate = (taskId) => {
+  console.log('📍 handleGraphNavigate 收到任务ID:', taskId)
   const task = taskStore.tasks.find(t => t.id === taskId)
+  console.log('📍 找到的任务:', task)
   if (task) {
     showTaskGraph.value = false
     setTimeout(() => {
       openTaskDetail(task)
     }, 300)
+  } else {
+    console.warn('⚠️ 未找到任务:', taskId)
   }
 }
 
@@ -14223,10 +14278,10 @@ onMounted(async () => {
     }, 2000)
   }
   
-  // 检查是否需要显示首次登录备份提醒
-  const { value: showReminder } = await Preferences.get({ key: 'showBackupReminder' })
+  // 检查是否需要显示首次登录备份提醒（按用户隔离）
+  const { value: showReminder } = await Preferences.get({ key: `showBackupReminder_${userStore.currentUser}` })
   if (showReminder === 'true') {
-    await Preferences.remove({ key: 'showBackupReminder' })
+    await Preferences.remove({ key: `showBackupReminder_${userStore.currentUser}` })
     setTimeout(() => {
       showBackupReminder.value = true
     }, 500)
@@ -14696,6 +14751,10 @@ onMounted(async () => {
         console.log('✅ 关闭添加日志')
         showAddLogModal.value = false
         currentLogTask.value = null
+        return
+      } else if (showCalendar.value) {
+        console.log('✅ 关闭日历视图')
+        showCalendar.value = false
         return
       } else if (showTaskPreview.value) {
         console.log('✅ 关闭任务预览')

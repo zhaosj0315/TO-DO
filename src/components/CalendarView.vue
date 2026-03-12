@@ -1,8 +1,14 @@
 <template>
   <div class="calendar-modal" @click.self="$emit('close')">
     <div class="calendar-container">
-      <!-- 关闭按钮 -->
-      <button class="close-btn-top" @click="$emit('close')">✕</button>
+      <!-- 顶部小横条 -->
+      <div class="drag-handle"></div>
+      
+      <!-- 头部标题栏 -->
+      <div class="modal-header-bar">
+        <h2 class="modal-title">📅 日历视图</h2>
+        <button class="close-btn-top" @click="$emit('close')">✕</button>
+      </div>
       
       <div class="calendar-view">
     <!-- 头部：月份切换 -->
@@ -53,7 +59,12 @@
           <!-- 已完成 -->
           <div v-if="completedTasks.length > 0" class="task-section">
             <div class="section-title">✅ 已完成 ({{ completedTasks.length }})</div>
-            <div v-for="task in completedTasks" :key="task.id" class="task-item completed">
+            <div
+              v-for="task in completedTasks"
+              :key="task.id"
+              class="task-item completed"
+              @click="openTaskDetail(task)"
+            >
               <span class="task-text">{{ task.text }}</span>
             </div>
           </div>
@@ -97,7 +108,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useOfflineTaskStore } from '../stores/offlineTaskStore'
 
 // 定义 emit
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'openTask', 'createTask'])
 
 const taskStore = useOfflineTaskStore()
 
@@ -253,22 +264,25 @@ function closeDayTasks() {
 
 // 打开任务详情
 function openTaskDetail(task) {
-  // 触发父组件的任务详情事件
-  // 这里需要通过 emit 或者直接调用 taskStore 的方法
   closeDayTasks()
+  emit('close')
+  emit('openTask', task)
 }
 
 // 快速创建任务
 function quickCreateTask() {
-  // 预填选中的日期
+  console.log('📅 快速创建任务 - 选中日期:', selectedDateStr.value)
   const date = new Date(selectedDateStr.value)
-  // 触发父组件的创建任务事件，传入预填日期
+  console.log('📅 Date对象:', date)
   closeDayTasks()
+  emit('close')
+  emit('createTask', date)
+  console.log('📅 已触发 createTask 事件')
 }
 </script>
 
 <style scoped>
-/* 全屏弹窗 */
+/* Bottom Sheet 全屏弹窗（从底部滑出，左右全屏） */
 .calendar-modal {
   position: fixed;
   top: 0;
@@ -277,42 +291,68 @@ function quickCreateTask() {
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-end;
   z-index: 10000;
   animation: fadeIn 0.2s;
 }
 
 .calendar-container {
-  width: 90%;
-  max-width: 900px;
-  max-height: 90vh;
+  width: 100%;
+  max-height: 95vh;
   background: white;
-  border-radius: 20px;
-  padding: 2rem;
+  border-radius: 20px 20px 0 0;
+  padding: 0;
   overflow-y: auto;
   position: relative;
-  animation: slideIn 0.3s;
+  animation: slideUp 0.3s;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* 顶部小横条 */
+.drag-handle {
+  width: 40px;
+  height: 4px;
+  background: #d1d5db;
+  border-radius: 2px;
+  margin: 12px auto 8px;
+  flex-shrink: 0;
+}
+
+/* 头部标题栏（紫色渐变） */
+.modal-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: white;
 }
 
 .close-btn-top {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background: #f3f4f6;
+  background: rgba(255, 255, 255, 0.2);
   border: none;
   width: 36px;
   height: 36px;
   border-radius: 50%;
   cursor: pointer;
   font-size: 1.2rem;
-  color: #666;
-  z-index: 10;
+  color: white;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 
 .close-btn-top:hover {
-  background: #e5e7eb;
+  background: rgba(255, 255, 255, 0.3);
   transform: scale(1.1);
 }
 
@@ -320,7 +360,7 @@ function quickCreateTask() {
   width: 100%;
   max-width: 800px;
   margin: 0 auto;
-  padding: 1rem;
+  padding: 1.5rem;
 }
 
 /* 头部 */
@@ -576,11 +616,6 @@ function quickCreateTask() {
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
-}
-
-@keyframes slideIn {
-  from { transform: scale(0.9); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
 }
 
 @keyframes slideUp {

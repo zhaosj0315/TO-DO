@@ -488,9 +488,9 @@ const handleLogin = async () => {
       await Preferences.set({ key: 'userInfo', value: JSON.stringify(userInfo) })
     }
     
-    // 标记首次登录状态
+    // 标记首次登录状态（按用户隔离）
     if (isFirstLogin) {
-      await Preferences.set({ key: 'showBackupReminder', value: 'true' })
+      await Preferences.set({ key: `showBackupReminder_${username.value}`, value: 'true' })
     }
     
     emit('notify', { message: '登录成功！', type: 'success' })

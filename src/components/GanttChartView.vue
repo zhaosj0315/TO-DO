@@ -15,36 +15,23 @@
 
       <!-- 控制栏 -->
       <div class="gantt-controls">
-        <div class="control-group">
-          <button 
-            :class="['control-btn', { active: viewMode === 'week' }]"
-            @click="viewMode = 'week'"
-          >
-            📅 周视图
-          </button>
-          <button 
-            :class="['control-btn', { active: viewMode === 'month' }]"
-            @click="viewMode = 'month'"
-          >
-            📆 月视图
-          </button>
-          <button 
-            :class="['control-btn', { active: viewMode === 'quarter' }]"
-            @click="viewMode = 'quarter'"
-          >
-            📊 季度视图
-          </button>
-        </div>
-        <div class="mobile-hint">💡 左右滑动查看完整时间轴</div>
+        <div class="mobile-hint">💡 左右滑动查看完整时间轴 · 自动适配任务时间范围</div>
       </div>
 
       <!-- 图表容器 -->
       <div class="gantt-wrapper">
         <div ref="chartRef" class="gantt-container"></div>
+        
+        <!-- 🆕 显示更多按钮 -->
+        <div v-if="hasMoreTasks" class="load-more">
+          <button @click="showMoreTasks" class="load-more-btn">
+            显示更多任务 (还有 {{ remainingTasks }} 个)
+          </button>
+        </div>
       </div>
 
       <!-- 空状态 -->
-      <div v-if="ganttData.length === 0" class="empty-state">
+      <div v-if="allGanttData.length === 0" class="empty-state">
         <span class="icon">📊</span>
         <p>暂无任务数据</p>
         <p class="hint">请为任务设置截止时间以显示在甘特图中</p>
@@ -65,56 +52,72 @@ const chartRef = ref(null)
 let chartInstance = null
 
 const viewMode = ref('week') // week, month, quarter
+const displayLimit = ref(8) // 🆕 默认只显示8个任务
 
 // 统计
-const totalTasks = computed(() => ganttData.value.length)
+const totalTasks = computed(() => allGanttData.value.length) // 🆕 改为统计全部任务
 const inProgressTasks = computed(() => 
-  ganttData.value.filter(t => t.status === 'pending').length
+  allGanttData.value.filter(t => t.status === 'pending').length
 )
 
 // 计算时间范围
 const timeRange = computed(() => {
-  const now = new Date()
-  let start, end
-  
-  switch (viewMode.value) {
-    case 'week':
-      // 本周一到周日
-      const dayOfWeek = now.getDay() || 7 // 周日为0，改为7
-      start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek + 1)
-      end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + (7 - dayOfWeek))
-      end.setHours(23, 59, 59)
-      break
-    case 'month':
-      // 本月1号到月底
-      start = new Date(now.getFullYear(), now.getMonth(), 1)
-      end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
-      break
-    case 'quarter':
-      // 本季度第一天到最后一天
-      const currentMonth = now.getMonth()
-      const quarterStartMonth = Math.floor(currentMonth / 3) * 3
-      start = new Date(now.getFullYear(), quarterStartMonth, 1)
-      end = new Date(now.getFullYear(), quarterStartMonth + 3, 0, 23, 59, 59)
-      break
-    default:
-      start = new Date(now.getFullYear(), now.getMonth(), 1)
-      end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+  // 🔧 修复：根据实际任务的时间范围自动调整
+  if (ganttData.value.length === 0) {
+    const now = new Date()
+    return { 
+      start: now.getTime(), 
+      end: now.getTime() + 7 * 24 * 60 * 60 * 1000 
+    }
   }
   
-  return { start: start.getTime(), end: end.getTime() }
+  // 找出所有任务的最早开始时间和最晚结束时间
+  let minTime = Infinity
+  let maxTime = -Infinity
+  
+  ganttData.value.forEach(task => {
+    if (task.value[0] < minTime) minTime = task.value[0]
+    if (task.value[1] > maxTime) maxTime = task.value[1]
+  })
+  
+  // 添加一些边距（前后各加10%）
+  const timeSpan = maxTime - minTime
+  const padding = timeSpan * 0.1
+  
+  console.log('📊 自动计算时间范围:')
+  console.log('  最早:', new Date(minTime))
+  console.log('  最晚:', new Date(maxTime))
+  console.log('  时间跨度:', Math.round(timeSpan / (24 * 60 * 60 * 1000)), '天')
+  
+  return { 
+    start: minTime - padding, 
+    end: maxTime + padding 
+  }
 })
 
-// 构建甘特图数据
-const ganttData = computed(() => {
+// 构建甘特图数据（全部任务）
+const allGanttData = computed(() => {
   const data = taskStore.tasks
     .filter(t => t.customDate) // 只显示有截止时间的任务
     .map(task => {
       const startTime = new Date(task.created_at)
-      const endTime = new Date(task.customDate + (task.customTime ? ` ${task.customTime}` : ' 23:59'))
+      
+      // 🔧 修复：正确解析日期
+      let endTime
+      if (task.customTime) {
+        // 有时间：2026-03-12 14:30
+        endTime = new Date(`${task.customDate} ${task.customTime}`)
+      } else {
+        // 无时间：2026-03-12 23:59
+        endTime = new Date(`${task.customDate} 23:59:59`)
+      }
+      
+      console.log('📊 任务:', task.text)
+      console.log('  开始时间:', startTime, startTime.getTime())
+      console.log('  结束时间:', endTime, endTime.getTime())
       
       return {
-        name: task.text,
+        name: task.text || '未命名任务',
         value: [
           startTime.getTime(),
           endTime.getTime()
@@ -125,15 +128,46 @@ const ganttData = computed(() => {
         },
         status: task.status,
         priority: task.priority,
-        taskId: task.id
+        taskId: task.id,
+        deadline: endTime.getTime()
       }
     })
-    .sort((a, b) => a.value[0] - b.value[0]) // 按开始时间排序
+    .filter(task => {
+      // 🔧 过滤掉无效的时间数据
+      return !isNaN(task.value[0]) && !isNaN(task.value[1]) && task.value[1] > task.value[0]
+    })
+    .sort((a, b) => {
+      // 🆕 优先显示：高优先级 + 即将到期
+      const priorityWeight = { high: 3, medium: 2, low: 1 }
+      if (priorityWeight[a.priority] !== priorityWeight[b.priority]) {
+        return priorityWeight[b.priority] - priorityWeight[a.priority]
+      }
+      return a.deadline - b.deadline
+    })
   
-  console.log('📊 甘特图数据:', data.length, '个任务')
-  console.log('📊 示例数据:', data[0])
+  console.log('📊 甘特图全部数据:', data.length, '个任务')
   return data
 })
+
+// 🆕 显示的任务数据（限制数量）
+const ganttData = computed(() => {
+  return allGanttData.value.slice(0, displayLimit.value)
+})
+
+// 🆕 是否还有更多任务
+const hasMoreTasks = computed(() => {
+  return allGanttData.value.length > displayLimit.value
+})
+
+// 🆕 剩余任务数量
+const remainingTasks = computed(() => {
+  return allGanttData.value.length - displayLimit.value
+})
+
+// 🆕 显示更多任务
+const showMoreTasks = () => {
+  displayLimit.value += 8
+}
 
 // 优先级颜色
 function getPriorityColor(priority) {
@@ -148,6 +182,10 @@ function getPriorityColor(priority) {
 // 初始化图表
 function initChart() {
   if (!chartRef.value || ganttData.value.length === 0) return
+
+  // 🆕 设置容器高度
+  const chartHeight = Math.max(ganttData.value.length * 50 + 150, 400)
+  chartRef.value.style.height = `${chartHeight}px`
 
   chartInstance = echarts.init(chartRef.value)
 
@@ -173,35 +211,69 @@ function initChart() {
       }
     },
     grid: {
-      left: isMobile ? 80 : 200,
-      right: isMobile ? 20 : 60,
+      left: isMobile ? 20 : 20,  // ✨ 与返回按钮左对齐
+      right: isMobile ? 20 : 40,
       top: 80,
       bottom: 50,
+      height: Math.max(ganttData.value.length * 50, 300),
       containLabel: true
     },
     xAxis: {
       type: 'time',
       min: timeRange.value.start,
       max: timeRange.value.end,
+      splitLine: {
+        show: true,
+        lineStyle: {
+          color: '#e5e7eb',
+          type: 'solid',
+          width: 1
+        }
+      },
+      axisLine: {
+        lineStyle: {
+          color: '#d1d5db',
+          width: 1
+        }
+      },
       axisLabel: {
-        fontSize: isMobile ? 10 : 12,
+        fontSize: isMobile ? 11 : 12,
+        color: '#6b7280',
         formatter: (value) => {
           const date = new Date(value)
-          if (viewMode.value === 'week') {
-            return `${date.getMonth() + 1}/${date.getDate()}`
-          } else if (viewMode.value === 'month') {
-            return `${date.getMonth() + 1}/${date.getDate()}`
-          } else {
-            return `${date.getMonth() + 1}月`
-          }
+          return `${date.getMonth() + 1}/${date.getDate()}`
         }
       }
     },
     yAxis: {
       type: 'category',
       data: taskNames,
+      splitLine: {
+        show: true,
+        lineStyle: {
+          color: '#f3f4f6',
+          type: 'solid',
+          width: 1
+        }
+      },
+      axisLine: {
+        show: true,  // ✨ 显示Y轴线作为分隔线
+        lineStyle: {
+          color: '#d1d5db',
+          width: 2
+        }
+      },
+      axisTick: {
+        show: false
+      },
       axisLabel: {
-        fontSize: isMobile ? 11 : 13
+        fontSize: isMobile ? 12 : 14,
+        color: '#1f2937',
+        fontWeight: 500,
+        align: 'left',
+        padding: [0, 8, 0, 20],  // ✨ 左边距20px，与返回按钮对齐
+        overflow: 'truncate',
+        ellipsis: '...'
       }
     },
     series: [
@@ -213,22 +285,64 @@ function initChart() {
           const end = api.coord([api.value(1), categoryIndex])
           const height = api.size([0, 1])[1] * 0.6
           
-          // 从 ganttData 中获取数据
           const taskData = ganttData.value[categoryIndex]
+          
+          // ✨ 优先级渐变色
+          let gradient
+          if (taskData.priority === 'high') {
+            gradient = new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+              { offset: 0, color: '#ef4444' },
+              { offset: 1, color: '#dc2626' }
+            ])
+          } else if (taskData.priority === 'medium') {
+            gradient = new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+              { offset: 0, color: '#f59e0b' },
+              { offset: 1, color: '#d97706' }
+            ])
+          } else {
+            gradient = new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+              { offset: 0, color: '#3b82f6' },
+              { offset: 1, color: '#2563eb' }
+            ])
+          }
 
           return {
             type: 'rect',
             shape: {
               x: start[0],
               y: start[1] - height / 2,
-              width: end[0] - start[0],
-              height: height
+              width: Math.max(end[0] - start[0], 2),
+              height: height,
+              r: 6  // ✨ 圆角
             },
             style: {
-              fill: taskData.itemStyle.color,
-              opacity: taskData.itemStyle.opacity
+              fill: gradient,
+              opacity: taskData.status === 'completed' ? 0.5 : 0.85,  // ✨ 半透明效果
+              shadowBlur: 4,
+              shadowColor: 'rgba(0,0,0,0.15)',
+              shadowOffsetY: 2
             }
           }
+        },
+        markLine: {
+          symbol: 'none',
+          lineStyle: {
+            color: '#ef4444',  // 红色
+            width: 2,
+            type: 'solid'
+          },
+          label: {
+            show: true,
+            formatter: '今天',
+            position: 'insideEndTop',
+            color: '#ef4444',
+            fontSize: 12,
+            fontWeight: 'bold',
+            backgroundColor: 'rgba(255,255,255,0.9)',
+            padding: [4, 8],
+            borderRadius: 4
+          },
+          data: [{ xAxis: new Date().getTime() }]
         },
         encode: {
           x: [0, 1],
@@ -249,8 +363,8 @@ function initChart() {
   })
 }
 
-// 监听数据变化和视图模式变化
-watch([ganttData, viewMode], () => {
+// 监听数据变化
+watch(ganttData, () => {
   if (chartInstance) {
     chartInstance.dispose()
   }
@@ -479,8 +593,9 @@ onUnmounted(() => {
 }
 
 .gantt-container {
-  min-width: 100%;
-  min-height: 100%;
+  width: 100%;
+  height: 100%;
+  min-height: 400px; /* 🆕 确保有最小高度 */
   background: #fafafa;
   padding: 0 10px;
 }
@@ -524,6 +639,35 @@ onUnmounted(() => {
   .empty-state .icon {
     font-size: 3rem;
   }
+}
+
+/* 🆕 显示更多按钮 */
+.load-more {
+  padding: 20px;
+  text-align: center;
+  background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.95));
+}
+
+.load-more-btn {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.load-more-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.load-more-btn:active {
+  transform: translateY(0);
 }
 
 .empty-state p {
