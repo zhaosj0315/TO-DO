@@ -35,10 +35,13 @@
             📊 季度视图
           </button>
         </div>
+        <div class="mobile-hint">💡 左右滑动查看完整时间轴</div>
       </div>
 
       <!-- 图表容器 -->
-      <div ref="chartRef" class="gantt-container"></div>
+      <div class="gantt-wrapper">
+        <div ref="chartRef" class="gantt-container"></div>
+      </div>
 
       <!-- 空状态 -->
       <div v-if="ganttData.length === 0" class="empty-state">
@@ -148,7 +151,12 @@ function initChart() {
 
   chartInstance = echarts.init(chartRef.value)
 
-  const taskNames = ganttData.value.map(t => t.name.substring(0, 15) + (t.name.length > 15 ? '...' : ''))
+  // 移动端优化：任务名称截断
+  const isMobile = window.innerWidth < 768
+  const maxNameLength = isMobile ? 8 : 15
+  const taskNames = ganttData.value.map(t => 
+    t.name.substring(0, maxNameLength) + (t.name.length > maxNameLength ? '...' : '')
+  )
 
   const option = {
     tooltip: {
@@ -165,8 +173,8 @@ function initChart() {
       }
     },
     grid: {
-      left: 200,
-      right: 60,
+      left: isMobile ? 80 : 200,
+      right: isMobile ? 20 : 60,
       top: 80,
       bottom: 50,
       containLabel: true
@@ -176,6 +184,7 @@ function initChart() {
       min: timeRange.value.start,
       max: timeRange.value.end,
       axisLabel: {
+        fontSize: isMobile ? 10 : 12,
         formatter: (value) => {
           const date = new Date(value)
           if (viewMode.value === 'week') {
@@ -183,7 +192,6 @@ function initChart() {
           } else if (viewMode.value === 'month') {
             return `${date.getMonth() + 1}/${date.getDate()}`
           } else {
-            // 季度视图：显示月/日
             return `${date.getMonth() + 1}月`
           }
         }
@@ -191,7 +199,10 @@ function initChart() {
     },
     yAxis: {
       type: 'category',
-      data: taskNames
+      data: taskNames,
+      axisLabel: {
+        fontSize: isMobile ? 11 : 13
+      }
     },
     series: [
       {
@@ -316,6 +327,14 @@ onUnmounted(() => {
   border-radius: 20px 20px 0 0;
 }
 
+@media (max-width: 768px) {
+  .gantt-header {
+    padding: 20px 12px 12px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+}
+
 .back-btn {
   background: rgba(255, 255, 255, 0.2);
   border: none;
@@ -325,6 +344,13 @@ onUnmounted(() => {
   padding: 8px 12px;
   border-radius: 8px;
   transition: background 0.2s;
+}
+
+@media (max-width: 768px) {
+  .back-btn {
+    padding: 6px 10px;
+    font-size: 0.9rem;
+  }
 }
 
 .back-btn:hover {
@@ -339,10 +365,26 @@ onUnmounted(() => {
   font-weight: 600;
 }
 
+@media (max-width: 768px) {
+  .gantt-header h2 {
+    font-size: 1rem;
+    width: 100%;
+    order: -1;
+  }
+}
+
 .gantt-stats {
   display: flex;
   gap: 12px;
   font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+  .gantt-stats {
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.75rem;
+  }
 }
 
 .stat-item {
@@ -353,15 +395,52 @@ onUnmounted(() => {
   font-weight: 500;
 }
 
+@media (max-width: 768px) {
+  .stat-item {
+    padding: 2px 8px;
+    font-size: 0.75rem;
+  }
+}
+
 .gantt-controls {
   padding: 12px 20px;
   border-bottom: 1px solid #f0f0f0;
   background: white;
 }
 
+@media (max-width: 768px) {
+  .gantt-controls {
+    padding: 8px 12px;
+  }
+}
+
 .control-group {
   display: flex;
   gap: 8px;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .control-group {
+    gap: 4px;
+  }
+}
+
+.mobile-hint {
+  display: none;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #666;
+  margin-top: 6px;
+  padding: 4px 8px;
+  background: #f0f0f0;
+  border-radius: 6px;
+}
+
+@media (max-width: 768px) {
+  .mobile-hint {
+    display: block;
+  }
 }
 
 .control-btn {
@@ -374,6 +453,14 @@ onUnmounted(() => {
   transition: all 0.2s;
 }
 
+@media (max-width: 768px) {
+  .control-btn {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    flex: 1;
+  }
+}
+
 .control-btn:hover {
   background: #f5f5f5;
 }
@@ -384,11 +471,31 @@ onUnmounted(() => {
   border-color: transparent;
 }
 
-.gantt-container {
+.gantt-wrapper {
   flex: 1;
-  width: 100%;
+  overflow-x: auto;
+  overflow-y: auto;
+  background: #fafafa;
+}
+
+.gantt-container {
+  min-width: 100%;
+  min-height: 100%;
   background: #fafafa;
   padding: 0 10px;
+}
+
+@media (max-width: 768px) {
+  .gantt-wrapper {
+    /* 移动端支持横向滚动 */
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .gantt-container {
+    /* 移动端最小宽度，确保图表不会太挤 */
+    min-width: 600px;
+    padding: 0 5px;
+  }
 }
 
 .empty-state {
@@ -400,6 +507,12 @@ onUnmounted(() => {
   color: #999;
 }
 
+@media (max-width: 768px) {
+  .empty-state {
+    width: 80%;
+  }
+}
+
 .empty-state .icon {
   font-size: 4rem;
   display: block;
@@ -407,9 +520,32 @@ onUnmounted(() => {
   opacity: 0.3;
 }
 
+@media (max-width: 768px) {
+  .empty-state .icon {
+    font-size: 3rem;
+  }
+}
+
 .empty-state p {
   margin: 8px 0;
   font-size: 1rem;
+}
+
+@media (max-width: 768px) {
+  .empty-state p {
+    font-size: 0.9rem;
+  }
+}
+
+.empty-state .hint {
+  font-size: 0.85rem;
+  color: #bbb;
+}
+
+@media (max-width: 768px) {
+  .empty-state .hint {
+    font-size: 0.75rem;
+  }
 }
 
 .empty-state .hint {
