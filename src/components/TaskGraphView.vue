@@ -106,17 +106,21 @@
       <!-- 图谱容器 -->
       <div ref="chartRef" class="graph-container"></div>
 
-      <!-- 🆕 孤立任务提示 -->
-      <div v-if="isolatedTasks.length > 0 && !hideIsolated" class="isolated-hint">
-        ⚠️ 发现 {{ isolatedTasks.length }} 个孤立任务（无任何关系）
-        <button @click="showIsolatedTasks" class="hint-btn">查看</button>
-      </div>
+      <!-- 🆕 孤立任务提示（3秒后自动消失） -->
+      <transition name="fade">
+        <div v-if="showIsolatedHint && isolatedTasks.length > 0 && !hideIsolated" class="isolated-hint">
+          ⚠️ 发现 {{ isolatedTasks.length }} 个孤立任务（无任何关系）
+          <button @click="showIsolatedTasks" class="hint-btn">查看</button>
+        </div>
+      </transition>
       
-      <!-- 🆕 隐藏孤立提示 -->
-      <div v-if="hideIsolated" class="isolated-hint success">
-        ✅ 已隐藏 {{ isolatedTasks.length }} 个孤立任务
-        <button @click="hideIsolated = false" class="hint-btn">显示</button>
-      </div>
+      <!-- 🆕 隐藏孤立提示（3秒后自动消失） -->
+      <transition name="fade">
+        <div v-if="showHideIsolatedHint && hideIsolated" class="isolated-hint success">
+          ✅ 已隐藏 {{ isolatedTasks.length }} 个孤立任务
+          <button @click="hideIsolated = false" class="hint-btn">显示</button>
+        </div>
+      </transition>
 
       <!-- 🆕 导出按钮 -->
       <button class="export-btn" @click="exportAsImage" title="导出为图片">
@@ -180,6 +184,8 @@ const searchKeyword = ref('')      // 搜索关键字
 const selectedTaskId = ref(props.centerTaskId) // 选中的任务ID
 const displayLimit = ref(50)       // 显示数量限制
 const relationDepth = ref(2)       // 🆕 关系层级深度
+const showIsolatedHint = ref(true) // 🆕 显示孤立任务提示
+const showHideIsolatedHint = ref(false) // 🆕 显示隐藏孤立提示
 
 // 可选择的任务列表
 const availableTasks = computed(() => {
@@ -386,6 +392,26 @@ function toggleCompleted() {
   showCompleted.value = !showCompleted.value
   console.log('✅ 切换已完成任务显示:', showCompleted.value)
 }
+
+// 🆕 监听 hideIsolated 变化，显示提示3秒
+watch(hideIsolated, (newVal) => {
+  if (newVal) {
+    showHideIsolatedHint.value = true
+    setTimeout(() => {
+      showHideIsolatedHint.value = false
+    }, 3000)
+  }
+})
+
+// 🆕 初始化时显示孤立任务提示3秒
+onMounted(() => {
+  initChart()
+  if (isolatedTasks.value.length > 0) {
+    setTimeout(() => {
+      showIsolatedHint.value = false
+    }, 3000)
+  }
+})
 
 // 🆕 显示孤立任务
 function showIsolatedTasks() {
@@ -640,6 +666,12 @@ watch([showLinks, showDependencies, showSubtasks, showCompleted, displayLimit, h
 
 onMounted(() => {
   initChart()
+  // 🆕 3秒后隐藏孤立任务提示
+  if (isolatedTasks.value.length > 0) {
+    setTimeout(() => {
+      showIsolatedHint.value = false
+    }, 3000)
+  }
 })
 
 onUnmounted(() => {
@@ -929,6 +961,15 @@ onUnmounted(() => {
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   z-index: 10;
   animation: slideDown 0.3s ease-out;
+}
+
+/* 🆕 淡入淡出动画 */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
 }
 
 .isolated-hint.success {

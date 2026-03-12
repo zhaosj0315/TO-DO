@@ -2680,7 +2680,7 @@
 
     <!-- 导入预览弹窗 -->
     <div v-if="showImportPreview" class="modal-overlay" @click.self="cancelImport">
-      <div class="import-preview-sheet">
+      <div class="report-bottom-sheet">
         <div class="modal-header">
           <button class="back-btn" @click="cancelImport">
             <span>← 返回</span>
@@ -2739,31 +2739,23 @@
             </div>
             
             <!-- 重复任务 -->
-            <div v-if="importPreviewData.analysis.duplicates.length > 0" class="detail-section">
+            <div v-if="importPreviewData.analysis.duplicates.length > 0" class="detail-section collapsed">
               <h4>⚠️ 重复任务 (将跳过，{{ importPreviewData.analysis.duplicates.length }})</h4>
-              <div class="task-preview-list">
-                <div v-for="task in importPreviewData.analysis.duplicates.slice(0, 3)" :key="task.row" class="task-preview-item duplicate">
-                  <span class="task-name">{{ task.name }}</span>
-                  <span class="task-meta">第{{ task.row }}行</span>
-                </div>
-                <div v-if="importPreviewData.analysis.duplicates.length > 3" class="more-hint">
-                  还有 {{ importPreviewData.analysis.duplicates.length - 3 }} 条...
-                </div>
-              </div>
+              <div class="collapse-hint">已折叠，点击统计卡片查看详情</div>
             </div>
             
             <!-- 错误任务 -->
             <div v-if="importPreviewData.analysis.errors.length > 0" class="detail-section">
               <h4>❌ 错误任务 (将跳过，{{ importPreviewData.analysis.errors.length }})</h4>
               <div class="task-preview-list">
-                <div v-for="error in importPreviewData.analysis.errors.slice(0, 5)" :key="error.row" class="task-preview-item error">
+                <div v-for="error in importPreviewData.analysis.errors.slice(0, 3)" :key="error.row" class="task-preview-item error">
                   <div class="error-content">
                     <span class="error-row">第{{ error.row }}行</span>
                     <span class="error-reason">{{ error.reason }}</span>
                   </div>
                 </div>
-                <div v-if="importPreviewData.analysis.errors.length > 5" class="more-hint">
-                  还有 {{ importPreviewData.analysis.errors.length - 5 }} 条错误...
+                <div v-if="importPreviewData.analysis.errors.length > 3" class="more-hint">
+                  还有 {{ importPreviewData.analysis.errors.length - 3 }} 条错误...
                 </div>
               </div>
             </div>
@@ -5422,60 +5414,51 @@ const initVersionHistory = () => {
       features: [
         '🕸️ 任务关系图谱全面升级：',
         '  • 节点状态标识：已完成半透明、逾期红色边框',
-        '  • 双击展开关系网络：可配置1-5层深度',
-        '  • 孤立任务提示：橙色警告/绿色成功提示',
+        '  • 双击展开：双击节点展开1-5层关系网络',
+        '  • 孤立任务提示：橙色警告/绿色成功状态提示',
         '  • 导出图片：右下角紫色按钮，2倍分辨率PNG',
-        '  • 显示已完成开关：灵活控制是否显示已完成任务',
-        '  • 隐藏孤立任务：一键过滤无关系的任务',
-        '  • 层级控制：1-5层关系深度可调',
+        '  • 显示已完成：开关控制是否显示已完成任务',
+        '  • 隐藏孤立：一键过滤无关系的任务',
+        '  • 层级控制：1-5层关系深度滑块',
         '  • 数量控制：10-200个任务显示范围',
-        '  • 合并搜索：全部任务下拉框集成搜索功能',
+        '  • 合并搜索：全部任务下拉框集成搜索',
         '📊 甘特图专业化设计：',
         '  • 任务标题左对齐：与返回按钮精确对齐',
-        '  • 渐变色任务条：高优先级红色、中橙色、低蓝色',
-        '  • 增强阴影效果：4px模糊+2px偏移，立体感更强',
-        '  • Y轴分隔线：2px垂直线清晰区分信息区和图表区',
+        '  • 渐变色任务条：高优先级红色渐变、中橙色、低蓝色',
+        '  • 增强阴影：4px模糊+2px偏移，立体感',
+        '  • Y轴分隔线：2px垂直线区分信息区和图表区',
         '📅 日历视图优化：',
-        '  • 任务下钻：点击任务名称跳转到详情页面',
+        '  • 任务下钻：点击任务名称跳转详情',
         '  • 已完成任务也可点击查看',
+        '📋 导入预览优化：',
+        '  • 重复任务折叠显示（避免1000+条卡顿）',
+        '  • 底部滑出布局，左右全屏',
         '💾 备份提醒优化：',
-        '  • 按用户隔离：每个用户只在首次登录时提醒一次',
-        '  • 修复多用户场景下备份提醒混乱问题'
+        '  • 按用户隔离：每个用户只提醒一次'
       ],
       improvements: [
-        '🎨 UI布局优化：',
-        '  • 甘特图任务标题与返回按钮左对齐',
-        '  • 关系图谱合并全部任务和搜索功能',
-        '  • 关系图谱层级/数量双滑块控制',
-        '  • 孤立任务提示（橙色警告/绿色成功）',
-        '  • 导出按钮（右下角紫色圆形按钮）',
-        '📊 交互体验提升：',
-        '  • 单击节点跳转任务详情',
-        '  • 双击节点展开关系网络',
-        '  • 点击孤立提示高亮显示孤立任务',
-        '  • 拖动滑块实时更新图谱',
+        '🎨 UI优化：',
+        '  • 甘特图左对齐、关系图谱合并搜索',
+        '  • 双滑块控制（层级+数量）',
+        '  • 孤立任务提示（橙/绿状态）',
+        '  • 导出按钮（紫色圆形）',
+        '📊 交互提升：',
+        '  • 单击跳转、双击展开',
+        '  • 点击提示高亮孤立任务',
+        '  • 滑块实时更新图谱',
         '🔧 性能优化：',
-        '  • 关系图谱按关系数量排序（优先显示有关系的任务）',
-        '  • 孤立任务过滤逻辑优化（先截取再过滤）',
-        '  • 图表更新时保留图例和统计信息',
-        '  • 默认周视图（最常用）',
-        '  • 新增季度视图（适合长期规划）',
-        '📅 日历优化：',
-        '  • 已完成任务和待办任务都可以点击查看详情',
-        '  • 移动端响应式布局，完美适配手机',
-        '💾 备份提醒优化：',
-        '  • 按用户隔离，每个用户只在首次登录时提醒一次',
-        '  • 修复多用户场景下备份提醒混乱问题',
-        '🔙 Android 返回手势全面支持：',
-        '  • 拖动滑块实时更新图谱'
+        '  • 按关系数排序（优先有关系的）',
+        '  • 过滤逻辑优化（先截取再过滤）',
+        '  • 导入预览折叠重复任务'
       ],
       fixes: [
-        '🐛 修复已完成按钮点击无效：添加toggleCompleted函数',
-        '🐛 修复隐藏孤立任务逻辑顺序：先截取再过滤',
-        '🐛 修复日历任务点击跳转：添加缺失的@click事件',
-        '🐛 修复备份提醒多用户混乱：按用户隔离存储',
-        '🐛 修复甘特图任务标题错位：统一左对齐20px',
-        '🐛 修复关系图谱数据响应：添加watch监听hideIsolated'
+        '🐛 已完成按钮点击无效',
+        '🐛 隐藏孤立逻辑顺序错误',
+        '🐛 日历任务点击跳转失效',
+        '🐛 备份提醒多用户混乱',
+        '🐛 甘特图标题错位',
+        '🐛 关系图谱数据不响应',
+        '🐛 导入预览1000+条卡顿'
       ]
     },
     {
@@ -18428,6 +18411,20 @@ watch(() => reportData.value, (newData) => {
 
 .detail-section {
   margin-bottom: 1.5rem;
+}
+
+.detail-section.collapsed {
+  opacity: 0.7;
+}
+
+.collapse-hint {
+  font-size: 0.85rem;
+  color: #999;
+  font-style: italic;
+  padding: 0.5rem;
+  background: #f9f9f9;
+  border-radius: 6px;
+  text-align: center;
 }
 
 .detail-section h4 {

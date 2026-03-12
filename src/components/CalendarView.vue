@@ -93,7 +93,7 @@
         </div>
 
         <!-- 快速创建按钮 -->
-        <button @click="quickCreateTask" class="quick-create-btn">
+        <button @click.stop="quickCreateTask" class="quick-create-btn">
           ➕ 快速创建任务
         </button>
       </div>
