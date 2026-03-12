@@ -73,18 +73,26 @@ export function useAutocomplete(textareaRef) {
 
   // 合并建议
   const suggestions = computed(() => {
-    if (autocompleteType.value === 'tag') return tagSuggestions.value
-    if (autocompleteType.value === 'link') return linkSuggestions.value
-    return []
+    const result = autocompleteType.value === 'tag' ? tagSuggestions.value 
+      : autocompleteType.value === 'link' ? linkSuggestions.value 
+      : []
+    console.log('💡 生成建议', { type: autocompleteType.value, count: result.length, suggestions: result })
+    return result
   })
 
   // 🔍 检测触发器
   function handleInput(event) {
-    const textarea = textareaRef.value
-    if (!textarea) return
+    // 支持多个 textarea：优先使用事件目标，否则使用 ref
+    const textarea = event?.target || textareaRef.value
+    if (!textarea) {
+      console.log('🔍 自动补全 - textarea 不存在')
+      return
+    }
 
     const text = textarea.value
     const cursorPos = textarea.selectionStart
+    
+    console.log('🔍 自动补全 - 输入检测', { text, cursorPos })
 
     // 获取光标前的文本
     const textBeforeCursor = text.substring(0, cursorPos)
@@ -92,6 +100,7 @@ export function useAutocomplete(textareaRef) {
     // 检测标签触发 #
     const tagMatch = textBeforeCursor.match(/#([\w\u4e00-\u9fa5/]*)$/)
     if (tagMatch) {
+      console.log('🏷️ 检测到标签触发', { query: tagMatch[1] })
       autocompleteType.value = 'tag'
       autocompleteQuery.value = tagMatch[1]
       triggerStart.value = cursorPos - tagMatch[0].length
@@ -103,6 +112,7 @@ export function useAutocomplete(textareaRef) {
     // 检测链接触发 [[
     const linkMatch = textBeforeCursor.match(/\[\[([^\]]*?)$/)
     if (linkMatch) {
+      console.log('🔗 检测到链接触发', { query: linkMatch[1] })
       autocompleteType.value = 'link'
       autocompleteQuery.value = linkMatch[1]
       triggerStart.value = cursorPos - linkMatch[0].length
@@ -112,6 +122,7 @@ export function useAutocomplete(textareaRef) {
     }
 
     // 没有匹配，关闭自动补全
+    console.log('❌ 无匹配，关闭自动补全')
     showAutocomplete.value = false
   }
 
@@ -151,7 +162,10 @@ export function useAutocomplete(textareaRef) {
 
   // ✅ 选择建议
   function selectSuggestion(item) {
-    const textarea = textareaRef.value
+    // 查找当前聚焦的 textarea
+    const textarea = document.activeElement?.tagName === 'TEXTAREA' 
+      ? document.activeElement 
+      : textareaRef.value
     if (!textarea) return
 
     const text = textarea.value

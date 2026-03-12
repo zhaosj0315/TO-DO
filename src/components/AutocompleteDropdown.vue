@@ -93,7 +93,7 @@ onUnmounted(() => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   max-height: 200px;
   overflow-y: auto;
-  z-index: 3000;
+  z-index: 10020;  /* 🔧 提高到最高层级，高于所有弹窗 */
   min-width: 200px;
 }
 

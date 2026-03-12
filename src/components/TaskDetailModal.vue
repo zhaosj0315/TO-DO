@@ -156,10 +156,10 @@
           <textarea 
             v-else
             v-model="localTask.description"
-            @input="autoResizeTextarea($event)"
+            @input="handleAutocompleteInput($event); autoResizeTextarea($event)"
             @blur="saveField('description'); isDescriptionPreview = false"
             class="description-textarea"
-            placeholder="输入任务描述..."
+            placeholder="输入任务描述... 提示：输入 # 添加标签，输入 [[ 链接任务"
             rows="3"
             ref="descriptionTextarea"
           ></textarea>
@@ -719,12 +719,22 @@
       :file="previewFile"
       @close="showFilePreview = false"
     />
+    
+    <!-- 🆕 自动补全下拉（v0.9.0）-->
+    <AutocompleteDropdown
+      :show="showAutocomplete"
+      :suggestions="autocompleteSuggestions"
+      :position="autocompletePosition"
+      @select="selectAutocompleteSuggestion"
+      @close="closeAutocomplete"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useOfflineTaskStore } from '../stores/offlineTaskStore'
+import { useAutocomplete } from '../composables/useAutocomplete'  // 🆕 自动补全（v0.9.0）
 import LogTimeline from './LogTimeline.vue'
 import LogStats from './LogStats.vue'
 import AddLogModal from './AddLogModal.vue'
@@ -732,6 +742,7 @@ import AITextMenu from './AITextMenu.vue'
 import AITextResultSheet from './AITextResultSheet.vue'
 import WaitForSelector from './WaitForSelector.vue'
 import MarkdownRenderer from './MarkdownRenderer.vue'  // 🆕 Markdown渲染器
+import AutocompleteDropdown from './AutocompleteDropdown.vue'  // 🆕 自动补全下拉（v0.9.0）
 import CalendarPicker from './CalendarPicker.vue'  // 🆕 日历选择器
 import FilePreviewModal from './FilePreviewModal.vue'  // 🆕 文件预览
 import { useTextSelection } from '../composables/useTextSelection'
@@ -964,6 +975,16 @@ const localTask = ref({
 // 🆕 Markdown 预览模式
 const isDescriptionPreview = ref(false)
 const descriptionTextarea = ref(null)
+
+// 🆕 自动补全相关（v0.9.0）
+const {
+  showAutocomplete,
+  suggestions: autocompleteSuggestions,
+  autocompletePosition,
+  handleInput: handleAutocompleteInput,
+  selectSuggestion: selectAutocompleteSuggestion,
+  closeAutocomplete
+} = useAutocomplete(descriptionTextarea)
 
 // 🆕 切换描述编辑模式
 const toggleDescriptionEdit = async () => {

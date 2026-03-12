@@ -2167,11 +2167,13 @@
             <div class="edit-field">
               <label class="field-label">📄 详细描述</label>
               <textarea 
+                ref="editDescriptionTextarea"
                 v-model="editDescription" 
                 class="input textarea edit-textarea" 
-                :placeholder="currentLanguage === 'zh' ? '添加更多细节描述...' : 'Add more details...'"
+                :placeholder="currentLanguage === 'zh' ? '添加更多细节描述... 提示：输入 # 添加标签，输入 [[ 链接任务' : 'Add more details... Tip: # for tags, [[ for links'"
                 rows="4"
                 maxlength="500"
+                @input="handleAutocompleteInput"
               ></textarea>
               <div class="char-count">{{ (editDescription || '').length }}/500 · {{ (editDescription || '').split('\n').length }} 行</div>
             </div>
@@ -4555,6 +4557,7 @@ const currentTaskId = ref(null)  // 当前编辑的任务ID
 
 // 🆕 自动补全相关（v0.9.0）
 const descriptionTextarea = ref(null)
+const editDescriptionTextarea = ref(null)  // 编辑弹窗的描述框
 const {
   showAutocomplete,
   suggestions: autocompleteSuggestions,
