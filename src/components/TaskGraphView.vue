@@ -18,6 +18,18 @@
 
       <!-- 控制栏 -->
       <div class="graph-controls">
+        <!-- 任务选择器 -->
+        <select v-model="selectedTaskId" class="task-selector">
+          <option :value="null">🌐 全部任务</option>
+          <option 
+            v-for="task in availableTasks" 
+            :key="task.id"
+            :value="task.id"
+          >
+            {{ task.text.substring(0, 20) }}{{ task.text.length > 20 ? '...' : '' }}
+          </option>
+        </select>
+        
         <!-- 搜索框 -->
         <div class="search-box">
           <input 
@@ -32,27 +44,43 @@
           :class="['control-btn', { active: showLinks }]"
           @click="showLinks = !showLinks"
         >
-          🔗 引用链接
+          🔗<span> 引用链接</span>
         </button>
         <button 
           :class="['control-btn', { active: showDependencies }]"
           @click="showDependencies = !showDependencies"
         >
-          🔒 依赖关系
+          🔒<span> 依赖关系</span>
         </button>
         <button 
           :class="['control-btn', { active: showSubtasks }]"
           @click="showSubtasks = !showSubtasks"
         >
-          🌳 父子关系
+          🌳<span> 父子关系</span>
         </button>
         <button class="control-btn" @click="resetView">
-          🔄 重置视图
+          🔄<span> 重置视图</span>
         </button>
       </div>
 
       <!-- 图谱容器 -->
       <div ref="chartRef" class="graph-container"></div>
+
+      <!-- 关系类型图例 -->
+      <div class="graph-legend">
+        <div class="legend-item">
+          <span class="line-sample solid"></span>
+          <span>🔗 引用链接</span>
+        </div>
+        <div class="legend-item">
+          <span class="line-sample dashed"></span>
+          <span>🔒 依赖关系</span>
+        </div>
+        <div class="legend-item">
+          <span class="line-sample dotted"></span>
+          <span>🌳 父子关系</span>
+        </div>
+      </div>
 
       <!-- 空状态 -->
       <div v-if="nodes.length === 0" class="empty-state">
@@ -91,10 +119,28 @@ const showLinks = ref(true)        // 引用链接
 const showDependencies = ref(true) // 依赖关系
 const showSubtasks = ref(true)     // 父子关系
 const searchKeyword = ref('')      // 搜索关键字
+const selectedTaskId = ref(props.centerTaskId) // 选中的任务ID
+
+// 可选择的任务列表
+const availableTasks = computed(() => {
+  return taskStore.tasks
+    .filter(t => t.status !== 'completed')
+    .sort((a, b) => {
+      // 按关系数量排序
+      const aCount = (a.linkedTasks?.length || 0) + (a.waitFor?.length || 0) + (a.subtasks?.length || 0)
+      const bCount = (b.linkedTasks?.length || 0) + (b.waitFor?.length || 0) + (b.subtasks?.length || 0)
+      return bCount - aCount
+    })
+})
+
+// 监听选择变化
+watch(selectedTaskId, () => {
+  updateChart()
+})
 
 // 是否触发了节点数量限制
 const isLimited = computed(() => {
-  if (props.centerTaskId) return false
+  if (selectedTaskId.value) return false
   const totalTasks = taskStore.tasks.filter(t => t.status !== 'completed').length
   return totalTasks > props.maxNodes
 })
@@ -132,8 +178,8 @@ const graphData = computed(() => {
   const nodeMap = new Set()
 
   // 获取要显示的任务
-  let tasksToShow = props.centerTaskId 
-    ? getRelatedTasks(props.centerTaskId)
+  let tasksToShow = selectedTaskId.value 
+    ? getRelatedTasks(selectedTaskId.value)
     : taskStore.tasks.filter(t => t.status !== 'completed') // 只显示未完成任务
 
   // 如果任务数量超过限制，按关系数量排序并截取
@@ -158,9 +204,11 @@ const graphData = computed(() => {
         name: task.text,
         value: task.priority === 'high' ? 100 : task.priority === 'medium' ? 60 : 30,
         category: getCategoryIndex(task),
-        symbolSize: task.id === props.centerTaskId ? 60 : 40,
+        symbolSize: task.id === selectedTaskId.value ? 60 : 40,
         itemStyle: {
-          color: task.id === props.centerTaskId ? '#f59e0b' : getCategoryColor(task.category)
+          color: task.id === selectedTaskId.value ? '#f59e0b' : getCategoryColor(task.category),
+          borderWidth: task.id === selectedTaskId.value ? 3 : 0,
+          borderColor: '#f59e0b'
         }
       })
       nodeMap.add(task.id)
@@ -392,6 +440,8 @@ function updateChart() {
 
 // 🆕 重置视图
 function resetView() {
+  selectedTaskId.value = null
+  searchKeyword.value = ''
   if (chartInstance) {
     chartInstance.dispatchAction({
       type: 'restore'
@@ -504,9 +554,45 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
+.task-selector {
+  flex: 1;
+  min-width: 200px;
+  padding: 6px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+@media (max-width: 768px) {
+  .task-selector {
+    width: 100%;
+    flex: none;
+    font-size: 0.85rem;
+  }
+}
+
+.task-selector:focus {
+  outline: none;
+  border-color: #8b5cf6;
+}
+
+.task-selector option {
+  padding: 8px;
+}
+
 .search-box {
   flex: 1;
   min-width: 200px;
+}
+
+@media (max-width: 768px) {
+  .search-box {
+    width: 100%;
+    flex: none;
+  }
 }
 
 .search-box input {
@@ -531,6 +617,19 @@ onUnmounted(() => {
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .control-btn {
+    flex: 1;
+    padding: 8px 6px;
+    font-size: 1.1rem;
+  }
+  
+  .control-btn span {
+    display: none;
+  }
 }
 
 .control-btn:hover {
@@ -548,6 +647,58 @@ onUnmounted(() => {
   flex: 1;
   width: 100%;
   min-height: 0;
+}
+
+.graph-legend {
+  display: flex;
+  gap: 20px;
+  padding: 12px 20px;
+  background: white;
+  border-top: 1px solid #f0f0f0;
+  flex-shrink: 0;
+  justify-content: center;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.line-sample {
+  width: 30px;
+  height: 2px;
+  display: inline-block;
+}
+
+.line-sample.solid {
+  background: #8b5cf6;
+}
+
+.line-sample.dashed {
+  background: linear-gradient(to right, #ef4444 0%, #ef4444 50%, transparent 50%, transparent 100%);
+  background-size: 8px 2px;
+  background-repeat: repeat-x;
+}
+
+.line-sample.dotted {
+  background: linear-gradient(to right, #10b981 0%, #10b981 33%, transparent 33%, transparent 100%);
+  background-size: 6px 2px;
+  background-repeat: repeat-x;
+}
+
+@media (max-width: 768px) {
+  .graph-legend {
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px 12px;
+  }
+  
+  .legend-item {
+    font-size: 0.75rem;
+  }
 }
 
 .empty-state {
