@@ -17,22 +17,22 @@
       <div class="gantt-controls">
         <div class="control-group">
           <button 
-            :class="['control-btn', { active: viewMode === 'day' }]"
-            @click="viewMode = 'day'"
-          >
-            日视图
-          </button>
-          <button 
             :class="['control-btn', { active: viewMode === 'week' }]"
             @click="viewMode = 'week'"
           >
-            周视图
+            📅 周视图
           </button>
           <button 
             :class="['control-btn', { active: viewMode === 'month' }]"
             @click="viewMode = 'month'"
           >
-            月视图
+            📆 月视图
+          </button>
+          <button 
+            :class="['control-btn', { active: viewMode === 'quarter' }]"
+            @click="viewMode = 'quarter'"
+          >
+            📊 季度视图
           </button>
         </div>
       </div>
@@ -61,7 +61,7 @@ const taskStore = useOfflineTaskStore()
 const chartRef = ref(null)
 let chartInstance = null
 
-const viewMode = ref('week') // day, week, month
+const viewMode = ref('week') // week, month, quarter
 
 // 统计
 const totalTasks = computed(() => ganttData.value.length)
@@ -75,11 +75,6 @@ const timeRange = computed(() => {
   let start, end
   
   switch (viewMode.value) {
-    case 'day':
-      // 今天 00:00 到 23:59
-      start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-      end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
-      break
     case 'week':
       // 本周一到周日
       const dayOfWeek = now.getDay() || 7 // 周日为0，改为7
@@ -91,6 +86,13 @@ const timeRange = computed(() => {
       // 本月1号到月底
       start = new Date(now.getFullYear(), now.getMonth(), 1)
       end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+      break
+    case 'quarter':
+      // 本季度第一天到最后一天
+      const currentMonth = now.getMonth()
+      const quarterStartMonth = Math.floor(currentMonth / 3) * 3
+      start = new Date(now.getFullYear(), quarterStartMonth, 1)
+      end = new Date(now.getFullYear(), quarterStartMonth + 3, 0, 23, 59, 59)
       break
     default:
       start = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -176,12 +178,13 @@ function initChart() {
       axisLabel: {
         formatter: (value) => {
           const date = new Date(value)
-          if (viewMode.value === 'day') {
-            return `${date.getHours()}:00`
-          } else if (viewMode.value === 'week') {
+          if (viewMode.value === 'week') {
+            return `${date.getMonth() + 1}/${date.getDate()}`
+          } else if (viewMode.value === 'month') {
             return `${date.getMonth() + 1}/${date.getDate()}`
           } else {
-            return `${date.getMonth() + 1}/${date.getDate()}`
+            // 季度视图：显示月/日
+            return `${date.getMonth() + 1}月`
           }
         }
       }
