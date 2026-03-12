@@ -3,7 +3,6 @@ Dead Code Detection Report
 
 零引用函数列表:
 --------------------------------------------------------------------------------
-methodName	./detect-dead-code.js:94
 addWaitFor	./src/stores/offlineTaskStore.js:756
 removeWaitFor	./src/stores/offlineTaskStore.js:771
 updateTaskLog	./src/stores/offlineTaskStore.js:1359
@@ -90,16 +89,6 @@ initDatabase	./mysql-server.js:67	引用2次
 initDatabase	./mysql-server.js:67	引用2次
 checkData	./check-db.js:3	引用1次
 checkData	./check-db.js:3	引用1次
-scanDirectory	./detect-dead-code.js:29	引用1次
-walk	./detect-dead-code.js:32	引用2次
-extractFunctions	./detect-dead-code.js:59	引用1次
-extractVueMethods	./detect-dead-code.js:93	引用1次
-findReferences	./detect-dead-code.js:122	引用1次
-scanDirectory	./detect-dead-code.js:29	引用1次
-walk	./detect-dead-code.js:32	引用2次
-extractFunctions	./detect-dead-code.js:59	引用1次
-extractVueMethods	./detect-dead-code.js:93	引用1次
-findReferences	./detect-dead-code.js:122	引用1次
 generateWeekdays	./scripts/生成1000条测试数据.js:88	引用1次
 generateTasks	./scripts/生成1000条测试数据.js:101	引用1次
 generateExcel	./scripts/生成1000条测试数据.js:187	引用1次

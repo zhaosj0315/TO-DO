@@ -238,25 +238,6 @@ function initChart() {
   })
 }
 
-// 渲染甘特图项（已废弃，改为内联）
-function renderGanttItem(params, api) {
-  const categoryIndex = api.value(2)
-  const start = api.coord([api.value(0), categoryIndex])
-  const end = api.coord([api.value(1), categoryIndex])
-  const height = api.size([0, 1])[1] * 0.6
-
-  return {
-    type: 'rect',
-    shape: {
-      x: start[0],
-      y: start[1] - height / 2,
-      width: end[0] - start[0],
-      height: height
-    },
-    style: api.style()
-  }
-}
-
 // 监听数据变化和视图模式变化
 watch([ganttData, viewMode], () => {
   if (chartInstance) {
