@@ -14396,8 +14396,9 @@ onMounted(async () => {
 
   // Android 返回手势监听
   if (Capacitor.getPlatform() === 'android') {
-    App.addListener('backButton', ({ canGoBack }) => {
-      console.log('🔙 返回手势触发')
+    console.log('📱 Android 平台检测成功，注册返回手势监听器...')
+    const backButtonHandler = ({ canGoBack }) => {
+      console.log('🔙 返回手势触发, canGoBack:', canGoBack)
       console.log('📝 表单状态:', {
         标题: newTaskText.value,
         描述: newTaskDescription.value,
@@ -14687,16 +14688,22 @@ onMounted(async () => {
         showCollectionManage.value = false
         return
       }
+      // 🆕 第二层：标签浏览器（v0.9.0）
+      else if (showTagBrowser.value) {
+        console.log('✅ 关闭标签浏览器')
+        showTagBrowser.value = false
+        return
+      }
+      // 🆕 第二层：任务关系图谱（v0.9.0）
+      else if (showTaskGraph.value) {
+        console.log('✅ 关闭任务关系图谱')
+        showTaskGraph.value = false
+        return
+      }
       // 🆕 第二层：更多文件夹选择
       else if (showMoreCollections.value) {
         console.log('✅ 关闭更多文件夹')
         showMoreCollections.value = false
-        return
-      }
-      // 🆕 文件夹选择状态（二级页面）
-      else if (selectedCollectionId.value !== null) {
-        console.log('✅ 返回到全部任务')
-        selectCollection(null)
         return
       }
       // 第二层弹窗（中层）
@@ -14770,7 +14777,19 @@ onMounted(async () => {
         showTaskSplitter.value = false
       } 
       // 第一层：表单状态清空（逐步恢复到初始状态）
-      else if (newTaskDescription.value.trim() !== '') {
+      else if (showAutocomplete) {
+        // 自动补全优先级最低，放在表单清空之前
+        console.log('✅ 关闭自动补全')
+        closeAutocomplete()
+      } else if (selectedCollectionId.value !== null) {
+        // 文件夹选择状态
+        console.log('✅ 返回到全部任务')
+        selectCollection(null)
+      } else if (selectedTag.value) {
+        // 如果有标签筛选，先清空标签筛选
+        console.log('✅ 清空标签筛选')
+        selectedTag.value = null
+      } else if (newTaskDescription.value.trim() !== '') {
         // 如果有任务描述，先清空描述
         console.log('✅ 清空任务描述')
         newTaskDescription.value = ''
@@ -14797,13 +14816,18 @@ onMounted(async () => {
         // 如果当前不是"全部"，恢复到"全部"
         console.log('✅ 恢复筛选状态')
         setFilter('all')
+        return
       } 
-      // 首页状态：退出应用到后台
+      // 首页状态：不处理，让系统默认行为生效（退出应用或返回上一页）
       else {
-        console.log('✅ 首页返回 → 退出应用到后台')
-        App.exitApp()
+        console.log('✅ 首页返回 → 使用系统默认行为')
+        // 不调用 return，让事件继续传播
+        // 系统会自动处理：手势导航返回桌面，按钮导航退出应用
       }
-    })
+    }
+    
+    App.addListener('backButton', backButtonHandler)
+    console.log('✅ 返回手势监听器注册完成')
   }
 })
 

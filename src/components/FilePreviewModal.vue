@@ -85,7 +85,11 @@ const textContent = ref('')
 const pdfData = ref(null)
 
 // 🆕 Android 返回手势监听
-let backButtonListener = null
+const handleBackButton = () => {
+  if (props.visible) {
+    emit('close')
+  }
+}
 
 onMounted(() => {
   if (Capacitor.isNativePlatform()) {
@@ -95,15 +99,9 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (Capacitor.isNativePlatform()) {
-    App.removeAllListeners()
+    App.removeListener('backButton', handleBackButton)
   }
 })
-
-const handleBackButton = () => {
-  if (props.visible) {
-    emit('close')
-  }
-}
 
 // 监听弹窗显示状态，重新加载文件
 watch(() => [props.visible, props.file], async ([visible, newFile]) => {
