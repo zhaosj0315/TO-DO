@@ -14,7 +14,7 @@
         <button class="back-btn" @click="$emit('close')">
           <span>← 返回</span>
         </button>
-        <h2>🕸️ 任务关系图谱</h2>
+        <h2>🕸️</h2>
         <div class="graph-stats">
           <span class="stat-item">{{ nodes.length }} 个任务</span>
           <span class="stat-item">{{ relationStats.total }} 个关系</span>

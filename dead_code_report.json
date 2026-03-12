@@ -1,0 +1,5968 @@
+{
+  "summary": {
+    "total_functions": 748,
+    "unused_functions": 384,
+    "low_usage_functions": 96,
+    "safe_to_delete": 384
+  },
+  "unused": [
+    {
+      "name": "showNotify",
+      "file": "src/App.vue",
+      "line": 53,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "saveAIConfig",
+      "file": "src/components/AIAssistButton.vue",
+      "line": 40,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "callAI",
+      "file": "src/components/AIAssistButton.vue",
+      "line": 90,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "loadModelsFromStorage",
+      "file": "src/components/AIChat.vue",
+      "line": 185,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "toggleGroup",
+      "file": "src/components/AIChat.vue",
+      "line": 226,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "highlightText",
+      "file": "src/components/AIChat.vue",
+      "line": 244,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "copyMessage",
+      "file": "src/components/AIChat.vue",
+      "line": 251,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "regenerateMessage",
+      "file": "src/components/AIChat.vue",
+      "line": 260,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "formatTimestamp",
+      "file": "src/components/AIChat.vue",
+      "line": 319,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "loadAllChats",
+      "file": "src/components/AIChat.vue",
+      "line": 340,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "switchChat",
+      "file": "src/components/AIChat.vue",
+      "line": 417,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "deleteChat",
+      "file": "src/components/AIChat.vue",
+      "line": 425,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "clearCurrentChat",
+      "file": "src/components/AIChat.vue",
+      "line": 441,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "formatChatTime",
+      "file": "src/components/AIChat.vue",
+      "line": 450,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "groupedChats",
+      "file": "src/components/AIChat.vue",
+      "line": 463,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "filteredGroupedChats",
+      "file": "src/components/AIChat.vue",
+      "line": 490,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "loadChatHistory",
+      "file": "src/components/AIChat.vue",
+      "line": 528,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "clearChatHistory",
+      "file": "src/components/AIChat.vue",
+      "line": 550,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "sendMessage",
+      "file": "src/components/AIChat.vue",
+      "line": 994,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "detectIntent",
+      "file": "src/components/AIChat.vue",
+      "line": 1044,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "callOllama",
+      "file": "src/components/AIChat.vue",
+      "line": 1652,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "callOpenAI",
+      "file": "src/components/AIChat.vue",
+      "line": 1680,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "fetchOllamaModels",
+      "file": "src/components/AIConfigModal.vue",
+      "line": 105,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "fetchAPIModels",
+      "file": "src/components/AIConfigModal.vue",
+      "line": 126,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "save",
+      "file": "src/components/AIConfigModal.vue",
+      "line": 206,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getCurrentUsername",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 289,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "needApiKey",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 416,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "selectPresetProvider",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 449,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "loadProviderConfig",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 468,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "editProviderConfig",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 491,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "deleteProviderConfig",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 513,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getProviderLabel",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 534,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "loadingText",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 556,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "loadingSubText",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 563,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "getUrlPlaceholder",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 603,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getStatusIcon",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 710,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "testSingleModel",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 732,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "testAllModels",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 764,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "exportConfig",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 882,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "importConfig",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 899,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "addModel",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 1004,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "clearForm",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 1073,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "setDefault",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 1088,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "editModel",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 1092,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "deleteModel",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 1112,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "processTable",
+      "file": "src/components/AIPreviewModal.vue",
+      "line": 110,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "renderedMarkdown",
+      "file": "src/components/AIPreviewModal.vue",
+      "line": 196,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "reportTitle",
+      "file": "src/components/AIReportModal.vue",
+      "line": 290,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "copyReport",
+      "file": "src/components/AIReportModal.vue",
+      "line": 444,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "exportPDF",
+      "file": "src/components/AIReportModal.vue",
+      "line": 494,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "generateSuggestion",
+      "file": "src/components/AISuggestionCard.vue",
+      "line": 67,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "viewDetails",
+      "file": "src/components/AISuggestionCard.vue",
+      "line": 177,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "snooze",
+      "file": "src/components/AISuggestionCard.vue",
+      "line": 183,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getTitle",
+      "file": "src/components/AITextResultSheet.vue",
+      "line": 67,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getWarningText",
+      "file": "src/components/AddDependencyModal.vue",
+      "line": 153,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getTaskById",
+      "file": "src/components/AddDependencyModal.vue",
+      "line": 181,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "contentLines",
+      "file": "src/components/AddLogModal.vue",
+      "line": 336,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "unresolvedBlocks",
+      "file": "src/components/AddLogModal.vue",
+      "line": 341,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "canSubmit",
+      "file": "src/components/AddLogModal.vue",
+      "line": 346,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "addTag",
+      "file": "src/components/AddLogModal.vue",
+      "line": 362,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "removeTag",
+      "file": "src/components/AddLogModal.vue",
+      "line": 371,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "addLesson",
+      "file": "src/components/AddLogModal.vue",
+      "line": 376,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "removeLesson",
+      "file": "src/components/AddLogModal.vue",
+      "line": 385,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "formatWeekdays",
+      "file": "src/components/AddSubtaskModal.vue",
+      "line": 207,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getTaskCollectionName",
+      "file": "src/components/BatchAddTasksModal.vue",
+      "line": 111,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "currentMonthText",
+      "file": "src/components/CalendarView.vue",
+      "line": 126,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "selectedDateText",
+      "file": "src/components/CalendarView.vue",
+      "line": 131,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "goToday",
+      "file": "src/components/CalendarView.vue",
+      "line": 248,
+      "type": "function",
+      "references": 0
+    },
+    {
+      "name": "quickCreateTask",
+      "file": "src/components/CalendarView.vue",
+      "line": 273,
+      "type": "function",
+      "references": 0
+    },
+    {
+      "name": "focusNewPassword",
+      "file": "src/components/ChangePasswordModal.vue",
+      "line": 80,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "focusConfirmPassword",
+      "file": "src/components/ChangePasswordModal.vue",
+      "line": 84,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "rootCollections",
+      "file": "src/components/CollectionManageModal.vue",
+      "line": 97,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "allExpanded",
+      "file": "src/components/CollectionManageModal.vue",
+      "line": 114,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "toggleExpandAll",
+      "file": "src/components/CollectionManageModal.vue",
+      "line": 134,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "enterBatchMode",
+      "file": "src/components/CollectionManageModal.vue",
+      "line": 144,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "toggleSelect",
+      "file": "src/components/CollectionManageModal.vue",
+      "line": 154,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getLevelLabel",
+      "file": "src/components/CollectionTreeNode.vue",
+      "line": 146,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "canCreate",
+      "file": "src/components/CreateCollectionModal.vue",
+      "line": 120,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "generateSummary",
+      "file": "src/components/DailySummaryModal.vue",
+      "line": 111,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "generateAIInsight",
+      "file": "src/components/DailySummaryModal.vue",
+      "line": 180,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "testSQLite",
+      "file": "src/components/DatabaseConfigModal.vue",
+      "line": 286,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "testMySQL",
+      "file": "src/components/DatabaseConfigModal.vue",
+      "line": 308,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "taskCount",
+      "file": "src/components/DeleteCollectionModal.vue",
+      "line": 89,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "childCount",
+      "file": "src/components/DeleteCollectionModal.vue",
+      "line": 94,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "blockingTasks",
+      "file": "src/components/DependencyManager.vue",
+      "line": 88,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "resizeChart",
+      "file": "src/components/EChart.vue",
+      "line": 30,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "inProgressTasks",
+      "file": "src/components/GanttChartView.vue",
+      "line": 59,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "hasMoreTasks",
+      "file": "src/components/GanttChartView.vue",
+      "line": 158,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "remainingTasks",
+      "file": "src/components/GanttChartView.vue",
+      "line": 163,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "showMoreTasks",
+      "file": "src/components/GanttChartView.vue",
+      "line": 168,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getTagSize",
+      "file": "src/components/LogStats.vue",
+      "line": 232,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "exportAsText",
+      "file": "src/components/LogStats.vue",
+      "line": 259,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "exportAsMarkdown",
+      "file": "src/components/LogStats.vue",
+      "line": 315,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "exportAsJson",
+      "file": "src/components/LogStats.vue",
+      "line": 371,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getLogIcon",
+      "file": "src/components/LogTimeline.vue",
+      "line": 99,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getLogTypeLabel",
+      "file": "src/components/LogTimeline.vue",
+      "line": 112,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getMoodText",
+      "file": "src/components/LogTimeline.vue",
+      "line": 147,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "processLocalImages",
+      "file": "src/components/MarkdownRenderer.vue",
+      "line": 68,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "availableTargets",
+      "file": "src/components/MoveCollectionModal.vue",
+      "line": 77,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "restoreData",
+      "file": "src/components/MySQLConfigModal.vue",
+      "line": 348,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "toggleTakeover",
+      "file": "src/components/MySQLConfigModal.vue",
+      "line": 391,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "closeGuide",
+      "file": "src/components/PermissionGuide.vue",
+      "line": 63,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "openSettings",
+      "file": "src/components/PermissionGuide.vue",
+      "line": 67,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "dontShowAgain",
+      "file": "src/components/PermissionGuide.vue",
+      "line": 76,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "applyTemplate",
+      "file": "src/components/SmartTaskSplitter.vue",
+      "line": 177,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "generateSubtasks",
+      "file": "src/components/SmartTaskSplitter.vue",
+      "line": 185,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "regenerate",
+      "file": "src/components/SmartTaskSplitter.vue",
+      "line": 216,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "openCalendar",
+      "file": "src/components/SubtaskPreviewModal.vue",
+      "line": 180,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "toggleWeekday",
+      "file": "src/components/SubtaskPreviewModal.vue",
+      "line": 226,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "totalEstimatedTime",
+      "file": "src/components/SubtaskPreviewModal.vue",
+      "line": 257,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "tagTreeArray",
+      "file": "src/components/TagBrowser.vue",
+      "line": 80,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "totalTags",
+      "file": "src/components/TagBrowser.vue",
+      "line": 85,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "childrenArray",
+      "file": "src/components/TagTreeNode.vue",
+      "line": 72,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "getBacklinkContext",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 802,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "hasRelations",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 831,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "filteredLogs",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 942,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "filteredSortedLogs",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 965,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "toggleDescriptionEdit",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 990,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "formatDateShort",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 1263,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getProgressWidth",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 1270,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getLatestProgress",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 1276,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "formatDeadlineShort",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 1282,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "saveLogContent",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 1328,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "saveAISummary",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 1364,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "toggleTimelineView",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 1372,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "deleteLog",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 1386,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "confirmDelete",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 1491,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "isLimited",
+      "file": "src/components/TaskGraphView.vue",
+      "line": 257,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "toggleCompleted",
+      "file": "src/components/TaskGraphView.vue",
+      "line": 563,
+      "type": "function",
+      "references": 0
+    },
+    {
+      "name": "showIsolatedTasks",
+      "file": "src/components/TaskGraphView.vue",
+      "line": 597,
+      "type": "function",
+      "references": 0
+    },
+    {
+      "name": "exportAsImage",
+      "file": "src/components/TaskGraphView.vue",
+      "line": 815,
+      "type": "function",
+      "references": 0
+    },
+    {
+      "name": "resetView",
+      "file": "src/components/TaskGraphView.vue",
+      "line": 860,
+      "type": "function",
+      "references": 0
+    },
+    {
+      "name": "selectTemplate",
+      "file": "src/components/TemplateSelector.vue",
+      "line": 88,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "selectCustom",
+      "file": "src/components/TemplateSelector.vue",
+      "line": 92,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "formatDeleteTime",
+      "file": "src/components/TrashModal.vue",
+      "line": 123,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "progressPercent",
+      "file": "src/components/TutorialMode.vue",
+      "line": 282,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "nextStep",
+      "file": "src/components/TutorialMode.vue",
+      "line": 379,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "prevStep",
+      "file": "src/components/TutorialMode.vue",
+      "line": 386,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "skipTutorial",
+      "file": "src/components/TutorialMode.vue",
+      "line": 393,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "finishTutorial",
+      "file": "src/components/TutorialMode.vue",
+      "line": 398,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "isHistoryMode",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 226,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "selectType",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 291,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "generateUnifiedReport",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 410,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "generateQualityData",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 521,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "generateEfficiencyData",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 571,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "generateTrendData",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 628,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "generateHeatmapData",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 781,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "generateAIReport",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 805,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "autoSaveWithAIReport",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 851,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "copyAIReport",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 943,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "exportAIReport",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 953,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "saveToHistory",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 964,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "saveAsNew",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 980,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "formatHistoryDate",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 996,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "copyText",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 1008,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getReportTitle",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 1083,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "showHistory",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 1097,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "cleanup",
+      "file": "src/components/VisualReportView.vue",
+      "line": 383,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "priorityText",
+      "file": "src/components/WaitForSelector.vue",
+      "line": 123,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "statusText",
+      "file": "src/components/WaitForSelector.vue",
+      "line": 128,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "tagSuggestions",
+      "file": "src/composables/useAutocomplete.js",
+      "line": 14,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "linkSuggestions",
+      "file": "src/composables/useAutocomplete.js",
+      "line": 50,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "closeAutocomplete",
+      "file": "src/composables/useAutocomplete.js",
+      "line": 206,
+      "type": "function",
+      "references": 0
+    },
+    {
+      "name": "closeMenu",
+      "file": "src/composables/useTextSelection.js",
+      "line": 155,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "replaceSelectedText",
+      "file": "src/composables/useTextSelection.js",
+      "line": 163,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getTemplateSections",
+      "file": "src/services/aiReportGenerator.js",
+      "line": 316,
+      "type": "method",
+      "references": 0
+    },
+    {
+      "name": "getTaskPomodoros",
+      "file": "src/services/aiWorkReportGenerator.js",
+      "line": 363,
+      "type": "method",
+      "references": 0
+    },
+    {
+      "name": "getEstimatedPomodoros",
+      "file": "src/services/aiWorkReportGenerator.js",
+      "line": 370,
+      "type": "method",
+      "references": 0
+    },
+    {
+      "name": "calculateOverdueDays",
+      "file": "src/services/aiWorkReportGenerator.js",
+      "line": 380,
+      "type": "method",
+      "references": 0
+    },
+    {
+      "name": "clearUser",
+      "file": "src/stores/offlineTaskStore.js",
+      "line": 1269,
+      "type": "method",
+      "references": 0
+    },
+    {
+      "name": "getAllLogRelations",
+      "file": "src/stores/offlineTaskStore.js",
+      "line": 1445,
+      "type": "method",
+      "references": 0
+    },
+    {
+      "name": "getTasksWithLogRelations",
+      "file": "src/stores/offlineTaskStore.js",
+      "line": 1455,
+      "type": "method",
+      "references": 0
+    },
+    {
+      "name": "getLogRelationsStats",
+      "file": "src/stores/offlineTaskStore.js",
+      "line": 1462,
+      "type": "method",
+      "references": 0
+    },
+    {
+      "name": "verifyCollectionPassword",
+      "file": "src/stores/offlineTaskStore.js",
+      "line": 1581,
+      "type": "method",
+      "references": 0
+    },
+    {
+      "name": "isCollectionLocked",
+      "file": "src/stores/offlineTaskStore.js",
+      "line": 1752,
+      "type": "method",
+      "references": 0
+    },
+    {
+      "name": "enterCollection",
+      "file": "src/stores/offlineTaskStore.js",
+      "line": 1771,
+      "type": "method",
+      "references": 0
+    },
+    {
+      "name": "goBackCollection",
+      "file": "src/stores/offlineTaskStore.js",
+      "line": 1776,
+      "type": "method",
+      "references": 0
+    },
+    {
+      "name": "goToRootCollection",
+      "file": "src/stores/offlineTaskStore.js",
+      "line": 1784,
+      "type": "method",
+      "references": 0
+    },
+    {
+      "name": "getCollectionStats",
+      "file": "src/stores/offlineTaskStore.js",
+      "line": 1789,
+      "type": "method",
+      "references": 0
+    },
+    {
+      "name": "loadUser",
+      "file": "src/stores/userStore.js",
+      "line": 39,
+      "type": "method",
+      "references": 0
+    },
+    {
+      "name": "sendMockSMS",
+      "file": "src/views/LoginView.vue",
+      "line": 252,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "sendRegisterSMS",
+      "file": "src/views/LoginView.vue",
+      "line": 289,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "showForgotPassword",
+      "file": "src/views/LoginView.vue",
+      "line": 506,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "verifySecurityAnswer",
+      "file": "src/views/LoginView.vue",
+      "line": 529,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "resetPassword",
+      "file": "src/views/LoginView.vue",
+      "line": 549,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "backToLogin",
+      "file": "src/views/LoginView.vue",
+      "line": 565,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "checkAISuggestion",
+      "file": "src/views/TodoView.vue",
+      "line": 4711,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "openTaskSplitter",
+      "file": "src/views/TodoView.vue",
+      "line": 4749,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "openTaskSplitterForNew",
+      "file": "src/views/TodoView.vue",
+      "line": 4755,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "showReportHistory",
+      "file": "src/views/TodoView.vue",
+      "line": 5277,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "batchDeleteReports",
+      "file": "src/views/TodoView.vue",
+      "line": 5387,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "toggleAllVersions",
+      "file": "src/views/TodoView.vue",
+      "line": 5828,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "checkVersionUpdate",
+      "file": "src/views/TodoView.vue",
+      "line": 5834,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "showVersionHistory",
+      "file": "src/views/TodoView.vue",
+      "line": 5878,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "markAllVersionsRead",
+      "file": "src/views/TodoView.vue",
+      "line": 5884,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "currentDateTime",
+      "file": "src/views/TodoView.vue",
+      "line": 5910,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "displayInputValue",
+      "file": "src/views/TodoView.vue",
+      "line": 5925,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "descEditTime",
+      "file": "src/views/TodoView.vue",
+      "line": 5932,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "getWordCountHint",
+      "file": "src/views/TodoView.vue",
+      "line": 5949,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getPlaceholder",
+      "file": "src/views/TodoView.vue",
+      "line": 5958,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "openFullscreenDesc",
+      "file": "src/views/TodoView.vue",
+      "line": 5966,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "closeFullscreenDesc",
+      "file": "src/views/TodoView.vue",
+      "line": 5984,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "toggleMarkdownPreview",
+      "file": "src/views/TodoView.vue",
+      "line": 6008,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "detectSubtasksFromDescription",
+      "file": "src/views/TodoView.vue",
+      "line": 6013,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "ignoreDetectedSubtasks",
+      "file": "src/views/TodoView.vue",
+      "line": 6042,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "previewTask",
+      "file": "src/views/TodoView.vue",
+      "line": 6048,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "saveTaskFromPreview",
+      "file": "src/views/TodoView.vue",
+      "line": 6095,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "storeSubtasksForPreview",
+      "file": "src/views/TodoView.vue",
+      "line": 6259,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "createSubtasksFromPreview",
+      "file": "src/views/TodoView.vue",
+      "line": 6276,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "pasteFromClipboard",
+      "file": "src/views/TodoView.vue",
+      "line": 6365,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "showPasteHistory",
+      "file": "src/views/TodoView.vue",
+      "line": 6406,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "selectClipboardItem",
+      "file": "src/views/TodoView.vue",
+      "line": 6431,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "clearClipboardHistory",
+      "file": "src/views/TodoView.vue",
+      "line": 6438,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "clearDescription",
+      "file": "src/views/TodoView.vue",
+      "line": 6448,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "pickImageForTask",
+      "file": "src/views/TodoView.vue",
+      "line": 6461,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "pickFileForTask",
+      "file": "src/views/TodoView.vue",
+      "line": 6536,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getFileType",
+      "file": "src/views/TodoView.vue",
+      "line": 6633,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "toggleAIMenu",
+      "file": "src/views/TodoView.vue",
+      "line": 6844,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "generateTitle",
+      "file": "src/views/TodoView.vue",
+      "line": 6974,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "polishDescription",
+      "file": "src/views/TodoView.vue",
+      "line": 7047,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "extractKeyPoints",
+      "file": "src/views/TodoView.vue",
+      "line": 7117,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "rewriteStyle",
+      "file": "src/views/TodoView.vue",
+      "line": 7187,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "generateWeeklyReport",
+      "file": "src/views/TodoView.vue",
+      "line": 7268,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "triggerAIAssist",
+      "file": "src/views/TodoView.vue",
+      "line": 7397,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "applySuggestion",
+      "file": "src/views/TodoView.vue",
+      "line": 7504,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "dismissSuggestion",
+      "file": "src/views/TodoView.vue",
+      "line": 7521,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "copyAIResult",
+      "file": "src/views/TodoView.vue",
+      "line": 7546,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "loadNotificationSettings",
+      "file": "src/views/TodoView.vue",
+      "line": 7569,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "saveNotificationSettings",
+      "file": "src/views/TodoView.vue",
+      "line": 7581,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "closeUnifiedReport",
+      "file": "src/views/TodoView.vue",
+      "line": 7621,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "viewTemplateDetail",
+      "file": "src/views/TodoView.vue",
+      "line": 7708,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "saveTemplateEdit",
+      "file": "src/views/TodoView.vue",
+      "line": 7720,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "generateCustomReport",
+      "file": "src/views/TodoView.vue",
+      "line": 7730,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "monthlyTrendChartOption",
+      "file": "src/views/TodoView.vue",
+      "line": 7832,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "pieChartOption",
+      "file": "src/views/TodoView.vue",
+      "line": 7925,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "radarChartOption",
+      "file": "src/views/TodoView.vue",
+      "line": 7978,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "treeIcon",
+      "file": "src/views/TodoView.vue",
+      "line": 8108,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "treeStyle",
+      "file": "src/views/TodoView.vue",
+      "line": 8135,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "treeProgress",
+      "file": "src/views/TodoView.vue",
+      "line": 8166,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "getNextLevelScore",
+      "file": "src/views/TodoView.vue",
+      "line": 8178,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "quickCollections",
+      "file": "src/views/TodoView.vue",
+      "line": 8230,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "moreCollections",
+      "file": "src/views/TodoView.vue",
+      "line": 8235,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "uncategorizedTaskCount",
+      "file": "src/views/TodoView.vue",
+      "line": 8239,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "currentBreadcrumb",
+      "file": "src/views/TodoView.vue",
+      "line": 8244,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "completionPercentage",
+      "file": "src/views/TodoView.vue",
+      "line": 8306,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "pendingCount",
+      "file": "src/views/TodoView.vue",
+      "line": 8313,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "completedCount",
+      "file": "src/views/TodoView.vue",
+      "line": 8314,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "overdueCount",
+      "file": "src/views/TodoView.vue",
+      "line": 8315,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "urgentPriorityCount",
+      "file": "src/views/TodoView.vue",
+      "line": 8327,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "priorityOptions",
+      "file": "src/views/TodoView.vue",
+      "line": 8330,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "getCategoryCount",
+      "file": "src/views/TodoView.vue",
+      "line": 8350,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "filterResultCount",
+      "file": "src/views/TodoView.vue",
+      "line": 8369,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "timeDimensionLabel",
+      "file": "src/views/TodoView.vue",
+      "line": 8372,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "completionRate",
+      "file": "src/views/TodoView.vue",
+      "line": 8380,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "usageDays",
+      "file": "src/views/TodoView.vue",
+      "line": 8387,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "pendingPomodoros",
+      "file": "src/views/TodoView.vue",
+      "line": 8413,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "lostPomodoros",
+      "file": "src/views/TodoView.vue",
+      "line": 8429,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "totalPomodoros",
+      "file": "src/views/TodoView.vue",
+      "line": 8445,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "getPomodorosByCategory",
+      "file": "src/views/TodoView.vue",
+      "line": 8451,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getPomodorosByPriority",
+      "file": "src/views/TodoView.vue",
+      "line": 8468,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getPomodorosByTime",
+      "file": "src/views/TodoView.vue",
+      "line": 8485,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getConsecutiveDays",
+      "file": "src/views/TodoView.vue",
+      "line": 8520,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getMaxDailyPomodoros",
+      "file": "src/views/TodoView.vue",
+      "line": 8555,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getCompletionRate",
+      "file": "src/views/TodoView.vue",
+      "line": 8572,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getLast7DaysTrend",
+      "file": "src/views/TodoView.vue",
+      "line": 8580,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getMaxDailyInWeek",
+      "file": "src/views/TodoView.vue",
+      "line": 8606,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getCategoryPercent",
+      "file": "src/views/TodoView.vue",
+      "line": 8613,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getLevelBadge",
+      "file": "src/views/TodoView.vue",
+      "line": 8621,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getTodayCompletedPomodoros",
+      "file": "src/views/TodoView.vue",
+      "line": 8631,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getTodayFocusMinutes",
+      "file": "src/views/TodoView.vue",
+      "line": 8644,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getWeekCompletedPomodoros",
+      "file": "src/views/TodoView.vue",
+      "line": 8650,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getTotalFocusMinutes",
+      "file": "src/views/TodoView.vue",
+      "line": 8667,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "formatPomodoroTime",
+      "file": "src/views/TodoView.vue",
+      "line": 8673,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "formatPomodoroDate",
+      "file": "src/views/TodoView.vue",
+      "line": 8681,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getPomodoroMinutes",
+      "file": "src/views/TodoView.vue",
+      "line": 8697,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "totalPages",
+      "file": "src/views/TodoView.vue",
+      "line": 8704,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "paginatedTasks",
+      "file": "src/views/TodoView.vue",
+      "line": 8710,
+      "type": "computed",
+      "references": 0
+    },
+    {
+      "name": "setCategoryFilter",
+      "file": "src/views/TodoView.vue",
+      "line": 8737,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "setPriorityFilter",
+      "file": "src/views/TodoView.vue",
+      "line": 8743,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "resetFilters",
+      "file": "src/views/TodoView.vue",
+      "line": 8760,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "clearDateFilter",
+      "file": "src/views/TodoView.vue",
+      "line": 8771,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "showCustomDateTimePicker",
+      "file": "src/views/TodoView.vue",
+      "line": 8918,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "filterTasks",
+      "file": "src/views/TodoView.vue",
+      "line": 9046,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "addTaskAndClose",
+      "file": "src/views/TodoView.vue",
+      "line": 9051,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "scanTextFromCamera",
+      "file": "src/views/TodoView.vue",
+      "line": 9059,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "startPomodoro",
+      "file": "src/views/TodoView.vue",
+      "line": 9396,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getTotalSeconds",
+      "file": "src/views/TodoView.vue",
+      "line": 9410,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "startPomodoroTimer",
+      "file": "src/views/TodoView.vue",
+      "line": 9416,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "pausePomodoro",
+      "file": "src/views/TodoView.vue",
+      "line": 9428,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "stopPomodoro",
+      "file": "src/views/TodoView.vue",
+      "line": 9432,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "skipBreak",
+      "file": "src/views/TodoView.vue",
+      "line": 9442,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "continueNextPomodoro",
+      "file": "src/views/TodoView.vue",
+      "line": 9448,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "toggleTaskStatus",
+      "file": "src/views/TodoView.vue",
+      "line": 9509,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "undoDelete",
+      "file": "src/views/TodoView.vue",
+      "line": 9590,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "permanentDelete",
+      "file": "src/views/TodoView.vue",
+      "line": 9611,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "clearAllTrash",
+      "file": "src/views/TodoView.vue",
+      "line": 9619,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "openEditModal",
+      "file": "src/views/TodoView.vue",
+      "line": 9670,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "openTaskFromCalendar",
+      "file": "src/views/TodoView.vue",
+      "line": 9725,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "createTaskFromCalendar",
+      "file": "src/views/TodoView.vue",
+      "line": 9730,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "confirmCustomDate",
+      "file": "src/views/TodoView.vue",
+      "line": 9797,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "confirmWeeklySelect",
+      "file": "src/views/TodoView.vue",
+      "line": 9806,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "saveTaskEdit",
+      "file": "src/views/TodoView.vue",
+      "line": 9815,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "generateReportContent",
+      "file": "src/views/TodoView.vue",
+      "line": 9882,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getMilestoneTransition",
+      "file": "src/views/TodoView.vue",
+      "line": 10154,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "priorityWeight",
+      "file": "src/views/TodoView.vue",
+      "line": 10506,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getColor",
+      "file": "src/views/TodoView.vue",
+      "line": 10699,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "generateExecutiveSummary",
+      "file": "src/views/TodoView.vue",
+      "line": 10815,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "generateInsights",
+      "file": "src/views/TodoView.vue",
+      "line": 10883,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "generateSmartSummary",
+      "file": "src/views/TodoView.vue",
+      "line": 10951,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "copyReportText",
+      "file": "src/views/TodoView.vue",
+      "line": 11007,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "copyWeeklyReport",
+      "file": "src/views/TodoView.vue",
+      "line": 11017,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "exportMarkdown",
+      "file": "src/views/TodoView.vue",
+      "line": 11105,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "exportPoster",
+      "file": "src/views/TodoView.vue",
+      "line": 11196,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "loadUserInfo",
+      "file": "src/views/TodoView.vue",
+      "line": 11375,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "formatLogTimeMini",
+      "file": "src/views/TodoView.vue",
+      "line": 11425,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "formatLogTimeFull",
+      "file": "src/views/TodoView.vue",
+      "line": 11451,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "formatDeadlineMini",
+      "file": "src/views/TodoView.vue",
+      "line": 11473,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "openAddLogModal",
+      "file": "src/views/TodoView.vue",
+      "line": 11527,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "deleteLogFromEdit",
+      "file": "src/views/TodoView.vue",
+      "line": 11533,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "startTutorial",
+      "file": "src/views/TodoView.vue",
+      "line": 11588,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "startEditUsername",
+      "file": "src/views/TodoView.vue",
+      "line": 11618,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "saveUsername",
+      "file": "src/views/TodoView.vue",
+      "line": 11626,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "updatePassword",
+      "file": "src/views/TodoView.vue",
+      "line": 11679,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "sendBindSMS",
+      "file": "src/views/TodoView.vue",
+      "line": 11704,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "confirmBindPhone",
+      "file": "src/views/TodoView.vue",
+      "line": 11743,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "unbindPhone",
+      "file": "src/views/TodoView.vue",
+      "line": 11776,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "triggerRestoreFile",
+      "file": "src/views/TodoView.vue",
+      "line": 11829,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "loadBackupList",
+      "file": "src/views/TodoView.vue",
+      "line": 11963,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "formatBackupDate",
+      "file": "src/views/TodoView.vue",
+      "line": 11974,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "exportToExcel",
+      "file": "src/views/TodoView.vue",
+      "line": 12035,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getTaskTypeText",
+      "file": "src/views/TodoView.vue",
+      "line": 12115,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getParentTaskName",
+      "file": "src/views/TodoView.vue",
+      "line": 12217,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getHabitTitle",
+      "file": "src/views/TodoView.vue",
+      "line": 12245,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "triggerImport",
+      "file": "src/views/TodoView.vue",
+      "line": 12259,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "showImportWarning",
+      "file": "src/views/TodoView.vue",
+      "line": 12264,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "showClearWarning",
+      "file": "src/views/TodoView.vue",
+      "line": 12282,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "downloadTemplate",
+      "file": "src/views/TodoView.vue",
+      "line": 12326,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "validateTaskData",
+      "file": "src/views/TodoView.vue",
+      "line": 12359,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "isValidDate",
+      "file": "src/views/TodoView.vue",
+      "line": 12424,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "importFromExcel",
+      "file": "src/views/TodoView.vue",
+      "line": 12432,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "confirmImport",
+      "file": "src/views/TodoView.vue",
+      "line": 12535,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "cancelImport",
+      "file": "src/views/TodoView.vue",
+      "line": 12570,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "parseCategoryText",
+      "file": "src/views/TodoView.vue",
+      "line": 12576,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "parsePriorityText",
+      "file": "src/views/TodoView.vue",
+      "line": 12582,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "parseTypeText",
+      "file": "src/views/TodoView.vue",
+      "line": 12588,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "parseStatusText",
+      "file": "src/views/TodoView.vue",
+      "line": 12597,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "parseWeekdays",
+      "file": "src/views/TodoView.vue",
+      "line": 12604,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "parseDateTime",
+      "file": "src/views/TodoView.vue",
+      "line": 12615,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getDeadlineDate",
+      "file": "src/views/TodoView.vue",
+      "line": 12711,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getPlannedDeadlineDate",
+      "file": "src/views/TodoView.vue",
+      "line": 12716,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getCompactStatus",
+      "file": "src/views/TodoView.vue",
+      "line": 12721,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getPlannedDeadlineText",
+      "file": "src/views/TodoView.vue",
+      "line": 12731,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "getDeadlineText",
+      "file": "src/views/TodoView.vue",
+      "line": 12746,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "toggleLanguage",
+      "file": "src/views/TodoView.vue",
+      "line": 12870,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "togglePriorityMode",
+      "file": "src/views/TodoView.vue",
+      "line": 12877,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "generateEnergyInsight",
+      "file": "src/views/TodoView.vue",
+      "line": 12884,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "toggleCollectionList",
+      "file": "src/views/TodoView.vue",
+      "line": 12978,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "startEditCollectionName",
+      "file": "src/views/TodoView.vue",
+      "line": 13032,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "saveCollectionName",
+      "file": "src/views/TodoView.vue",
+      "line": 13050,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "cancelEditCollectionName",
+      "file": "src/views/TodoView.vue",
+      "line": 13062,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "openBatchAddForCollection",
+      "file": "src/views/TodoView.vue",
+      "line": 13076,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "openBatchMoveIn",
+      "file": "src/views/TodoView.vue",
+      "line": 13082,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "openBatchMoveOut",
+      "file": "src/views/TodoView.vue",
+      "line": 13089,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "openChangePassword",
+      "file": "src/views/TodoView.vue",
+      "line": 13134,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "showCollectionMenu",
+      "file": "src/views/TodoView.vue",
+      "line": 13144,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "openDeleteCollection",
+      "file": "src/views/TodoView.vue",
+      "line": 13150,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "openSetPrivate",
+      "file": "src/views/TodoView.vue",
+      "line": 13159,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "collectChildren",
+      "file": "src/views/TodoView.vue",
+      "line": 13211,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "openMoveToCollection",
+      "file": "src/views/TodoView.vue",
+      "line": 13264,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "goToFirstPage",
+      "file": "src/views/TodoView.vue",
+      "line": 13278,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "goToLastPage",
+      "file": "src/views/TodoView.vue",
+      "line": 13283,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "changePageSize",
+      "file": "src/views/TodoView.vue",
+      "line": 13288,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "jumpToPageNumber",
+      "file": "src/views/TodoView.vue",
+      "line": 13294,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "checkBackupReminder",
+      "file": "src/views/TodoView.vue",
+      "line": 13305,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "recordBackupTime",
+      "file": "src/views/TodoView.vue",
+      "line": 13322,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "disableBackupReminder",
+      "file": "src/views/TodoView.vue",
+      "line": 13327,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "cleanupExpiredNotifications",
+      "file": "src/views/TodoView.vue",
+      "line": 13394,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "checkNotificationPermission",
+      "file": "src/views/TodoView.vue",
+      "line": 13429,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "generateNotificationId",
+      "file": "src/views/TodoView.vue",
+      "line": 13461,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "checkAndNotifyDeadline",
+      "file": "src/views/TodoView.vue",
+      "line": 13470,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "testNotification",
+      "file": "src/views/TodoView.vue",
+      "line": 13644,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "openNotificationSettings",
+      "file": "src/views/TodoView.vue",
+      "line": 13745,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "autoGenerateReports",
+      "file": "src/views/TodoView.vue",
+      "line": 13789,
+      "type": "const_function",
+      "references": 0
+    },
+    {
+      "name": "cleanupOldReports",
+      "file": "src/views/TodoView.vue",
+      "line": 14153,
+      "type": "const_function",
+      "references": 0
+    }
+  ],
+  "low_usage": [
+    {
+      "name": "isWeb",
+      "file": "src/App.vue",
+      "line": 34,
+      "type": "computed",
+      "references": 1,
+      "referenced_in": [
+        "src/App.vue"
+      ]
+    },
+    {
+      "name": "waitForTasks",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 788,
+      "type": "computed",
+      "references": 1,
+      "referenced_in": [
+        "src/stores/offlineTaskStore.js"
+      ]
+    },
+    {
+      "name": "blockedTasks",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 885,
+      "type": "computed",
+      "references": 1,
+      "referenced_in": [
+        "src/components/TaskDetailModal.vue"
+      ]
+    },
+    {
+      "name": "formatLogTime",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 1289,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/components/TaskDetailModal.vue"
+      ]
+    },
+    {
+      "name": "formatDuration",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 1304,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/components/TaskDetailModal.vue"
+      ]
+    },
+    {
+      "name": "moodStats",
+      "file": "src/components/LogStats.vue",
+      "line": 206,
+      "type": "computed",
+      "references": 1,
+      "referenced_in": [
+        "src/components/LogStats.vue"
+      ]
+    },
+    {
+      "name": "graphData",
+      "file": "src/components/TaskGraphView.vue",
+      "line": 290,
+      "type": "computed",
+      "references": 1,
+      "referenced_in": [
+        "src/components/TaskGraphView.vue"
+      ]
+    },
+    {
+      "name": "getRelatedTasks",
+      "file": "src/components/TaskGraphView.vue",
+      "line": 618,
+      "type": "function",
+      "references": 1,
+      "referenced_in": [
+        "src/components/TaskGraphView.vue"
+      ]
+    },
+    {
+      "name": "getCategoryIndex",
+      "file": "src/components/TaskGraphView.vue",
+      "line": 676,
+      "type": "function",
+      "references": 1,
+      "referenced_in": [
+        "src/components/TaskGraphView.vue"
+      ]
+    },
+    {
+      "name": "getCategoryColor",
+      "file": "src/components/TaskGraphView.vue",
+      "line": 684,
+      "type": "function",
+      "references": 1,
+      "referenced_in": [
+        "src/components/TaskGraphView.vue"
+      ]
+    },
+    {
+      "name": "getCollectionDepth",
+      "file": "src/components/TaskGraphView.vue",
+      "line": 694,
+      "type": "function",
+      "references": 1,
+      "referenced_in": [
+        "src/components/TaskGraphView.vue"
+      ]
+    },
+    {
+      "name": "blockedByTasks",
+      "file": "src/components/DependencyManager.vue",
+      "line": 82,
+      "type": "computed",
+      "references": 1,
+      "referenced_in": [
+        "src/components/DependencyManager.vue"
+      ]
+    },
+    {
+      "name": "tagTree",
+      "file": "src/components/TagBrowser.vue",
+      "line": 49,
+      "type": "computed",
+      "references": 1,
+      "referenced_in": [
+        "src/components/TagBrowser.vue"
+      ]
+    },
+    {
+      "name": "countTags",
+      "file": "src/components/TagBrowser.vue",
+      "line": 87,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/components/TagBrowser.vue"
+      ]
+    },
+    {
+      "name": "createNewChat",
+      "file": "src/components/AIChat.vue",
+      "line": 400,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/components/AIChat.vue"
+      ]
+    },
+    {
+      "name": "buildSmartContext",
+      "file": "src/components/AIChat.vue",
+      "line": 766,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/components/AIChat.vue"
+      ]
+    },
+    {
+      "name": "buildContext",
+      "file": "src/components/AIChat.vue",
+      "line": 867,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/components/AIChat.vue"
+      ]
+    },
+    {
+      "name": "callOllamaStream",
+      "file": "src/components/AIChat.vue",
+      "line": 1426,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/components/AIChat.vue"
+      ]
+    },
+    {
+      "name": "callOpenAIStream",
+      "file": "src/components/AIChat.vue",
+      "line": 1492,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/components/AIChat.vue"
+      ]
+    },
+    {
+      "name": "bindFileCardEvents",
+      "file": "src/components/MarkdownRenderer.vue",
+      "line": 351,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/components/MarkdownRenderer.vue"
+      ]
+    },
+    {
+      "name": "timeRange",
+      "file": "src/components/GanttChartView.vue",
+      "line": 64,
+      "type": "computed",
+      "references": 1,
+      "referenced_in": [
+        "src/components/GanttChartView.vue"
+      ]
+    },
+    {
+      "name": "close",
+      "file": "src/components/NotificationSheet.vue",
+      "line": 51,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/components/NotificationSheet.vue"
+      ]
+    },
+    {
+      "name": "updateTrendChart",
+      "file": "src/components/VisualReportView.vue",
+      "line": 166,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/components/VisualReportView.vue"
+      ]
+    },
+    {
+      "name": "updateCategoryChart",
+      "file": "src/components/VisualReportView.vue",
+      "line": 212,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/components/VisualReportView.vue"
+      ]
+    },
+    {
+      "name": "updatePriorityChart",
+      "file": "src/components/VisualReportView.vue",
+      "line": 263,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/components/VisualReportView.vue"
+      ]
+    },
+    {
+      "name": "updateHeatmapChart",
+      "file": "src/components/VisualReportView.vue",
+      "line": 312,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/components/VisualReportView.vue"
+      ]
+    },
+    {
+      "name": "dismiss",
+      "file": "src/components/AISuggestionCard.vue",
+      "line": 189,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/components/AISuggestionCard.vue"
+      ]
+    },
+    {
+      "name": "getAllCollectionIds",
+      "file": "src/components/CollectionManageModal.vue",
+      "line": 119,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/components/CollectionManageModal.vue"
+      ]
+    },
+    {
+      "name": "traverse",
+      "file": "src/components/CollectionManageModal.vue",
+      "line": 121,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/components/CollectionManageModal.vue"
+      ]
+    },
+    {
+      "name": "exitBatchMode",
+      "file": "src/components/CollectionManageModal.vue",
+      "line": 149,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/components/CollectionManageModal.vue"
+      ]
+    },
+    {
+      "name": "isSetMode",
+      "file": "src/components/ChangePasswordModal.vue",
+      "line": 67,
+      "type": "computed",
+      "references": 1,
+      "referenced_in": [
+        "src/components/ChangePasswordModal.vue"
+      ]
+    },
+    {
+      "name": "testModelConnection",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 820,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/components/AIModelConfig.vue"
+      ]
+    },
+    {
+      "name": "addWithLevel",
+      "file": "src/components/MoveCollectionModal.vue",
+      "line": 80,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/components/MoveCollectionModal.vue"
+      ]
+    },
+    {
+      "name": "getLogTypeClass",
+      "file": "src/components/LogTimeline.vue",
+      "line": 86,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/components/LogTimeline.vue"
+      ]
+    },
+    {
+      "name": "calculateDateRange",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 338,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/components/UnifiedReportModal.vue"
+      ]
+    },
+    {
+      "name": "updateCurrentDateTime",
+      "file": "src/views/TodoView.vue",
+      "line": 5913,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/views/TodoView.vue"
+      ]
+    },
+    {
+      "name": "generateAISuggestions",
+      "file": "src/views/TodoView.vue",
+      "line": 6656,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/views/TodoView.vue"
+      ]
+    },
+    {
+      "name": "generateAISuggestionsWithTemplate",
+      "file": "src/views/TodoView.vue",
+      "line": 6677,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/views/TodoView.vue"
+      ]
+    },
+    {
+      "name": "continueDescription",
+      "file": "src/views/TodoView.vue",
+      "line": 6789,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/views/TodoView.vue"
+      ]
+    },
+    {
+      "name": "generateDescription",
+      "file": "src/views/TodoView.vue",
+      "line": 7452,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/services/aiTaskGenerator.js"
+      ]
+    },
+    {
+      "name": "editTemplate",
+      "file": "src/views/TodoView.vue",
+      "line": 7714,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/views/TodoView.vue"
+      ]
+    },
+    {
+      "name": "currentUsername",
+      "file": "src/views/TodoView.vue",
+      "line": 8066,
+      "type": "computed",
+      "references": 1,
+      "referenced_in": [
+        "src/views/TodoView.vue"
+      ]
+    },
+    {
+      "name": "highPriorityCount",
+      "file": "src/views/TodoView.vue",
+      "line": 8318,
+      "type": "computed",
+      "references": 1,
+      "referenced_in": [
+        "src/views/TodoView.vue"
+      ]
+    },
+    {
+      "name": "mediumPriorityCount",
+      "file": "src/views/TodoView.vue",
+      "line": 8325,
+      "type": "computed",
+      "references": 1,
+      "referenced_in": [
+        "src/views/TodoView.vue"
+      ]
+    },
+    {
+      "name": "lowPriorityCount",
+      "file": "src/views/TodoView.vue",
+      "line": 8326,
+      "type": "computed",
+      "references": 1,
+      "referenced_in": [
+        "src/views/TodoView.vue"
+      ]
+    },
+    {
+      "name": "getTodayDateTime",
+      "file": "src/views/TodoView.vue",
+      "line": 8934,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/views/TodoView.vue"
+      ]
+    },
+    {
+      "name": "formatSelectedWeekdays",
+      "file": "src/views/TodoView.vue",
+      "line": 9312,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/views/TodoView.vue"
+      ]
+    },
+    {
+      "name": "togglePin",
+      "file": "src/views/TodoView.vue",
+      "line": 9381,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/stores/offlineTaskStore.js"
+      ]
+    },
+    {
+      "name": "clearAllTasks",
+      "file": "src/views/TodoView.vue",
+      "line": 9628,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/stores/offlineTaskStore.js"
+      ]
+    },
+    {
+      "name": "formatTimelineMini",
+      "file": "src/views/TodoView.vue",
+      "line": 11466,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/views/TodoView.vue"
+      ]
+    },
+    {
+      "name": "formatDurationMini",
+      "file": "src/views/TodoView.vue",
+      "line": 11562,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/views/TodoView.vue"
+      ]
+    },
+    {
+      "name": "calculateActualHours",
+      "file": "src/views/TodoView.vue",
+      "line": 12666,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/views/TodoView.vue"
+      ]
+    },
+    {
+      "name": "scheduleDailySummaryNotification",
+      "file": "src/views/TodoView.vue",
+      "line": 13672,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/views/TodoView.vue"
+      ]
+    },
+    {
+      "name": "parseTaskLinks",
+      "file": "src/stores/offlineTaskStore.js",
+      "line": 357,
+      "type": "method",
+      "references": 1,
+      "referenced_in": [
+        "src/stores/offlineTaskStore.js"
+      ]
+    },
+    {
+      "name": "parseHierarchicalTags",
+      "file": "src/stores/offlineTaskStore.js",
+      "line": 376,
+      "type": "method",
+      "references": 1,
+      "referenced_in": [
+        "src/stores/offlineTaskStore.js"
+      ]
+    },
+    {
+      "name": "checkOverdueTasks",
+      "file": "src/stores/offlineTaskStore.js",
+      "line": 818,
+      "type": "method",
+      "references": 1,
+      "referenced_in": [
+        "src/stores/taskStore.js"
+      ]
+    },
+    {
+      "name": "getWeight",
+      "file": "src/stores/offlineTaskStore.js",
+      "line": 1085,
+      "type": "const_function",
+      "references": 1,
+      "referenced_in": [
+        "src/stores/offlineTaskStore.js"
+      ]
+    },
+    {
+      "name": "logout",
+      "file": "src/stores/userStore.js",
+      "line": 33,
+      "type": "method",
+      "references": 1,
+      "referenced_in": [
+        "src/stores/offlineUserStore.js"
+      ]
+    },
+    {
+      "name": "getLastBackupDate",
+      "file": "src/utils/autoBackup.js",
+      "line": 21,
+      "type": "function",
+      "references": 1,
+      "referenced_in": [
+        "src/utils/autoBackup.js"
+      ]
+    },
+    {
+      "name": "setLastBackupDate",
+      "file": "src/utils/autoBackup.js",
+      "line": 27,
+      "type": "function",
+      "references": 1,
+      "referenced_in": [
+        "src/utils/autoBackup.js"
+      ]
+    },
+    {
+      "name": "collectReportData",
+      "file": "src/services/aiWorkReportGenerator.js",
+      "line": 34,
+      "type": "method",
+      "references": 1,
+      "referenced_in": [
+        "src/services/aiWorkReportGenerator.js"
+      ]
+    },
+    {
+      "name": "calculatePomodoros",
+      "file": "src/services/aiWorkReportGenerator.js",
+      "line": 354,
+      "type": "method",
+      "references": 1,
+      "referenced_in": [
+        "src/services/aiWorkReportGenerator.js"
+      ]
+    },
+    {
+      "name": "getDefaultTitle",
+      "file": "src/services/notificationService.js",
+      "line": 50,
+      "type": "function",
+      "references": 1,
+      "referenced_in": [
+        "src/services/notificationService.js"
+      ]
+    },
+    {
+      "name": "waitingTasks",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 792,
+      "type": "computed",
+      "references": 2,
+      "referenced_in": [
+        "src/stores/offlineTaskStore.js"
+      ]
+    },
+    {
+      "name": "backlinks",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 797,
+      "type": "computed",
+      "references": 2,
+      "referenced_in": [
+        "src/components/TaskGraphView.vue",
+        "src/components/TaskDetailModal.vue"
+      ]
+    },
+    {
+      "name": "topTags",
+      "file": "src/components/LogStats.vue",
+      "line": 187,
+      "type": "computed",
+      "references": 2,
+      "referenced_in": [
+        "src/components/LogStats.vue"
+      ]
+    },
+    {
+      "name": "isTaskIsolated",
+      "file": "src/components/TaskGraphView.vue",
+      "line": 550,
+      "type": "function",
+      "references": 2,
+      "referenced_in": [
+        "src/components/TaskGraphView.vue"
+      ]
+    },
+    {
+      "name": "selectedDayTasks",
+      "file": "src/components/CalendarView.vue",
+      "line": 171,
+      "type": "computed",
+      "references": 2,
+      "referenced_in": [
+        "src/components/CalendarView.vue"
+      ]
+    },
+    {
+      "name": "getTasksOnDate",
+      "file": "src/components/CalendarView.vue",
+      "line": 186,
+      "type": "function",
+      "references": 2,
+      "referenced_in": [
+        "src/components/CalendarView.vue"
+      ]
+    },
+    {
+      "name": "closeDayTasks",
+      "file": "src/components/CalendarView.vue",
+      "line": 261,
+      "type": "function",
+      "references": 2,
+      "referenced_in": [
+        "src/components/CalendarView.vue"
+      ]
+    },
+    {
+      "name": "saveAllChats",
+      "file": "src/components/AIChat.vue",
+      "line": 353,
+      "type": "const_function",
+      "references": 2,
+      "referenced_in": [
+        "src/components/AIChat.vue"
+      ]
+    },
+    {
+      "name": "loadChat",
+      "file": "src/components/AIChat.vue",
+      "line": 362,
+      "type": "const_function",
+      "references": 2,
+      "referenced_in": [
+        "src/components/AIChat.vue"
+      ]
+    },
+    {
+      "name": "scrollToBottom",
+      "file": "src/components/AIChat.vue",
+      "line": 374,
+      "type": "const_function",
+      "references": 2,
+      "referenced_in": [
+        "src/components/AIChat.vue"
+      ]
+    },
+    {
+      "name": "showWelcomeMessage",
+      "file": "src/components/AIChat.vue",
+      "line": 560,
+      "type": "const_function",
+      "references": 2,
+      "referenced_in": [
+        "src/components/AIChat.vue"
+      ]
+    },
+    {
+      "name": "generateDailyPlan",
+      "file": "src/components/AIChat.vue",
+      "line": 615,
+      "type": "const_function",
+      "references": 2,
+      "referenced_in": [
+        "src/components/AIChat.vue",
+        "src/services/aiDailyPlanner.js"
+      ]
+    },
+    {
+      "name": "analyzeQuestion",
+      "file": "src/components/AIChat.vue",
+      "line": 723,
+      "type": "const_function",
+      "references": 2,
+      "referenced_in": [
+        "src/components/AIChat.vue"
+      ]
+    },
+    {
+      "name": "canMoveTo",
+      "file": "src/components/MoveCollectionModal.vue",
+      "line": 96,
+      "type": "const_function",
+      "references": 2,
+      "referenced_in": [
+        "src/components/MoveCollectionModal.vue"
+      ]
+    },
+    {
+      "name": "sortedTasks",
+      "file": "src/components/TrashModal.vue",
+      "line": 79,
+      "type": "computed",
+      "references": 2,
+      "referenced_in": [
+        "src/components/TrashModal.vue"
+      ]
+    },
+    {
+      "name": "earnedPomodoros",
+      "file": "src/views/TodoView.vue",
+      "line": 8397,
+      "type": "computed",
+      "references": 2,
+      "referenced_in": [
+        "src/views/TodoView.vue"
+      ]
+    },
+    {
+      "name": "showDatePicker",
+      "file": "src/views/TodoView.vue",
+      "line": 8909,
+      "type": "const_function",
+      "references": 2,
+      "referenced_in": [
+        "src/views/TodoView.vue"
+      ]
+    },
+    {
+      "name": "formatDisplayDateTime",
+      "file": "src/views/TodoView.vue",
+      "line": 9006,
+      "type": "const_function",
+      "references": 2,
+      "referenced_in": [
+        "src/views/TodoView.vue"
+      ]
+    },
+    {
+      "name": "getSubtasksCount",
+      "file": "src/views/TodoView.vue",
+      "line": 12223,
+      "type": "const_function",
+      "references": 2,
+      "referenced_in": [
+        "src/views/TodoView.vue"
+      ]
+    },
+    {
+      "name": "getDependencyCount",
+      "file": "src/views/TodoView.vue",
+      "line": 12228,
+      "type": "const_function",
+      "references": 2,
+      "referenced_in": [
+        "src/views/TodoView.vue"
+      ]
+    },
+    {
+      "name": "getWaitingTasksCount",
+      "file": "src/views/TodoView.vue",
+      "line": 12235,
+      "type": "const_function",
+      "references": 2,
+      "referenced_in": [
+        "src/views/TodoView.vue"
+      ]
+    },
+    {
+      "name": "getSelectedCollectionName",
+      "file": "src/views/TodoView.vue",
+      "line": 13068,
+      "type": "const_function",
+      "references": 2,
+      "referenced_in": [
+        "src/views/TodoView.vue"
+      ]
+    },
+    {
+      "name": "resetForm",
+      "file": "src/views/LoginView.vue",
+      "line": 576,
+      "type": "const_function",
+      "references": 2,
+      "referenced_in": [
+        "src/views/LoginView.vue"
+      ]
+    },
+    {
+      "name": "updatePosition",
+      "file": "src/composables/useAutocomplete.js",
+      "line": 130,
+      "type": "function",
+      "references": 2,
+      "referenced_in": [
+        "src/composables/useAutocomplete.js"
+      ]
+    },
+    {
+      "name": "fixOrphanTasks",
+      "file": "src/stores/offlineTaskStore.js",
+      "line": 336,
+      "type": "method",
+      "references": 2,
+      "referenced_in": [
+        "src/stores/offlineTaskStore.js"
+      ]
+    },
+    {
+      "name": "getCollectionTasksRecursive",
+      "file": "src/stores/offlineTaskStore.js",
+      "line": 1696,
+      "type": "method",
+      "references": 2,
+      "referenced_in": [
+        "src/stores/offlineTaskStore.js"
+      ]
+    },
+    {
+      "name": "getCollectionBreadcrumb",
+      "file": "src/stores/offlineTaskStore.js",
+      "line": 1713,
+      "type": "method",
+      "references": 2,
+      "referenced_in": [
+        "src/views/TodoView.vue"
+      ]
+    },
+    {
+      "name": "saveUser",
+      "file": "src/stores/userStore.js",
+      "line": 47,
+      "type": "method",
+      "references": 2,
+      "referenced_in": [
+        "src/stores/userStore.js"
+      ]
+    },
+    {
+      "name": "parseExcelDate",
+      "file": "src/utils/excelFormat.js",
+      "line": 154,
+      "type": "const_function",
+      "references": 2,
+      "referenced_in": [
+        "src/utils/excelFormat.js"
+      ]
+    },
+    {
+      "name": "parseBoolean",
+      "file": "src/utils/excelFormat.js",
+      "line": 191,
+      "type": "const_function",
+      "references": 2,
+      "referenced_in": [
+        "src/utils/excelFormat.js"
+      ]
+    },
+    {
+      "name": "getAllData",
+      "file": "src/utils/autoBackup.js",
+      "line": 32,
+      "type": "function",
+      "references": 2,
+      "referenced_in": [
+        "src/utils/autoBackup.js"
+      ]
+    },
+    {
+      "name": "generateSimpleSummary",
+      "file": "src/services/aiWorkReportGenerator.js",
+      "line": 247,
+      "type": "method",
+      "references": 2,
+      "referenced_in": [
+        "src/services/aiWorkReportGenerator.js"
+      ]
+    },
+    {
+      "name": "migrateData",
+      "file": "src/services/mysqlSync.js",
+      "line": 224,
+      "type": "const_function",
+      "references": 2,
+      "referenced_in": [
+        "src/services/mysqlSync.js"
+      ]
+    }
+  ],
+  "safe_to_delete": [
+    {
+      "name": "showNotify",
+      "file": "src/App.vue",
+      "line": 53,
+      "type": "const_function"
+    },
+    {
+      "name": "saveAIConfig",
+      "file": "src/components/AIAssistButton.vue",
+      "line": 40,
+      "type": "const_function"
+    },
+    {
+      "name": "callAI",
+      "file": "src/components/AIAssistButton.vue",
+      "line": 90,
+      "type": "const_function"
+    },
+    {
+      "name": "loadModelsFromStorage",
+      "file": "src/components/AIChat.vue",
+      "line": 185,
+      "type": "const_function"
+    },
+    {
+      "name": "toggleGroup",
+      "file": "src/components/AIChat.vue",
+      "line": 226,
+      "type": "const_function"
+    },
+    {
+      "name": "highlightText",
+      "file": "src/components/AIChat.vue",
+      "line": 244,
+      "type": "const_function"
+    },
+    {
+      "name": "copyMessage",
+      "file": "src/components/AIChat.vue",
+      "line": 251,
+      "type": "const_function"
+    },
+    {
+      "name": "regenerateMessage",
+      "file": "src/components/AIChat.vue",
+      "line": 260,
+      "type": "const_function"
+    },
+    {
+      "name": "formatTimestamp",
+      "file": "src/components/AIChat.vue",
+      "line": 319,
+      "type": "const_function"
+    },
+    {
+      "name": "loadAllChats",
+      "file": "src/components/AIChat.vue",
+      "line": 340,
+      "type": "const_function"
+    },
+    {
+      "name": "switchChat",
+      "file": "src/components/AIChat.vue",
+      "line": 417,
+      "type": "const_function"
+    },
+    {
+      "name": "deleteChat",
+      "file": "src/components/AIChat.vue",
+      "line": 425,
+      "type": "const_function"
+    },
+    {
+      "name": "clearCurrentChat",
+      "file": "src/components/AIChat.vue",
+      "line": 441,
+      "type": "const_function"
+    },
+    {
+      "name": "formatChatTime",
+      "file": "src/components/AIChat.vue",
+      "line": 450,
+      "type": "const_function"
+    },
+    {
+      "name": "groupedChats",
+      "file": "src/components/AIChat.vue",
+      "line": 463,
+      "type": "computed"
+    },
+    {
+      "name": "filteredGroupedChats",
+      "file": "src/components/AIChat.vue",
+      "line": 490,
+      "type": "computed"
+    },
+    {
+      "name": "loadChatHistory",
+      "file": "src/components/AIChat.vue",
+      "line": 528,
+      "type": "const_function"
+    },
+    {
+      "name": "clearChatHistory",
+      "file": "src/components/AIChat.vue",
+      "line": 550,
+      "type": "const_function"
+    },
+    {
+      "name": "sendMessage",
+      "file": "src/components/AIChat.vue",
+      "line": 994,
+      "type": "const_function"
+    },
+    {
+      "name": "detectIntent",
+      "file": "src/components/AIChat.vue",
+      "line": 1044,
+      "type": "const_function"
+    },
+    {
+      "name": "callOllama",
+      "file": "src/components/AIChat.vue",
+      "line": 1652,
+      "type": "const_function"
+    },
+    {
+      "name": "callOpenAI",
+      "file": "src/components/AIChat.vue",
+      "line": 1680,
+      "type": "const_function"
+    },
+    {
+      "name": "fetchOllamaModels",
+      "file": "src/components/AIConfigModal.vue",
+      "line": 105,
+      "type": "const_function"
+    },
+    {
+      "name": "fetchAPIModels",
+      "file": "src/components/AIConfigModal.vue",
+      "line": 126,
+      "type": "const_function"
+    },
+    {
+      "name": "save",
+      "file": "src/components/AIConfigModal.vue",
+      "line": 206,
+      "type": "const_function"
+    },
+    {
+      "name": "getCurrentUsername",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 289,
+      "type": "const_function"
+    },
+    {
+      "name": "needApiKey",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 416,
+      "type": "computed"
+    },
+    {
+      "name": "selectPresetProvider",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 449,
+      "type": "const_function"
+    },
+    {
+      "name": "loadProviderConfig",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 468,
+      "type": "const_function"
+    },
+    {
+      "name": "editProviderConfig",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 491,
+      "type": "const_function"
+    },
+    {
+      "name": "deleteProviderConfig",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 513,
+      "type": "const_function"
+    },
+    {
+      "name": "getProviderLabel",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 534,
+      "type": "const_function"
+    },
+    {
+      "name": "loadingText",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 556,
+      "type": "computed"
+    },
+    {
+      "name": "loadingSubText",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 563,
+      "type": "computed"
+    },
+    {
+      "name": "getUrlPlaceholder",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 603,
+      "type": "const_function"
+    },
+    {
+      "name": "getStatusIcon",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 710,
+      "type": "const_function"
+    },
+    {
+      "name": "testSingleModel",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 732,
+      "type": "const_function"
+    },
+    {
+      "name": "testAllModels",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 764,
+      "type": "const_function"
+    },
+    {
+      "name": "exportConfig",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 882,
+      "type": "const_function"
+    },
+    {
+      "name": "importConfig",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 899,
+      "type": "const_function"
+    },
+    {
+      "name": "addModel",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 1004,
+      "type": "const_function"
+    },
+    {
+      "name": "clearForm",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 1073,
+      "type": "const_function"
+    },
+    {
+      "name": "setDefault",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 1088,
+      "type": "const_function"
+    },
+    {
+      "name": "editModel",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 1092,
+      "type": "const_function"
+    },
+    {
+      "name": "deleteModel",
+      "file": "src/components/AIModelConfig.vue",
+      "line": 1112,
+      "type": "const_function"
+    },
+    {
+      "name": "processTable",
+      "file": "src/components/AIPreviewModal.vue",
+      "line": 110,
+      "type": "const_function"
+    },
+    {
+      "name": "renderedMarkdown",
+      "file": "src/components/AIPreviewModal.vue",
+      "line": 196,
+      "type": "computed"
+    },
+    {
+      "name": "reportTitle",
+      "file": "src/components/AIReportModal.vue",
+      "line": 290,
+      "type": "computed"
+    },
+    {
+      "name": "copyReport",
+      "file": "src/components/AIReportModal.vue",
+      "line": 444,
+      "type": "const_function"
+    },
+    {
+      "name": "exportPDF",
+      "file": "src/components/AIReportModal.vue",
+      "line": 494,
+      "type": "const_function"
+    },
+    {
+      "name": "generateSuggestion",
+      "file": "src/components/AISuggestionCard.vue",
+      "line": 67,
+      "type": "const_function"
+    },
+    {
+      "name": "viewDetails",
+      "file": "src/components/AISuggestionCard.vue",
+      "line": 177,
+      "type": "const_function"
+    },
+    {
+      "name": "snooze",
+      "file": "src/components/AISuggestionCard.vue",
+      "line": 183,
+      "type": "const_function"
+    },
+    {
+      "name": "getTitle",
+      "file": "src/components/AITextResultSheet.vue",
+      "line": 67,
+      "type": "const_function"
+    },
+    {
+      "name": "getWarningText",
+      "file": "src/components/AddDependencyModal.vue",
+      "line": 153,
+      "type": "const_function"
+    },
+    {
+      "name": "getTaskById",
+      "file": "src/components/AddDependencyModal.vue",
+      "line": 181,
+      "type": "const_function"
+    },
+    {
+      "name": "contentLines",
+      "file": "src/components/AddLogModal.vue",
+      "line": 336,
+      "type": "computed"
+    },
+    {
+      "name": "unresolvedBlocks",
+      "file": "src/components/AddLogModal.vue",
+      "line": 341,
+      "type": "computed"
+    },
+    {
+      "name": "canSubmit",
+      "file": "src/components/AddLogModal.vue",
+      "line": 346,
+      "type": "computed"
+    },
+    {
+      "name": "addTag",
+      "file": "src/components/AddLogModal.vue",
+      "line": 362,
+      "type": "const_function"
+    },
+    {
+      "name": "removeTag",
+      "file": "src/components/AddLogModal.vue",
+      "line": 371,
+      "type": "const_function"
+    },
+    {
+      "name": "addLesson",
+      "file": "src/components/AddLogModal.vue",
+      "line": 376,
+      "type": "const_function"
+    },
+    {
+      "name": "removeLesson",
+      "file": "src/components/AddLogModal.vue",
+      "line": 385,
+      "type": "const_function"
+    },
+    {
+      "name": "formatWeekdays",
+      "file": "src/components/AddSubtaskModal.vue",
+      "line": 207,
+      "type": "const_function"
+    },
+    {
+      "name": "getTaskCollectionName",
+      "file": "src/components/BatchAddTasksModal.vue",
+      "line": 111,
+      "type": "const_function"
+    },
+    {
+      "name": "currentMonthText",
+      "file": "src/components/CalendarView.vue",
+      "line": 126,
+      "type": "computed"
+    },
+    {
+      "name": "selectedDateText",
+      "file": "src/components/CalendarView.vue",
+      "line": 131,
+      "type": "computed"
+    },
+    {
+      "name": "goToday",
+      "file": "src/components/CalendarView.vue",
+      "line": 248,
+      "type": "function"
+    },
+    {
+      "name": "quickCreateTask",
+      "file": "src/components/CalendarView.vue",
+      "line": 273,
+      "type": "function"
+    },
+    {
+      "name": "focusNewPassword",
+      "file": "src/components/ChangePasswordModal.vue",
+      "line": 80,
+      "type": "const_function"
+    },
+    {
+      "name": "focusConfirmPassword",
+      "file": "src/components/ChangePasswordModal.vue",
+      "line": 84,
+      "type": "const_function"
+    },
+    {
+      "name": "rootCollections",
+      "file": "src/components/CollectionManageModal.vue",
+      "line": 97,
+      "type": "computed"
+    },
+    {
+      "name": "allExpanded",
+      "file": "src/components/CollectionManageModal.vue",
+      "line": 114,
+      "type": "computed"
+    },
+    {
+      "name": "toggleExpandAll",
+      "file": "src/components/CollectionManageModal.vue",
+      "line": 134,
+      "type": "const_function"
+    },
+    {
+      "name": "enterBatchMode",
+      "file": "src/components/CollectionManageModal.vue",
+      "line": 144,
+      "type": "const_function"
+    },
+    {
+      "name": "toggleSelect",
+      "file": "src/components/CollectionManageModal.vue",
+      "line": 154,
+      "type": "const_function"
+    },
+    {
+      "name": "getLevelLabel",
+      "file": "src/components/CollectionTreeNode.vue",
+      "line": 146,
+      "type": "const_function"
+    },
+    {
+      "name": "canCreate",
+      "file": "src/components/CreateCollectionModal.vue",
+      "line": 120,
+      "type": "computed"
+    },
+    {
+      "name": "generateSummary",
+      "file": "src/components/DailySummaryModal.vue",
+      "line": 111,
+      "type": "const_function"
+    },
+    {
+      "name": "generateAIInsight",
+      "file": "src/components/DailySummaryModal.vue",
+      "line": 180,
+      "type": "const_function"
+    },
+    {
+      "name": "testSQLite",
+      "file": "src/components/DatabaseConfigModal.vue",
+      "line": 286,
+      "type": "const_function"
+    },
+    {
+      "name": "testMySQL",
+      "file": "src/components/DatabaseConfigModal.vue",
+      "line": 308,
+      "type": "const_function"
+    },
+    {
+      "name": "taskCount",
+      "file": "src/components/DeleteCollectionModal.vue",
+      "line": 89,
+      "type": "computed"
+    },
+    {
+      "name": "childCount",
+      "file": "src/components/DeleteCollectionModal.vue",
+      "line": 94,
+      "type": "computed"
+    },
+    {
+      "name": "blockingTasks",
+      "file": "src/components/DependencyManager.vue",
+      "line": 88,
+      "type": "computed"
+    },
+    {
+      "name": "resizeChart",
+      "file": "src/components/EChart.vue",
+      "line": 30,
+      "type": "const_function"
+    },
+    {
+      "name": "inProgressTasks",
+      "file": "src/components/GanttChartView.vue",
+      "line": 59,
+      "type": "computed"
+    },
+    {
+      "name": "hasMoreTasks",
+      "file": "src/components/GanttChartView.vue",
+      "line": 158,
+      "type": "computed"
+    },
+    {
+      "name": "remainingTasks",
+      "file": "src/components/GanttChartView.vue",
+      "line": 163,
+      "type": "computed"
+    },
+    {
+      "name": "showMoreTasks",
+      "file": "src/components/GanttChartView.vue",
+      "line": 168,
+      "type": "const_function"
+    },
+    {
+      "name": "getTagSize",
+      "file": "src/components/LogStats.vue",
+      "line": 232,
+      "type": "const_function"
+    },
+    {
+      "name": "exportAsText",
+      "file": "src/components/LogStats.vue",
+      "line": 259,
+      "type": "const_function"
+    },
+    {
+      "name": "exportAsMarkdown",
+      "file": "src/components/LogStats.vue",
+      "line": 315,
+      "type": "const_function"
+    },
+    {
+      "name": "exportAsJson",
+      "file": "src/components/LogStats.vue",
+      "line": 371,
+      "type": "const_function"
+    },
+    {
+      "name": "getLogIcon",
+      "file": "src/components/LogTimeline.vue",
+      "line": 99,
+      "type": "const_function"
+    },
+    {
+      "name": "getLogTypeLabel",
+      "file": "src/components/LogTimeline.vue",
+      "line": 112,
+      "type": "const_function"
+    },
+    {
+      "name": "getMoodText",
+      "file": "src/components/LogTimeline.vue",
+      "line": 147,
+      "type": "const_function"
+    },
+    {
+      "name": "processLocalImages",
+      "file": "src/components/MarkdownRenderer.vue",
+      "line": 68,
+      "type": "const_function"
+    },
+    {
+      "name": "availableTargets",
+      "file": "src/components/MoveCollectionModal.vue",
+      "line": 77,
+      "type": "computed"
+    },
+    {
+      "name": "restoreData",
+      "file": "src/components/MySQLConfigModal.vue",
+      "line": 348,
+      "type": "const_function"
+    },
+    {
+      "name": "toggleTakeover",
+      "file": "src/components/MySQLConfigModal.vue",
+      "line": 391,
+      "type": "const_function"
+    },
+    {
+      "name": "closeGuide",
+      "file": "src/components/PermissionGuide.vue",
+      "line": 63,
+      "type": "const_function"
+    },
+    {
+      "name": "openSettings",
+      "file": "src/components/PermissionGuide.vue",
+      "line": 67,
+      "type": "const_function"
+    },
+    {
+      "name": "dontShowAgain",
+      "file": "src/components/PermissionGuide.vue",
+      "line": 76,
+      "type": "const_function"
+    },
+    {
+      "name": "applyTemplate",
+      "file": "src/components/SmartTaskSplitter.vue",
+      "line": 177,
+      "type": "const_function"
+    },
+    {
+      "name": "generateSubtasks",
+      "file": "src/components/SmartTaskSplitter.vue",
+      "line": 185,
+      "type": "const_function"
+    },
+    {
+      "name": "regenerate",
+      "file": "src/components/SmartTaskSplitter.vue",
+      "line": 216,
+      "type": "const_function"
+    },
+    {
+      "name": "openCalendar",
+      "file": "src/components/SubtaskPreviewModal.vue",
+      "line": 180,
+      "type": "const_function"
+    },
+    {
+      "name": "toggleWeekday",
+      "file": "src/components/SubtaskPreviewModal.vue",
+      "line": 226,
+      "type": "const_function"
+    },
+    {
+      "name": "totalEstimatedTime",
+      "file": "src/components/SubtaskPreviewModal.vue",
+      "line": 257,
+      "type": "computed"
+    },
+    {
+      "name": "tagTreeArray",
+      "file": "src/components/TagBrowser.vue",
+      "line": 80,
+      "type": "computed"
+    },
+    {
+      "name": "totalTags",
+      "file": "src/components/TagBrowser.vue",
+      "line": 85,
+      "type": "computed"
+    },
+    {
+      "name": "childrenArray",
+      "file": "src/components/TagTreeNode.vue",
+      "line": 72,
+      "type": "computed"
+    },
+    {
+      "name": "getBacklinkContext",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 802,
+      "type": "const_function"
+    },
+    {
+      "name": "hasRelations",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 831,
+      "type": "computed"
+    },
+    {
+      "name": "filteredLogs",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 942,
+      "type": "computed"
+    },
+    {
+      "name": "filteredSortedLogs",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 965,
+      "type": "computed"
+    },
+    {
+      "name": "toggleDescriptionEdit",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 990,
+      "type": "const_function"
+    },
+    {
+      "name": "formatDateShort",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 1263,
+      "type": "const_function"
+    },
+    {
+      "name": "getProgressWidth",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 1270,
+      "type": "const_function"
+    },
+    {
+      "name": "getLatestProgress",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 1276,
+      "type": "const_function"
+    },
+    {
+      "name": "formatDeadlineShort",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 1282,
+      "type": "const_function"
+    },
+    {
+      "name": "saveLogContent",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 1328,
+      "type": "const_function"
+    },
+    {
+      "name": "saveAISummary",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 1364,
+      "type": "const_function"
+    },
+    {
+      "name": "toggleTimelineView",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 1372,
+      "type": "const_function"
+    },
+    {
+      "name": "deleteLog",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 1386,
+      "type": "const_function"
+    },
+    {
+      "name": "confirmDelete",
+      "file": "src/components/TaskDetailModal.vue",
+      "line": 1491,
+      "type": "const_function"
+    },
+    {
+      "name": "isLimited",
+      "file": "src/components/TaskGraphView.vue",
+      "line": 257,
+      "type": "computed"
+    },
+    {
+      "name": "toggleCompleted",
+      "file": "src/components/TaskGraphView.vue",
+      "line": 563,
+      "type": "function"
+    },
+    {
+      "name": "showIsolatedTasks",
+      "file": "src/components/TaskGraphView.vue",
+      "line": 597,
+      "type": "function"
+    },
+    {
+      "name": "exportAsImage",
+      "file": "src/components/TaskGraphView.vue",
+      "line": 815,
+      "type": "function"
+    },
+    {
+      "name": "resetView",
+      "file": "src/components/TaskGraphView.vue",
+      "line": 860,
+      "type": "function"
+    },
+    {
+      "name": "selectTemplate",
+      "file": "src/components/TemplateSelector.vue",
+      "line": 88,
+      "type": "const_function"
+    },
+    {
+      "name": "selectCustom",
+      "file": "src/components/TemplateSelector.vue",
+      "line": 92,
+      "type": "const_function"
+    },
+    {
+      "name": "formatDeleteTime",
+      "file": "src/components/TrashModal.vue",
+      "line": 123,
+      "type": "const_function"
+    },
+    {
+      "name": "progressPercent",
+      "file": "src/components/TutorialMode.vue",
+      "line": 282,
+      "type": "computed"
+    },
+    {
+      "name": "nextStep",
+      "file": "src/components/TutorialMode.vue",
+      "line": 379,
+      "type": "const_function"
+    },
+    {
+      "name": "prevStep",
+      "file": "src/components/TutorialMode.vue",
+      "line": 386,
+      "type": "const_function"
+    },
+    {
+      "name": "skipTutorial",
+      "file": "src/components/TutorialMode.vue",
+      "line": 393,
+      "type": "const_function"
+    },
+    {
+      "name": "finishTutorial",
+      "file": "src/components/TutorialMode.vue",
+      "line": 398,
+      "type": "const_function"
+    },
+    {
+      "name": "isHistoryMode",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 226,
+      "type": "computed"
+    },
+    {
+      "name": "selectType",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 291,
+      "type": "const_function"
+    },
+    {
+      "name": "generateUnifiedReport",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 410,
+      "type": "const_function"
+    },
+    {
+      "name": "generateQualityData",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 521,
+      "type": "const_function"
+    },
+    {
+      "name": "generateEfficiencyData",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 571,
+      "type": "const_function"
+    },
+    {
+      "name": "generateTrendData",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 628,
+      "type": "const_function"
+    },
+    {
+      "name": "generateHeatmapData",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 781,
+      "type": "const_function"
+    },
+    {
+      "name": "generateAIReport",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 805,
+      "type": "const_function"
+    },
+    {
+      "name": "autoSaveWithAIReport",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 851,
+      "type": "const_function"
+    },
+    {
+      "name": "copyAIReport",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 943,
+      "type": "const_function"
+    },
+    {
+      "name": "exportAIReport",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 953,
+      "type": "const_function"
+    },
+    {
+      "name": "saveToHistory",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 964,
+      "type": "const_function"
+    },
+    {
+      "name": "saveAsNew",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 980,
+      "type": "const_function"
+    },
+    {
+      "name": "formatHistoryDate",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 996,
+      "type": "const_function"
+    },
+    {
+      "name": "copyText",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 1008,
+      "type": "const_function"
+    },
+    {
+      "name": "getReportTitle",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 1083,
+      "type": "const_function"
+    },
+    {
+      "name": "showHistory",
+      "file": "src/components/UnifiedReportModal.vue",
+      "line": 1097,
+      "type": "const_function"
+    },
+    {
+      "name": "cleanup",
+      "file": "src/components/VisualReportView.vue",
+      "line": 383,
+      "type": "const_function"
+    },
+    {
+      "name": "priorityText",
+      "file": "src/components/WaitForSelector.vue",
+      "line": 123,
+      "type": "const_function"
+    },
+    {
+      "name": "statusText",
+      "file": "src/components/WaitForSelector.vue",
+      "line": 128,
+      "type": "const_function"
+    },
+    {
+      "name": "tagSuggestions",
+      "file": "src/composables/useAutocomplete.js",
+      "line": 14,
+      "type": "computed"
+    },
+    {
+      "name": "linkSuggestions",
+      "file": "src/composables/useAutocomplete.js",
+      "line": 50,
+      "type": "computed"
+    },
+    {
+      "name": "closeAutocomplete",
+      "file": "src/composables/useAutocomplete.js",
+      "line": 206,
+      "type": "function"
+    },
+    {
+      "name": "closeMenu",
+      "file": "src/composables/useTextSelection.js",
+      "line": 155,
+      "type": "const_function"
+    },
+    {
+      "name": "replaceSelectedText",
+      "file": "src/composables/useTextSelection.js",
+      "line": 163,
+      "type": "const_function"
+    },
+    {
+      "name": "getTemplateSections",
+      "file": "src/services/aiReportGenerator.js",
+      "line": 316,
+      "type": "method"
+    },
+    {
+      "name": "getTaskPomodoros",
+      "file": "src/services/aiWorkReportGenerator.js",
+      "line": 363,
+      "type": "method"
+    },
+    {
+      "name": "getEstimatedPomodoros",
+      "file": "src/services/aiWorkReportGenerator.js",
+      "line": 370,
+      "type": "method"
+    },
+    {
+      "name": "calculateOverdueDays",
+      "file": "src/services/aiWorkReportGenerator.js",
+      "line": 380,
+      "type": "method"
+    },
+    {
+      "name": "clearUser",
+      "file": "src/stores/offlineTaskStore.js",
+      "line": 1269,
+      "type": "method"
+    },
+    {
+      "name": "getAllLogRelations",
+      "file": "src/stores/offlineTaskStore.js",
+      "line": 1445,
+      "type": "method"
+    },
+    {
+      "name": "getTasksWithLogRelations",
+      "file": "src/stores/offlineTaskStore.js",
+      "line": 1455,
+      "type": "method"
+    },
+    {
+      "name": "getLogRelationsStats",
+      "file": "src/stores/offlineTaskStore.js",
+      "line": 1462,
+      "type": "method"
+    },
+    {
+      "name": "verifyCollectionPassword",
+      "file": "src/stores/offlineTaskStore.js",
+      "line": 1581,
+      "type": "method"
+    },
+    {
+      "name": "isCollectionLocked",
+      "file": "src/stores/offlineTaskStore.js",
+      "line": 1752,
+      "type": "method"
+    },
+    {
+      "name": "enterCollection",
+      "file": "src/stores/offlineTaskStore.js",
+      "line": 1771,
+      "type": "method"
+    },
+    {
+      "name": "goBackCollection",
+      "file": "src/stores/offlineTaskStore.js",
+      "line": 1776,
+      "type": "method"
+    },
+    {
+      "name": "goToRootCollection",
+      "file": "src/stores/offlineTaskStore.js",
+      "line": 1784,
+      "type": "method"
+    },
+    {
+      "name": "getCollectionStats",
+      "file": "src/stores/offlineTaskStore.js",
+      "line": 1789,
+      "type": "method"
+    },
+    {
+      "name": "loadUser",
+      "file": "src/stores/userStore.js",
+      "line": 39,
+      "type": "method"
+    },
+    {
+      "name": "sendMockSMS",
+      "file": "src/views/LoginView.vue",
+      "line": 252,
+      "type": "const_function"
+    },
+    {
+      "name": "sendRegisterSMS",
+      "file": "src/views/LoginView.vue",
+      "line": 289,
+      "type": "const_function"
+    },
+    {
+      "name": "showForgotPassword",
+      "file": "src/views/LoginView.vue",
+      "line": 506,
+      "type": "const_function"
+    },
+    {
+      "name": "verifySecurityAnswer",
+      "file": "src/views/LoginView.vue",
+      "line": 529,
+      "type": "const_function"
+    },
+    {
+      "name": "resetPassword",
+      "file": "src/views/LoginView.vue",
+      "line": 549,
+      "type": "const_function"
+    },
+    {
+      "name": "backToLogin",
+      "file": "src/views/LoginView.vue",
+      "line": 565,
+      "type": "const_function"
+    },
+    {
+      "name": "checkAISuggestion",
+      "file": "src/views/TodoView.vue",
+      "line": 4711,
+      "type": "const_function"
+    },
+    {
+      "name": "openTaskSplitter",
+      "file": "src/views/TodoView.vue",
+      "line": 4749,
+      "type": "const_function"
+    },
+    {
+      "name": "openTaskSplitterForNew",
+      "file": "src/views/TodoView.vue",
+      "line": 4755,
+      "type": "const_function"
+    },
+    {
+      "name": "showReportHistory",
+      "file": "src/views/TodoView.vue",
+      "line": 5277,
+      "type": "const_function"
+    },
+    {
+      "name": "batchDeleteReports",
+      "file": "src/views/TodoView.vue",
+      "line": 5387,
+      "type": "const_function"
+    },
+    {
+      "name": "toggleAllVersions",
+      "file": "src/views/TodoView.vue",
+      "line": 5828,
+      "type": "const_function"
+    },
+    {
+      "name": "checkVersionUpdate",
+      "file": "src/views/TodoView.vue",
+      "line": 5834,
+      "type": "const_function"
+    },
+    {
+      "name": "showVersionHistory",
+      "file": "src/views/TodoView.vue",
+      "line": 5878,
+      "type": "const_function"
+    },
+    {
+      "name": "markAllVersionsRead",
+      "file": "src/views/TodoView.vue",
+      "line": 5884,
+      "type": "const_function"
+    },
+    {
+      "name": "currentDateTime",
+      "file": "src/views/TodoView.vue",
+      "line": 5910,
+      "type": "computed"
+    },
+    {
+      "name": "displayInputValue",
+      "file": "src/views/TodoView.vue",
+      "line": 5925,
+      "type": "computed"
+    },
+    {
+      "name": "descEditTime",
+      "file": "src/views/TodoView.vue",
+      "line": 5932,
+      "type": "computed"
+    },
+    {
+      "name": "getWordCountHint",
+      "file": "src/views/TodoView.vue",
+      "line": 5949,
+      "type": "const_function"
+    },
+    {
+      "name": "getPlaceholder",
+      "file": "src/views/TodoView.vue",
+      "line": 5958,
+      "type": "const_function"
+    },
+    {
+      "name": "openFullscreenDesc",
+      "file": "src/views/TodoView.vue",
+      "line": 5966,
+      "type": "const_function"
+    },
+    {
+      "name": "closeFullscreenDesc",
+      "file": "src/views/TodoView.vue",
+      "line": 5984,
+      "type": "const_function"
+    },
+    {
+      "name": "toggleMarkdownPreview",
+      "file": "src/views/TodoView.vue",
+      "line": 6008,
+      "type": "const_function"
+    },
+    {
+      "name": "detectSubtasksFromDescription",
+      "file": "src/views/TodoView.vue",
+      "line": 6013,
+      "type": "const_function"
+    },
+    {
+      "name": "ignoreDetectedSubtasks",
+      "file": "src/views/TodoView.vue",
+      "line": 6042,
+      "type": "const_function"
+    },
+    {
+      "name": "previewTask",
+      "file": "src/views/TodoView.vue",
+      "line": 6048,
+      "type": "const_function"
+    },
+    {
+      "name": "saveTaskFromPreview",
+      "file": "src/views/TodoView.vue",
+      "line": 6095,
+      "type": "const_function"
+    },
+    {
+      "name": "storeSubtasksForPreview",
+      "file": "src/views/TodoView.vue",
+      "line": 6259,
+      "type": "const_function"
+    },
+    {
+      "name": "createSubtasksFromPreview",
+      "file": "src/views/TodoView.vue",
+      "line": 6276,
+      "type": "const_function"
+    },
+    {
+      "name": "pasteFromClipboard",
+      "file": "src/views/TodoView.vue",
+      "line": 6365,
+      "type": "const_function"
+    },
+    {
+      "name": "showPasteHistory",
+      "file": "src/views/TodoView.vue",
+      "line": 6406,
+      "type": "const_function"
+    },
+    {
+      "name": "selectClipboardItem",
+      "file": "src/views/TodoView.vue",
+      "line": 6431,
+      "type": "const_function"
+    },
+    {
+      "name": "clearClipboardHistory",
+      "file": "src/views/TodoView.vue",
+      "line": 6438,
+      "type": "const_function"
+    },
+    {
+      "name": "clearDescription",
+      "file": "src/views/TodoView.vue",
+      "line": 6448,
+      "type": "const_function"
+    },
+    {
+      "name": "pickImageForTask",
+      "file": "src/views/TodoView.vue",
+      "line": 6461,
+      "type": "const_function"
+    },
+    {
+      "name": "pickFileForTask",
+      "file": "src/views/TodoView.vue",
+      "line": 6536,
+      "type": "const_function"
+    },
+    {
+      "name": "getFileType",
+      "file": "src/views/TodoView.vue",
+      "line": 6633,
+      "type": "const_function"
+    },
+    {
+      "name": "toggleAIMenu",
+      "file": "src/views/TodoView.vue",
+      "line": 6844,
+      "type": "const_function"
+    },
+    {
+      "name": "generateTitle",
+      "file": "src/views/TodoView.vue",
+      "line": 6974,
+      "type": "const_function"
+    },
+    {
+      "name": "polishDescription",
+      "file": "src/views/TodoView.vue",
+      "line": 7047,
+      "type": "const_function"
+    },
+    {
+      "name": "extractKeyPoints",
+      "file": "src/views/TodoView.vue",
+      "line": 7117,
+      "type": "const_function"
+    },
+    {
+      "name": "rewriteStyle",
+      "file": "src/views/TodoView.vue",
+      "line": 7187,
+      "type": "const_function"
+    },
+    {
+      "name": "generateWeeklyReport",
+      "file": "src/views/TodoView.vue",
+      "line": 7268,
+      "type": "const_function"
+    },
+    {
+      "name": "triggerAIAssist",
+      "file": "src/views/TodoView.vue",
+      "line": 7397,
+      "type": "const_function"
+    },
+    {
+      "name": "applySuggestion",
+      "file": "src/views/TodoView.vue",
+      "line": 7504,
+      "type": "const_function"
+    },
+    {
+      "name": "dismissSuggestion",
+      "file": "src/views/TodoView.vue",
+      "line": 7521,
+      "type": "const_function"
+    },
+    {
+      "name": "copyAIResult",
+      "file": "src/views/TodoView.vue",
+      "line": 7546,
+      "type": "const_function"
+    },
+    {
+      "name": "loadNotificationSettings",
+      "file": "src/views/TodoView.vue",
+      "line": 7569,
+      "type": "const_function"
+    },
+    {
+      "name": "saveNotificationSettings",
+      "file": "src/views/TodoView.vue",
+      "line": 7581,
+      "type": "const_function"
+    },
+    {
+      "name": "closeUnifiedReport",
+      "file": "src/views/TodoView.vue",
+      "line": 7621,
+      "type": "const_function"
+    },
+    {
+      "name": "viewTemplateDetail",
+      "file": "src/views/TodoView.vue",
+      "line": 7708,
+      "type": "const_function"
+    },
+    {
+      "name": "saveTemplateEdit",
+      "file": "src/views/TodoView.vue",
+      "line": 7720,
+      "type": "const_function"
+    },
+    {
+      "name": "generateCustomReport",
+      "file": "src/views/TodoView.vue",
+      "line": 7730,
+      "type": "const_function"
+    },
+    {
+      "name": "monthlyTrendChartOption",
+      "file": "src/views/TodoView.vue",
+      "line": 7832,
+      "type": "computed"
+    },
+    {
+      "name": "pieChartOption",
+      "file": "src/views/TodoView.vue",
+      "line": 7925,
+      "type": "computed"
+    },
+    {
+      "name": "radarChartOption",
+      "file": "src/views/TodoView.vue",
+      "line": 7978,
+      "type": "computed"
+    },
+    {
+      "name": "treeIcon",
+      "file": "src/views/TodoView.vue",
+      "line": 8108,
+      "type": "computed"
+    },
+    {
+      "name": "treeStyle",
+      "file": "src/views/TodoView.vue",
+      "line": 8135,
+      "type": "computed"
+    },
+    {
+      "name": "treeProgress",
+      "file": "src/views/TodoView.vue",
+      "line": 8166,
+      "type": "computed"
+    },
+    {
+      "name": "getNextLevelScore",
+      "file": "src/views/TodoView.vue",
+      "line": 8178,
+      "type": "const_function"
+    },
+    {
+      "name": "quickCollections",
+      "file": "src/views/TodoView.vue",
+      "line": 8230,
+      "type": "computed"
+    },
+    {
+      "name": "moreCollections",
+      "file": "src/views/TodoView.vue",
+      "line": 8235,
+      "type": "computed"
+    },
+    {
+      "name": "uncategorizedTaskCount",
+      "file": "src/views/TodoView.vue",
+      "line": 8239,
+      "type": "computed"
+    },
+    {
+      "name": "currentBreadcrumb",
+      "file": "src/views/TodoView.vue",
+      "line": 8244,
+      "type": "computed"
+    },
+    {
+      "name": "completionPercentage",
+      "file": "src/views/TodoView.vue",
+      "line": 8306,
+      "type": "computed"
+    },
+    {
+      "name": "pendingCount",
+      "file": "src/views/TodoView.vue",
+      "line": 8313,
+      "type": "computed"
+    },
+    {
+      "name": "completedCount",
+      "file": "src/views/TodoView.vue",
+      "line": 8314,
+      "type": "computed"
+    },
+    {
+      "name": "overdueCount",
+      "file": "src/views/TodoView.vue",
+      "line": 8315,
+      "type": "computed"
+    },
+    {
+      "name": "urgentPriorityCount",
+      "file": "src/views/TodoView.vue",
+      "line": 8327,
+      "type": "computed"
+    },
+    {
+      "name": "priorityOptions",
+      "file": "src/views/TodoView.vue",
+      "line": 8330,
+      "type": "computed"
+    },
+    {
+      "name": "getCategoryCount",
+      "file": "src/views/TodoView.vue",
+      "line": 8350,
+      "type": "const_function"
+    },
+    {
+      "name": "filterResultCount",
+      "file": "src/views/TodoView.vue",
+      "line": 8369,
+      "type": "computed"
+    },
+    {
+      "name": "timeDimensionLabel",
+      "file": "src/views/TodoView.vue",
+      "line": 8372,
+      "type": "computed"
+    },
+    {
+      "name": "completionRate",
+      "file": "src/views/TodoView.vue",
+      "line": 8380,
+      "type": "computed"
+    },
+    {
+      "name": "usageDays",
+      "file": "src/views/TodoView.vue",
+      "line": 8387,
+      "type": "computed"
+    },
+    {
+      "name": "pendingPomodoros",
+      "file": "src/views/TodoView.vue",
+      "line": 8413,
+      "type": "computed"
+    },
+    {
+      "name": "lostPomodoros",
+      "file": "src/views/TodoView.vue",
+      "line": 8429,
+      "type": "computed"
+    },
+    {
+      "name": "totalPomodoros",
+      "file": "src/views/TodoView.vue",
+      "line": 8445,
+      "type": "computed"
+    },
+    {
+      "name": "getPomodorosByCategory",
+      "file": "src/views/TodoView.vue",
+      "line": 8451,
+      "type": "const_function"
+    },
+    {
+      "name": "getPomodorosByPriority",
+      "file": "src/views/TodoView.vue",
+      "line": 8468,
+      "type": "const_function"
+    },
+    {
+      "name": "getPomodorosByTime",
+      "file": "src/views/TodoView.vue",
+      "line": 8485,
+      "type": "const_function"
+    },
+    {
+      "name": "getConsecutiveDays",
+      "file": "src/views/TodoView.vue",
+      "line": 8520,
+      "type": "const_function"
+    },
+    {
+      "name": "getMaxDailyPomodoros",
+      "file": "src/views/TodoView.vue",
+      "line": 8555,
+      "type": "const_function"
+    },
+    {
+      "name": "getCompletionRate",
+      "file": "src/views/TodoView.vue",
+      "line": 8572,
+      "type": "const_function"
+    },
+    {
+      "name": "getLast7DaysTrend",
+      "file": "src/views/TodoView.vue",
+      "line": 8580,
+      "type": "const_function"
+    },
+    {
+      "name": "getMaxDailyInWeek",
+      "file": "src/views/TodoView.vue",
+      "line": 8606,
+      "type": "const_function"
+    },
+    {
+      "name": "getCategoryPercent",
+      "file": "src/views/TodoView.vue",
+      "line": 8613,
+      "type": "const_function"
+    },
+    {
+      "name": "getLevelBadge",
+      "file": "src/views/TodoView.vue",
+      "line": 8621,
+      "type": "const_function"
+    },
+    {
+      "name": "getTodayCompletedPomodoros",
+      "file": "src/views/TodoView.vue",
+      "line": 8631,
+      "type": "const_function"
+    },
+    {
+      "name": "getTodayFocusMinutes",
+      "file": "src/views/TodoView.vue",
+      "line": 8644,
+      "type": "const_function"
+    },
+    {
+      "name": "getWeekCompletedPomodoros",
+      "file": "src/views/TodoView.vue",
+      "line": 8650,
+      "type": "const_function"
+    },
+    {
+      "name": "getTotalFocusMinutes",
+      "file": "src/views/TodoView.vue",
+      "line": 8667,
+      "type": "const_function"
+    },
+    {
+      "name": "formatPomodoroTime",
+      "file": "src/views/TodoView.vue",
+      "line": 8673,
+      "type": "const_function"
+    },
+    {
+      "name": "formatPomodoroDate",
+      "file": "src/views/TodoView.vue",
+      "line": 8681,
+      "type": "const_function"
+    },
+    {
+      "name": "getPomodoroMinutes",
+      "file": "src/views/TodoView.vue",
+      "line": 8697,
+      "type": "const_function"
+    },
+    {
+      "name": "totalPages",
+      "file": "src/views/TodoView.vue",
+      "line": 8704,
+      "type": "computed"
+    },
+    {
+      "name": "paginatedTasks",
+      "file": "src/views/TodoView.vue",
+      "line": 8710,
+      "type": "computed"
+    },
+    {
+      "name": "setCategoryFilter",
+      "file": "src/views/TodoView.vue",
+      "line": 8737,
+      "type": "const_function"
+    },
+    {
+      "name": "setPriorityFilter",
+      "file": "src/views/TodoView.vue",
+      "line": 8743,
+      "type": "const_function"
+    },
+    {
+      "name": "resetFilters",
+      "file": "src/views/TodoView.vue",
+      "line": 8760,
+      "type": "const_function"
+    },
+    {
+      "name": "clearDateFilter",
+      "file": "src/views/TodoView.vue",
+      "line": 8771,
+      "type": "const_function"
+    },
+    {
+      "name": "showCustomDateTimePicker",
+      "file": "src/views/TodoView.vue",
+      "line": 8918,
+      "type": "const_function"
+    },
+    {
+      "name": "filterTasks",
+      "file": "src/views/TodoView.vue",
+      "line": 9046,
+      "type": "const_function"
+    },
+    {
+      "name": "addTaskAndClose",
+      "file": "src/views/TodoView.vue",
+      "line": 9051,
+      "type": "const_function"
+    },
+    {
+      "name": "scanTextFromCamera",
+      "file": "src/views/TodoView.vue",
+      "line": 9059,
+      "type": "const_function"
+    },
+    {
+      "name": "startPomodoro",
+      "file": "src/views/TodoView.vue",
+      "line": 9396,
+      "type": "const_function"
+    },
+    {
+      "name": "getTotalSeconds",
+      "file": "src/views/TodoView.vue",
+      "line": 9410,
+      "type": "const_function"
+    },
+    {
+      "name": "startPomodoroTimer",
+      "file": "src/views/TodoView.vue",
+      "line": 9416,
+      "type": "const_function"
+    },
+    {
+      "name": "pausePomodoro",
+      "file": "src/views/TodoView.vue",
+      "line": 9428,
+      "type": "const_function"
+    },
+    {
+      "name": "stopPomodoro",
+      "file": "src/views/TodoView.vue",
+      "line": 9432,
+      "type": "const_function"
+    },
+    {
+      "name": "skipBreak",
+      "file": "src/views/TodoView.vue",
+      "line": 9442,
+      "type": "const_function"
+    },
+    {
+      "name": "continueNextPomodoro",
+      "file": "src/views/TodoView.vue",
+      "line": 9448,
+      "type": "const_function"
+    },
+    {
+      "name": "toggleTaskStatus",
+      "file": "src/views/TodoView.vue",
+      "line": 9509,
+      "type": "const_function"
+    },
+    {
+      "name": "undoDelete",
+      "file": "src/views/TodoView.vue",
+      "line": 9590,
+      "type": "const_function"
+    },
+    {
+      "name": "permanentDelete",
+      "file": "src/views/TodoView.vue",
+      "line": 9611,
+      "type": "const_function"
+    },
+    {
+      "name": "clearAllTrash",
+      "file": "src/views/TodoView.vue",
+      "line": 9619,
+      "type": "const_function"
+    },
+    {
+      "name": "openEditModal",
+      "file": "src/views/TodoView.vue",
+      "line": 9670,
+      "type": "const_function"
+    },
+    {
+      "name": "openTaskFromCalendar",
+      "file": "src/views/TodoView.vue",
+      "line": 9725,
+      "type": "const_function"
+    },
+    {
+      "name": "createTaskFromCalendar",
+      "file": "src/views/TodoView.vue",
+      "line": 9730,
+      "type": "const_function"
+    },
+    {
+      "name": "confirmCustomDate",
+      "file": "src/views/TodoView.vue",
+      "line": 9797,
+      "type": "const_function"
+    },
+    {
+      "name": "confirmWeeklySelect",
+      "file": "src/views/TodoView.vue",
+      "line": 9806,
+      "type": "const_function"
+    },
+    {
+      "name": "saveTaskEdit",
+      "file": "src/views/TodoView.vue",
+      "line": 9815,
+      "type": "const_function"
+    },
+    {
+      "name": "generateReportContent",
+      "file": "src/views/TodoView.vue",
+      "line": 9882,
+      "type": "const_function"
+    },
+    {
+      "name": "getMilestoneTransition",
+      "file": "src/views/TodoView.vue",
+      "line": 10154,
+      "type": "const_function"
+    },
+    {
+      "name": "priorityWeight",
+      "file": "src/views/TodoView.vue",
+      "line": 10506,
+      "type": "const_function"
+    },
+    {
+      "name": "getColor",
+      "file": "src/views/TodoView.vue",
+      "line": 10699,
+      "type": "const_function"
+    },
+    {
+      "name": "generateExecutiveSummary",
+      "file": "src/views/TodoView.vue",
+      "line": 10815,
+      "type": "const_function"
+    },
+    {
+      "name": "generateInsights",
+      "file": "src/views/TodoView.vue",
+      "line": 10883,
+      "type": "const_function"
+    },
+    {
+      "name": "generateSmartSummary",
+      "file": "src/views/TodoView.vue",
+      "line": 10951,
+      "type": "const_function"
+    },
+    {
+      "name": "copyReportText",
+      "file": "src/views/TodoView.vue",
+      "line": 11007,
+      "type": "const_function"
+    },
+    {
+      "name": "copyWeeklyReport",
+      "file": "src/views/TodoView.vue",
+      "line": 11017,
+      "type": "const_function"
+    },
+    {
+      "name": "exportMarkdown",
+      "file": "src/views/TodoView.vue",
+      "line": 11105,
+      "type": "const_function"
+    },
+    {
+      "name": "exportPoster",
+      "file": "src/views/TodoView.vue",
+      "line": 11196,
+      "type": "const_function"
+    },
+    {
+      "name": "loadUserInfo",
+      "file": "src/views/TodoView.vue",
+      "line": 11375,
+      "type": "const_function"
+    },
+    {
+      "name": "formatLogTimeMini",
+      "file": "src/views/TodoView.vue",
+      "line": 11425,
+      "type": "const_function"
+    },
+    {
+      "name": "formatLogTimeFull",
+      "file": "src/views/TodoView.vue",
+      "line": 11451,
+      "type": "const_function"
+    },
+    {
+      "name": "formatDeadlineMini",
+      "file": "src/views/TodoView.vue",
+      "line": 11473,
+      "type": "const_function"
+    },
+    {
+      "name": "openAddLogModal",
+      "file": "src/views/TodoView.vue",
+      "line": 11527,
+      "type": "const_function"
+    },
+    {
+      "name": "deleteLogFromEdit",
+      "file": "src/views/TodoView.vue",
+      "line": 11533,
+      "type": "const_function"
+    },
+    {
+      "name": "startTutorial",
+      "file": "src/views/TodoView.vue",
+      "line": 11588,
+      "type": "const_function"
+    },
+    {
+      "name": "startEditUsername",
+      "file": "src/views/TodoView.vue",
+      "line": 11618,
+      "type": "const_function"
+    },
+    {
+      "name": "saveUsername",
+      "file": "src/views/TodoView.vue",
+      "line": 11626,
+      "type": "const_function"
+    },
+    {
+      "name": "updatePassword",
+      "file": "src/views/TodoView.vue",
+      "line": 11679,
+      "type": "const_function"
+    },
+    {
+      "name": "sendBindSMS",
+      "file": "src/views/TodoView.vue",
+      "line": 11704,
+      "type": "const_function"
+    },
+    {
+      "name": "confirmBindPhone",
+      "file": "src/views/TodoView.vue",
+      "line": 11743,
+      "type": "const_function"
+    },
+    {
+      "name": "unbindPhone",
+      "file": "src/views/TodoView.vue",
+      "line": 11776,
+      "type": "const_function"
+    },
+    {
+      "name": "triggerRestoreFile",
+      "file": "src/views/TodoView.vue",
+      "line": 11829,
+      "type": "const_function"
+    },
+    {
+      "name": "loadBackupList",
+      "file": "src/views/TodoView.vue",
+      "line": 11963,
+      "type": "const_function"
+    },
+    {
+      "name": "formatBackupDate",
+      "file": "src/views/TodoView.vue",
+      "line": 11974,
+      "type": "const_function"
+    },
+    {
+      "name": "exportToExcel",
+      "file": "src/views/TodoView.vue",
+      "line": 12035,
+      "type": "const_function"
+    },
+    {
+      "name": "getTaskTypeText",
+      "file": "src/views/TodoView.vue",
+      "line": 12115,
+      "type": "const_function"
+    },
+    {
+      "name": "getParentTaskName",
+      "file": "src/views/TodoView.vue",
+      "line": 12217,
+      "type": "const_function"
+    },
+    {
+      "name": "getHabitTitle",
+      "file": "src/views/TodoView.vue",
+      "line": 12245,
+      "type": "const_function"
+    },
+    {
+      "name": "triggerImport",
+      "file": "src/views/TodoView.vue",
+      "line": 12259,
+      "type": "const_function"
+    },
+    {
+      "name": "showImportWarning",
+      "file": "src/views/TodoView.vue",
+      "line": 12264,
+      "type": "const_function"
+    },
+    {
+      "name": "showClearWarning",
+      "file": "src/views/TodoView.vue",
+      "line": 12282,
+      "type": "const_function"
+    },
+    {
+      "name": "downloadTemplate",
+      "file": "src/views/TodoView.vue",
+      "line": 12326,
+      "type": "const_function"
+    },
+    {
+      "name": "validateTaskData",
+      "file": "src/views/TodoView.vue",
+      "line": 12359,
+      "type": "const_function"
+    },
+    {
+      "name": "isValidDate",
+      "file": "src/views/TodoView.vue",
+      "line": 12424,
+      "type": "const_function"
+    },
+    {
+      "name": "importFromExcel",
+      "file": "src/views/TodoView.vue",
+      "line": 12432,
+      "type": "const_function"
+    },
+    {
+      "name": "confirmImport",
+      "file": "src/views/TodoView.vue",
+      "line": 12535,
+      "type": "const_function"
+    },
+    {
+      "name": "cancelImport",
+      "file": "src/views/TodoView.vue",
+      "line": 12570,
+      "type": "const_function"
+    },
+    {
+      "name": "parseCategoryText",
+      "file": "src/views/TodoView.vue",
+      "line": 12576,
+      "type": "const_function"
+    },
+    {
+      "name": "parsePriorityText",
+      "file": "src/views/TodoView.vue",
+      "line": 12582,
+      "type": "const_function"
+    },
+    {
+      "name": "parseTypeText",
+      "file": "src/views/TodoView.vue",
+      "line": 12588,
+      "type": "const_function"
+    },
+    {
+      "name": "parseStatusText",
+      "file": "src/views/TodoView.vue",
+      "line": 12597,
+      "type": "const_function"
+    },
+    {
+      "name": "parseWeekdays",
+      "file": "src/views/TodoView.vue",
+      "line": 12604,
+      "type": "const_function"
+    },
+    {
+      "name": "parseDateTime",
+      "file": "src/views/TodoView.vue",
+      "line": 12615,
+      "type": "const_function"
+    },
+    {
+      "name": "getDeadlineDate",
+      "file": "src/views/TodoView.vue",
+      "line": 12711,
+      "type": "const_function"
+    },
+    {
+      "name": "getPlannedDeadlineDate",
+      "file": "src/views/TodoView.vue",
+      "line": 12716,
+      "type": "const_function"
+    },
+    {
+      "name": "getCompactStatus",
+      "file": "src/views/TodoView.vue",
+      "line": 12721,
+      "type": "const_function"
+    },
+    {
+      "name": "getPlannedDeadlineText",
+      "file": "src/views/TodoView.vue",
+      "line": 12731,
+      "type": "const_function"
+    },
+    {
+      "name": "getDeadlineText",
+      "file": "src/views/TodoView.vue",
+      "line": 12746,
+      "type": "const_function"
+    },
+    {
+      "name": "toggleLanguage",
+      "file": "src/views/TodoView.vue",
+      "line": 12870,
+      "type": "const_function"
+    },
+    {
+      "name": "togglePriorityMode",
+      "file": "src/views/TodoView.vue",
+      "line": 12877,
+      "type": "const_function"
+    },
+    {
+      "name": "generateEnergyInsight",
+      "file": "src/views/TodoView.vue",
+      "line": 12884,
+      "type": "const_function"
+    },
+    {
+      "name": "toggleCollectionList",
+      "file": "src/views/TodoView.vue",
+      "line": 12978,
+      "type": "const_function"
+    },
+    {
+      "name": "startEditCollectionName",
+      "file": "src/views/TodoView.vue",
+      "line": 13032,
+      "type": "const_function"
+    },
+    {
+      "name": "saveCollectionName",
+      "file": "src/views/TodoView.vue",
+      "line": 13050,
+      "type": "const_function"
+    },
+    {
+      "name": "cancelEditCollectionName",
+      "file": "src/views/TodoView.vue",
+      "line": 13062,
+      "type": "const_function"
+    },
+    {
+      "name": "openBatchAddForCollection",
+      "file": "src/views/TodoView.vue",
+      "line": 13076,
+      "type": "const_function"
+    },
+    {
+      "name": "openBatchMoveIn",
+      "file": "src/views/TodoView.vue",
+      "line": 13082,
+      "type": "const_function"
+    },
+    {
+      "name": "openBatchMoveOut",
+      "file": "src/views/TodoView.vue",
+      "line": 13089,
+      "type": "const_function"
+    },
+    {
+      "name": "openChangePassword",
+      "file": "src/views/TodoView.vue",
+      "line": 13134,
+      "type": "const_function"
+    },
+    {
+      "name": "showCollectionMenu",
+      "file": "src/views/TodoView.vue",
+      "line": 13144,
+      "type": "const_function"
+    },
+    {
+      "name": "openDeleteCollection",
+      "file": "src/views/TodoView.vue",
+      "line": 13150,
+      "type": "const_function"
+    },
+    {
+      "name": "openSetPrivate",
+      "file": "src/views/TodoView.vue",
+      "line": 13159,
+      "type": "const_function"
+    },
+    {
+      "name": "collectChildren",
+      "file": "src/views/TodoView.vue",
+      "line": 13211,
+      "type": "const_function"
+    },
+    {
+      "name": "openMoveToCollection",
+      "file": "src/views/TodoView.vue",
+      "line": 13264,
+      "type": "const_function"
+    },
+    {
+      "name": "goToFirstPage",
+      "file": "src/views/TodoView.vue",
+      "line": 13278,
+      "type": "const_function"
+    },
+    {
+      "name": "goToLastPage",
+      "file": "src/views/TodoView.vue",
+      "line": 13283,
+      "type": "const_function"
+    },
+    {
+      "name": "changePageSize",
+      "file": "src/views/TodoView.vue",
+      "line": 13288,
+      "type": "const_function"
+    },
+    {
+      "name": "jumpToPageNumber",
+      "file": "src/views/TodoView.vue",
+      "line": 13294,
+      "type": "const_function"
+    },
+    {
+      "name": "checkBackupReminder",
+      "file": "src/views/TodoView.vue",
+      "line": 13305,
+      "type": "const_function"
+    },
+    {
+      "name": "recordBackupTime",
+      "file": "src/views/TodoView.vue",
+      "line": 13322,
+      "type": "const_function"
+    },
+    {
+      "name": "disableBackupReminder",
+      "file": "src/views/TodoView.vue",
+      "line": 13327,
+      "type": "const_function"
+    },
+    {
+      "name": "cleanupExpiredNotifications",
+      "file": "src/views/TodoView.vue",
+      "line": 13394,
+      "type": "const_function"
+    },
+    {
+      "name": "checkNotificationPermission",
+      "file": "src/views/TodoView.vue",
+      "line": 13429,
+      "type": "const_function"
+    },
+    {
+      "name": "generateNotificationId",
+      "file": "src/views/TodoView.vue",
+      "line": 13461,
+      "type": "const_function"
+    },
+    {
+      "name": "checkAndNotifyDeadline",
+      "file": "src/views/TodoView.vue",
+      "line": 13470,
+      "type": "const_function"
+    },
+    {
+      "name": "testNotification",
+      "file": "src/views/TodoView.vue",
+      "line": 13644,
+      "type": "const_function"
+    },
+    {
+      "name": "openNotificationSettings",
+      "file": "src/views/TodoView.vue",
+      "line": 13745,
+      "type": "const_function"
+    },
+    {
+      "name": "autoGenerateReports",
+      "file": "src/views/TodoView.vue",
+      "line": 13789,
+      "type": "const_function"
+    },
+    {
+      "name": "cleanupOldReports",
+      "file": "src/views/TodoView.vue",
+      "line": 14153,
+      "type": "const_function"
+    }
+  ]
+}
