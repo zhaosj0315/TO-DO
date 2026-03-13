@@ -21,14 +21,30 @@
       <!-- 标签名称（点击筛选） -->
       <span class="tag-name" @click="$emit('select', node.path)">{{ node.name }}</span>
 
+      <!-- 🆕 迁入/迁出按钮 -->
+      <button 
+        class="btn-migrate btn-migrate-in" 
+        @click.stop="$emit('migrateIn', node.path)"
+        title="迁入任务"
+      >
+        ➕
+      </button>
+      <button 
+        class="btn-migrate btn-migrate-out" 
+        @click.stop="$emit('migrateOut', node.path)"
+        title="迁出任务"
+      >
+        ➖
+      </button>
+
       <!-- 任务数量 -->
       <span class="tag-count">{{ node.count }}</span>
 
-      <!-- 🆕 管理按钮 -->
+      <!-- 🆕 管理按钮（点击展开任务列表） -->
       <button 
         class="btn-manage-tag" 
         @click.stop="$emit('manage', node.path)"
-        title="管理此标签"
+        title="查看任务列表"
       >
         ⚙️
       </button>
@@ -45,6 +61,8 @@
         @toggle="$emit('toggle', $event)"
         @select="$emit('select', $event)"
         @manage="$emit('manage', $event)"
+        @migrateIn="$emit('migrateIn', $event)"
+        @migrateOut="$emit('migrateOut', $event)"
       />
     </template>
   </div>
@@ -68,7 +86,7 @@ const props = defineProps({
   }
 })
 
-defineEmits(['toggle', 'select', 'manage'])
+defineEmits(['toggle', 'select', 'manage', 'migrateIn', 'migrateOut'])
 
 const hasChildren = computed(() => {
   return Object.keys(props.node.children).length > 0
@@ -161,16 +179,33 @@ const childrenArray = computed(() => {
   padding: 4px 8px;
   border-radius: 6px;
   transition: all 0.2s;
-  opacity: 0;
   flex-shrink: 0;
-}
-
-.tag-item:hover .btn-manage-tag {
-  opacity: 1;
 }
 
 .btn-manage-tag:hover {
   background: rgba(139, 92, 246, 0.2);
+  transform: scale(1.1);
+}
+
+/* 🆕 迁入迁出按钮 */
+.btn-migrate {
+  background: rgba(139, 92, 246, 0.1);
+  border: none;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.btn-migrate-in:hover {
+  background: rgba(102, 126, 234, 0.2);
+  transform: scale(1.1);
+}
+
+.btn-migrate-out:hover {
+  background: rgba(245, 87, 108, 0.2);
   transform: scale(1.1);
 }
 </style>

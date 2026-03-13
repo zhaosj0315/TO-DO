@@ -30,21 +30,13 @@
           @toggle="toggleExpand"
           @select="handleSelect"
           @manage="handleManage"
+          @migrateIn="handleMigrateIn"
+          @migrateOut="handleMigrateOut"
         />
       </div>
 
       <!-- 标签管理视图 -->
       <div v-else class="tag-manage-view">
-        <!-- 操作按钮 -->
-        <div class="manage-actions">
-          <button class="btn-action btn-add" @click="showMigrateIn = true">
-            ➕ 迁入任务
-          </button>
-          <button class="btn-action btn-remove" @click="showMigrateOut = true">
-            ➖ 迁出任务
-          </button>
-        </div>
-
         <!-- 任务列表 -->
         <div class="task-list">
           <div v-if="tagTasks.length === 0" class="empty-state">
@@ -228,6 +220,18 @@ function handleSelect(path) {
 // 🆕 管理标签（查看标签下的任务）
 function handleManage(path) {
   selectedTag.value = path
+}
+
+// 🆕 迁入任务
+function handleMigrateIn(path) {
+  selectedTag.value = path
+  showMigrateIn.value = true
+}
+
+// 🆕 迁出任务
+function handleMigrateOut(path) {
+  selectedTag.value = path
+  showMigrateOut.value = true
 }
 
 // 🆕 获取标签下的所有任务
@@ -439,47 +443,6 @@ function getPriorityText(priority) {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-
-/* 🆕 操作按钮 */
-.manage-actions {
-  display: flex;
-  gap: 12px;
-  padding: 16px;
-  background: white;
-  border-bottom: 1px solid #f0f0f0;
-  flex-shrink: 0;
-}
-
-.btn-action {
-  flex: 1;
-  padding: 12px;
-  border: none;
-  border-radius: 10px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-add {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-}
-
-.btn-add:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
-
-.btn-remove {
-  background: linear-gradient(135deg, #f093fb, #f5576c);
-  color: white;
-}
-
-.btn-remove:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3);
 }
 
 .task-list {
