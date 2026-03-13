@@ -102,43 +102,43 @@
           :class="['control-btn', { active: showCompleted }]"
           @click="toggleCompleted"
         >
-          ✅<span> 已完成</span>
+          <span class="checkbox">{{ showCompleted ? '☑' : '☐' }}</span> ✅<span> 已完成</span>
         </button>
         <button 
           :class="['control-btn', { active: hideIsolated }]"
           @click="hideIsolated = !hideIsolated"
         >
-          🚫<span> 隐藏孤立</span>
+          <span class="checkbox">{{ hideIsolated ? '☑' : '☐' }}</span> 🚫<span> 隐藏孤立</span>
         </button>
         <button 
           :class="['control-btn', { active: showLinks }]"
           @click="showLinks = !showLinks"
         >
-          🔗<span> 引用</span>
+          <span class="checkbox">{{ showLinks ? '☑' : '☐' }}</span> 🔗<span> 引用</span>
         </button>
         <button 
           :class="['control-btn', { active: showDependencies }]"
           @click="showDependencies = !showDependencies"
         >
-          🔒<span> 依赖</span>
+          <span class="checkbox">{{ showDependencies ? '☑' : '☐' }}</span> 🔒<span> 依赖</span>
         </button>
         <button 
           :class="['control-btn', { active: showSubtasks }]"
           @click="showSubtasks = !showSubtasks"
         >
-          🌳<span> 父子</span>
+          <span class="checkbox">{{ showSubtasks ? '☑' : '☐' }}</span> 🌳<span> 父子</span>
         </button>
         <button 
           :class="['control-btn', { active: showLogRelations }]"
           @click="showLogRelations = !showLogRelations"
         >
-          💡<span> 阻碍方案</span>
+          <span class="checkbox">{{ showLogRelations ? '☑' : '☐' }}</span> 💡<span> 阻碍方案</span>
         </button>
         <button 
           :class="['control-btn', { active: showTagRelations }]"
           @click="showTagRelations = !showTagRelations"
         >
-          🏷️<span> 标签关系</span>
+          <span class="checkbox">{{ showTagRelations ? '☑' : '☐' }}</span> 🏷️<span> 标签关系</span>
         </button>
         <button class="control-btn" @click="resetView">
           🔄<span> 重置</span>
@@ -1256,7 +1256,14 @@ onUnmounted(() => {
 .control-btn.active {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  border-color: transparent;
+  border-color: #667eea;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.control-btn .checkbox {
+  font-size: 1.2rem;
+  margin-right: 4px;
 }
 
 .graph-container {
