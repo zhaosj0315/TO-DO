@@ -1300,19 +1300,7 @@ const callAI = async (prompt, title) => {
     isProcessing.value = false
     
     // 显示成功提示
-    emit('notify', { message: `✅ ${title}完成，请查看AI总结区域`, type: 'success' })
-    
-    // 滚动到AI总结区域
-    await nextTick()
-    const aiSection = document.querySelector('.ai-summary-section')
-    if (aiSection) {
-      aiSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      // 高亮提示
-      aiSection.style.animation = 'highlight 1s ease-out'
-      setTimeout(() => {
-        aiSection.style.animation = ''
-      }, 1000)
-    }
+    emit('notify', { message: `✅ ${title}完成`, type: 'success' })
   } catch (err) {
     isProcessing.value = false
     throw err
@@ -3579,21 +3567,5 @@ section h3 {
 
 .btn-view-graph:active {
   transform: translateY(0);
-}
-
-/* AI总结区域高亮动画 */
-@keyframes highlight {
-  0% {
-    background: rgba(102, 126, 234, 0.1);
-    transform: scale(1);
-  }
-  50% {
-    background: rgba(102, 126, 234, 0.2);
-    transform: scale(1.02);
-  }
-  100% {
-    background: transparent;
-    transform: scale(1);
-  }
 }
 </style>
