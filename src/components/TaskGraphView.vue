@@ -330,8 +330,8 @@ const graphData = computed(() => {
       .slice(0, displayLimit.value)
   }
 
-  // 🆕 过滤孤立任务（在截取之后）
-  if (hideIsolated.value) {
+  // 🆕 过滤孤立任务（在截取之后，但聚焦模式下不过滤）
+  if (hideIsolated.value && !focusedTaskId.value) {
     const beforeCount = tasksToShow.length
     tasksToShow = tasksToShow.filter(t => !isTaskIsolated(t))
     console.log('🚫 隐藏孤立任务:', beforeCount, '→', tasksToShow.length)
@@ -364,13 +364,30 @@ const graphData = computed(() => {
         borderColor = '#ef4444'  // 红色边框：有未解决阻碍
       }
 
-      // 🆕 计算关系数量
-      const relationCount = 
-        (task.linkedTasks?.length || 0) +           // 引用链接
-        (task.waitFor?.length || 0) +               // 依赖关系
-        (task.parentTaskId ? 1 : 0) +               // 父任务
-        (taskStore.tasks.filter(t => t.parentTaskId === task.id).length) + // 子任务数
-        (taskStore.getBacklinks(task.id)?.length || 0) // 反向链接
+      // 🆕 计算关系数量（只计算当前启用的关系类型）
+      let relationCount = 0
+      
+      if (showLinks.value) {
+        relationCount += (task.linkedTasks?.length || 0)  // 引用链接
+        relationCount += (taskStore.getBacklinks(task.id)?.length || 0) // 反向链接
+      }
+      
+      if (showDependencies.value) {
+        relationCount += (task.waitFor?.length || 0)  // 依赖关系
+      }
+      
+      if (showSubtasks.value) {
+        relationCount += (task.parentTaskId ? 1 : 0)  // 父任务
+        relationCount += taskStore.tasks.filter(t => t.parentTaskId === task.id).length // 子任务数
+      }
+      
+      if (showLogRelations.value) {
+        relationCount += logRelations.length  // 日志关系
+      }
+      
+      if (showTagRelations.value) {
+        relationCount += (task.tags?.length || 0)  // 标签关系
+      }
 
       nodes.push({
         id: String(task.id),
@@ -583,15 +600,37 @@ const isolatedTasks = computed(() => {
 
 // 🆕 判断任务是否孤立（v0.9.2 更新：包含日志关系和标签关系）
 function isTaskIsolated(task) {
-  const hasLinks = task.linkedTasks?.length > 0
-  const hasDeps = task.waitFor?.length > 0
-  const hasParent = !!task.parentTaskId
-  const hasSubtasks = task.subtasks?.length > 0
-  const hasBacklinks = taskStore.getBacklinks(task.id)?.length > 0
-  const hasLogRelations = taskStore.getLogRelations(task.id).length > 0
-  const hasTags = task.tags?.length > 0  // 🆕 标签关系
+  // 根据当前启用的关系类型判断是否孤立
+  let hasRelation = false
   
-  return !hasLinks && !hasDeps && !hasParent && !hasSubtasks && !hasBacklinks && !hasLogRelations && !hasTags
+  if (showLinks.value) {
+    const hasLinks = task.linkedTasks?.length > 0
+    const hasBacklinks = taskStore.getBacklinks(task.id)?.length > 0
+    if (hasLinks || hasBacklinks) hasRelation = true
+  }
+  
+  if (showDependencies.value) {
+    const hasDeps = task.waitFor?.length > 0
+    if (hasDeps) hasRelation = true
+  }
+  
+  if (showSubtasks.value) {
+    const hasParent = !!task.parentTaskId
+    const hasSubtasks = task.subtasks?.length > 0
+    if (hasParent || hasSubtasks) hasRelation = true
+  }
+  
+  if (showLogRelations.value) {
+    const hasLogRelations = taskStore.getLogRelations(task.id).length > 0
+    if (hasLogRelations) hasRelation = true
+  }
+  
+  if (showTagRelations.value) {
+    const hasTags = task.tags?.length > 0
+    if (hasTags) hasRelation = true
+  }
+  
+  return !hasRelation
 }
 
 // 🆕 切换显示已完成任务
