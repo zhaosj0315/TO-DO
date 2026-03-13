@@ -3893,6 +3893,7 @@
       v-if="showTagBrowser"
       @close="showTagBrowser = false"
       @filter="handleTagFilter"
+      @openTask="openTaskDetailById"
     />
 
     <!-- 🆕 任务关系图谱（v0.9.0）-->
@@ -9502,6 +9503,14 @@ const openTaskDetail = (task) => {
   }
   selectedTask.value = task
   showTaskDetail.value = true
+}
+
+// 🆕 通过ID打开任务详情（用于标签浏览器）
+const openTaskDetailById = (taskId) => {
+  const task = taskStore.tasks.find(t => t.id === taskId)
+  if (task) {
+    openTaskDetail(task)
+  }
 }
 
 // 方法：处理任务详情刷新

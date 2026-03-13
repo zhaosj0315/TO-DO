@@ -3,18 +3,18 @@
     <div class="tag-browser-sheet">
       <!-- 头部 -->
       <div class="browser-header">
-        <button class="back-btn" @click="$emit('close')">
-          <span>← 返回</span>
+        <button class="back-btn" @click="selectedTag ? (selectedTag = null) : $emit('close')">
+          <span>{{ selectedTag ? '← 返回标签列表' : '← 返回' }}</span>
         </button>
-        <h2>🏷️ 标签浏览器</h2>
+        <h2>{{ selectedTag ? `🏷️ ${selectedTag}` : '🏷️ 标签浏览器' }}</h2>
         <div class="tag-stats">
           <span class="stat-item">{{ totalTags }} 个标签</span>
           <span class="stat-item">{{ totalTasks }} 个任务</span>
         </div>
       </div>
 
-      <!-- 标签树 -->
-      <div class="tag-tree">
+      <!-- 标签列表视图 -->
+      <div v-if="!selectedTag" class="tag-tree">
         <div v-if="tagTreeArray.length === 0" class="empty-state">
           <span class="icon">🏷️</span>
           <p>暂无标签</p>
@@ -29,7 +29,51 @@
           :expandedPaths="expandedPaths"
           @toggle="toggleExpand"
           @select="handleSelect"
+          @manage="handleManage"
         />
+      </div>
+
+      <!-- 标签管理视图 -->
+      <div v-else class="tag-manage-view">
+        <!-- 任务列表 -->
+        <div class="task-list">
+          <div v-if="tagTasks.length === 0" class="empty-state">
+            <span class="icon">📝</span>
+            <p>该标签下暂无任务</p>
+          </div>
+
+          <div 
+            v-for="task in tagTasks" 
+            :key="task.id" 
+            class="task-item"
+            @click="openTaskDetail(task.id)"
+          >
+            <div class="task-header">
+              <span :class="['status-icon', task.status]">
+                {{ task.status === 'completed' ? '✅' : task.status === 'overdue' ? '⚠️' : '⬜' }}
+              </span>
+              <span class="task-name">{{ task.text }}</span>
+            </div>
+            <div class="task-meta">
+              <span class="task-category">{{ getCategoryIcon(task.category) }}</span>
+              <span class="task-priority" :class="task.priority">{{ getPriorityText(task.priority) }}</span>
+              <button 
+                class="btn-remove-tag" 
+                @click.stop="removeTagFromTask(task.id)"
+                title="移除此标签"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 批量操作 -->
+        <div class="batch-actions">
+          <button class="btn-batch btn-danger" @click="batchRemoveTag">
+            🗑️ 批量移除标签（{{ tagTasks.length }}个任务）
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -40,10 +84,11 @@ import { ref, computed } from 'vue'
 import { useOfflineTaskStore } from '@/stores/offlineTaskStore'
 import TagTreeNode from './TagTreeNode.vue'
 
-const emit = defineEmits(['close', 'filter'])
+const emit = defineEmits(['close', 'filter', 'openTask'])
 
 const taskStore = useOfflineTaskStore()
 const expandedPaths = ref(new Set())
+const selectedTag = ref(null) // 🆕 当前选中的标签
 
 // 🆕 构建标签树
 const tagTree = computed(() => {
@@ -120,6 +165,80 @@ function handleSelect(path) {
   emit('filter', path)
   emit('close')
 }
+
+// 🆕 管理标签（查看标签下的任务）
+function handleManage(path) {
+  selectedTag.value = path
+}
+
+// 🆕 获取标签下的所有任务
+const tagTasks = computed(() => {
+  if (!selectedTag.value) return []
+  
+  return taskStore.tasks.filter(task => 
+    task.tags?.includes(selectedTag.value)
+  ).sort((a, b) => {
+    // 按状态排序：待办 > 逾期 > 已完成
+    const statusOrder = { pending: 0, overdue: 1, completed: 2 }
+    return statusOrder[a.status] - statusOrder[b.status]
+  })
+})
+
+// 🆕 打开任务详情
+function openTaskDetail(taskId) {
+  emit('openTask', taskId)
+}
+
+// 🆕 从单个任务移除标签
+async function removeTagFromTask(taskId) {
+  const task = taskStore.tasks.find(t => t.id === taskId)
+  if (!task) return
+  
+  if (confirm(`确定要从任务"${task.text}"中移除标签"#${selectedTag.value}"吗？`)) {
+    // 从描述中移除标签
+    const tagPattern = new RegExp(`#${selectedTag.value.replace(/\//g, '\\/')}(?!\\w)`, 'g')
+    const newDescription = task.description.replace(tagPattern, '').trim()
+    
+    await taskStore.updateTask(taskId, { description: newDescription })
+  }
+}
+
+// 🆕 批量移除标签
+async function batchRemoveTag() {
+  if (tagTasks.value.length === 0) return
+  
+  const taskNames = tagTasks.value.slice(0, 5).map(t => `  • ${t.text}`).join('\n')
+  const more = tagTasks.value.length > 5 ? `\n  ... 还有 ${tagTasks.value.length - 5} 个任务` : ''
+  
+  if (confirm(
+    `⚠️ 批量移除标签确认\n\n` +
+    `标签：#${selectedTag.value}\n` +
+    `将从以下 ${tagTasks.value.length} 个任务中移除：\n${taskNames}${more}\n\n` +
+    `确定要继续吗？`
+  )) {
+    const tagPattern = new RegExp(`#${selectedTag.value.replace(/\//g, '\\/')}(?!\\w)`, 'g')
+    
+    for (const task of tagTasks.value) {
+      const newDescription = task.description.replace(tagPattern, '').trim()
+      await taskStore.updateTask(task.id, { description: newDescription })
+    }
+    
+    selectedTag.value = null
+    alert(`✅ 已从 ${tagTasks.value.length} 个任务中移除标签`)
+  }
+}
+
+// 🆕 辅助函数
+function getCategoryIcon(category) {
+  const icons = { work: '💼', study: '📚', life: '🏠' }
+  return icons[category] || '📝'
+}
+
+function getPriorityText(priority) {
+  const texts = { high: '高', medium: '中', low: '低' }
+  return texts[priority] || '中'
+}
+
 </script>
 
 <style scoped>
@@ -246,5 +365,145 @@ function handleSelect(path) {
 .empty-state .hint {
   font-size: 0.9rem;
   color: #bbb;
+}
+
+/* 🆕 标签管理视图 */
+.tag-manage-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.task-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  background: #fafafa;
+}
+
+.task-item {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.task-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.task-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.status-icon {
+  font-size: 1.2rem;
+}
+
+.status-icon.completed {
+  opacity: 0.5;
+}
+
+.status-icon.overdue {
+  animation: pulse 2s infinite;
+}
+
+.task-name {
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.task-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.task-category {
+  font-size: 1rem;
+}
+
+.task-priority {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.task-priority.high {
+  background: #fee;
+  color: #c00;
+}
+
+.task-priority.medium {
+  background: #ffeaa7;
+  color: #d63031;
+}
+
+.task-priority.low {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.btn-remove-tag {
+  background: #fee;
+  border: none;
+  color: #c00;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.btn-remove-tag:hover {
+  background: #fcc;
+  transform: scale(1.1);
+}
+
+/* 批量操作 */
+.batch-actions {
+  padding: 16px;
+  border-top: 1px solid #f0f0f0;
+  background: white;
+  flex-shrink: 0;
+}
+
+.btn-batch {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+  color: white;
+}
+
+.btn-danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 </style>

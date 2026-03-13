@@ -4,7 +4,6 @@
     <div 
       class="tag-item"
       :style="{ paddingLeft: `${level * 20}px` }"
-      @click="$emit('select', node.path)"
     >
       <!-- 展开/折叠按钮 -->
       <button 
@@ -19,11 +18,20 @@
       <!-- 标签图标 -->
       <span class="tag-icon">{{ hasChildren ? '📁' : '🏷️' }}</span>
 
-      <!-- 标签名称 -->
-      <span class="tag-name">{{ node.name }}</span>
+      <!-- 标签名称（点击筛选） -->
+      <span class="tag-name" @click="$emit('select', node.path)">{{ node.name }}</span>
 
       <!-- 任务数量 -->
       <span class="tag-count">{{ node.count }}</span>
+
+      <!-- 🆕 管理按钮 -->
+      <button 
+        class="btn-manage-tag" 
+        @click.stop="$emit('manage', node.path)"
+        title="管理此标签"
+      >
+        ⚙️
+      </button>
     </div>
 
     <!-- 子节点（递归） -->
@@ -36,6 +44,7 @@
         :expandedPaths="expandedPaths"
         @toggle="$emit('toggle', $event)"
         @select="$emit('select', $event)"
+        @manage="$emit('manage', $event)"
       />
     </template>
   </div>
@@ -59,7 +68,7 @@ const props = defineProps({
   }
 })
 
-defineEmits(['toggle', 'select'])
+defineEmits(['toggle', 'select', 'manage'])
 
 const hasChildren = computed(() => {
   return Object.keys(props.node.children).length > 0
@@ -141,5 +150,27 @@ const childrenArray = computed(() => {
   font-size: 0.85rem;
   font-weight: 600;
   flex-shrink: 0;
+}
+
+/* 🆕 管理按钮 */
+.btn-manage-tag {
+  background: rgba(139, 92, 246, 0.1);
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  opacity: 0;
+  flex-shrink: 0;
+}
+
+.tag-item:hover .btn-manage-tag {
+  opacity: 1;
+}
+
+.btn-manage-tag:hover {
+  background: rgba(139, 92, 246, 0.2);
+  transform: scale(1.1);
 }
 </style>
