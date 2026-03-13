@@ -1299,8 +1299,10 @@ const callAI = async (prompt, title) => {
     
     isProcessing.value = false
     
-    // 显示成功提示
-    emit('notify', { message: `✅ ${title}完成`, type: 'success' })
+    // 显示结果弹窗
+    textResult.value = content
+    currentTextAction.value = title
+    showTextResult.value = true
   } catch (err) {
     isProcessing.value = false
     throw err
