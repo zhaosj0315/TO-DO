@@ -846,7 +846,14 @@ async function exportAsImage() {
 function updateChart() {
   if (!chartInstance) return
 
-  console.log('🔄 更新图谱, hideIsolated:', hideIsolated.value, 'nodes:', nodes.value.length)
+  console.log('🔄 更新图谱')
+  console.log('  hideIsolated:', hideIsolated.value)
+  console.log('  showCompleted:', showCompleted.value)
+  console.log('  showLinks:', showLinks.value)
+  console.log('  showDependencies:', showDependencies.value)
+  console.log('  showSubtasks:', showSubtasks.value)
+  console.log('  nodes:', nodes.value.length)
+  console.log('  edges:', edges.value.length)
   
   chartInstance.setOption({
     series: [{
@@ -860,7 +867,7 @@ function updateChart() {
         return `${name} (${stat?.count || 0})`
       }
     }]
-  })
+  }, true) // 🆕 添加 true 参数，强制刷新
 }
 
 // 🆕 重置视图
