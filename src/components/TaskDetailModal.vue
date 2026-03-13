@@ -25,6 +25,26 @@
               <span class="menu-icon">🔨</span>
               <span class="menu-text">拆解任务</span>
             </button>
+            <button class="ai-menu-item" @click="handleProgressAnalysis(); showAIMenu = false" v-if="task.status !== 'completed'">
+              <span class="menu-icon">📊</span>
+              <span class="menu-text">进度分析</span>
+            </button>
+            <button class="ai-menu-item" @click="handleBlockageAnalysis(); showAIMenu = false">
+              <span class="menu-icon">🚧</span>
+              <span class="menu-text">阻碍分析</span>
+            </button>
+            <button class="ai-menu-item" @click="handleOptimizeSuggestion(); showAIMenu = false">
+              <span class="menu-icon">💡</span>
+              <span class="menu-text">优化建议</span>
+            </button>
+            <button class="ai-menu-item" @click="handleDescriptionOptimize(); showAIMenu = false">
+              <span class="menu-icon">📝</span>
+              <span class="menu-text">描述优化</span>
+            </button>
+            <button class="ai-menu-item" @click="handleRelationRecommend(); showAIMenu = false">
+              <span class="menu-icon">🔗</span>
+              <span class="menu-text">关联推荐</span>
+            </button>
           </div>
         </div>
       </div>
@@ -1096,6 +1116,188 @@ const isProcessing = ref(false)
 // AI 拆解任务
 const handleSplitTask = () => {
   emit('split', props.task)
+}
+
+// 📊 进度分析
+const handleProgressAnalysis = async () => {
+  try {
+    const logs = localTask.value.logs || []
+    const progressLogs = logs.filter(l => l.progress).map(l => `${l.createdAt}: ${l.progress}%`).join('\n')
+    
+    const prompt = `任务：${localTask.value.text}
+截止时间：${localTask.value.customDate || '未设置'}
+当前进度：${localTask.value.stats?.latestProgress || 0}%
+执行次数：${logs.length}次
+进度历史：
+${progressLogs || '暂无进度记录'}
+
+请分析：1)当前进度评估 2)预计完成时间 3)风险提示 4)加速建议`
+    
+    await callAI(prompt, '进度分析')
+  } catch (err) {
+    alert('进度分析失败: ' + err.message)
+  }
+}
+
+// 🚧 阻碍分析
+const handleBlockageAnalysis = async () => {
+  try {
+    const logs = localTask.value.logs || []
+    const blockLogs = logs.filter(l => l.type === '阻碍').map(l => l.content).join('\n')
+    const solutionLogs = logs.filter(l => l.type === '方案').map(l => l.content).join('\n')
+    
+    const prompt = `任务：${localTask.value.text}
+遇到的阻碍：
+${blockLogs || '暂无阻碍记录'}
+
+已尝试的方案：
+${solutionLogs || '暂无'}
+
+请分析：1)阻碍分类 2)根本原因 3)3个解决方案 4)预防建议`
+    
+    await callAI(prompt, '阻碍分析')
+  } catch (err) {
+    alert('阻碍分析失败: ' + err.message)
+  }
+}
+
+// 💡 优化建议
+const handleOptimizeSuggestion = async () => {
+  try {
+    const logs = localTask.value.logs || []
+    const stats = localTask.value.stats || {}
+    
+    const prompt = `任务：${localTask.value.text}
+描述：${localTask.value.description || '无'}
+优先级：${localTask.value.priority}
+执行次数：${logs.length}次
+总耗时：${stats.totalDuration || 0}分钟
+平均耗时：${stats.avgDuration || 0}分钟
+
+请提供：1)执行效率评估 2)时间分配建议 3)优先级调整建议 4)依赖关系优化`
+    
+    await callAI(prompt, '优化建议')
+  } catch (err) {
+    alert('优化建议失败: ' + err.message)
+  }
+}
+
+// 📝 描述优化
+const handleDescriptionOptimize = async () => {
+  try {
+    const prompt = `任务：${localTask.value.text}
+当前描述：${localTask.value.description || '无描述'}
+
+请按SMART原则优化任务描述，包括：1)优化后的描述 2)验收标准 3)关键步骤`
+    
+    await callAI(prompt, '描述优化')
+  } catch (err) {
+    alert('描述优化失败: ' + err.message)
+  }
+}
+
+// 🔗 关联推荐
+const handleRelationRecommend = async () => {
+  try {
+    const allTasks = taskStore.tasks.filter(t => t.id !== localTask.value.id).slice(0, 20)
+    const taskList = allTasks.map(t => `- ${t.text} (${t.category}/${t.priority})`).join('\n')
+    
+    const prompt = `当前任务：${localTask.value.text}
+描述：${localTask.value.description || '无'}
+分类：${localTask.value.category}
+
+其他任务：
+${taskList}
+
+请推荐：1)前置任务(依赖) 2)后续任务(延伸) 3)相关任务(双向链接) 4)推荐标签`
+    
+    await callAI(prompt, '关联推荐')
+  } catch (err) {
+    alert('关联推荐失败: ' + err.message)
+  }
+}
+
+// 统一AI调用函数
+const callAI = async (prompt, title) => {
+  originalTextForResult.value = prompt
+  const models = JSON.parse(localStorage.getItem('ai_models') || '[]')
+  const defaultModelId = localStorage.getItem('ai_default_model')
+  const model = models.find(m => m.id === defaultModelId) || models[0]
+  
+  if (!model) {
+    alert('请先在个人主页配置AI模型')
+    return
+  }
+  
+  isProcessing.value = true
+  
+  const normalizeBaseUrl = (url, type) => {
+    if (!url) return ''
+    let baseUrl = url.trim()
+    if (type === 'local') {
+      baseUrl = baseUrl.replace(/\/api\/.*$/, '')
+    } else {
+      baseUrl = baseUrl.replace(/\/v1(\/.*)?$/, '')
+    }
+    return baseUrl.replace(/\/$/, '')
+  }
+  
+  const getApiUrl = (baseUrl, type) => {
+    baseUrl = baseUrl.replace(/\/$/, '')
+    if (type === 'local') {
+      return `${baseUrl}/api/generate`
+    } else {
+      return baseUrl.endsWith('/v1') 
+        ? `${baseUrl}/chat/completions` 
+        : `${baseUrl}/v1/chat/completions`
+    }
+  }
+  
+  const baseUrl = normalizeBaseUrl(model.url, model.type)
+  const apiUrl = getApiUrl(baseUrl, model.type)
+  
+  const response = await fetch(apiUrl, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      ...(model.apiKey ? { 'Authorization': `Bearer ${model.apiKey}` } : {})
+    },
+    body: JSON.stringify(
+      model.type === 'openai' 
+        ? {
+            model: model.modelName || 'gpt-3.5-turbo',
+            messages: [{ role: 'user', content: prompt }]
+          }
+        : {
+            model: model.modelName || 'gemma2:2b',
+            prompt: prompt,
+            stream: false
+          }
+    )
+  })
+  
+  if (!response.ok) {
+    throw new Error(`API错误: ${response.status}`)
+  }
+  
+  const result = await response.json()
+  const content = model.type === 'openai' 
+    ? result.choices[0].message.content 
+    : result.response
+  
+  const aiSummary = {
+    content: content,
+    createdAt: new Date().toISOString(),
+    logsCount: (localTask.value.logs || []).length,
+    modelName: model.name,
+    type: title
+  }
+  
+  localTask.value.aiSummary = aiSummary
+  await saveField('aiSummary')
+  
+  isProcessing.value = false
+  showAIResultModal.value = true
 }
 
 // 手动添加子任务
