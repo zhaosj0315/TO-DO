@@ -357,21 +357,52 @@ const graphData = computed(() => {
         borderColor = '#ef4444'  // 红色边框：有未解决阻碍
       }
 
+      // 🆕 计算关系数量
+      const relationCount = 
+        (task.linkedTasks?.length || 0) +           // 引用链接
+        (task.waitFor?.length || 0) +               // 依赖关系
+        (task.parentTaskId ? 1 : 0) +               // 父任务
+        (taskStore.tasks.filter(t => t.parentTaskId === task.id).length) + // 子任务数
+        (taskStore.getBacklinks(task.id)?.length || 0) // 反向链接
+
       nodes.push({
         id: String(task.id),
-        name: task.text || '未命名任务',
-        value: task.priority === 'high' ? 100 : task.priority === 'medium' ? 60 : 30,
+        name: task.text || '未命名任务', // 圆圈下方显示任务名称
+        value: relationCount, // 🆕 关系数量
         category: getCategoryIndex(task),
-        symbolSize: task.id === selectedTaskId.value ? 60 : 40,
+        symbolSize: Math.max(35, Math.min(70, 35 + relationCount * 3)), // 🆕 根据关系数量动态调整大小
+        label: {
+          show: true,
+          formatter: (params) => {
+            // 圆圈内显示关系数量，圆圈下显示任务名称
+            return `{count|${relationCount}}\n{name|${params.data.name.substring(0, 10)}${params.data.name.length > 10 ? '...' : ''}}`
+          },
+          rich: {
+            count: {
+              fontSize: 18,
+              fontWeight: 'bold',
+              color: '#fff',
+              align: 'center'
+            },
+            name: {
+              fontSize: 11,
+              color: '#333',
+              align: 'center',
+              padding: [5, 0, 0, 0]
+            }
+          }
+        },
         itemStyle: {
           color: task.id === selectedTaskId.value ? '#f59e0b' : getCategoryColor(task.category),
           opacity: opacity,  // ✨ 状态透明度
           borderWidth: task.id === selectedTaskId.value ? 3 : borderWidth,  // ✨ 状态边框
           borderColor: task.id === selectedTaskId.value ? '#f59e0b' : borderColor
         },
-        // 🆕 存储日志关系信息用于tooltip
+        // 🆕 存储信息用于tooltip
+        relationCount: relationCount, // 🆕 存储关系数量
         logRelationsCount: logRelations.length,
-        unresolvedBlocksCount: hasUnresolvedBlocks ? taskStore.getUnresolvedBlocks(task.id).length : 0
+        unresolvedBlocksCount: hasUnresolvedBlocks ? taskStore.getUnresolvedBlocks(task.id).length : 0,
+        relationCount: relationCount // 🆕 存储关系数量
       })
       nodeMap.add(task.id)
     }
