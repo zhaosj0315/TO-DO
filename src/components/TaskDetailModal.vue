@@ -1813,7 +1813,7 @@ ${logsText || '暂无日志'}
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   min-width: 160px;
-  z-index: 1000;
+  z-index: 10000;
   overflow: hidden;
   animation: slideDown 0.2s ease-out;
 }
