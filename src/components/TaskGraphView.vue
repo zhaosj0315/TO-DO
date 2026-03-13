@@ -367,30 +367,17 @@ const graphData = computed(() => {
 
       nodes.push({
         id: String(task.id),
-        name: task.text || '未命名任务', // 圆圈下方显示任务名称
+        name: task.text || '未命名任务', // 任务名称
         value: relationCount, // 🆕 关系数量
         category: getCategoryIndex(task),
         symbolSize: Math.max(35, Math.min(70, 35 + relationCount * 3)), // 🆕 根据关系数量动态调整大小
         label: {
           show: true,
-          formatter: (params) => {
-            // 圆圈内显示关系数量，圆圈下显示任务名称
-            return `{count|${relationCount}}\n{name|${params.data.name.substring(0, 10)}${params.data.name.length > 10 ? '...' : ''}}`
-          },
-          rich: {
-            count: {
-              fontSize: 18,
-              fontWeight: 'bold',
-              color: '#fff',
-              align: 'center'
-            },
-            name: {
-              fontSize: 11,
-              color: '#333',
-              align: 'center',
-              padding: [5, 0, 0, 0]
-            }
-          }
+          position: 'inside', // 🔧 圆圈内部显示数字
+          formatter: String(relationCount), // 只显示数字
+          fontSize: 16,
+          fontWeight: 'bold',
+          color: '#fff'
         },
         itemStyle: {
           color: task.id === selectedTaskId.value ? '#f59e0b' : getCategoryColor(task.category),
@@ -808,9 +795,11 @@ function initChart() {
       draggable: true,
       label: {
         show: true,
-        position: 'bottom',
-        formatter: '{b}',
-        fontSize: 12
+        position: 'bottom', // 任务名称显示在圆圈下方
+        formatter: '{b}', // 显示节点名称
+        fontSize: 11,
+        color: '#333',
+        distance: 5 // 🔧 减小距离，让名称更靠近圆圈
       },
       force: {
         initLayout: 'circular',  // 🔧 圆形初始布局，更快
