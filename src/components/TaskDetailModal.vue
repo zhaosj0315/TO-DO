@@ -1219,85 +1219,90 @@ ${taskList}
 
 // 统一AI调用函数
 const callAI = async (prompt, title) => {
-  originalTextForResult.value = prompt
-  const models = JSON.parse(localStorage.getItem('ai_models') || '[]')
-  const defaultModelId = localStorage.getItem('ai_default_model')
-  const model = models.find(m => m.id === defaultModelId) || models[0]
-  
-  if (!model) {
-    alert('请先在个人主页配置AI模型')
-    return
-  }
-  
-  isProcessing.value = true
-  
-  const normalizeBaseUrl = (url, type) => {
-    if (!url) return ''
-    let baseUrl = url.trim()
-    if (type === 'local') {
-      baseUrl = baseUrl.replace(/\/api\/.*$/, '')
-    } else {
-      baseUrl = baseUrl.replace(/\/v1(\/.*)?$/, '')
+  try {
+    originalTextForResult.value = prompt
+    const models = JSON.parse(localStorage.getItem('ai_models') || '[]')
+    const defaultModelId = localStorage.getItem('ai_default_model')
+    const model = models.find(m => m.id === defaultModelId) || models[0]
+    
+    if (!model) {
+      alert('请先在个人主页配置AI模型')
+      return
     }
-    return baseUrl.replace(/\/$/, '')
-  }
-  
-  const getApiUrl = (baseUrl, type) => {
-    baseUrl = baseUrl.replace(/\/$/, '')
-    if (type === 'local') {
-      return `${baseUrl}/api/generate`
-    } else {
-      return baseUrl.endsWith('/v1') 
-        ? `${baseUrl}/chat/completions` 
-        : `${baseUrl}/v1/chat/completions`
+    
+    isProcessing.value = true
+    
+    const normalizeBaseUrl = (url, type) => {
+      if (!url) return ''
+      let baseUrl = url.trim()
+      if (type === 'local') {
+        baseUrl = baseUrl.replace(/\/api\/.*$/, '')
+      } else {
+        baseUrl = baseUrl.replace(/\/v1(\/.*)?$/, '')
+      }
+      return baseUrl.replace(/\/$/, '')
     }
+    
+    const getApiUrl = (baseUrl, type) => {
+      baseUrl = baseUrl.replace(/\/$/, '')
+      if (type === 'local') {
+        return `${baseUrl}/api/generate`
+      } else {
+        return baseUrl.endsWith('/v1') 
+          ? `${baseUrl}/chat/completions` 
+          : `${baseUrl}/v1/chat/completions`
+      }
+    }
+    
+    const baseUrl = normalizeBaseUrl(model.url, model.type)
+    const apiUrl = getApiUrl(baseUrl, model.type)
+    
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        ...(model.apiKey ? { 'Authorization': `Bearer ${model.apiKey}` } : {})
+      },
+      body: JSON.stringify(
+        model.type === 'openai' 
+          ? {
+              model: model.modelName || 'gpt-3.5-turbo',
+              messages: [{ role: 'user', content: prompt }]
+            }
+          : {
+              model: model.modelName || 'gemma2:2b',
+              prompt: prompt,
+              stream: false
+            }
+      )
+    })
+    
+    if (!response.ok) {
+      throw new Error(`API错误: ${response.status}`)
+    }
+    
+    const result = await response.json()
+    const content = model.type === 'openai' 
+      ? result.choices[0].message.content 
+      : result.response
+    
+    const aiSummary = {
+      content: content,
+      createdAt: new Date().toISOString(),
+      logsCount: (localTask.value.logs || []).length,
+      modelName: model.name,
+      type: title
+    }
+    
+    localTask.value.aiSummary = aiSummary
+    await saveField('aiSummary')
+    
+    isProcessing.value = false
+    emit('notify', { message: `✅ ${title}完成`, type: 'success' })
+  } catch (err) {
+    isProcessing.value = false
+    throw err
   }
-  
-  const baseUrl = normalizeBaseUrl(model.url, model.type)
-  const apiUrl = getApiUrl(baseUrl, model.type)
-  
-  const response = await fetch(apiUrl, {
-    method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      ...(model.apiKey ? { 'Authorization': `Bearer ${model.apiKey}` } : {})
-    },
-    body: JSON.stringify(
-      model.type === 'openai' 
-        ? {
-            model: model.modelName || 'gpt-3.5-turbo',
-            messages: [{ role: 'user', content: prompt }]
-          }
-        : {
-            model: model.modelName || 'gemma2:2b',
-            prompt: prompt,
-            stream: false
-          }
-    )
-  })
-  
-  if (!response.ok) {
-    throw new Error(`API错误: ${response.status}`)
-  }
-  
-  const result = await response.json()
-  const content = model.type === 'openai' 
-    ? result.choices[0].message.content 
-    : result.response
-  
-  const aiSummary = {
-    content: content,
-    createdAt: new Date().toISOString(),
-    logsCount: (localTask.value.logs || []).length,
-    modelName: model.name,
-    type: title
-  }
-  
-  localTask.value.aiSummary = aiSummary
-  await saveField('aiSummary')
-  
-  isProcessing.value = false
-  showAIResultModal.value = true
 }
 
 // 手动添加子任务
