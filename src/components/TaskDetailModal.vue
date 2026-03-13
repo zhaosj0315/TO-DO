@@ -753,22 +753,6 @@
       @select="selectAutocompleteSuggestion"
       @close="closeAutocomplete"
     />
-    
-    <!-- AI结果弹窗 -->
-    <div v-if="showAIResultPopup" class="ai-result-overlay" @click.self="showAIResultPopup = false">
-      <div class="ai-result-sheet">
-        <div class="ai-result-header">
-          <h3>{{ aiResultTitle }}</h3>
-          <button class="close-btn" @click="showAIResultPopup = false">✕</button>
-        </div>
-        <div class="ai-result-content">
-          <MarkdownRenderer :content="aiResultContent" />
-        </div>
-        <div class="ai-result-footer">
-          <button class="confirm-btn" @click="showAIResultPopup = false">知道了</button>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -1234,10 +1218,6 @@ ${taskList}
 }
 
 // 统一AI调用函数
-const showAIResultPopup = ref(false)
-const aiResultTitle = ref('')
-const aiResultContent = ref('')
-
 const callAI = async (prompt, title) => {
   try {
     originalTextForResult.value = prompt
@@ -1319,10 +1299,20 @@ const callAI = async (prompt, title) => {
     
     isProcessing.value = false
     
-    // 显示结果弹窗
-    aiResultTitle.value = title
-    aiResultContent.value = content
-    showAIResultPopup.value = true
+    // 显示成功提示
+    emit('notify', { message: `✅ ${title}完成，请查看AI总结区域`, type: 'success' })
+    
+    // 滚动到AI总结区域
+    await nextTick()
+    const aiSection = document.querySelector('.ai-summary-section')
+    if (aiSection) {
+      aiSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      // 高亮提示
+      aiSection.style.animation = 'highlight 1s ease-out'
+      setTimeout(() => {
+        aiSection.style.animation = ''
+      }, 1000)
+    }
   } catch (err) {
     isProcessing.value = false
     throw err
@@ -3590,119 +3580,20 @@ section h3 {
 .btn-view-graph:active {
   transform: translateY(0);
 }
-</style>
 
-/* AI结果弹窗样式 */
-.ai-result-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10001;
-  padding: 20px;
-}
-
-.ai-result-sheet {
-  background: white;
-  border-radius: 16px;
-  max-width: 800px;
-  width: 100%;
-  max-height: 80vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  animation: slideUp 0.3s ease-out;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
+/* AI总结区域高亮动画 */
+@keyframes highlight {
+  0% {
+    background: rgba(102, 126, 234, 0.1);
+    transform: scale(1);
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  50% {
+    background: rgba(102, 126, 234, 0.2);
+    transform: scale(1.02);
   }
-}
-
-.ai-result-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px;
-  border-bottom: 1px solid #eee;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-radius: 16px 16px 0 0;
-}
-
-.ai-result-header h3 {
-  margin: 0;
-  font-size: 1.2rem;
-  font-weight: 600;
-}
-
-.ai-result-header .close-btn {
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  color: white;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  font-size: 1.2rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.ai-result-header .close-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.1);
-}
-
-.ai-result-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 24px;
-  line-height: 1.8;
-}
-
-.ai-result-footer {
-  padding: 16px 20px;
-  border-top: 1px solid #eee;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.ai-result-footer .confirm-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  padding: 10px 32px;
-  border-radius: 8px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.ai-result-footer .confirm-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-}
-
-@media (max-width: 768px) {
-  .ai-result-sheet {
-    max-width: 100%;
-    max-height: 90vh;
-    margin: 0;
-    border-radius: 16px 16px 0 0;
+  100% {
+    background: transparent;
+    transform: scale(1);
   }
 }
 </style>
