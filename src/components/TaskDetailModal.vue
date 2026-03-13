@@ -1,6 +1,6 @@
 <template>
   <div class="task-detail-overlay" @click.self="$emit('close')">
-    <div class="task-detail-sheet" @click="showAIMenu = false">
+    <div class="task-detail-sheet">
       <!-- 头部 -->
       <div class="detail-header">
         <button class="back-btn" @click="$emit('close')">
