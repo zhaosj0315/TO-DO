@@ -17,11 +17,11 @@
             🤖
           </button>
           <div v-if="showAIMenu" class="ai-dropdown-menu">
-            <button class="ai-menu-item" @click="handleAISummary; showAIMenu = false">
+            <button class="ai-menu-item" @click="handleAISummary(); showAIMenu = false">
               <span class="menu-icon">✨</span>
               <span class="menu-text">智能总结</span>
             </button>
-            <button class="ai-menu-item" @click="handleSplitTask; showAIMenu = false" v-if="task.status !== 'completed'">
+            <button class="ai-menu-item" @click="handleSplitTask(); showAIMenu = false" v-if="task.status !== 'completed'">
               <span class="menu-icon">🔨</span>
               <span class="menu-text">拆解任务</span>
             </button>
