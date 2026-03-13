@@ -856,18 +856,24 @@ function updateChart() {
   console.log('  edges:', edges.value.length)
   
   chartInstance.setOption({
-    series: [{
-      data: nodes.value,
-      links: edges.value
-    }],
     legend: [{
       data: categoryStats.value.map(s => ({ name: s.name, icon: 'circle', itemStyle: { color: s.color } })),
       formatter: (name) => {
         const stat = categoryStats.value.find(s => s.name === name)
         return `${name} (${stat?.count || 0})`
       }
+    }],
+    series: [{
+      type: 'graph',  // 🔧 必须包含 type
+      data: nodes.value,
+      links: edges.value,
+      categories: [
+        { name: '工作', itemStyle: { color: '#8b5cf6' } },
+        { name: '学习', itemStyle: { color: '#3b82f6' } },
+        { name: '生活', itemStyle: { color: '#10b981' } }
+      ]
     }]
-  }, true) // 🆕 添加 true 参数，强制刷新
+  }, { notMerge: false, lazyUpdate: false }) // 🔧 使用合并模式
 }
 
 // 🆕 重置视图
