@@ -13036,6 +13036,13 @@ const handleRefresh = async () => {
   await loadUserInfo()
   taskStore.checkOverdueTasks()
 
+  // 11. 强制清空DOM输入框（防止浏览器缓存问题）
+  await nextTick()
+  const inputElement = document.querySelector('.quick-task-input')
+  if (inputElement) {
+    inputElement.value = ''
+  }
+
   setTimeout(() => {
     isRefreshing.value = false
     showNotification('🔄 已刷新到初始状态', 'success')
