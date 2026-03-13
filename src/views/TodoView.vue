@@ -12914,34 +12914,48 @@ const handleRefresh = async () => {
   startDate.value = ''
   endDate.value = ''
   currentPage.value = 1
+  jumpToPage.value = ''
   
-  // 2. 清空输入框
+  // 2. 清空输入框和临时数据
   newTaskText.value = ''
   newTaskDescription.value = ''
+  quickTaskInput.value = ''
+  tempDescription.value = ''
+  tempMedia.value = []
+  currentTaskId.value = null
   
   // 3. 重置任务表单属性到默认值
   newTaskType.value = 'today'
   newTaskCategory.value = 'work'
   newTaskPriority.value = 'medium'
+  newTaskCollectionId.value = null
   customDateTime.value = ''
   selectedWeekdays.value = []
+  monthDay.value = 1
+  enableReminder.value = false
+  forceReminder.value = true
+  reminderDateTime.value = ''
   
   // 4. 关闭所有弹窗
   showTaskDetail.value = false
   showTrash.value = false
   showProfile.value = false
   showPomodoroStats.value = false
+  showPomodoroTimer.value = false
   showSupport.value = false
   showAIConfig.value = false
   showAIChat.value = false
   showAIResult.value = false
   showAISuggestion.value = false
+  showAIPreview.value = false
+  showAIMenu.value = false
   showDailySummary.value = false
   showAIReport.value = false
   showTaskSplitter.value = false
   showTextResult.value = false
   showTaskPreview.value = false
   showSubtaskPreview.value = false
+  showSubtaskSuggestion.value = false
   showVersionModal.value = false
   showFullscreenDesc.value = false
   showPrivacyPolicy.value = false
@@ -12953,24 +12967,78 @@ const handleRefresh = async () => {
   showNotificationGuide.value = false
   showAllLogs.value = false
   showAddLogModal.value = false
+  showPasswordModal.value = false
+  showPhoneModal.value = false
+  showWeeklyModal.value = false
+  showCustomDateModal.value = false
+  showFilterModal.value = false
+  showChangelog.value = false
+  showGrowthDetail.value = false
+  showUnifiedReport.value = false
+  showReportHistoryModal.value = false
+  showBackupList.value = false
+  showClipboardHistory.value = false
+  showImportPreview.value = false
   
-  // 5. 清空选中的任务
+  // 🆕 v0.9.0+ 新增弹窗
+  showCollectionList.value = false
+  showCollectionManage.value = false
+  showCollectionMenu.value = false
+  showVerifyPasswordModal.value = false
+  showTagBrowser.value = false
+  showTaskGraph.value = false
+  showGanttChart.value = false
+  showCalendarView.value = false
+  showMoreCollections.value = false
+  
+  // 5. 清空选中的任务和临时数据
   selectedTask.value = null
   currentLogTask.value = null
   taskToSplit.value = null
+  editingTask.value = null
+  detectedSubtasks.value = []
+  aiSuggestion.value = null
+  aiPreviewContent.value = ''
+  aiSuggestionsList.value = []
   
-  // 🆕 重置文件夹选择
+  // 6. 重置编辑状态
+  editDescription.value = ''
+  editText.value = ''
+  editCategory.value = 'work'
+  editPriority.value = 'medium'
+  editType.value = 'today'
+  editCustomDateTime.value = ''
+  editWeekdays.value = []
+  editMonthDay.value = 1
+  isMarkdownPreview.value = false
+  
+  // 7. 重置文件夹和标签选择
   selectedCollectionId.value = null
-  showCollectionList.value = false
+  selectedTag.value = null
+  editingCollectionId.value = null
+  editingCollectionName.value = ''
+  pendingCollectionId.value = null
   
-  // 6. 重新加载数据
+  // 8. 清空报告相关
+  reportType.value = 'weekly'
+  customStartDate.value = ''
+  customEndDate.value = ''
+  reportContent.value = ''
+  reportData.value = {}
+  reportSearchKeyword.value = ''
+  historyReportData.value = null
+  
+  // 9. 清空导入预览
+  importPreviewData.value = null
+  
+  // 10. 重新加载数据
   await taskStore.setCurrentUser(userStore.currentUser)
   await loadUserInfo()
   taskStore.checkOverdueTasks()
 
   setTimeout(() => {
     isRefreshing.value = false
-    showNotification('🔄 已刷新并重置筛选条件', 'success')
+    showNotification('🔄 已刷新到初始状态', 'success')
   }, 800)
 }
 
