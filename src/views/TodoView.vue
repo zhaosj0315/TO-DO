@@ -12814,7 +12814,6 @@ const handleRefresh = async () => {
   showTagBrowser.value = false
   showTaskGraph.value = false
   showGanttChart.value = false
-  showCalendarView.value = false
   showMoreCollections.value = false
   
   // 5. 清空选中的任务和临时数据
