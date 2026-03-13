@@ -92,7 +92,6 @@ const steps = [
       • 📱 完全离线，数据本地存储<br>
       • 🔗 Obsidian风格任务关系<br>
       • 🤖 AI智能助手<br>
-      • 🌳 任务树成长激励<br>
       <br>
       让我们用 <strong>6-8 分钟</strong>，快速掌握核心功能！
     `,
@@ -109,7 +108,7 @@ const steps = [
       🔄 刷新 | 🤖 AI助手 | 🗑️ 回收站 | 📖 教程 | 👤 我的<br>
       <br>
       <strong>第二行</strong>：<br>
-      📚 笔记本 | 🏷️ 标签 | 🕸️ 图谱 | 📊 甘特图 | 📅 日历 | 🌳 成长树<br>
+      📚 笔记本 | 🏷️ 标签 | 🕸️ 图谱 | 📊 甘特图 | 📅 日历<br>
       <br>
       💡 点击🔄刷新可回到初始状态
     `,
@@ -288,22 +287,6 @@ const steps = [
     `,
     position: 'bottom-left',
     category: 'advanced'
-  },
-  
-  {
-    target: '.growth-tree',
-    icon: '🌳',
-    title: '任务树成长系统',
-    description: `
-      <strong>蚂蚁森林式激励</strong>：完成任务让树持续生长！<br>
-      <strong>成长值</strong>：完成任务+1分，高优先级+2分，番茄钟+0.5分<br>
-      <strong>10级体系</strong>：🌱种子 → 🌿幼苗 → 🪴树苗 → ... → 🎋神树<br>
-      <strong>10000分满级</strong>：长期目标，持续激励<br>
-      <br>
-      💡 点击树图标查看详细成长信息
-    `,
-    position: 'bottom-right',
-    category: 'intro'
   },
   
   // === 第六部分：数据与高级 ===

@@ -50,13 +50,6 @@ This is an **offline Android To-Do management application** built with **Vue 3**
   - **GitHub Style**: Familiar Markdown rendering with complete syntax support
   - **Security Protection**: DOMPurify prevents XSS attacks
   - **Mobile Optimized**: Perfect adaptation for mobile and desktop
-- **Task Growth Tree** 🌳 (v0.8.1):
-  - **Ant Forest-style Incentive**: Visualize your progress with a growing tree
-  - **10-Level System**: Seed🌱 → Sprout🌿 → Sapling🪴 → Small Tree🌳 → Big Tree🌲 → Blooming🌸 → Flourishing🌺 → Lush🌻 → Towering🏵️ → Divine Tree🎋
-  - **Growth Points**: Complete task +1, High priority +2, Pomodoro +0.5
-  - **10,000 Points to Max**: Long-term goal for sustained motivation
-  - **Growth Details**: Click tree to view level, progress, and rules
-  - **Circular Design**: 42px green gradient icon with breathing animation
 - **Voice Input** 🎤 (v0.7.12):
   - **Speech Recognition**: Tap microphone button to speak task content
   - **Real-time Display**: See recognized text as you speak
@@ -247,13 +240,6 @@ This is an **offline Android To-Do management application** built with **Vue 3**
   - **GitHub 风格**：熟悉的 Markdown 渲染效果，完整语法支持
   - **安全防护**：使用 DOMPurify 防止 XSS 攻击
   - **移动端优化**：完美适配手机和桌面端
-- **任务树成长系统** 🌳 (v0.8.1 新增):
-  - **蚂蚁森林式激励**：通过可视化的树木成长激励任务完成
-  - **10级成长体系**：种子🌱→幼苗🌿→树苗🪴→小树🌳→大树🌲→开花结果🌸→繁茂之树🌺→茂盛大树🌻→参天大树🏵️→神树🎋
-  - **成长值计算**：完成任务+1分，高优先级+2分，番茄钟+0.5分
-  - **10000分满级**：长期目标设计，保持持续激励
-  - **成长详情**：点击树图标查看等级、进度、规则说明
-  - **圆形设计**：42px绿色渐变图标，呼吸动画效果
 - **语音输入** 🎤 (v0.7.12 新增):
   - **语音识别**：点击麦克风按钮说出任务内容
   - **实时显示**：边说边显示识别的文字
@@ -591,7 +577,7 @@ userInfo[username] = {
   - **移动端优化**：响应式布局，完美适配手机
 - 🎨 **Header 两行布局**:
   - 第一行：刷新、AI助手、回收站、教程、我的主页
-  - 第二行：笔记本、标签、图谱、甘特图、日历、成长树
+  - 第二行：笔记本、标签、图谱、甘特图、日历
 - 📊 **配额管理优化**:
   - 报告历史：30 → 15 → 清空（三重防护）
   - 回收站：50 → 20（自动清理最旧的）
@@ -750,7 +736,6 @@ userInfo[username] = {
   - **胶囊按钮样式统一**：笔记本和统计栏改为横向胶囊布局，视觉一致
   - **间距极致紧凑**：所有行间距统一为2px，按钮内边距缩减至4px 8px
   - **等宽布局**：5个统计按钮等宽平分空间，左右边缘对齐
-  - **成长树配色调整**：从绿色渐变改为紫色渐变，与其他按钮保持一致
   - **Header图标重排**：刷新 → AI助手 → 回收站 → 教程 → 我的主页（按使用频率排序）
   - **AI配置页面优化**：标题更清晰（1️⃣2️⃣3️⃣数字序号），删除冗余label
 - 🎯 **交互优化**:
