@@ -5285,7 +5285,7 @@ const batchDeleteReports = () => {
 const showVersionModal = ref(false) // 版本历史弹窗
 const versionHistory = ref([]) // 版本历史列表
 const hasUnreadVersions = ref(false) // 是否有未读版本
-const CURRENT_VERSION = '0.9.1' // 当前应用版本
+const CURRENT_VERSION = '0.9.2' // 当前应用版本
 const versionModalTitle = ref('🎉 版本更新') // 弹窗标题（动态）
 
 // 版本历史数据
@@ -5294,6 +5294,19 @@ const showAllVersions = ref(false) // 是否展开全部历史
 const initVersionHistory = () => {
   // 完整版本历史
   const allVersions = [
+    {
+      version: '0.9.2',
+      date: '2026-03-13',
+      features: [
+        '📱 iOS 打包支持：新增 build-ios.sh 一键打包脚本'
+      ],
+      improvements: [
+        '🧹 代码精简：删除成长树功能（290行代码）',
+        '📝 文档清理：删除所有成长树相关说明和注释',
+        '🎯 功能聚焦：专注核心任务管理和知识图谱功能'
+      ],
+      fixes: []
+    },
     {
       version: '0.9.1',
       date: '2026-03-12',
