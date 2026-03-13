@@ -228,7 +228,7 @@ const isLoading = ref(true)  // 🆕 加载状态
 let chartInstance = null
 
 const showCompleted = ref(false)   // 显示已完成任务
-const hideIsolated = ref(false)    // 🆕 隐藏孤立任务
+const hideIsolated = ref(true)     // 🆕 隐藏孤立任务（默认开启）
 const showLinks = ref(true)        // 引用链接
 const showDependencies = ref(true) // 依赖关系
 const showSubtasks = ref(true)     // 父子关系
@@ -875,7 +875,18 @@ function resetView() {
 }
 
 // 监听数据变化
-watch([showLinks, showDependencies, showSubtasks, showCompleted, displayLimit, hideIsolated, relationDepth], () => {
+watch([
+  showLinks, 
+  showDependencies, 
+  showSubtasks, 
+  showLogRelations,      // 🆕 添加
+  showTagRelations,      // 🆕 添加
+  showCompleted, 
+  displayLimit, 
+  hideIsolated, 
+  relationDepth,
+  selectedCollectionId   // 🆕 添加笔记本筛选
+], () => {
   updateChart()
 }, { deep: true })
 
