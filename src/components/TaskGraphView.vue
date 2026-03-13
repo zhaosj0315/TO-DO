@@ -229,9 +229,9 @@ let chartInstance = null
 
 const showCompleted = ref(false)   // 显示已完成任务（默认关闭）
 const hideIsolated = ref(true)     // 🆕 隐藏孤立任务（默认开启 - 只显示有关系的）
-const showLinks = ref(false)       // 引用链接（默认关闭，需要时手动开启）
-const showDependencies = ref(false) // 依赖关系（默认关闭，需要时手动开启）
-const showSubtasks = ref(false)    // 父子关系（默认关闭，需要时手动开启）
+const showLinks = ref(true)        // 引用链接（默认开启 - 显示连线）
+const showDependencies = ref(true) // 依赖关系（默认开启 - 显示连线）
+const showSubtasks = ref(true)     // 父子关系（默认开启 - 显示连线）
 const showLogRelations = ref(false) // 🆕 阻碍-方案关系（默认关闭）
 const showTagRelations = ref(false) // 🆕 标签关系（默认关闭）
 const selectedCollectionId = ref(null) // 🆕 笔记本筛选（v0.9.2）
