@@ -86,6 +86,19 @@
           />
         </div>
         
+        <!-- 🆕 最小关系数 -->
+        <div class="limit-control">
+          <label>最小关系: {{ minRelationCount }}</label>
+          <input 
+            v-model.number="minRelationCount" 
+            type="range" 
+            min="0" 
+            max="10" 
+            step="1"
+            class="limit-slider"
+          />
+        </div>
+        
         <!-- 笔记本筛选 -->
         <select v-model="selectedCollectionId" class="collection-filter">
           <option :value="null">📚 全部笔记本</option>
@@ -243,6 +256,7 @@ const showIsolatedHint = ref(true) // 🆕 显示孤立任务提示
 const showHideIsolatedHint = ref(false) // 🆕 显示隐藏孤立提示
 const controlsCollapsed = ref(false) // 🆕 控制栏收起状态
 const focusedTaskId = ref(null)    // 🆕 双击聚焦的任务ID（展开关系网络）
+const minRelationCount = ref(2)    // 🆕 最小关系数（默认2个关系以上）
 
 // 可选择的任务列表
 const availableTasks = computed(() => {
@@ -387,6 +401,11 @@ const graphData = computed(() => {
       
       if (showTagRelations.value) {
         relationCount += (task.tags?.length || 0)  // 标签关系
+      }
+
+      // 🆕 过滤最小关系数（聚焦模式下不过滤）
+      if (!focusedTaskId.value && relationCount < minRelationCount.value) {
+        return  // 跳过关系数不足的任务
       }
 
       nodes.push({
@@ -1023,14 +1042,15 @@ watch([
   showLinks, 
   showDependencies, 
   showSubtasks, 
-  showLogRelations,      // 🆕 添加
-  showTagRelations,      // 🆕 添加
+  showLogRelations,
+  showTagRelations,
   showCompleted, 
   displayLimit, 
   hideIsolated, 
   relationDepth,
-  selectedCollectionId,  // 🆕 添加笔记本筛选
-  focusedTaskId          // 🆕 添加聚焦任务
+  selectedCollectionId,
+  focusedTaskId,
+  minRelationCount       // 🆕 添加最小关系数
 ], () => {
   updateChart()
 }, { deep: true })
