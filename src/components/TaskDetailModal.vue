@@ -1884,7 +1884,7 @@ ${logsText || '暂无日志'}
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  z-index: 2000;
+  z-index: 2200; /* 🆕 提高到2200，确保在标签浏览器(2000)和迁入迁出弹窗(2100)之上 */
   animation: fadeIn 0.2s ease-out;
 }
 

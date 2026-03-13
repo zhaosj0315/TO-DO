@@ -35,11 +35,22 @@
 
       <!-- 标签管理视图 -->
       <div v-else class="tag-manage-view">
+        <!-- 操作按钮 -->
+        <div class="manage-actions">
+          <button class="btn-action btn-add" @click="showMigrateIn = true">
+            ➕ 迁入任务
+          </button>
+          <button class="btn-action btn-remove" @click="showMigrateOut = true">
+            ➖ 迁出任务
+          </button>
+        </div>
+
         <!-- 任务列表 -->
         <div class="task-list">
           <div v-if="tagTasks.length === 0" class="empty-state">
             <span class="icon">📝</span>
             <p>该标签下暂无任务</p>
+            <p class="hint">点击"➕ 迁入任务"添加任务到此标签</p>
           </div>
 
           <div 
@@ -57,22 +68,67 @@
             <div class="task-meta">
               <span class="task-category">{{ getCategoryIcon(task.category) }}</span>
               <span class="task-priority" :class="task.priority">{{ getPriorityText(task.priority) }}</span>
-              <button 
-                class="btn-remove-tag" 
-                @click.stop="removeTagFromTask(task.id)"
-                title="移除此标签"
-              >
-                ✕
-              </button>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- 批量操作 -->
-        <div class="batch-actions">
-          <button class="btn-batch btn-danger" @click="batchRemoveTag">
-            🗑️ 批量移除标签（{{ tagTasks.length }}个任务）
-          </button>
+      <!-- 🆕 迁入任务弹窗 -->
+      <div v-if="showMigrateIn" class="migrate-modal" @click.self="showMigrateIn = false">
+        <div class="migrate-content">
+          <div class="migrate-header">
+            <h3>➕ 迁入任务到 #{{ selectedTag }}</h3>
+            <button class="btn-close" @click="showMigrateIn = false">✕</button>
+          </div>
+          
+          <div class="search-box">
+            <input 
+              v-model="migrateSearchKeyword" 
+              type="text" 
+              placeholder="搜索任务..."
+              class="search-input"
+            >
+          </div>
+
+          <div class="migrate-list">
+            <div v-if="availableTasksForMigrate.length === 0" class="empty-hint">
+              暂无可迁入的任务
+            </div>
+            <div 
+              v-for="task in availableTasksForMigrate" 
+              :key="task.id"
+              class="migrate-item"
+              @click="migrateTaskIn(task.id)"
+            >
+              <span class="task-text">{{ task.text }}</span>
+              <span class="task-category-small">{{ getCategoryIcon(task.category) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 🆕 迁出任务弹窗 -->
+      <div v-if="showMigrateOut" class="migrate-modal" @click.self="showMigrateOut = false">
+        <div class="migrate-content">
+          <div class="migrate-header">
+            <h3>➖ 从 #{{ selectedTag }} 迁出任务</h3>
+            <button class="btn-close" @click="showMigrateOut = false">✕</button>
+          </div>
+
+          <div class="migrate-list">
+            <div v-if="tagTasks.length === 0" class="empty-hint">
+              该标签下暂无任务
+            </div>
+            <div 
+              v-for="task in tagTasks" 
+              :key="task.id"
+              class="migrate-item"
+              @click="migrateTaskOut(task.id)"
+            >
+              <span class="task-text">{{ task.text }}</span>
+              <span class="task-category-small">{{ getCategoryIcon(task.category) }}</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -89,6 +145,9 @@ const emit = defineEmits(['close', 'filter', 'openTask'])
 const taskStore = useOfflineTaskStore()
 const expandedPaths = ref(new Set())
 const selectedTag = ref(null) // 🆕 当前选中的标签
+const showMigrateIn = ref(false) // 🆕 迁入弹窗
+const showMigrateOut = ref(false) // 🆕 迁出弹窗
+const migrateSearchKeyword = ref('') // 🆕 迁入搜索关键词
 
 // 🆕 构建标签树
 const tagTree = computed(() => {
@@ -189,43 +248,50 @@ function openTaskDetail(taskId) {
   emit('openTask', taskId)
 }
 
-// 🆕 从单个任务移除标签
-async function removeTagFromTask(taskId) {
+// 🆕 可迁入的任务（不包含当前标签的任务）
+const availableTasksForMigrate = computed(() => {
+  const tasks = taskStore.tasks.filter(task => 
+    !task.tags?.includes(selectedTag.value)
+  )
+  
+  // 搜索过滤
+  if (migrateSearchKeyword.value.trim()) {
+    const keyword = migrateSearchKeyword.value.toLowerCase()
+    return tasks.filter(task => 
+      task.text.toLowerCase().includes(keyword) ||
+      task.description?.toLowerCase().includes(keyword)
+    )
+  }
+  
+  return tasks
+})
+
+// 🆕 迁入任务（添加标签）
+async function migrateTaskIn(taskId) {
   const task = taskStore.tasks.find(t => t.id === taskId)
   if (!task) return
   
-  if (confirm(`确定要从任务"${task.text}"中移除标签"#${selectedTag.value}"吗？`)) {
-    // 从描述中移除标签
-    const tagPattern = new RegExp(`#${selectedTag.value.replace(/\//g, '\\/')}(?!\\w)`, 'g')
-    const newDescription = task.description.replace(tagPattern, '').trim()
-    
-    await taskStore.updateTask(taskId, { description: newDescription })
-  }
+  // 在描述末尾添加标签
+  const newDescription = task.description 
+    ? `${task.description} #${selectedTag.value}`
+    : `#${selectedTag.value}`
+  
+  await taskStore.updateTask(taskId, { description: newDescription })
+  showMigrateIn.value = false
+  migrateSearchKeyword.value = ''
 }
 
-// 🆕 批量移除标签
-async function batchRemoveTag() {
-  if (tagTasks.value.length === 0) return
+// 🆕 迁出任务（移除标签）
+async function migrateTaskOut(taskId) {
+  const task = taskStore.tasks.find(t => t.id === taskId)
+  if (!task) return
   
-  const taskNames = tagTasks.value.slice(0, 5).map(t => `  • ${t.text}`).join('\n')
-  const more = tagTasks.value.length > 5 ? `\n  ... 还有 ${tagTasks.value.length - 5} 个任务` : ''
+  // 从描述中移除标签
+  const tagPattern = new RegExp(`#${selectedTag.value.replace(/\//g, '\\/')}(?!\\w)`, 'g')
+  const newDescription = task.description.replace(tagPattern, '').trim()
   
-  if (confirm(
-    `⚠️ 批量移除标签确认\n\n` +
-    `标签：#${selectedTag.value}\n` +
-    `将从以下 ${tagTasks.value.length} 个任务中移除：\n${taskNames}${more}\n\n` +
-    `确定要继续吗？`
-  )) {
-    const tagPattern = new RegExp(`#${selectedTag.value.replace(/\//g, '\\/')}(?!\\w)`, 'g')
-    
-    for (const task of tagTasks.value) {
-      const newDescription = task.description.replace(tagPattern, '').trim()
-      await taskStore.updateTask(task.id, { description: newDescription })
-    }
-    
-    selectedTag.value = null
-    alert(`✅ 已从 ${tagTasks.value.length} 个任务中移除标签`)
-  }
+  await taskStore.updateTask(taskId, { description: newDescription })
+  showMigrateOut.value = false
 }
 
 // 🆕 辅助函数
@@ -375,6 +441,47 @@ function getPriorityText(priority) {
   overflow: hidden;
 }
 
+/* 🆕 操作按钮 */
+.manage-actions {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background: white;
+  border-bottom: 1px solid #f0f0f0;
+  flex-shrink: 0;
+}
+
+.btn-action {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-add {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+}
+
+.btn-add:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-remove {
+  background: linear-gradient(135deg, #f093fb, #f5576c);
+  color: white;
+}
+
+.btn-remove:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3);
+}
+
 .task-list {
   flex: 1;
   overflow-y: auto;
@@ -471,6 +578,133 @@ function getPriorityText(priority) {
 .btn-remove-tag:hover {
   background: #fcc;
   transform: scale(1.1);
+}
+
+/* 🆕 迁入迁出弹窗 */
+.migrate-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2100;
+}
+
+.migrate-content {
+  width: 90%;
+  max-width: 500px;
+  max-height: 70vh;
+  background: white;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.migrate-header {
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.migrate-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.btn-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 1.2rem;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.btn-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(90deg);
+}
+
+.search-box {
+  padding: 16px;
+  border-bottom: 1px solid #f0f0f0;
+  flex-shrink: 0;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.migrate-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.empty-hint {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+  font-size: 0.95rem;
+}
+
+.migrate-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px;
+  margin-bottom: 8px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.migrate-item:hover {
+  background: rgba(139, 92, 246, 0.1);
+  transform: translateX(4px);
+}
+
+.task-text {
+  flex: 1;
+  font-size: 0.95rem;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-category-small {
+  font-size: 1.1rem;
+  margin-left: 8px;
 }
 
 /* 批量操作 */
