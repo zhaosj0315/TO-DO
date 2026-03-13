@@ -1,6 +1,6 @@
 <template>
   <div class="task-detail-overlay" @click.self="$emit('close')">
-    <div class="task-detail-sheet">
+    <div class="task-detail-sheet" @click="showAIMenu = false">
       <!-- 头部 -->
       <div class="detail-header">
         <button class="back-btn" @click="$emit('close')">
@@ -12,9 +12,21 @@
           class="title-input"
           placeholder="任务标题"
         />
-        <button class="ai-summary-btn-header" @click="handleAISummary" title="AI智能总结">
-          ✨
-        </button>
+        <div class="ai-menu-wrapper">
+          <button class="ai-menu-btn" @click.stop="showAIMenu = !showAIMenu" title="AI功能">
+            🤖
+          </button>
+          <div v-if="showAIMenu" class="ai-dropdown-menu">
+            <button class="ai-menu-item" @click="handleAISummary; showAIMenu = false">
+              <span class="menu-icon">✨</span>
+              <span class="menu-text">智能总结</span>
+            </button>
+            <button class="ai-menu-item" @click="handleSplitTask; showAIMenu = false" v-if="task.status !== 'completed'">
+              <span class="menu-icon">🔨</span>
+              <span class="menu-text">拆解任务</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- 滚动内容区 -->
@@ -602,13 +614,6 @@
         </button>
         <button
           v-if="task.status !== 'completed'"
-          class="split-btn"
-          @click="handleSplitTask"
-        >
-          🔨 AI拆解任务
-        </button>
-        <button
-          v-if="task.status !== 'completed'"
           class="split-btn split-btn-manual"
           @click="handleManualAddSubtask"
         >
@@ -974,6 +979,7 @@ const localTask = ref({
 
 // 🆕 Markdown 预览模式
 const isDescriptionPreview = ref(false)
+const showAIMenu = ref(false)
 const descriptionTextarea = ref(null)
 
 // 🆕 自动补全相关（v0.9.0）
@@ -1749,8 +1755,7 @@ ${logsText || '暂无日志'}
 }
 
 .back-btn,
-.edit-btn,
-.ai-summary-btn-header {
+.edit-btn {
   height: 44px;
   background: rgba(255, 255, 255, 0.2);
   border: none;
@@ -1765,31 +1770,96 @@ ${logsText || '暂无日志'}
   justify-content: center;
 }
 
-.ai-summary-btn-header {
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 165, 0, 0.3));
-  font-size: 1.2rem;
+/* AI菜单 */
+.ai-menu-wrapper {
+  position: relative;
+}
+
+.ai-menu-btn {
+  height: 44px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(168, 85, 247, 0.3));
+  border: none;
   padding: 0 0.8rem;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  font-size: 1.2rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   animation: glow-ai 2s ease-in-out infinite;
 }
 
 @keyframes glow-ai {
   0%, 100% {
-    box-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+    box-shadow: 0 0 5px rgba(139, 92, 246, 0.5);
   }
   50% {
-    box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.8);
   }
+}
+
+.ai-menu-btn:hover {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.5), rgba(168, 85, 247, 0.5));
+  animation: none;
+}
+
+.ai-dropdown-menu {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  min-width: 160px;
+  z-index: 1000;
+  overflow: hidden;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ai-menu-item {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background 0.2s;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.ai-menu-item:hover {
+  background: #f3f4f6;
+}
+
+.ai-menu-item .menu-icon {
+  font-size: 1.1rem;
+}
+
+.ai-menu-item .menu-text {
+  flex: 1;
+  text-align: left;
 }
 
 .back-btn:hover,
 .edit-btn:hover {
   background: rgba(255, 255, 255, 0.3);
   transform: translateY(-1px);
-}
-
-.ai-summary-btn-header:hover {
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.5), rgba(255, 165, 0, 0.5));
-  animation: none;
 }
 
 /* 内容区 */
