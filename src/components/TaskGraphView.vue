@@ -371,14 +371,24 @@ const graphData = computed(() => {
         value: relationCount, // 🆕 关系数量
         category: getCategoryIndex(task),
         symbolSize: Math.max(35, Math.min(70, 35 + relationCount * 3)), // 🆕 根据关系数量动态调整大小
-        label: {
-          show: true,
-          position: 'inside', // 🔧 圆圈内部显示数字
-          formatter: String(relationCount), // 只显示数字
-          fontSize: 16,
-          fontWeight: 'bold',
-          color: '#fff'
-        },
+        label: [
+          {
+            show: true,
+            position: 'inside', // 圆圈内显示数字
+            formatter: String(relationCount),
+            fontSize: 16,
+            fontWeight: 'bold',
+            color: '#fff'
+          },
+          {
+            show: true,
+            position: 'bottom', // 圆圈下显示任务名称
+            formatter: '{b}',
+            fontSize: 11,
+            color: '#333',
+            distance: 5
+          }
+        ],
         itemStyle: {
           color: task.id === selectedTaskId.value ? '#f59e0b' : getCategoryColor(task.category),
           opacity: opacity,  // ✨ 状态透明度
@@ -388,8 +398,7 @@ const graphData = computed(() => {
         // 🆕 存储信息用于tooltip
         relationCount: relationCount, // 🆕 存储关系数量
         logRelationsCount: logRelations.length,
-        unresolvedBlocksCount: hasUnresolvedBlocks ? taskStore.getUnresolvedBlocks(task.id).length : 0,
-        relationCount: relationCount // 🆕 存储关系数量
+        unresolvedBlocksCount: hasUnresolvedBlocks ? taskStore.getUnresolvedBlocks(task.id).length : 0
       })
       nodeMap.add(task.id)
     }
