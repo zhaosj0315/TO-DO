@@ -242,6 +242,7 @@ const relationDepth = ref(2)       // 🆕 关系层级深度
 const showIsolatedHint = ref(true) // 🆕 显示孤立任务提示
 const showHideIsolatedHint = ref(false) // 🆕 显示隐藏孤立提示
 const controlsCollapsed = ref(false) // 🆕 控制栏收起状态
+const focusedTaskId = ref(null)    // 🆕 双击聚焦的任务ID（展开关系网络）
 
 // 可选择的任务列表
 const availableTasks = computed(() => {
@@ -299,10 +300,16 @@ const graphData = computed(() => {
   const edges = []
   const nodeMap = new Set()
 
-  // 获取要显示的任务
-  let tasksToShow = selectedTaskId.value 
-    ? getRelatedTasks(selectedTaskId.value)
-    : taskStore.tasks.filter(t => showCompleted.value || t.status !== 'completed')
+  // 🆕 双击聚焦模式：只显示该任务及其直接关系
+  let tasksToShow
+  if (focusedTaskId.value) {
+    tasksToShow = getDirectRelatedTasks(focusedTaskId.value)
+    console.log('🔍 聚焦模式 - 任务:', focusedTaskId.value, '关系数:', tasksToShow.length)
+  } else if (selectedTaskId.value) {
+    tasksToShow = getRelatedTasks(selectedTaskId.value)
+  } else {
+    tasksToShow = taskStore.tasks.filter(t => showCompleted.value || t.status !== 'completed')
+  }
 
   // 🆕 笔记本筛选（v0.9.2）
   if (selectedCollectionId.value !== null) {
@@ -310,7 +317,7 @@ const graphData = computed(() => {
   }
 
   // 如果任务数量超过限制，按关系数量排序并截取
-  if (tasksToShow.length > displayLimit.value) {
+  if (!focusedTaskId.value && tasksToShow.length > displayLimit.value) {
     tasksToShow = tasksToShow
       .map(t => ({
         ...t,
@@ -682,6 +689,42 @@ function getRelatedTasks(taskId) {
   return Array.from(related)
 }
 
+// 🆕 获取直接关系任务（双击聚焦用）
+function getDirectRelatedTasks(taskId) {
+  const task = taskStore.tasks.find(t => t.id === taskId)
+  if (!task) return []
+  
+  const related = new Set([task])
+  
+  // 添加所有直接关系的任务
+  task.linkedTasks?.forEach(id => {
+    const t = taskStore.tasks.find(t => t.id === id)
+    if (t) related.add(t)
+  })
+  
+  task.waitFor?.forEach(id => {
+    const t = taskStore.tasks.find(t => t.id === id)
+    if (t) related.add(t)
+  })
+  
+  if (task.parentTaskId) {
+    const t = taskStore.tasks.find(t => t.id === task.parentTaskId)
+    if (t) related.add(t)
+  }
+  
+  task.subtasks?.forEach(id => {
+    const t = taskStore.tasks.find(t => t.id === id)
+    if (t) related.add(t)
+  })
+  
+  // 添加反向链接
+  const backlinks = taskStore.getBacklinks(taskId)
+  backlinks.forEach(t => related.add(t))
+  
+  console.log('🔍 直接关系任务:', Array.from(related).map(t => t.text))
+  return Array.from(related)
+}
+
 // 🆕 分类统计
 const categoryStats = computed(() => {
   const stats = {
@@ -835,8 +878,16 @@ function initChart() {
   chartInstance.on('dblclick', (params) => {
     if (params.dataType === 'node') {
       const taskId = parseInt(params.data.id)
-      selectedTaskId.value = taskId
-      console.log('🔍 展开任务关系网络:', taskId)
+      if (focusedTaskId.value === taskId) {
+        // 再次双击取消聚焦
+        focusedTaskId.value = null
+        console.log('🔍 取消聚焦')
+      } else {
+        // 聚焦到该任务
+        focusedTaskId.value = taskId
+        selectedTaskId.value = taskId
+        console.log('🔍 聚焦任务关系网络:', taskId)
+      }
     }
   })
 }
@@ -921,7 +972,8 @@ watch([
   displayLimit, 
   hideIsolated, 
   relationDepth,
-  selectedCollectionId   // 🆕 添加笔记本筛选
+  selectedCollectionId,  // 🆕 添加笔记本筛选
+  focusedTaskId          // 🆕 添加聚焦任务
 ], () => {
   updateChart()
 }, { deep: true })
