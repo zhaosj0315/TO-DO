@@ -81,12 +81,14 @@
             <div class="header-item">
               <button 
                 class="btn-icon-circle btn-graph" 
-                @click="showTaskGraph = true; graphCenterTaskId = null" 
+                @click="handleOpenGraph" 
                 title="任务关系图谱"
+                :disabled="isLoadingGraph"
               >
-                🕸️
+                <span v-if="!isLoadingGraph">🕸️</span>
+                <span v-else class="loading-spinner-small"></span>
               </button>
-              <span class="item-label">图谱</span>
+              <span class="item-label">{{ isLoadingGraph ? '加载中...' : '图谱' }}</span>
             </div>
             
             <!-- 🆕 甘特图（v0.9.0）-->
@@ -4657,6 +4659,7 @@ const selectedTag = ref(null)  // 当前选中的标签
 // 🆕 任务关系图谱状态（v0.9.0）
 const showTaskGraph = ref(false)
 const graphCenterTaskId = ref(null)  // 图谱中心任务ID
+const isLoadingGraph = ref(false)  // 🆕 图谱加载状态
 const showGanttChart = ref(false)  // 🆕 甘特图状态（v0.9.0）
 const showCalendar = ref(false)  // 🆕 日历视图状态（v0.10.0）
 const collectionToMove = ref(null)  // 🆕 待移动的笔记本
@@ -9724,6 +9727,24 @@ const handleTaskDetailRefresh = () => {
 // 方法：从日历打开任务详情
 const openTaskFromCalendar = (task) => {
   openTaskDetail(task)
+}
+
+// 打开任务关系图谱
+const handleOpenGraph = async () => {
+  isLoadingGraph.value = true
+  graphCenterTaskId.value = null
+  
+  // 使用 nextTick 确保 UI 更新
+  await nextTick()
+  
+  // 延迟一帧，让加载动画显示出来
+  setTimeout(() => {
+    showTaskGraph.value = true
+    // 图谱打开后再关闭加载状态
+    setTimeout(() => {
+      isLoadingGraph.value = false
+    }, 300)
+  }, 50)
 }
 
 // 方法：从日历创建任务
@@ -17315,14 +17336,33 @@ watch(() => reportData.value, (newData) => {
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 
-.btn-icon-circle:hover {
+.btn-icon-circle:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-icon-circle:hover:not(:disabled) {
   border-color: rgba(255, 255, 255, 1);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
-.btn-icon-circle:active {
+.btn-icon-circle:active:not(:disabled) {
   transform: scale(0.95);
+}
+
+/* 小型加载动画 */
+.loading-spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .btn-icon-circle:hover {
