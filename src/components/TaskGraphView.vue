@@ -371,24 +371,18 @@ const graphData = computed(() => {
         value: relationCount, // 🆕 关系数量
         category: getCategoryIndex(task),
         symbolSize: Math.max(35, Math.min(70, 35 + relationCount * 3)), // 🆕 根据关系数量动态调整大小
-        label: [
-          {
-            show: true,
-            position: 'inside', // 圆圈内显示数字
-            formatter: String(relationCount),
-            fontSize: 16,
-            fontWeight: 'bold',
-            color: '#fff'
+        label: {
+          show: true,
+          position: 'bottom', // 圆圈下显示
+          formatter: (params) => {
+            const taskName = params.data.name.length > 10 ? params.data.name.substring(0, 10) + '...' : params.data.name
+            return `${taskName}\n(${relationCount}个关系)`
           },
-          {
-            show: true,
-            position: 'bottom', // 圆圈下显示任务名称
-            formatter: '{b}',
-            fontSize: 11,
-            color: '#333',
-            distance: 5
-          }
-        ],
+          fontSize: 11,
+          color: '#333',
+          distance: 5,
+          lineHeight: 14
+        },
         itemStyle: {
           color: task.id === selectedTaskId.value ? '#f59e0b' : getCategoryColor(task.category),
           opacity: opacity,  // ✨ 状态透明度
