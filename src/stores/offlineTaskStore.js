@@ -558,6 +558,13 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
       const task = this.tasks.find(t => t.id === taskId)
       if (task) {
         const oldReminder = { enableReminder: task.enableReminder, reminderTime: task.reminderTime }
+        
+        // 🆕 如果更新了描述，重新解析标签和链接（v0.9.2 修复）
+        if (updates.description !== undefined) {
+          updates.linkedTasks = this.parseTaskLinks(updates.description)
+          updates.tags = this.parseHierarchicalTags(updates.description)
+        }
+        
         Object.assign(task, updates)
         
         // 🔧 如果修改了任务类型、日期或时间，重新评估任务状态
