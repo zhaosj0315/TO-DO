@@ -13,7 +13,7 @@
           placeholder="任务标题"
         />
         <div class="ai-menu-wrapper">
-          <button class="ai-menu-btn" @click.stop="showAIMenu = !showAIMenu" title="AI功能">
+          <button class="ai-menu-btn" @click.stop="showAIMenu = !showAIMenu; console.log('AI按钮点击', showAIMenu)" title="AI功能">
             🤖
           </button>
           <div v-if="showAIMenu" class="ai-dropdown-menu">
