@@ -38,16 +38,7 @@
       </button>
 
       <!-- 任务数量 -->
-      <span class="tag-count">{{ node.count }}</span>
-
-      <!-- 🆕 管理按钮（点击展开任务列表） -->
-      <button 
-        class="btn-manage-tag" 
-        @click.stop="$emit('manage', node.path)"
-        title="查看任务列表"
-      >
-        ⚙️
-      </button>
+      <span class="tag-count" @click.stop="$emit('manage', node.path)">{{ node.count }}</span>
     </div>
 
     <!-- 子节点（递归） -->
@@ -168,23 +159,13 @@ const childrenArray = computed(() => {
   font-size: 0.85rem;
   font-weight: 600;
   flex-shrink: 0;
-}
-
-/* 🆕 管理按钮 */
-.btn-manage-tag {
-  background: rgba(139, 92, 246, 0.1);
-  border: none;
-  font-size: 1rem;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 6px;
   transition: all 0.2s;
-  flex-shrink: 0;
 }
 
-.btn-manage-tag:hover {
-  background: rgba(139, 92, 246, 0.2);
+.tag-count:hover {
   transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 
 /* 🆕 迁入迁出按钮 */

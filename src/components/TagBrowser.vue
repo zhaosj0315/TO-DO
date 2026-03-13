@@ -65,12 +65,25 @@
         </div>
       </div>
 
-      <!-- 🆕 迁入任务弹窗 -->
-      <div v-if="showMigrateIn" class="migrate-modal" @click.self="showMigrateIn = false">
-        <div class="migrate-content">
+      <!-- 🆕 迁入任务弹窗 (Bottom Sheet) -->
+      <div v-if="showMigrateIn" class="migrate-sheet-overlay" @click.self="closeMigrateIn">
+        <div class="migrate-sheet">
+          <!-- 顶部小横条 -->
+          <div class="sheet-handle"></div>
+          
           <div class="migrate-header">
+            <button class="back-btn" @click="closeMigrateIn">
+              <span>← 返回</span>
+            </button>
             <h3>➕ 迁入任务到 #{{ selectedTag }}</h3>
-            <button class="btn-close" @click="showMigrateIn = false">✕</button>
+            <button 
+              v-if="selectedMigrateTasks.length > 0"
+              class="btn-confirm"
+              @click="batchMigrateIn"
+            >
+              确定({{ selectedMigrateTasks.length }})
+            </button>
+            <div v-else style="width: 60px;"></div>
           </div>
           
           <div class="search-box">
@@ -90,8 +103,15 @@
               v-for="task in availableTasksForMigrate" 
               :key="task.id"
               class="migrate-item"
-              @click="migrateTaskIn(task.id)"
+              :class="{ selected: selectedMigrateTasks.includes(task.id) }"
+              @click="toggleSelectTask(task.id)"
             >
+              <input 
+                type="checkbox" 
+                :checked="selectedMigrateTasks.includes(task.id)"
+                class="task-checkbox"
+                @click.stop="toggleSelectTask(task.id)"
+              >
               <span class="task-text">{{ task.text }}</span>
               <span class="task-category-small">{{ getCategoryIcon(task.category) }}</span>
             </div>
@@ -99,12 +119,25 @@
         </div>
       </div>
 
-      <!-- 🆕 迁出任务弹窗 -->
-      <div v-if="showMigrateOut" class="migrate-modal" @click.self="showMigrateOut = false">
-        <div class="migrate-content">
+      <!-- 🆕 迁出任务弹窗 (Bottom Sheet) -->
+      <div v-if="showMigrateOut" class="migrate-sheet-overlay" @click.self="closeMigrateOut">
+        <div class="migrate-sheet">
+          <!-- 顶部小横条 -->
+          <div class="sheet-handle"></div>
+          
           <div class="migrate-header">
+            <button class="back-btn" @click="closeMigrateOut">
+              <span>← 返回</span>
+            </button>
             <h3>➖ 从 #{{ selectedTag }} 迁出任务</h3>
-            <button class="btn-close" @click="showMigrateOut = false">✕</button>
+            <button 
+              v-if="selectedMigrateTasks.length > 0"
+              class="btn-confirm"
+              @click="batchMigrateOut"
+            >
+              确定({{ selectedMigrateTasks.length }})
+            </button>
+            <div v-else style="width: 60px;"></div>
           </div>
 
           <div class="migrate-list">
@@ -115,8 +148,15 @@
               v-for="task in tagTasks" 
               :key="task.id"
               class="migrate-item"
-              @click="migrateTaskOut(task.id)"
+              :class="{ selected: selectedMigrateTasks.includes(task.id) }"
+              @click="toggleSelectTask(task.id)"
             >
+              <input 
+                type="checkbox" 
+                :checked="selectedMigrateTasks.includes(task.id)"
+                class="task-checkbox"
+                @click.stop="toggleSelectTask(task.id)"
+              >
               <span class="task-text">{{ task.text }}</span>
               <span class="task-category-small">{{ getCategoryIcon(task.category) }}</span>
             </div>
@@ -140,6 +180,7 @@ const selectedTag = ref(null) // 🆕 当前选中的标签
 const showMigrateIn = ref(false) // 🆕 迁入弹窗
 const showMigrateOut = ref(false) // 🆕 迁出弹窗
 const migrateSearchKeyword = ref('') // 🆕 迁入搜索关键词
+const selectedMigrateTasks = ref([]) // 🆕 选中的任务ID列表
 
 // 🆕 构建标签树
 const tagTree = computed(() => {
@@ -222,18 +263,6 @@ function handleManage(path) {
   selectedTag.value = path
 }
 
-// 🆕 迁入任务
-function handleMigrateIn(path) {
-  selectedTag.value = path
-  showMigrateIn.value = true
-}
-
-// 🆕 迁出任务
-function handleMigrateOut(path) {
-  selectedTag.value = path
-  showMigrateOut.value = true
-}
-
 // 🆕 获取标签下的所有任务
 const tagTasks = computed(() => {
   if (!selectedTag.value) return []
@@ -270,32 +299,75 @@ const availableTasksForMigrate = computed(() => {
   return tasks
 })
 
-// 🆕 迁入任务（添加标签）
-async function migrateTaskIn(taskId) {
-  const task = taskStore.tasks.find(t => t.id === taskId)
-  if (!task) return
-  
-  // 在描述末尾添加标签
-  const newDescription = task.description 
-    ? `${task.description} #${selectedTag.value}`
-    : `#${selectedTag.value}`
-  
-  await taskStore.updateTask(taskId, { description: newDescription })
+// 🆕 迁入任务
+function handleMigrateIn(path) {
+  selectedTag.value = path
+  selectedMigrateTasks.value = []
+  showMigrateIn.value = true
+}
+
+// 🆕 迁出任务
+function handleMigrateOut(path) {
+  selectedTag.value = path
+  selectedMigrateTasks.value = []
+  showMigrateOut.value = true
+}
+
+// 🆕 切换任务选中状态
+function toggleSelectTask(taskId) {
+  const index = selectedMigrateTasks.value.indexOf(taskId)
+  if (index > -1) {
+    selectedMigrateTasks.value.splice(index, 1)
+  } else {
+    selectedMigrateTasks.value.push(taskId)
+  }
+}
+
+// 🆕 关闭迁入弹窗
+function closeMigrateIn() {
   showMigrateIn.value = false
+  selectedMigrateTasks.value = []
   migrateSearchKeyword.value = ''
 }
 
-// 🆕 迁出任务（移除标签）
-async function migrateTaskOut(taskId) {
-  const task = taskStore.tasks.find(t => t.id === taskId)
-  if (!task) return
-  
-  // 从描述中移除标签
-  const tagPattern = new RegExp(`#${selectedTag.value.replace(/\//g, '\\/')}(?!\\w)`, 'g')
-  const newDescription = task.description.replace(tagPattern, '').trim()
-  
-  await taskStore.updateTask(taskId, { description: newDescription })
+// 🆕 关闭迁出弹窗
+function closeMigrateOut() {
   showMigrateOut.value = false
+  selectedMigrateTasks.value = []
+}
+
+// 🆕 批量迁入任务
+async function batchMigrateIn() {
+  if (selectedMigrateTasks.value.length === 0) return
+  
+  for (const taskId of selectedMigrateTasks.value) {
+    const task = taskStore.tasks.find(t => t.id === taskId)
+    if (task) {
+      const newDescription = task.description 
+        ? `${task.description} #${selectedTag.value}`
+        : `#${selectedTag.value}`
+      await taskStore.updateTask(taskId, { description: newDescription })
+    }
+  }
+  
+  closeMigrateIn()
+}
+
+// 🆕 批量迁出任务
+async function batchMigrateOut() {
+  if (selectedMigrateTasks.value.length === 0) return
+  
+  const tagPattern = new RegExp(`#${selectedTag.value.replace(/\//g, '\\/')}(?!\\w)`, 'g')
+  
+  for (const taskId of selectedMigrateTasks.value) {
+    const task = taskStore.tasks.find(t => t.id === taskId)
+    if (task) {
+      const newDescription = task.description.replace(tagPattern, '').trim()
+      await taskStore.updateTask(taskId, { description: newDescription })
+    }
+  }
+  
+  closeMigrateOut()
 }
 
 // 🆕 辅助函数
@@ -308,6 +380,28 @@ function getPriorityText(priority) {
   const texts = { high: '高', medium: '中', low: '低' }
   return texts[priority] || '中'
 }
+
+// 🆕 Android 返回手势处理
+function handleBackButton() {
+  if (showMigrateIn.value) {
+    closeMigrateIn()
+    return true
+  }
+  if (showMigrateOut.value) {
+    closeMigrateOut()
+    return true
+  }
+  if (selectedTag.value) {
+    selectedTag.value = null
+    return true
+  }
+  return false
+}
+
+// 暴露给父组件
+defineExpose({
+  handleBackButton
+})
 
 </script>
 
@@ -543,8 +637,8 @@ function getPriorityText(priority) {
   transform: scale(1.1);
 }
 
-/* 🆕 迁入迁出弹窗 */
-.migrate-modal {
+/* 🆕 迁入迁出弹窗 (Bottom Sheet) */
+.migrate-sheet-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -553,24 +647,46 @@ function getPriorityText(priority) {
   background: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-end;
   z-index: 2100;
 }
 
-.migrate-content {
-  width: 90%;
-  max-width: 500px;
-  max-height: 70vh;
+.migrate-sheet {
+  width: 100%;
+  height: 85vh;
   background: white;
-  border-radius: 16px;
+  border-radius: 20px 20px 0 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* 顶部小横条 */
+.sheet-handle {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 4px;
+  background: #ddd;
+  border-radius: 2px;
+  z-index: 1;
 }
 
 .migrate-header {
-  padding: 20px;
+  padding: 24px 20px 16px;
   background: linear-gradient(135deg, #667eea, #764ba2);
   color: white;
   display: flex;
@@ -580,35 +696,50 @@ function getPriorityText(priority) {
 }
 
 .migrate-header h3 {
-  margin: 0;
+  flex: 1;
+  margin: 0 12px;
   font-size: 1.1rem;
   font-weight: 600;
+  text-align: center;
 }
 
-.btn-close {
+.back-btn {
   background: rgba(255, 255, 255, 0.2);
   border: none;
   color: white;
-  font-size: 1.2rem;
+  font-size: 1rem;
   cursor: pointer;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 8px;
   transition: all 0.2s;
 }
 
-.btn-close:hover {
+.back-btn:hover {
   background: rgba(255, 255, 255, 0.3);
-  transform: rotate(90deg);
+}
+
+.btn-confirm {
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  color: #667eea;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.btn-confirm:hover {
+  background: white;
+  transform: scale(1.05);
 }
 
 .search-box {
   padding: 16px;
   border-bottom: 1px solid #f0f0f0;
   flex-shrink: 0;
+  background: white;
 }
 
 .search-input {
@@ -630,6 +761,7 @@ function getPriorityText(priority) {
   flex: 1;
   overflow-y: auto;
   padding: 12px;
+  background: #fafafa;
 }
 
 .empty-hint {
@@ -642,18 +774,30 @@ function getPriorityText(priority) {
 .migrate-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 12px;
   padding: 14px;
   margin-bottom: 8px;
-  background: #f8f9fa;
+  background: white;
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s;
+  border: 2px solid transparent;
 }
 
 .migrate-item:hover {
+  background: rgba(139, 92, 246, 0.05);
+}
+
+.migrate-item.selected {
   background: rgba(139, 92, 246, 0.1);
-  transform: translateX(4px);
+  border-color: #8b5cf6;
+}
+
+.task-checkbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 .task-text {
@@ -668,6 +812,7 @@ function getPriorityText(priority) {
 .task-category-small {
   font-size: 1.1rem;
   margin-left: 8px;
+  flex-shrink: 0;
 }
 
 /* 批量操作 */

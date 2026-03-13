@@ -3891,6 +3891,7 @@
     <!-- 🆕 标签浏览器（v0.9.0）-->
     <TagBrowser
       v-if="showTagBrowser"
+      ref="tagBrowserRef"
       @close="showTagBrowser = false"
       @filter="handleTagFilter"
       @openTask="openTaskDetailById"
@@ -11403,6 +11404,7 @@ const showAddLogModal = ref(false)
 const showTaskDetail = ref(false)
 const taskDetailModalRef = ref(null) // TaskDetailModal 组件引用
 const unifiedReportModalRef = ref(null) // UnifiedReportModal 组件引用
+const tagBrowserRef = ref(null) // 🆕 TagBrowser 组件引用
 const selectedTask = ref(null)
 const currentLogTask = ref(null)
 
@@ -14732,6 +14734,14 @@ onMounted(async () => {
       }
       // 🆕 第二层：标签浏览器（v0.9.0）
       else if (showTagBrowser.value) {
+        // 先尝试让 TagBrowser 处理（迁入/迁出弹窗、任务列表）
+        if (tagBrowserRef.value && tagBrowserRef.value.handleBackButton) {
+          const handled = tagBrowserRef.value.handleBackButton()
+          if (handled) {
+            console.log('✅ TagBrowser 内部返回')
+            return
+          }
+        }
         console.log('✅ 关闭标签浏览器')
         showTagBrowser.value = false
         return
