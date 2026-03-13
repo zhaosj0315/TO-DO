@@ -12800,7 +12800,6 @@ const handleRefresh = async () => {
   showCustomDateModal.value = false
   showFilterModal.value = false
   showChangelog.value = false
-  showGrowthDetail.value = false
   showUnifiedReport.value = false
   showReportHistoryModal.value = false
   showBackupList.value = false
@@ -14463,11 +14462,7 @@ onMounted(async () => {
       }
       
       // 第三层弹窗（最上层，优先关闭）
-      if (showGrowthDetail.value) {
-        console.log('✅ 关闭任务树成长详情')
-        showGrowthDetail.value = false
-        return
-      } else if (showPasswordModal.value) {
+      if (showPasswordModal.value) {
         console.log('✅ 关闭密码弹窗')
         showPasswordModal.value = false
         return
