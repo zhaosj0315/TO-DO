@@ -30,7 +30,12 @@
       </div>
 
       <!-- 控制栏 -->
-      <div class="graph-controls">
+      <div class="graph-controls" :class="{ collapsed: controlsCollapsed }">
+        <button class="toggle-controls-btn" @click="controlsCollapsed = !controlsCollapsed" :title="controlsCollapsed ? '展开筛选' : '收起筛选'">
+          {{ controlsCollapsed ? '▼ 展开筛选' : '▲ 收起筛选' }}
+        </button>
+        
+        <div v-show="!controlsCollapsed" class="controls-content">
         <!-- 任务选择器 + 搜索框合并 -->
         <select v-model="selectedTaskId" class="task-selector">
           <option :value="null">🌐 全部任务</option>
@@ -138,6 +143,7 @@
         <button class="control-btn" @click="resetView">
           🔄<span> 重置</span>
         </button>
+        </div>
       </div>
 
       <!-- 图谱容器 -->
@@ -235,6 +241,7 @@ const displayLimit = ref(50)       // 显示数量限制
 const relationDepth = ref(2)       // 🆕 关系层级深度
 const showIsolatedHint = ref(true) // 🆕 显示孤立任务提示
 const showHideIsolatedHint = ref(false) // 🆕 显示隐藏孤立提示
+const controlsCollapsed = ref(false) // 🆕 控制栏收起状态
 
 // 可选择的任务列表
 const availableTasks = computed(() => {
@@ -1022,9 +1029,38 @@ onUnmounted(() => {
   padding: 12px 20px;
   border-bottom: 1px solid #f0f0f0;
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.graph-controls.collapsed {
+  padding: 8px 20px;
+}
+
+.toggle-controls-btn {
+  align-self: flex-start;
+  padding: 6px 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.toggle-controls-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.controls-content {
+  display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  flex-shrink: 0;
 }
 
 .task-selector,
