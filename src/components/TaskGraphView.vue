@@ -864,19 +864,37 @@ function initChart() {
 
   chartInstance.setOption(option)
 
-  // 点击节点跳转
+  // 🔧 延迟单击，避免与双击冲突
+  let clickTimer = null
+  
+  // 点击节点跳转（延迟执行）
   chartInstance.on('click', (params) => {
-    console.log('🖱️ 图谱节点点击:', params)
     if (params.dataType === 'node') {
       const taskId = parseInt(params.data.id)
-      console.log('📍 跳转到任务:', taskId)
-      emit('navigate', taskId)
+      
+      // 清除之前的定时器
+      if (clickTimer) {
+        clearTimeout(clickTimer)
+      }
+      
+      // 延迟300ms执行，如果期间有双击则取消
+      clickTimer = setTimeout(() => {
+        console.log('🖱️ 单击跳转到任务:', taskId)
+        emit('navigate', taskId)
+        clickTimer = null
+      }, 300)
     }
   })
 
   // 🆕 双击节点展开关系网络
   chartInstance.on('dblclick', (params) => {
     if (params.dataType === 'node') {
+      // 取消单击事件
+      if (clickTimer) {
+        clearTimeout(clickTimer)
+        clickTimer = null
+      }
+      
       const taskId = parseInt(params.data.id)
       if (focusedTaskId.value === taskId) {
         // 再次双击取消聚焦
