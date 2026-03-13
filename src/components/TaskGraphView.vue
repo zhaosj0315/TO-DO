@@ -256,7 +256,7 @@ const showIsolatedHint = ref(true) // 🆕 显示孤立任务提示
 const showHideIsolatedHint = ref(false) // 🆕 显示隐藏孤立提示
 const controlsCollapsed = ref(false) // 🆕 控制栏收起状态
 const focusedTaskId = ref(null)    // 🆕 双击聚焦的任务ID（展开关系网络）
-const minRelationCount = ref(2)    // 🆕 最小关系数（默认2个关系以上）
+const minRelationCount = ref(1)    // 🆕 最小关系数（默认1个关系以上）
 
 // 可选择的任务列表
 const availableTasks = computed(() => {
