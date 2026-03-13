@@ -1286,12 +1286,24 @@ const callAI = async (prompt, title) => {
       ? result.choices[0].message.content 
       : result.response
     
+    // 格式化新内容：添加功能标题和时间
+    const timestamp = new Date().toLocaleString('zh-CN', { 
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit'
+    })
+    const formattedContent = `## ${title} (${timestamp})\n\n${content}\n\n---\n\n`
+    
+    // 追加模式：保留旧内容，新内容添加到前面
+    const oldContent = localTask.value.aiSummary?.content || ''
+    const newContent = formattedContent + oldContent
+    
     const aiSummary = {
-      content: content,
+      content: newContent,
       createdAt: new Date().toISOString(),
       logsCount: (localTask.value.logs || []).length,
       modelName: model.name,
-      type: title
+      type: title,
+      lastUpdateType: title  // 记录最后一次更新的功能类型
     }
     
     localTask.value.aiSummary = aiSummary
