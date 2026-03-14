@@ -1329,7 +1329,7 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
 
       const log = {
         id: Date.now(),
-        type: logData.type, // start/progress/block/solution/milestone/complete
+        type: logData.type,
         content: logData.content,
         timestamp: new Date().toISOString(),
         duration: logData.duration || null,
@@ -1341,7 +1341,8 @@ export const useOfflineTaskStore = defineStore('offlineTask', {
         resolvedNote: logData.resolvedNote || null,
         relatedLogId: logData.relatedLogId || null,
         rating: logData.rating || null,
-        lessons: logData.lessons || []
+        lessons: logData.lessons || [],
+        media: logData.media || []
       }
 
       if (!task.logs) {

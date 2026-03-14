@@ -27,12 +27,33 @@
           </div>
         </div>
 
+        <!-- 全屏日志内容编辑器 -->
+        <FullscreenDescEditor
+          v-if="showFullscreenEditor"
+          v-model="formData.content"
+          :title="task.text"
+          :task-id="task.id"
+          :media="formData.media"
+          @update:media="onMediaUpdate"
+          @close="showFullscreenEditor = false; if (formData.content.trim()) isContentPreview = true"
+        />
+
         <!-- 日志内容 -->
         <div class="form-group">
           <label class="required">
             💬 日志内容 ({{ formData.content.length }}/2000 · {{ contentLines }}行)
+            <button v-if="formData.content.trim()" class="maximize-btn" @click="isContentPreview = !isContentPreview">
+              {{ isContentPreview ? '✏️ 编辑' : '👁️ 预览' }}
+            </button>
+            <button class="maximize-btn" @click="showFullscreenEditor = true" title="最大化编辑">⛶</button>
           </label>
+          <!-- Markdown 预览 -->
+          <div v-if="isContentPreview && formData.content.trim()" class="content-md-preview" @click="isContentPreview = false">
+            <MarkdownRenderer :content="formData.content" :media="formData.media" />
+          </div>
+          <!-- 编辑模式 -->
           <textarea
+            v-else
             v-model="formData.content"
             placeholder="详细描述本次执行的内容..."
             maxlength="2000"
@@ -223,6 +244,8 @@ import AITextMenu from './AITextMenu.vue'
 import AITextResultSheet from './AITextResultSheet.vue'
 import { useTextSelection } from '../composables/useTextSelection'
 import { AITextService } from '../services/aiTextService'
+import FullscreenDescEditor from './FullscreenDescEditor.vue'
+import MarkdownRenderer from './MarkdownRenderer.vue'
 
 const props = defineProps({
   task: {
@@ -242,6 +265,11 @@ const taskStore = useOfflineTaskStore()
 // 文本选择菜单
 const logFormRef = ref(null)
 const contentTextarea = ref(null)
+const showFullscreenEditor = ref(false)
+const isContentPreview = ref(false)
+const onMediaUpdate = (media) => { formData.value.media = media }
+
+defineExpose({ showFullscreenEditor })
 const { showMenu: showTextMenu, menuPosition, selectedText, closeTextMenu, replaceSelectedText } = useTextSelection(logFormRef)
 
 // AI文本处理结果
@@ -295,7 +323,8 @@ const formData = ref({
   mood: null,
   rating: null,
   lessons: [],
-  relatedLogId: null
+  relatedLogId: null,
+  media: []
 })
 
 const customDuration = ref(null)
@@ -405,7 +434,8 @@ const handleSubmit = () => {
     mood: formData.value.mood,
     rating: formData.value.rating,
     lessons: formData.value.lessons,
-    relatedLogId: formData.value.relatedLogId
+    relatedLogId: formData.value.relatedLogId,
+    media: formData.value.media || []
   }
 
   emit('submit', logData)
@@ -514,11 +544,35 @@ const handleSubmit = () => {
 }
 
 .form-group label {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-weight: 600;
   margin-bottom: 0.5rem;
   color: #333;
   font-size: 0.9rem;
+}
+
+.maximize-btn {
+  margin-left: auto;
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 14px;
+  cursor: pointer;
+  color: #666;
+  line-height: 1;
+}
+.maximize-btn:active { background: #f0f0f0; }
+
+.content-md-preview {
+  min-height: 80px;
+  padding: 0.75rem;
+  background: #f8f8f8;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  cursor: pointer;
 }
 
 .form-group label.required::after {

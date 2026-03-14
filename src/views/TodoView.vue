@@ -2240,6 +2240,7 @@
     <!-- 添加日志弹窗 -->
     <AddLogModal
       v-if="showAddLogModal && currentLogTask"
+      ref="addLogModalRef"
       :task="currentLogTask"
       @close="showAddLogModal = false; currentLogTask = null"
       @submit="handleAddLog"
@@ -5287,6 +5288,34 @@ const showAllVersions = ref(false) // 是否展开全部历史
 const initVersionHistory = () => {
   // 完整版本历史
   const allVersions = [
+    {
+      version: '0.9.4',
+      date: '2026-03-15',
+      features: [
+        '🛠️ 编辑器工具栏组件化（FullscreenDescEditor）：',
+        '  • 抽取全屏描述编辑器为独立组件，支持多场景复用',
+        '  • 📋 粘贴（含长按历史）、🔄 清空、🖼️ 图片、📎 文件、🤖 AI助手 5个工具',
+        '  • AI助手内置7个功能：生成标题/描述/续写/润色/提取要点/改写/Markdown渲染',
+        '📝 任务详情描述区支持全屏编辑：',
+        '  • 描述区新增 ⛶ 最大化按钮，点击进入全屏编辑模式',
+        '  • 全屏编辑器内可插入图片和文件附件，关闭后自动保存',
+        '📋 添加日志支持全屏编辑与 Markdown 预览：',
+        '  • 日志内容区新增 ⛶ 最大化按钮和 👁️ 预览切换',
+        '  • 日志内容支持 Markdown 渲染，图片和文件附件可正常预览',
+        '  • 全屏编辑器关闭后自动切换到预览模式',
+      ],
+      improvements: [
+        '📎 日志附件支持：日志数据结构新增 media 字段，附件随日志持久化保存',
+        '🔄 任务详情日志列表：MarkdownRenderer 传入 media，图片和文件正确渲染',
+        '💾 添加日志后自动刷新任务详情，确保 logs 和 media 数据同步',
+      ],
+      fixes: [
+        '🐛 修复任务详情描述区图片/文件保存后无法预览（media 未持久化）',
+        '🐛 修复日志附件 media 数据未传入 MarkdownRenderer',
+        '🐛 修复 @update:media 模板赋值错误（Vue ref 解包陷阱）',
+        '🐛 修复添加日志后任务详情未刷新导致 media 数据不同步',
+      ]
+    },
     {
       version: '0.9.3',
       date: '2026-03-14',
@@ -11387,6 +11416,11 @@ const handleAddLog = async (logData) => {
   showAddLogModal.value = false
   currentLogTask.value = null
   
+  // 刷新任务详情（确保 logs 和 media 同步）
+  if (selectedTask.value?.id === taskId) {
+    handleTaskDetailRefresh()
+  }
+  
   // 如果编辑弹窗还开着，更新 editingTask
   if (editingTask.value && editingTask.value.id === taskId) {
     const updatedTask = taskStore.tasks.find(t => t.id === taskId)
@@ -11413,6 +11447,7 @@ const showAllLogs = ref(false)
 
 // 状态：添加日志弹窗
 const showAddLogModal = ref(false)
+const addLogModalRef = ref(null)
 const showTaskDetail = ref(false)
 const taskDetailModalRef = ref(null) // TaskDetailModal 组件引用
 const unifiedReportModalRef = ref(null) // UnifiedReportModal 组件引用
@@ -14625,6 +14660,11 @@ onMounted(async () => {
         manualSubtaskData.value = null
         return
       } else if (showAddLogModal.value) {
+        // 先检查日志弹窗内的全屏编辑器
+        if (addLogModalRef.value?.showFullscreenEditor) {
+          addLogModalRef.value.showFullscreenEditor = false
+          return
+        }
         console.log('✅ 关闭添加日志')
         showAddLogModal.value = false
         currentLogTask.value = null
@@ -14796,6 +14836,9 @@ onMounted(async () => {
         if (taskDetailModalRef.value) {
           if (taskDetailModalRef.value.showDeleteConfirm) {
             taskDetailModalRef.value.showDeleteConfirm = false
+            return
+          } else if (taskDetailModalRef.value.showFullscreenEditor) {
+            taskDetailModalRef.value.showFullscreenEditor = false
             return
           } else if (taskDetailModalRef.value.showAddLogModal) {
             taskDetailModalRef.value.showAddLogModal = false

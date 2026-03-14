@@ -165,16 +165,30 @@
         </section>
 
         <!-- 任务描述 -->
+        <!-- 全屏描述编辑器 -->
+        <FullscreenDescEditor
+          v-if="showFullscreenEditor"
+          v-model="localTask.description"
+          :title="localTask.text"
+          :task-id="localTask.id"
+          :media="localTask.media || []"
+          @update:media="onDescMediaUpdate"
+          @close="showFullscreenEditor = false; saveDescriptionAndMedia()"
+        />
+
         <section class="description-section">
           <div class="section-header">
             <h3>📝 任务描述</h3>
-            <button 
-              v-if="localTask.description && localTask.description.trim()"
-              class="markdown-toggle-btn-small" 
-              @click="toggleDescriptionEdit"
-            >
-              {{ isDescriptionPreview ? '✏️ 编辑' : '👁️ 预览' }}
-            </button>
+            <div style="display:flex;gap:0.5rem;align-items:center;">
+              <button class="markdown-toggle-btn-small" @click="showFullscreenEditor = true" title="最大化编辑">⛶</button>
+              <button 
+                v-if="localTask.description && localTask.description.trim()"
+                class="markdown-toggle-btn-small" 
+                @click="toggleDescriptionEdit"
+              >
+                {{ isDescriptionPreview ? '✏️ 编辑' : '👁️ 预览' }}
+              </button>
+            </div>
           </div>
           
           <!-- 🆕 Markdown 预览模式（默认） -->
@@ -588,7 +602,8 @@
                 <div v-if="!logPreviewStates[log.timestamp] && log.content && log.content.trim()" 
                      class="log-markdown-preview" 
                      @click="logPreviewStates[log.timestamp] = true">
-                  <MarkdownRenderer :content="log.content" />
+                  <MarkdownRenderer :content="log.content" :media="log.media || []" />
+                  <div v-if="!log.media?.length && log.content.includes('local://')" style="font-size:11px;color:#f90;padding:4px;">⚠️ 附件数据未保存，请重新添加</div>
                 </div>
                 
                 <!-- 编辑模式 -->
@@ -770,6 +785,7 @@ import MarkdownRenderer from './MarkdownRenderer.vue'  // 🆕 Markdown渲染器
 import AutocompleteDropdown from './AutocompleteDropdown.vue'  // 🆕 自动补全下拉（v0.9.0）
 import CalendarPicker from './CalendarPicker.vue'  // 🆕 日历选择器
 import FilePreviewModal from './FilePreviewModal.vue'  // 🆕 文件预览
+import FullscreenDescEditor from './FullscreenDescEditor.vue'
 import { useTextSelection } from '../composables/useTextSelection'
 import { AITextService } from '../services/aiTextService'
 import { Capacitor } from '@capacitor/core'
@@ -799,6 +815,8 @@ const showDeleteConfirm = ref(false)
 const showCalendar = ref(false)  // 🆕 日历选择器
 const showFilePreview = ref(false)  // 🆕 文件预览
 const previewFile = ref(null)  // 🆕 预览的文件
+const showFullscreenEditor = ref(false)  // 🆕 全屏描述编辑器
+const onDescMediaUpdate = (media) => { localTask.value.media = media }
 const logPreviewStates = ref({})  // 🆕 日志预览状态 { logId: boolean }
 const isAISummaryPreview = ref(false)  // 🆕 AI总结预览状态
 
@@ -806,7 +824,8 @@ const isAISummaryPreview = ref(false)  // 🆕 AI总结预览状态
 defineExpose({
   showAddLogModal,
   showWaitForSelector,
-  showDeleteConfirm
+  showDeleteConfirm,
+  showFullscreenEditor
 })
 
 // 依赖关系相关
@@ -1586,6 +1605,15 @@ const saveField = (field) => {
     updates[field] = localTask.value[field]
   }
   taskStore.updateTask(props.task.id, updates)
+  emit('refresh')
+}
+
+// 全屏编辑器关闭时同时保存描述和媒体
+const saveDescriptionAndMedia = () => {
+  taskStore.updateTask(props.task.id, {
+    description: localTask.value.description,
+    media: localTask.value.media || []
+  })
   emit('refresh')
 }
 
