@@ -8171,21 +8171,6 @@ const totalPomodoros = computed(() => {
 })
 
 // 按分类统计番茄数（考虑文件夹筛选）
-const getPomodorosByCategory = (category) => {
-  let tasks = taskStore.tasks
-    .filter(t => t.category === category && t.status === TaskStatus.COMPLETED)
-  
-  // 🆕 如果选中了文件夹，只统计该文件夹内的任务
-  if (selectedCollectionId.value !== null) {
-    if (selectedCollectionId.value === 'uncategorized') {
-      tasks = tasks.filter(t => !t.collectionId)
-    } else {
-      tasks = tasks.filter(t => t.collectionId === selectedCollectionId.value)
-    }
-  }
-  
-  return tasks.reduce((sum, t) => sum + getPomodoroCount(t), 0)
-}
 
 // 按优先级统计番茄数（考虑文件夹筛选）
 
@@ -8198,30 +8183,6 @@ const getPomodorosByCategory = (category) => {
 // 完成率
 
 // 近7天趋势数据
-const getLast7DaysTrend = () => {
-  const trend = []
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  
-  for (let i = 6; i >= 0; i--) {
-    const date = new Date(today)
-    date.setDate(today.getDate() - i)
-    const dateStr = date.toDateString()
-    
-    const count = taskStore.tasks
-      .filter(t => {
-        if (t.status !== TaskStatus.COMPLETED) return false
-        const taskDate = new Date(t.created_at)
-        return taskDate.toDateString() === dateStr
-      })
-      .reduce((sum, t) => sum + getPomodoroCount(t), 0)
-    
-    const label = i === 0 ? t('todayLabel') : i === 1 ? t('yesterdayLabel') : `${date.getMonth() + 1}/${date.getDate()}`
-    trend.push({ label, count, date: dateStr })
-  }
-  
-  return trend
-}
 
 // 获取7天内最大值（用于柱状图高度计算）
 
@@ -8230,17 +8191,6 @@ const getLast7DaysTrend = () => {
 // 等级徽章
 
 // 计算今日完成的番茄钟数
-const getTodayCompletedPomodoros = () => {
-  const today = new Date().toDateString()
-  return taskStore.tasks.reduce((total, task) => {
-    if (!task.pomodoroHistory) return total
-    const todayCount = task.pomodoroHistory.filter(record => {
-      const recordDate = new Date(record.endTime).toDateString()
-      return recordDate === today && record.completed
-    }).length
-    return total + todayCount
-  }, 0)
-}
 
 // 计算今日专注时长（分钟）
 

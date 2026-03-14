@@ -710,39 +710,6 @@ const isolatedTasks = computed(() => {
 })
 
 // 🆕 判断任务是否孤立（v0.9.2 更新：包含日志关系和标签关系）
-function isTaskIsolated(task) {
-  // 根据当前启用的关系类型判断是否孤立
-  let hasRelation = false
-  
-  if (showLinks.value) {
-    const hasLinks = task.linkedTasks?.length > 0
-    const hasBacklinks = taskStore.getBacklinks(task.id)?.length > 0
-    if (hasLinks || hasBacklinks) hasRelation = true
-  }
-  
-  if (showDependencies.value) {
-    const hasDeps = task.waitFor?.length > 0
-    if (hasDeps) hasRelation = true
-  }
-  
-  if (showSubtasks.value) {
-    const hasParent = !!task.parentTaskId
-    const hasSubtasks = task.subtasks?.length > 0
-    if (hasParent || hasSubtasks) hasRelation = true
-  }
-  
-  if (showLogRelations.value) {
-    const hasLogRelations = taskStore.getLogRelations(task.id).length > 0
-    if (hasLogRelations) hasRelation = true
-  }
-  
-  if (showTagRelations.value) {
-    const hasTags = task.tags?.length > 0
-    if (hasTags) hasRelation = true
-  }
-  
-  return !hasRelation
-}
 
 // 🆕 切换显示已完成任务
 
