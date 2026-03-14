@@ -34,7 +34,7 @@
       <div v-if="allGanttData.length === 0" class="empty-state">
         <span class="icon">📊</span>
         <p>暂无任务数据</p>
-        <p class="hint">请为任务设置截止时间以显示在甘特图中</p>
+        <p class="hint">暂无任务数据，请先创建任务</p>
       </div>
     </div>
   </div>
@@ -96,32 +96,70 @@ const timeRange = computed(() => {
 })
 
 // 构建甘特图数据（全部任务）
+// 根据任务类型推算截止时间
+function getTaskDeadline(task) {
+  const now = new Date()
+  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
+
+  switch (task.type) {
+    case 'custom_date': {
+      if (!task.customDate) return null
+      const str = task.customTime ? `${task.customDate} ${task.customTime}` : `${task.customDate} 23:59:59`
+      const d = new Date(str)
+      return isNaN(d) ? null : d
+    }
+    case 'today':
+    case 'daily':
+      return todayEnd
+    case 'tomorrow': {
+      const d = new Date(todayEnd)
+      d.setDate(d.getDate() + 1)
+      return d
+    }
+    case 'this_week': {
+      // 本周日 23:59
+      const d = new Date(todayEnd)
+      const day = d.getDay() // 0=周日
+      d.setDate(d.getDate() + (day === 0 ? 0 : 7 - day))
+      return d
+    }
+    case 'weekday': {
+      // 下一个工作日结束（今天是工作日则今天，否则下周一）
+      const d = new Date(todayEnd)
+      const day = d.getDay()
+      if (day === 0) d.setDate(d.getDate() + 1) // 周日→周一
+      else if (day === 6) d.setDate(d.getDate() + 2) // 周六→周一
+      return d
+    }
+    case 'weekly': {
+      // 本周指定的星期几
+      if (!task.weekdays || task.weekdays.length === 0) return todayEnd
+      const d = new Date(todayEnd)
+      const currentDay = d.getDay()
+      // 找最近的一个指定星期几
+      const targets = task.weekdays.map(w => {
+        const diff = (w - currentDay + 7) % 7
+        return diff === 0 ? 0 : diff
+      })
+      const minDiff = Math.min(...targets)
+      d.setDate(d.getDate() + minDiff)
+      return d
+    }
+    default:
+      return null
+  }
+}
+
 const allGanttData = computed(() => {
   const data = taskStore.tasks
-    .filter(t => t.customDate) // 只显示有截止时间的任务
     .map(task => {
       const startTime = new Date(task.created_at)
-      
-      // 🔧 修复：正确解析日期
-      let endTime
-      if (task.customTime) {
-        // 有时间：2026-03-12 14:30
-        endTime = new Date(`${task.customDate} ${task.customTime}`)
-      } else {
-        // 无时间：2026-03-12 23:59
-        endTime = new Date(`${task.customDate} 23:59:59`)
-      }
-      
-      console.log('📊 任务:', task.text)
-      console.log('  开始时间:', startTime, startTime.getTime())
-      console.log('  结束时间:', endTime, endTime.getTime())
-      
+      const endTime = getTaskDeadline(task)
+      if (!endTime) return null
+
       return {
         name: task.text || '未命名任务',
-        value: [
-          startTime.getTime(),
-          endTime.getTime()
-        ],
+        value: [startTime.getTime(), endTime.getTime()],
         itemStyle: {
           color: getPriorityColor(task.priority),
           opacity: task.status === 'completed' ? 0.5 : 1
@@ -129,22 +167,22 @@ const allGanttData = computed(() => {
         status: task.status,
         priority: task.priority,
         taskId: task.id,
-        deadline: endTime.getTime()
+        deadline: endTime.getTime(),
+        taskType: task.type
       }
     })
     .filter(task => {
-      // 🔧 过滤掉无效的时间数据
+      if (!task) return false
       return !isNaN(task.value[0]) && !isNaN(task.value[1]) && task.value[1] > task.value[0]
     })
     .sort((a, b) => {
-      // 🆕 优先显示：高优先级 + 即将到期
       const priorityWeight = { high: 3, medium: 2, low: 1 }
       if (priorityWeight[a.priority] !== priorityWeight[b.priority]) {
         return priorityWeight[b.priority] - priorityWeight[a.priority]
       }
       return a.deadline - b.deadline
     })
-  
+
   console.log('📊 甘特图全部数据:', data.length, '个任务')
   return data
 })
