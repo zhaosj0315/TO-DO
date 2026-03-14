@@ -30,47 +30,28 @@
       </div>
 
       <!-- 控制栏 -->
-      <!-- 简化控制栏：一行核心操作 + 折叠高级选项 -->
+      <!-- 控制栏 -->
       <div class="graph-controls">
-        <!-- 主控制行 -->
         <div class="controls-main">
-          <input
-            v-model="searchKeyword"
-            type="text"
-            placeholder="🔍 搜索任务..."
-            @input="handleSearch"
-            class="search-input"
-          />
-          <button :class="['ctrl-tag', { active: showCompleted }]" @click="toggleCompleted">
-            ✅ 已完成
-          </button>
-          <button :class="['ctrl-tag', { active: !hideIsolated }]" @click="hideIsolated = !hideIsolated">
-            🔗 含孤立
-          </button>
-          <button :class="['ctrl-tag', { active: showAdvanced }]" @click="showAdvanced = !showAdvanced">
-            ⚙️ 高级 {{ showAdvanced ? '▲' : '▼' }}
-          </button>
-          <button class="ctrl-tag reset" @click="resetView">🔄</button>
-        </div>
-
-        <!-- 高级选项（折叠） -->
-        <div v-show="showAdvanced" class="controls-advanced">
-          <div class="adv-row">
-            <span class="adv-label">关系类型</span>
-            <button :class="['ctrl-tag', { active: showLinks }]" @click="showLinks = !showLinks">🔗 引用</button>
-            <button :class="['ctrl-tag', { active: showDependencies }]" @click="showDependencies = !showDependencies">🔒 依赖</button>
-            <button :class="['ctrl-tag', { active: showSubtasks }]" @click="showSubtasks = !showSubtasks">🌳 父子</button>
-            <button :class="['ctrl-tag', { active: showLogRelations }]" @click="showLogRelations = !showLogRelations">💡 阻碍</button>
-            <button :class="['ctrl-tag', { active: showTagRelations }]" @click="showTagRelations = !showTagRelations">🏷️ 标签</button>
+          <div class="search-wrap">
+            <input
+              v-model="searchKeyword"
+              type="text"
+              placeholder="🔍 搜索任务名称..."
+              @input="handleSearch"
+              list="task-list"
+              class="search-input"
+            />
+            <datalist id="task-list">
+              <option
+                v-for="task in availableTasks"
+                :key="task.id"
+                :value="task.text + '（' + task._relCount + '条关系）'"
+              ></option>
+            </datalist>
+            <button v-if="searchKeyword" class="search-clear" @click="resetView">✕</button>
           </div>
-          <div class="adv-row">
-            <span class="adv-label">显示数量</span>
-            <input v-model.number="displayLimit" type="range" min="10" max="200" step="10" class="limit-slider" />
-            <span class="adv-val">{{ displayLimit }}</span>
-            <span class="adv-label" style="margin-left:12px">关系层级</span>
-            <input v-model.number="relationDepth" type="range" min="1" max="5" step="1" class="limit-slider" />
-            <span class="adv-val">{{ relationDepth }}</span>
-          </div>
+          <button class="ctrl-tag reset" @click="resetView">🔄 重置</button>
         </div>
       </div>
 
@@ -160,33 +141,41 @@
 
       <!-- 关系类型图例 -->
       <div class="graph-legend">
+        <!-- 默认模式：层级统计 -->
+        <template v-if="!selectedTaskId && Object.keys(levelStatsRef).length > 0">
+          <div class="legend-item">
+            <span class="node-sample" style="background:#f59e0b; border: 2px solid #d97706;"></span>
+            <span>⭐ 核心节点 {{ levelStatsRef[0] || 0 }}个</span>
+          </div>
+          <div v-if="levelStatsRef[1]" class="legend-item">
+            <span class="node-sample" style="background:#8b5cf6;"></span>
+            <span>一级关联 {{ levelStatsRef[1] }}个</span>
+          </div>
+          <div v-if="levelStatsRef[2]" class="legend-item">
+            <span class="node-sample" style="background:#a78bfa; opacity:0.8"></span>
+            <span>二级关联 {{ levelStatsRef[2] }}个</span>
+          </div>
+          <div v-if="Object.keys(levelStatsRef).filter(k => k >= 3).length > 0" class="legend-item">
+            <span class="node-sample" style="background:#c4b5fd; opacity:0.6"></span>
+            <span>三级+ {{ Object.entries(levelStatsRef).filter(([k]) => k >= 3).reduce((s,[,v]) => s+v, 0) }}个</span>
+          </div>
+          <div class="legend-sep"></div>
+        </template>
         <div class="legend-item">
           <span class="node-sample" style="background:#9ca3af;"></span>
           <span>✅ 已完成</span>
         </div>
         <div class="legend-item">
-          <span class="node-sample" style="background:#ef4444;"></span>
-          <span>⚠️ 已逾期</span>
-        </div>
-        <div class="legend-item">
           <span class="line-sample solid purple"></span>
-          <span>🔗 引用链接</span>
+          <span>🔗 引用</span>
         </div>
         <div class="legend-item">
           <span class="line-sample dashed red"></span>
-          <span>🔒 依赖关系</span>
+          <span>🔒 依赖</span>
         </div>
         <div class="legend-item">
           <span class="line-sample dotted green"></span>
-          <span>🌳 父子关系</span>
-        </div>
-        <div class="legend-item">
-          <span class="line-sample solid orange"></span>
-          <span>💡 阻碍方案</span>
-        </div>
-        <div class="legend-item">
-          <span class="line-sample dotted gray"></span>
-          <span>🏷️ 标签关系</span>
+          <span>🌳 父子</span>
         </div>
       </div>
 
@@ -256,17 +245,31 @@ const quickInputRef = ref(null)
 const showRelationMenu = ref(false)
 const relationMenuPos = ref({ x: 0, y: 0 })
 const pendingRelation = ref({ sourceId: null, targetId: null, isNewTask: false })
+const levelStatsRef = ref({}) // 各层级节点数统计（默认模式）
 
-// 可选择的任务列表
+// 统一的关系数量计算（潜在关系数，用于排序和下拉框显示）
+function calcRelCount(task) {
+  let cnt = 0
+  if (showLinks.value) {
+    cnt += (task.linkedTasks?.length || 0)
+    cnt += (taskStore.getBacklinks(task.id)?.length || 0)
+  }
+  if (showDependencies.value) cnt += (task.waitFor?.length || 0)
+  if (showSubtasks.value) {
+    cnt += task.parentTaskId ? 1 : 0
+    cnt += taskStore.tasks.filter(t => t.parentTaskId === task.id).length
+  }
+  if (showTagRelations.value) cnt += (task.tags?.length || 0)
+  return cnt
+}
+
+// 可选择的任务列表（按关系数量倒序）
 const availableTasks = computed(() => {
   return taskStore.tasks
     .filter(t => showCompleted.value || t.status !== 'completed')
-    .sort((a, b) => {
-      // 按关系数量排序
-      const aCount = (a.linkedTasks?.length || 0) + (a.waitFor?.length || 0) + (a.subtasks?.length || 0)
-      const bCount = (b.linkedTasks?.length || 0) + (b.waitFor?.length || 0) + (b.subtasks?.length || 0)
-      return bCount - aCount
-    })
+    .map(t => ({ ...t, _relCount: calcRelCount(t) }))
+    .filter(t => t._relCount > 0)
+    .sort((a, b) => b._relCount - a._relCount)
 })
 
 // 监听选择变化
@@ -276,155 +279,228 @@ watch(selectedTaskId, () => {
 
 // 是否触发了节点数量限制
 const isLimited = computed(() => {
-  if (selectedTaskId.value) return false
-  const totalTasks = taskStore.tasks.filter(t => showCompleted.value || t.status !== 'completed').length
-  return totalTasks > displayLimit.value  // 🆕 使用动态限制
+  if (!selectedTaskId.value) return false
+  return graphData.value.nodes.length >= displayLimit.value
 })
 
-// 🆕 搜索处理
+// 搜索处理：匹配到任务名则切换视图，否则高亮节点
 function handleSearch() {
   if (!chartInstance) return
+  const keyword = searchKeyword.value.trim()
   
-  if (searchKeyword.value.trim()) {
-    // 高亮匹配的节点
-    const keyword = searchKeyword.value.toLowerCase()
-    chartInstance.setOption({
-      series: [{
-        data: nodes.value.map(node => ({
-          ...node,
-          symbolSize: node.name.toLowerCase().includes(keyword) ? 60 : 40,
-          itemStyle: {
-            ...node.itemStyle,
-            borderWidth: node.name.toLowerCase().includes(keyword) ? 4 : 0,
-            borderColor: '#f59e0b'
-          }
-        }))
-      }]
-    })
-  } else {
-    // 重置
+  if (!keyword) {
+    selectedTaskId.value = null
     updateChart()
+    return
   }
+
+  // 从候选列表选中时，value 格式是 "任务名（X条关系）"，提取任务名
+  const nameMatch = keyword.match(/^(.+?)（\d+条关系）$/)
+  const taskName = nameMatch ? nameMatch[1] : keyword
+
+  // 精确匹配任务名 → 切换到该任务的关联网络
+  const matched = taskStore.tasks.find(t => t.text === taskName)
+  if (matched) {
+    selectedTaskId.value = matched.id
+    return
+  }
+
+  // 模糊匹配 → 高亮节点，不切换视图
+  selectedTaskId.value = null
+  const kw = taskName.toLowerCase()
+  chartInstance.setOption({
+    series: [{
+      data: nodes.value.map(node => ({
+        ...node,
+        itemStyle: {
+          ...node.itemStyle,
+          borderWidth: node.name.toLowerCase().includes(kw) ? 4 : node.itemStyle.borderWidth,
+          borderColor: node.name.toLowerCase().includes(kw) ? '#f59e0b' : node.itemStyle.borderColor
+        }
+      }))
+    }]
+  })
 }
 
-// 🆕 构建图谱数据
+// 构建图谱数据
 const graphData = computed(() => {
   const nodes = []
   const edges = []
   const nodeMap = new Set()
 
-  // 🆕 双击聚焦模式：只显示该任务及其直接关系
+  // ── Step 1: 确定候选任务集 ──
   let tasksToShow
   if (focusedTaskId.value) {
+    // 双击聚焦：只显示该任务及其直接关系
     tasksToShow = getDirectRelatedTasks(focusedTaskId.value)
-    console.log('🔍 聚焦模式 - 任务:', focusedTaskId.value, '关系数:', tasksToShow.length)
   } else if (selectedTaskId.value) {
-    tasksToShow = getRelatedTasks(selectedTaskId.value)
+    // 选中某任务：BFS 全量展开，选中任务为0层（主节点）
+    const taskSet = new Set([selectedTaskId.value])
+    const nodeLevelMap = new Map([[selectedTaskId.value, 0]])
+    const queue = [{ id: selectedTaskId.value, level: 0 }]
+    while (queue.length > 0) {
+      const { id, level } = queue.shift()
+      const t = taskStore.tasks.find(x => x.id === id)
+      if (!t) continue
+      const neighbors = [
+        ...(t.linkedTasks || []),
+        ...(t.waitFor || []),
+        ...(t.parentTaskId ? [t.parentTaskId] : []),
+        ...taskStore.tasks.filter(x => x.parentTaskId === t.id).map(x => x.id),
+        ...taskStore.getBacklinks(t.id).map(x => x.id)
+      ]
+      neighbors.forEach(nid => {
+        if (!taskSet.has(nid)) {
+          taskSet.add(nid)
+          nodeLevelMap.set(nid, level + 1)
+          queue.push({ id: nid, level: level + 1 })
+        }
+      })
+    }
+    tasksToShow = taskStore.tasks
+      .filter(t => taskSet.has(t.id))
+      .map(t => ({ ...t, _level: nodeLevelMap.get(t.id) ?? 99 }))
   } else {
-    tasksToShow = taskStore.tasks.filter(t => showCompleted.value || t.status !== 'completed')
+    // 默认：关系最多的前5个任务 + 它们的所有直接关联任务
+    const allTasks = taskStore.tasks.filter(t => showCompleted.value || t.status !== 'completed')
+    
+    const top5 = allTasks
+      .map(t => ({ ...t, _cnt: calcRelCount(t) }))
+      .filter(t => t._cnt > 0)
+      .sort((a, b) => b._cnt - a._cnt)
+      .slice(0, 5)
+
+    const taskSet = new Set(top5.map(t => t.id))
+    // BFS 记录每个节点的层级（top5 = 0层）
+    const nodeLevelMap = new Map()
+    top5.forEach(t => nodeLevelMap.set(t.id, 0))
+    const queue = top5.map(t => ({ id: t.id, level: 0 }))
+    while (queue.length > 0) {
+      const { id, level } = queue.shift()
+      const t = taskStore.tasks.find(x => x.id === id)
+      if (!t) continue
+      const neighbors = [
+        ...(t.linkedTasks || []),
+        ...(t.waitFor || []),
+        ...(t.parentTaskId ? [t.parentTaskId] : []),
+        ...taskStore.tasks.filter(x => x.parentTaskId === t.id).map(x => x.id),
+        ...taskStore.getBacklinks(t.id).map(x => x.id)
+      ]
+      neighbors.forEach(nid => {
+        if (!taskSet.has(nid)) {
+          taskSet.add(nid)
+          nodeLevelMap.set(nid, level + 1)
+          queue.push({ id: nid, level: level + 1 })
+        }
+      })
+    }
+
+    tasksToShow = taskStore.tasks.filter(t => taskSet.has(t.id))
+    // 把层级信息挂到任务上，供节点构建时使用
+    tasksToShow = tasksToShow.map(t => ({ ...t, _level: nodeLevelMap.get(t.id) ?? 99 }))
+    
+    // 统计各层节点数，存到 graphData 外部供图例使用
+    const levelStats = {}
+    nodeLevelMap.forEach(level => { levelStats[level] = (levelStats[level] || 0) + 1 })
+    levelStatsRef.value = levelStats
+    console.log(`📊 Top5: ${top5.map(t => `${t.text}(${t._cnt})`).join(', ')}`)
+    console.log(`📊 展开后节点: ${tasksToShow.length}个`)
   }
 
-  // 🆕 笔记本筛选（v0.9.2）
+  // ── Step 2: 笔记本筛选 ──
   if (selectedCollectionId.value !== null) {
     tasksToShow = tasksToShow.filter(t => t.collectionId === selectedCollectionId.value)
   }
 
-  // 如果任务数量超过限制，按关系数量排序并截取
-  if (!focusedTaskId.value && tasksToShow.length > displayLimit.value) {
+  // ── Step 3: 数量限制（选中任务模式下限制数量，默认模式已在Step1控制）──
+  if (!focusedTaskId.value && selectedTaskId.value && tasksToShow.length > displayLimit.value) {
     tasksToShow = tasksToShow
-      .map(t => ({
-        ...t,
-        relationCount: (t.linkedTasks?.length || 0) + 
-                      (t.waitFor?.length || 0) + 
-                      (t.subtasks?.length || 0) +
-                      (taskStore.getBacklinks(t.id)?.length || 0)
-      }))
-      .sort((a, b) => b.relationCount - a.relationCount)
+      .map(t => ({ ...t, _preCount: calcRelCount(t) }))
+      .sort((a, b) => b._preCount - a._preCount)
       .slice(0, displayLimit.value)
   }
 
-  // 🆕 过滤孤立任务（在截取之后，但聚焦模式下不过滤）
-  if (hideIsolated.value && !focusedTaskId.value) {
-    const beforeCount = tasksToShow.length
-    tasksToShow = tasksToShow.filter(t => !isTaskIsolated(t))
-    console.log('🚫 隐藏孤立任务:', beforeCount, '→', tasksToShow.length)
-  }
-
+  // ── Step 4: 预计算全量关系数（BFS在tasksToShow集合内）──
+  const taskSetIds = new Set(tasksToShow.map(t => t.id))
+  const totalRelCountMap = new Map()
   tasksToShow.forEach(task => {
-    // 添加节点
-    if (!nodeMap.has(task.id)) {
+    const visited = new Set()
+    const q = [task.id]
+    while (q.length > 0) {
+      const id = q.shift()
+      if (visited.has(id)) continue
+      visited.add(id)
+      const t = taskStore.tasks.find(x => x.id === id)
+      if (!t) continue
+      ;[...(t.linkedTasks||[]), ...(t.waitFor||[]),
+        ...(t.parentTaskId?[t.parentTaskId]:[]),
+        ...taskStore.tasks.filter(x=>x.parentTaskId===t.id).map(x=>x.id),
+        ...taskStore.getBacklinks(t.id).map(x=>x.id)
+      ].filter(nid => taskSetIds.has(nid) && !visited.has(nid))
+       .forEach(nid => q.push(nid))
+    }
+    totalRelCountMap.set(task.id, visited.size - 1)
+  })
+
+  // ── Step 5: 建节点 ──
+  tasksToShow.forEach(task => {
+    if (nodeMap.has(task.id)) return
       // ✨ 节点状态标识
       let opacity = 1
       let borderWidth = 0
       let borderColor = '#999'
+      const taskLevel = task._level ?? null // 层级（仅默认模式有值）
       
       if (task.status === 'completed') {
-        opacity = 0.6  // 已完成半透明
+        opacity = 0.6
       } else if (task.status === 'overdue') {
         borderWidth = 3
-        borderColor = '#ef4444'  // 逾期红色边框
+        borderColor = '#ef4444'
       }
 
-      // 🆕 检查是否有日志关系（v0.9.1）
+      // 核心节点（Top5，0层）加金色粗边框
+      if (taskLevel === 0) {
+        borderWidth = 4
+        borderColor = '#f59e0b'
+      }
+
       const logRelations = taskStore.getLogRelations(task.id)
       const hasUnresolvedBlocks = taskStore.getUnresolvedBlocks(task.id).length > 0
       
       if (showLogRelations.value && logRelations.length > 0) {
         borderWidth = 3
-        borderColor = '#f97316'  // 橙色边框：有阻碍-方案关系
+        borderColor = '#f97316'
       } else if (showLogRelations.value && hasUnresolvedBlocks) {
         borderWidth = 3
-        borderColor = '#ef4444'  // 红色边框：有未解决阻碍
+        borderColor = '#ef4444'
       }
 
-      // 🆕 计算关系数量（只计算当前启用的关系类型）
-      let relationCount = 0
-      
-      if (showLinks.value) {
-        relationCount += (task.linkedTasks?.length || 0)  // 引用链接
-        relationCount += (taskStore.getBacklinks(task.id)?.length || 0) // 反向链接
-      }
-      
-      if (showDependencies.value) {
-        relationCount += (task.waitFor?.length || 0)  // 依赖关系
-      }
-      
-      if (showSubtasks.value) {
-        relationCount += (task.parentTaskId ? 1 : 0)  // 父任务
-        relationCount += taskStore.tasks.filter(t => t.parentTaskId === task.id).length // 子任务数
-      }
-      
-      if (showLogRelations.value) {
-        relationCount += logRelations.length  // 日志关系
-      }
-      
-      if (showTagRelations.value) {
-        relationCount += (task.tags?.length || 0)  // 标签关系
-      }
+      const relationCount = calcRelCount(task)
 
-      // 🆕 过滤最小关系数（聚焦模式下不过滤）
-      if (!focusedTaskId.value && relationCount < minRelationCount.value) {
-        return  // 跳过关系数不足的任务
-      }
+      // 过滤最小关系数在后面基于实际边数处理，这里不过滤
 
       nodes.push({
         id: String(task.id),
         name: task.text || '未命名任务',
         value: relationCount,
-        _relationCount: relationCount, // 暂存，归一化时用
+        _relationCount: relationCount,
         category: getCategoryIndex(task),
-        symbolSize: 30, // 先占位，后面统一归一化
+        symbolSize: 30,
         label: {
           show: true,
           position: 'bottom',
           formatter: (params) => {
-            const taskName = params.data.name.length > 10 ? params.data.name.substring(0, 10) + '...' : params.data.name
-            return `${taskName}\n(${relationCount}个关系)`
+            const isCore = taskLevel === 0
+            const maxLen = isCore ? 12 : 10
+            const taskName = params.data.name.length > maxLen ? params.data.name.substring(0, maxLen) + '...' : params.data.name
+            const totalRel = totalRelCountMap.get(task.id) ?? 0
+            return `${taskName}\n(直接${relationCount} 全量${totalRel})`
           },
-          fontSize: 11,
-          color: '#333',
+          fontSize: taskLevel === 0 ? 13 : 11,
+          fontWeight: taskLevel === 0 ? 'bold' : 'normal',
+          color: taskLevel === 0 ? '#1a1a1a' : '#555',
           distance: 5,
-          lineHeight: 14
+          lineHeight: 16
         },
         itemStyle: {
           color: task.status === 'completed' 
@@ -441,12 +517,12 @@ const graphData = computed(() => {
         unresolvedBlocksCount: hasUnresolvedBlocks ? taskStore.getUnresolvedBlocks(task.id).length : 0
       })
       nodeMap.add(task.id)
-    }
 
+    // ── Step 5: 建边（只连接已在 nodeMap 里的节点）──
     // 添加引用链接
     if (showLinks.value && task.linkedTasks?.length) {
       task.linkedTasks.forEach(linkedId => {
-        if (nodeMap.has(linkedId) || tasksToShow.find(t => t.id === linkedId)) {
+        if (nodeMap.has(linkedId)) {
           const linkedTask = taskStore.tasks.find(t => t.id === linkedId)
           edges.push({
             source: String(task.id),
@@ -466,7 +542,7 @@ tooltipText: `🔗 引用  ${task.text} → ${linkedTask?.text || '?'}`
     // 添加依赖关系
     if (showDependencies.value && task.waitFor?.length) {
       task.waitFor.forEach(waitId => {
-        if (nodeMap.has(waitId) || tasksToShow.find(t => t.id === waitId)) {
+        if (nodeMap.has(waitId)) {
           const waitTask = taskStore.tasks.find(t => t.id === waitId)
           edges.push({
             source: String(task.id),
@@ -485,7 +561,7 @@ tooltipText: `🔒 依赖  ${task.text} 等待 ${waitTask?.text || '?'}`
 
     // 添加父子关系
     if (showSubtasks.value && task.parentTaskId) {
-      if (nodeMap.has(task.parentTaskId) || tasksToShow.find(t => t.id === task.parentTaskId)) {
+      if (nodeMap.has(task.parentTaskId)) {
         const parentTask = taskStore.tasks.find(t => t.id === task.parentTaskId)
         edges.push({
           source: String(task.parentTaskId),
@@ -517,21 +593,52 @@ tooltipText: `🌳 父子  ${parentTask?.text || '?'} → ${task.text}`
     }
   })
 
+  // 第二遍：统计每个节点实际画出来的边数
+  const edgeCountMap = {}
+  edges.forEach(e => {
+    edgeCountMap[e.source] = (edgeCountMap[e.source] || 0) + 1
+    edgeCountMap[e.target] = (edgeCountMap[e.target] || 0) + 1
+  })
+
+  // 过滤掉实际边数不足 minRelationCount 的节点（只在选中任务模式下过滤，默认/聚焦模式跳过）
+  const filteredNodes = (focusedTaskId.value || !selectedTaskId.value)
+    ? nodes
+    : nodes.filter(n => (edgeCountMap[n.id] || 0) >= minRelationCount.value)
+
+  const filteredNodeIds = new Set(filteredNodes.map(n => n.id))
+
+  // 同步过滤边（两端节点都必须在过滤后的节点集里）
+  const filteredEdges = edges.filter(e => filteredNodeIds.has(e.source) && filteredNodeIds.has(e.target))
+
+  // 更新节点标签为实际边数
+  const finalEdgeCountMap = {}
+  filteredEdges.forEach(e => {
+    finalEdgeCountMap[e.source] = (finalEdgeCountMap[e.source] || 0) + 1
+    finalEdgeCountMap[e.target] = (finalEdgeCountMap[e.target] || 0) + 1
+  })
+  filteredNodes.forEach(n => {
+    const actualCount = finalEdgeCountMap[n.id] || 0
+    n.label.formatter = (params) => {
+      const taskName = params.data.name.length > 10 ? params.data.name.substring(0, 10) + '...' : params.data.name
+      return `${taskName}\n(${actualCount}个关系)`
+    }
+  })
+
   // 归一化节点大小：最小30，最大45（1.5倍上限）
   const MIN_SIZE = 30
   const MAX_SIZE = 45
-  const counts = nodes.map(n => n._relationCount)
+  const counts = filteredNodes.map(n => n._relationCount)
   const minCount = Math.min(...counts)
   const maxCount = Math.max(...counts)
-  const range = maxCount - minCount || 1 // 避免除以0
+  const range = maxCount - minCount || 1
 
-  nodes.forEach(n => {
-    // 线性归一化到 [MIN_SIZE, MAX_SIZE]
+  filteredNodes.forEach(n => {
     n.symbolSize = Math.round(MIN_SIZE + ((n._relationCount - minCount) / range) * (MAX_SIZE - MIN_SIZE))
     delete n._relationCount
   })
 
-  return { nodes, edges }
+  console.log(`📊 最终渲染: ${filteredNodes.length}个节点, ${filteredEdges.length}条边`)
+  return { nodes: filteredNodes, edges: filteredEdges }
 })
 
 const nodes = computed(() => graphData.value.nodes)
@@ -812,7 +919,10 @@ function getPriorityColor(priority) {
 // 🆕 初始化图谱
 function initChart() {
   if (!chartRef.value) return
-
+  if (chartInstance) {
+    chartInstance.dispose()
+    chartInstance = null
+  }
   chartInstance = echarts.init(chartRef.value)
 
   const option = {
@@ -1014,11 +1124,7 @@ function updateChart() {
 function resetView() {
   selectedTaskId.value = null
   searchKeyword.value = ''
-  if (chartInstance) {
-    chartInstance.dispatchAction({
-      type: 'restore'
-    })
-  }
+  updateChart()
 }
 
 // 🆕 ========== 拖拽连线功能 ==========
@@ -1265,13 +1371,11 @@ watch([
 }, { deep: true })
 
 onMounted(() => {
-  initChart()
-  // 🆕 3秒后隐藏孤立任务提示
-  if (isolatedTasks.value.length > 0) {
-    setTimeout(() => {
-      showIsolatedHint.value = false
-    }, 3000)
-  }
+  // 延迟渲染，避免阻塞UI
+  setTimeout(() => {
+    initChart()
+    setTimeout(() => { isLoading.value = false }, 300)
+  }, 50)
 })
 
 onUnmounted(() => {
@@ -1444,6 +1548,33 @@ watch(showAdvanced, () => {
   border-color: #8b5cf6;
 }
 
+.search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 160px;
+  display: flex;
+  align-items: center;
+}
+
+.search-wrap .search-input {
+  width: 100%;
+  padding-right: 28px;
+}
+
+.search-clear {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0;
+  line-height: 1;
+}
+
+.search-clear:hover { color: #333; }
+
 .ctrl-tag {
   padding: 5px 12px;
   border: 1px solid #e0e0e0;
@@ -1499,6 +1630,21 @@ watch(showAdvanced, () => {
   color: #8b5cf6;
   font-weight: 600;
   min-width: 24px;
+}
+
+.adv-input {
+  width: 60px;
+  padding: 3px 6px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  text-align: center;
+  outline: none;
+  color: #333;
+}
+
+.adv-input:focus {
+  border-color: #8b5cf6;
 }
 
 .limit-slider {
@@ -1637,6 +1783,13 @@ watch(showAdvanced, () => {
   border-radius: 50%;
   display: inline-block;
   flex-shrink: 0;
+}
+
+.legend-sep {
+  width: 1px;
+  height: 16px;
+  background: #e5e7eb;
+  margin: 0 4px;
 }
 
 .line-sample.solid.purple {
