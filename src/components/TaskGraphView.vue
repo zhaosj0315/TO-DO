@@ -46,7 +46,7 @@
               <option
                 v-for="task in availableTasks"
                 :key="task.id"
-                :value="task.text + '（' + task._relCount + '条关系）'"
+                :value="task.text + (task._relCount > 0 ? '（' + task._relCount + '条关系）' : '')"
               ></option>
             </datalist>
             <button v-if="searchKeyword" class="search-clear" @click="resetView">✕</button>
@@ -273,8 +273,7 @@ const availableTasks = computed(() => {
       _relCount: calcRelCount(t),
       _totalRelCount: totalRelCountMapRef.value.get(String(t.id)) ?? calcRelCount(t)
     }))
-    .filter(t => t._relCount > 0)
-    .sort((a, b) => b._relCount - a._relCount)
+    .sort((a, b) => b._relCount - a._relCount) // 有关系的排前面，无关系的排后面
 })
 
 // 监听选择变化
