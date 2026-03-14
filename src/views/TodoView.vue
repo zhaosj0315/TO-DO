@@ -4,26 +4,24 @@
     <main class="main-content glass-card" ref="mainContent">
       <!-- 顶部标题栏 -->
       <header class="header">
-        <!-- 第一行：刷新、AI助手、回收站、教程、我的主页 -->
+        <!-- 第一行：左侧(笔记本+AI助手+刷新+回收站+教程) 右侧(我的主页+更多) -->
         <div class="header-row header-row-1">
-          <div class="header-group right-group">
-            <!-- 刷新 -->
+          <!-- 左侧靠左 -->
+          <div class="header-group">
+            <div class="header-item">
+              <button class="btn-icon-circle btn-manage" @click="showCollectionManage = true" title="管理文件夹">📓</button>
+              <span class="item-label">笔记本</span>
+            </div>
+            <div class="header-item">
+              <button class="btn-icon-circle btn-ai" @click="showAIChat = true" :title="t('aiChat')">🤖</button>
+              <span class="item-label">AI助手</span>
+            </div>
             <div class="header-item">
               <button class="btn-icon-circle btn-refresh-icon" @click="handleRefresh" :title="t('refresh')">
                 <span :class="{ spinning: isRefreshing }">⟳</span>
               </button>
               <span class="item-label">刷新</span>
             </div>
-            
-            <!-- AI助手 -->
-            <div class="header-item">
-              <button class="btn-icon-circle btn-ai" @click="showAIChat = true" :title="t('aiChat')">
-                🤖
-              </button>
-              <span class="item-label">AI助手</span>
-            </div>
-            
-            <!-- 回收站 -->
             <div class="header-item">
               <button class="btn-icon-circle btn-trash" @click="showTrash = true" :title="t('trash')">
                 🗑️
@@ -31,40 +29,32 @@
               </button>
               <span class="item-label">回收站</span>
             </div>
-            
-            <!-- 教程 -->
             <div class="header-item">
-              <button class="btn-icon-circle btn-tutorial" @click="startTutorial" :title="t('tutorial')">
-                💡
-              </button>
+              <button class="btn-icon-circle btn-tutorial" @click="startTutorial" :title="t('tutorial')">💡</button>
               <span class="item-label">教程</span>
             </div>
-            
-            <!-- 我的主页 -->
+          </div>
+
+          <!-- 右侧靠右 -->
+          <div class="header-group">
             <div class="header-item">
               <button class="btn-avatar" @click="showProfile = true" :title="t('profile')">
                 <span class="username-text">{{ currentUsername }}</span>
               </button>
               <span class="item-label">我的主页</span>
             </div>
+            <div class="header-item">
+              <button class="btn-icon-circle btn-toggle-row2" @click="headerRow2Expanded = !headerRow2Expanded">
+                {{ headerRow2Expanded ? '▲' : '▼' }}
+              </button>
+              <span class="item-label">{{ headerRow2Expanded ? '收起' : '更多' }}</span>
+            </div>
           </div>
         </div>
-        
-        <!-- 第二行：笔记本、标签、图谱、甘特图、日历 -->
-        <div class="header-row header-row-2">
+
+        <!-- 第二行：标签、图谱、甘特图、日历（默认收起） -->
+        <div class="header-row header-row-2" v-show="headerRow2Expanded">
           <div class="header-group left-group">
-            <!-- 笔记本 -->
-            <div class="header-item">
-              <button 
-                class="btn-icon-circle btn-manage" 
-                @click="showCollectionManage = true" 
-                title="管理文件夹"
-              >
-                📓
-              </button>
-              <span class="item-label">笔记本</span>
-            </div>
-            
             <!-- 🆕 标签浏览器（v0.9.0）-->
             <div class="header-item">
               <button 
@@ -4514,6 +4504,7 @@ const timeDimension = ref('created') // 时间维度：created/deadline/complete
 const activeScene = ref('') // 当前激活的快捷场景
 const countdownInterval = ref(null)
 const showTrash = ref(false)
+const headerRow2Expanded = ref(false) // 第二行默认收起
 const showProfile = ref(false)
 const showSupport = ref(false)
 const showAIConfig = ref(false)
@@ -5287,7 +5278,7 @@ const batchDeleteReports = () => {
 const showVersionModal = ref(false) // 版本历史弹窗
 const versionHistory = ref([]) // 版本历史列表
 const hasUnreadVersions = ref(false) // 是否有未读版本
-const CURRENT_VERSION = '0.9.2' // 当前应用版本
+const CURRENT_VERSION = '0.9.3' // 当前应用版本
 const versionModalTitle = ref('🎉 版本更新') // 弹窗标题（动态）
 
 // 版本历史数据
@@ -5297,9 +5288,13 @@ const initVersionHistory = () => {
   // 完整版本历史
   const allVersions = [
     {
-      version: '0.9.2',
+      version: '0.9.3',
       date: '2026-03-14',
       features: [
+        '🗂️ Header 布局重构：',
+        '  • 第一行：笔记本/AI助手/刷新/回收站/教程（左对齐）+ 我的主页/更多（右对齐）',
+        '  • 第二行（标签/图谱/甘特图/日历）默认收起，点击"更多"展开',
+        '  • 节省屏幕空间，常用功能一行直达',
         '🕸️ 任务图谱节点信息升级：',
         '  • 节点标签显示出度/入度/子孙数（出X 入Y 子孙Z）',
         '  • 出度：直接指向其他任务的关系数',
@@ -5310,30 +5305,39 @@ const initVersionHistory = () => {
         '  • 依赖关系（红色虚线）：箭头指向被等待任务',
         '  • 父子关系（绿色点线）：箭头从父指向子',
         '📌 拖动节点固定位置：拖动后节点不再被引力吸回中心',
+      ],
+      improvements: [
+        '🕸️ 图谱搜索下拉框：显示任务关系总数，选中后正确跳转到该任务图谱',
+        '🧲 降低 force 引力（0.1→0.02）：布局稳定后节点不再漂移',
+        '🤖 AI 功能整合：统一入口新增生成标题/描述/续写/润色/提取要点 5 个功能',
         '📱 iOS 打包支持：新增 build-ios.sh 一键打包脚本',
+        '🔄 刷新功能增强：完整重置所有状态，强制清空输入框',
+        '🧹 代码精简：删除成长树功能（290行代码）',
+      ],
+      fixes: [
+        '🐛 修复图谱搜索选中任务后未跳转到该任务图谱',
+        '🐛 修复 AI 菜单按钮点击无反应',
+        '🐛 修复 AI 菜单项点击无效（函数调用缺少括号）',
+        '🐛 修复刷新时输入框未清空',
+        '🐛 删除重复的 steps 数组声明'
+      ]
+    },
+    {
+      version: '0.9.2',
+      date: '2026-03-13',
+      features: [
         '🤖 AI 功能整合：统一入口优化，新增 5 个 AI 功能',
-        '  • 生成标题：根据描述智能生成任务标题',
-        '  • 生成描述：根据标题生成详细描述',
-        '  • 续写内容：智能续写任务描述',
-        '  • 优化润色：优化任务描述表达',
-        '  • 提取要点：提取任务关键信息',
+        '📱 iOS 打包支持：新增 build-ios.sh 一键打包脚本',
         '📖 教程模式更新：v0.9.2 全面版（18 步）',
         '🔄 刷新功能增强：完整重置所有状态到初始值'
       ],
       improvements: [
-        '🕸️ 图谱搜索下拉框：显示任务关系总数（出度+入度），选中后正确跳转到该任务图谱',
-        '🧲 降低 force 引力（0.1→0.02）：布局稳定后节点不再漂移',
         '🧹 代码精简：删除成长树功能（290行代码）',
-        '🤖 AI 结果展示：追加模式显示，带功能标题和时间',
         '🗑️ 清理过程性材料和旧版本文件'
       ],
       fixes: [
-        '🐛 修复图谱搜索选中任务后未跳转到该任务图谱（正则未同步更新）',
         '🐛 修复 AI 菜单按钮点击无反应',
-        '🐛 修复 AI 菜单项点击无效（函数调用缺少括号）',
-        '🐛 修复 AI 新功能报错（showAIResultModal 未定义）',
-        '🐛 修复刷新时输入框未清空（强制 DOM 清空）',
-        '🐛 删除重复的 steps 数组声明'
+        '🐛 修复刷新时输入框未清空'
       ]
     },
     {
@@ -16533,9 +16537,9 @@ watch(() => reportData.value, (newData) => {
   width: 100%;
 }
 
-/* 第一行：右对齐 */
+/* 第一行：两端对齐，笔记本靠左，其余靠右 */
 .header-row-1 {
-  justify-content: flex-end;
+  justify-content: space-between;
 }
 
 /* 第二行：左对齐 */
@@ -16543,11 +16547,19 @@ watch(() => reportData.value, (newData) => {
   justify-content: flex-start;
 }
 
+/* 展开/收起按钮 */
+.btn-toggle-row2 {
+  font-size: 12px;
+  background: rgba(255,255,255,0.85) !important;
+  color: #6d28d9 !important;
+  border: 1px solid rgba(109,40,217,0.3) !important;
+}
+
 /* 左右分组 */
 .header-group {
   display: flex;
   align-items: flex-start;
-  gap: 0.8rem;
+  gap: 0.5rem;
 }
 
 /* 每个图标+文字单元 */
