@@ -46,7 +46,7 @@
               <option
                 v-for="task in availableTasks"
                 :key="task.id"
-                :value="task.text + '（直接' + task._relCount + '条 全量' + task._totalRelCount + '条）'"
+                :value="task.text + '（' + task._relCount + '条关系）'"
               ></option>
             </datalist>
             <button v-if="searchKeyword" class="search-clear" @click="resetView">✕</button>
@@ -271,7 +271,7 @@ const availableTasks = computed(() => {
     .map(t => ({
       ...t,
       _relCount: calcRelCount(t),
-      _totalRelCount: totalRelCountMapRef.value.get(t.id) ?? calcRelCount(t)
+      _totalRelCount: totalRelCountMapRef.value.get(String(t.id)) ?? calcRelCount(t)
     }))
     .filter(t => t._relCount > 0)
     .sort((a, b) => b._relCount - a._relCount)
@@ -299,7 +299,7 @@ function handleSearch() {
     return
   }
 
-  // 从候选列表选中时，value 格式是 "任务名（X条关系）"，提取任务名
+  // 从候选列表选中时，value 格式是 "任务名（直接X条 全量Y条）"，提取任务名
   const nameMatch = keyword.match(/^(.+?)（\d+条关系）$/)
   const taskName = nameMatch ? nameMatch[1] : keyword
 
@@ -425,27 +425,8 @@ const graphData = computed(() => {
       .slice(0, displayLimit.value)
   }
 
-  // ── Step 4: 预计算全量关系数（BFS在tasksToShow集合内）──
-  const taskSetIds = new Set(tasksToShow.map(t => t.id))
+  // ── Step 4: 占位（全量关系数在 filteredEdges 建好后计算）──
   const totalRelCountMap = new Map()
-  tasksToShow.forEach(task => {
-    const visited = new Set()
-    const q = [task.id]
-    while (q.length > 0) {
-      const id = q.shift()
-      if (visited.has(id)) continue
-      visited.add(id)
-      const t = taskStore.tasks.find(x => x.id === id)
-      if (!t) continue
-      ;[...(t.linkedTasks||[]), ...(t.waitFor||[]),
-        ...(t.parentTaskId?[t.parentTaskId]:[]),
-        ...taskStore.tasks.filter(x=>x.parentTaskId===t.id).map(x=>x.id),
-        ...taskStore.getBacklinks(t.id).map(x=>x.id)
-      ].filter(nid => taskSetIds.has(nid) && !visited.has(nid))
-       .forEach(nid => q.push(nid))
-    }
-    totalRelCountMap.set(task.id, visited.size - 1)
-  })
   totalRelCountMapRef.value = totalRelCountMap
 
   // ── Step 5: 建节点 ──
@@ -616,18 +597,48 @@ tooltipText: `🌳 父子  ${parentTask?.text || '?'} → ${task.text}`
   // 同步过滤边（两端节点都必须在过滤后的节点集里）
   const filteredEdges = edges.filter(e => filteredNodeIds.has(e.source) && filteredNodeIds.has(e.target))
 
-  // 更新节点标签为实际边数
-  const finalEdgeCountMap = {}
+  // 建有向邻接表，统计出度和入度
+  const outAdj = {}
+  const outDegree = {}
+  const inDegree = {}
   filteredEdges.forEach(e => {
-    finalEdgeCountMap[e.source] = (finalEdgeCountMap[e.source] || 0) + 1
-    finalEdgeCountMap[e.target] = (finalEdgeCountMap[e.target] || 0) + 1
+    if (!outAdj[e.source]) outAdj[e.source] = []
+    outAdj[e.source].push(e.target)
+    outDegree[e.source] = (outDegree[e.source] || 0) + 1
+    inDegree[e.target] = (inDegree[e.target] || 0) + 1
   })
+
+  // BFS 沿出度方向统计子孙节点数（不含自身）
+  const descendantCountMap = {}
   filteredNodes.forEach(n => {
-    const actualCount = finalEdgeCountMap[n.id] || 0
-    const totalRel = totalRelCountMapRef.value.get(Number(n.id)) ?? actualCount
+    const visited = new Set([n.id])
+    const queue = [n.id]
+    while (queue.length > 0) {
+      const cur = queue.shift()
+      ;(outAdj[cur] || []).forEach(target => {
+        if (!visited.has(target)) {
+          visited.add(target)
+          queue.push(target)
+        }
+      })
+    }
+    descendantCountMap[n.id] = visited.size - 1
+  })
+
+  // 同步到 ref 供搜索下拉框使用（出度+入度总和）
+  const newMap = new Map()
+  filteredNodes.forEach(n => {
+    newMap.set(n.id, (outDegree[n.id] || 0) + (inDegree[n.id] || 0))
+  })
+  totalRelCountMapRef.value = newMap
+
+  filteredNodes.forEach(n => {
+    const out = outDegree[n.id] || 0
+    const inn = inDegree[n.id] || 0
+    const desc = descendantCountMap[n.id] || 0
     n.label.formatter = (params) => {
       const taskName = params.data.name.length > 10 ? params.data.name.substring(0, 10) + '...' : params.data.name
-      return `${taskName}\n(直接${actualCount} 全量${totalRel})`
+      return `${taskName}\n(出${out} 入${inn} 子孙${desc})`
     }
   })
 
@@ -983,6 +994,8 @@ function initChart() {
       ],
       roam: true,
       draggable: true,
+      edgeSymbol: ['none', 'arrow'],  // source端无符号，target端箭头
+      edgeSymbolSize: [0, 8],
       label: {
         show: true,
         position: 'bottom',
