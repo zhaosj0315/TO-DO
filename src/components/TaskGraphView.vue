@@ -46,7 +46,7 @@
               <option
                 v-for="task in availableTasks"
                 :key="task.id"
-                :value="task.text + '（' + task._relCount + '条关系）'"
+                :value="task.text + '（直接' + task._relCount + '条 全量' + task._totalRelCount + '条）'"
               ></option>
             </datalist>
             <button v-if="searchKeyword" class="search-clear" @click="resetView">✕</button>
@@ -246,6 +246,7 @@ const showRelationMenu = ref(false)
 const relationMenuPos = ref({ x: 0, y: 0 })
 const pendingRelation = ref({ sourceId: null, targetId: null, isNewTask: false })
 const levelStatsRef = ref({}) // 各层级节点数统计（默认模式）
+const totalRelCountMapRef = ref(new Map()) // 全量关系数（BFS所有层级）
 
 // 统一的关系数量计算（潜在关系数，用于排序和下拉框显示）
 function calcRelCount(task) {
@@ -267,7 +268,11 @@ function calcRelCount(task) {
 const availableTasks = computed(() => {
   return taskStore.tasks
     .filter(t => showCompleted.value || t.status !== 'completed')
-    .map(t => ({ ...t, _relCount: calcRelCount(t) }))
+    .map(t => ({
+      ...t,
+      _relCount: calcRelCount(t),
+      _totalRelCount: totalRelCountMapRef.value.get(t.id) ?? calcRelCount(t)
+    }))
     .filter(t => t._relCount > 0)
     .sort((a, b) => b._relCount - a._relCount)
 })
@@ -441,6 +446,7 @@ const graphData = computed(() => {
     }
     totalRelCountMap.set(task.id, visited.size - 1)
   })
+  totalRelCountMapRef.value = totalRelCountMap
 
   // ── Step 5: 建节点 ──
   tasksToShow.forEach(task => {
@@ -618,9 +624,10 @@ tooltipText: `🌳 父子  ${parentTask?.text || '?'} → ${task.text}`
   })
   filteredNodes.forEach(n => {
     const actualCount = finalEdgeCountMap[n.id] || 0
+    const totalRel = totalRelCountMapRef.value.get(Number(n.id)) ?? actualCount
     n.label.formatter = (params) => {
       const taskName = params.data.name.length > 10 ? params.data.name.substring(0, 10) + '...' : params.data.name
-      return `${taskName}\n(${actualCount}个关系)`
+      return `${taskName}\n(直接${actualCount} 全量${totalRel})`
     }
   })
 
@@ -988,7 +995,7 @@ function initChart() {
         initLayout: 'circular',  // 🔧 圆形初始布局，更快
         repulsion: 80,           // 🔧 降低斥力（200 → 80）
         edgeLength: 100,         // 🔧 缩短边长（150 → 100）
-        gravity: 0.1,
+        gravity: 0.02,
         friction: 0.6            // 🔧 增加摩擦力，快速稳定
         // 移除 layoutAnimation: false，保留拖动功能
       },
@@ -1058,6 +1065,20 @@ function initChart() {
   chartInstance.on('mouseout', (params) => {
     if (params.dataType === 'node') {
       setTimeout(hideAnchors, 200) // 延迟隐藏，避免移动到连接点时消失
+    }
+  })
+
+  // 🔧 拖动节点后固定位置，防止 force 引力把节点吸回中心
+  chartInstance.on('mouseup', (params) => {
+    if (params.dataType === 'node') {
+      const nodeId = params.data.id
+      const pos = chartInstance.getOption().series[0].data.find(n => n.id === nodeId)
+      if (pos) {
+        const updatedData = nodes.value.map(n =>
+          n.id === nodeId ? { ...n, fixed: true, x: pos.x, y: pos.y } : n
+        )
+        chartInstance.setOption({ series: [{ data: updatedData }] }, { notMerge: false })
+      }
     }
   })
 }
