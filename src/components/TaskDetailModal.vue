@@ -930,11 +930,6 @@ const blockedTasks = computed(() => {
   return taskStore.getWaitingTasks(props.task.id)
 })
 
-const handleClearWaitFor = async () => {
-  await taskStore.clearWaitFor(props.task.id)
-  emit('refresh')
-}
-
 // 清除手动依赖（不影响父子关系）
 const handleClearDependencies = async () => {
   // 直接清除所有依赖
@@ -1508,11 +1503,6 @@ const formatDate = (dateStr) => {
 
 
 // 日期格式化（简短版，用于时间轴）
-const formatDateShort = (dateStr) => {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  return `${date.getMonth() + 1}/${date.getDate()}`
-}
 
 // 获取进度宽度
 const getProgressWidth = () => {
@@ -1527,12 +1517,6 @@ const getLatestProgress = () => {
 }
 
 // 截止时间格式化（简短版）
-const formatDeadlineShort = (task) => {
-  const deadline = getTaskDeadline(task)
-  if (!deadline) return '无'
-  const date = new Date(deadline)
-  return `${date.getMonth() + 1}/${date.getDate()}`
-}
 
 const formatLogTime = (dateStr) => {
   if (!dateStr) return ''

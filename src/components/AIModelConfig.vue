@@ -286,7 +286,6 @@ const emit = defineEmits(['close', 'update'])
 
 // 获取当前用户
 const taskStore = useOfflineTaskStore()
-const getCurrentUsername = () => taskStore.currentUser || 'guest'
 
 // ==================== 预设厂商配置 ====================
 const PRESET_PROVIDERS = [
@@ -598,16 +597,6 @@ if (models.value.length === 0) {
     url: 'http://192.168.31.159:11434/api/generate'
   }]
   defaultModelId.value = 'default-local'
-}
-
-const getUrlPlaceholder = () => {
-  if (newModel.value.type === 'local') {
-    return 'http://192.168.31.159:11434/api/generate'
-  } else if (newModel.value.type === 'openai') {
-    return 'https://api.openai.com/v1/chat/completions'
-  } else {
-    return 'https://your-api.com/generate'
-  }
 }
 
 // 获取可用模型列表
@@ -1083,10 +1072,6 @@ const clearForm = () => {
   availableModels.value = []
   fetchError.value = ''
   testResult.value = null
-}
-
-const setDefault = (id) => {
-  defaultModelId.value = id
 }
 
 const editModel = (index) => {

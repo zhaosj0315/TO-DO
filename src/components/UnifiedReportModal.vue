@@ -1094,9 +1094,6 @@ const getReportTitle = () => {
 }
 
 // 显示历史
-const showHistory = () => {
-  emit('show-history')
-}
 
 // 监听弹窗显示
 watch(() => props.visible, (newVal) => {

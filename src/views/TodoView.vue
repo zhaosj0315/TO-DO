@@ -4626,41 +4626,8 @@ const handleGenerateWeeklyReport = () => {
 }
 
 // 打开任务分解
-const openTaskSplitter = (task) => {
-  taskToSplit.value = task
-  showTaskSplitter.value = true
-}
 
 // 打开任务分解（新任务）
-const openTaskSplitterForNew = () => {
-  const title = prompt('请输入要分解的任务标题：')
-  if (!title || title.trim() === '') return
-  
-  const description = prompt('请输入任务描述（可选）：')
-  
-  // 先创建父任务
-  const parentTask = {
-    id: Date.now(),
-    text: title.trim(),
-    description: description?.trim() || '',
-    type: 'today',
-    category: 'work',
-    priority: 'medium',
-    status: 'pending',
-    created_at: new Date().toISOString(),
-    user_id: taskStore.currentUser
-  }
-  
-  console.log('创建父任务:', parentTask.text, 'ID:', parentTask.id)
-  taskStore.addTask(parentTask)
-  
-  // 验证父任务是否创建成功
-  const savedParent = taskStore.tasks.find(t => t.id === parentTask.id)
-  console.log('从store读取的父任务:', savedParent)
-  
-  taskToSplit.value = savedParent || parentTask
-  showTaskSplitter.value = true
-}
 
 // 创建子任务
 const createSubtasks = async (subtasks) => {
@@ -5911,13 +5878,6 @@ const getWordCountHint = () => {
 }
 
 // 动态占位符
-const getPlaceholder = () => {
-  const taskName = newTaskText.value?.trim()
-  if (taskName) {
-    return `关于「${taskName}」，你想记录点什么？`
-  }
-  return '输入任务详细描述...'
-}
 
 const openFullscreenDesc = () => {
   showFullscreenDesc.value = true
@@ -7350,59 +7310,6 @@ const handleConfirmAITasks = (tasks) => {
 }
 
 // AI 写作助手 - 智能提取任务信息
-const triggerAIAssist = async () => {
-  // 🆕 使用统一输入框的值
-  const inputText = quickTaskInput.value.trim()
-  
-  if (!inputText) {
-    alert('请先输入文本或关键词')
-    return
-  }
-  
-  aiLoading.value = true
-  aiLoadingText.value = 'AI 正在分析文本...'
-  aiLoadingSubText.value = '智能提取任务信息'
-  
-  try {
-    // 如果输入文本较长（超过20字），使用提取模式
-    if (inputText.length > 20) {
-      // 调用 AI 提取任务
-      const tasks = await AITaskExtractor.extractTasks(inputText)
-      
-      if (tasks.length > 0) {
-        // 使用第一个提取的任务填充表单
-        const task = tasks[0]
-        quickTaskInput.value = task.title  // 🆕 更新统一输入框
-        tempDescription.value = task.description || ''  // 🆕 更新临时描述
-        newTaskCategory.value = task.category || 'life'
-        newTaskPriority.value = task.priority || 'medium'
-        
-        // 如果有截止时间，设置为指定日期
-        if (task.deadline) {
-          newTaskType.value = 'custom_date'
-          customDateTime.value = task.deadline.replace(' ', 'T')
-        }
-        
-        showNotification('✨ AI 已智能填充任务信息', 'success')
-      } else {
-        // 没有提取到任务，使用生成模式
-        const generatedTitle = await AITaskGenerator.generateTask(inputText)
-        quickTaskInput.value = generatedTitle  // 🆕 更新统一输入框
-        showNotification('✨ AI 已生成任务标题', 'success')
-      }
-    } else {
-      // 短文本使用生成模式
-      const generatedTitle = await AITaskGenerator.generateTask(inputText)
-      quickTaskInput.value = generatedTitle  // 🆕 更新统一输入框
-      showNotification('✨ AI 已生成任务标题', 'success')
-    }
-  } catch (error) {
-    console.error('AI处理失败:', error)
-    alert(`AI处理失败：${error.message}`)
-  } finally {
-    aiLoading.value = false
-  }
-}
 
 // 生成任务描述
 const generateDescription = async () => {
@@ -7430,31 +7337,6 @@ const generateDescription = async () => {
 }
 
 // 任务输入框失焦时触发智能分类
-const handleTaskInputBlur = () => {
-  const title = newTaskText.value.trim()
-  
-  if (!title || title.length < 3) {
-    return
-  }
-  
-  // 防抖：500ms 后触发
-  clearTimeout(suggestionTimeout)
-  suggestionTimeout = setTimeout(async () => {
-    try {
-      const classification = await AIClassifier.classifyTask(title, newTaskDescription.value)
-      aiSuggestion.value = classification
-      
-      // 如果AI返回了时间信息，自动填充
-      if (classification.customDate && classification.customTime) {
-        // 不自动应用，只在建议中显示
-        aiSuggestion.value.hasTimeInfo = true
-      }
-    } catch (error) {
-      console.error('AI分类失败:', error)
-      // 静默失败，不影响用户体验
-    }
-  }, 500)
-}
 
 // 采纳 AI 建议
 const applySuggestion = () => {
@@ -8306,116 +8188,14 @@ const getPomodorosByCategory = (category) => {
 }
 
 // 按优先级统计番茄数（考虑文件夹筛选）
-const getPomodorosByPriority = (priority) => {
-  let tasks = taskStore.tasks
-    .filter(t => t.priority === priority && t.status === TaskStatus.COMPLETED)
-  
-  // 🆕 如果选中了文件夹，只统计该文件夹内的任务
-  if (selectedCollectionId.value !== null) {
-    if (selectedCollectionId.value === 'uncategorized') {
-      tasks = tasks.filter(t => !t.collectionId)
-    } else {
-      tasks = tasks.filter(t => t.collectionId === selectedCollectionId.value)
-    }
-  }
-  
-  return tasks.reduce((sum, t) => sum + getPomodoroCount(t), 0)
-}
 
 // 按时间统计番茄数
-const getPomodorosByTime = (period) => {
-  const now = new Date()
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  
-  let tasks = taskStore.tasks
-    .filter(t => {
-      if (t.status !== TaskStatus.COMPLETED) return false
-      const completedDate = new Date(t.created_at)
-      
-      if (period === 'today') {
-        return completedDate >= today
-      } else if (period === 'week') {
-        const weekStart = new Date(today)
-        weekStart.setDate(today.getDate() - today.getDay())
-        return completedDate >= weekStart
-      } else if (period === 'month') {
-        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-        return completedDate >= monthStart
-      }
-      return false
-    })
-  
-  // 🆕 如果选中了文件夹，只统计该文件夹内的任务
-  if (selectedCollectionId.value !== null) {
-    if (selectedCollectionId.value === 'uncategorized') {
-      tasks = tasks.filter(t => !t.collectionId)
-    } else {
-      tasks = tasks.filter(t => t.collectionId === selectedCollectionId.value)
-    }
-  }
-  
-  return tasks.reduce((sum, t) => sum + getPomodoroCount(t), 0)
-}
 
 // 连续打卡天数
-const getConsecutiveDays = () => {
-  const completedTasks = taskStore.tasks
-    .filter(t => t.status === TaskStatus.COMPLETED)
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-  
-  if (completedTasks.length === 0) return 0
-  
-  let consecutive = 1
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  
-  let currentDate = new Date(completedTasks[0].created_at)
-  currentDate.setHours(0, 0, 0, 0)
-  
-  // 如果最近完成的任务不是今天或昨天，返回0
-  const daysDiff = Math.floor((today - currentDate) / (1000 * 60 * 60 * 24))
-  if (daysDiff > 1) return 0
-  
-  for (let i = 1; i < completedTasks.length; i++) {
-    const prevDate = new Date(completedTasks[i].created_at)
-    prevDate.setHours(0, 0, 0, 0)
-    
-    const diff = Math.floor((currentDate - prevDate) / (1000 * 60 * 60 * 24))
-    if (diff === 1) {
-      consecutive++
-      currentDate = prevDate
-    } else if (diff > 1) {
-      break
-    }
-  }
-  
-  return consecutive
-}
 
 // 单日最高番茄数
-const getMaxDailyPomodoros = () => {
-  const dailyStats = {}
-  
-  taskStore.tasks
-    .filter(t => t.status === TaskStatus.COMPLETED)
-    .forEach(t => {
-      const date = new Date(t.created_at).toDateString()
-      if (!dailyStats[date]) dailyStats[date] = 0
-      dailyStats[date] += getPomodoroCount(t)
-    })
-  
-  return Object.keys(dailyStats).length > 0 
-    ? Math.max(...Object.values(dailyStats)) 
-    : 0
-}
 
 // 完成率
-const getCompletionRate = () => {
-  const total = taskStore.tasks.length
-  if (total === 0) return 0
-  const completed = taskStore.tasks.filter(t => t.status === TaskStatus.COMPLETED).length
-  return Math.round((completed / total) * 100)
-}
 
 // 近7天趋势数据
 const getLast7DaysTrend = () => {
@@ -8444,29 +8224,10 @@ const getLast7DaysTrend = () => {
 }
 
 // 获取7天内最大值（用于柱状图高度计算）
-const getMaxDailyInWeek = () => {
-  const trend = getLast7DaysTrend()
-  const max = Math.max(...trend.map(d => d.count))
-  return max || 1 // 避免除以0
-}
 
 // 分类占比
-const getCategoryPercent = (category) => {
-  const total = earnedPomodoros.value
-  if (total === 0) return 0
-  const categoryCount = getPomodorosByCategory(category)
-  return Math.round((categoryCount / total) * 100)
-}
 
 // 等级徽章
-const getLevelBadge = () => {
-  const total = earnedPomodoros.value
-  if (total >= 500) return { icon: '👑', title: t('pomodoroMaster') }
-  if (total >= 300) return { icon: '🏆', title: t('pomodoroExpert') }
-  if (total >= 150) return { icon: '⭐', title: t('pomodoroTalent') }
-  if (total >= 50) return { icon: '🌟', title: t('pomodoroRising') }
-  return { icon: '🌱', title: t('pomodoroNovice') }
-}
 
 // 计算今日完成的番茄钟数
 const getTodayCompletedPomodoros = () => {
@@ -8482,64 +8243,16 @@ const getTodayCompletedPomodoros = () => {
 }
 
 // 计算今日专注时长（分钟）
-const getTodayFocusMinutes = () => {
-  const count = getTodayCompletedPomodoros()
-  return count * Math.floor(POMODORO_CONFIG.FOCUS_TIME / 60)
-}
 
 // 计算本周完成的番茄钟数
-const getWeekCompletedPomodoros = () => {
-  const now = new Date()
-  const weekStart = new Date(now)
-  weekStart.setDate(now.getDate() - now.getDay()) // 本周日
-  weekStart.setHours(0, 0, 0, 0)
-  
-  return taskStore.tasks.reduce((total, task) => {
-    if (!task.pomodoroHistory) return total
-    const weekCount = task.pomodoroHistory.filter(record => {
-      const recordDate = new Date(record.endTime)
-      return recordDate >= weekStart && record.completed
-    }).length
-    return total + weekCount
-  }, 0)
-}
 
 // 计算任务的总专注时长（分钟）
-const getTotalFocusMinutes = (task) => {
-  if (!task.pomodoroHistory) return 0
-  return task.pomodoroHistory.length * Math.floor(POMODORO_CONFIG.FOCUS_TIME / 60)
-}
 
 // 格式化番茄钟时间（HH:MM）
-const formatPomodoroTime = (isoString) => {
-  const date = new Date(isoString)
-  const hours = String(date.getHours()).padStart(2, '0')
-  const minutes = String(date.getMinutes()).padStart(2, '0')
-  return `${hours}:${minutes}`
-}
 
 // 格式化番茄钟日期
-const formatPomodoroDate = (isoString) => {
-  const date = new Date(isoString)
-  const today = new Date()
-  const yesterday = new Date(today)
-  yesterday.setDate(yesterday.getDate() - 1)
-  
-  if (date.toDateString() === today.toDateString()) {
-    return '今天'
-  } else if (date.toDateString() === yesterday.toDateString()) {
-    return '昨天'
-  } else {
-    return `${date.getMonth() + 1}月${date.getDate()}日`
-  }
-}
 
 // 计算番茄钟时长（分钟）
-const getPomodoroMinutes = (record) => {
-  const start = new Date(record.startTime)
-  const end = new Date(record.endTime)
-  return Math.round((end - start) / 60000)
-}
 
 // 计算属性：总页数
 const totalPages = computed(() => {
@@ -8884,17 +8597,8 @@ const hiddenCustomDateTime = ref(null)
 const filterSearchInput = ref(null)
 
 // 方法：筛选任务
-const filterTasks = () => {
-  // 筛选逻辑已在taskStore中实现
-}
 
 // 方法：添加任务并关闭表单
-const addTaskAndClose = async () => {
-  await addTask()
-  if (newTaskText.value.trim()) {
-    showAddForm.value = false
-  }
-}
 
 // 方法：拍照或选择照片识别文字
 const scanTextFromCamera = async () => {
@@ -9508,34 +9212,6 @@ const clearAllTasks = async () => {
 
 // 方法：打开编辑模态框
 // 切换描述展开/收起
-const openEditModal = (task) => {
-  editingTask.value = { ...task }
-  editText.value = task.text
-  editDescription.value = task.description || ''
-  editCategory.value = task.category
-  editPriority.value = task.priority
-  editType.value = task.type
-  
-  // 组合日期和时间为datetime-local格式
-  if (task.customDate) {
-    editCustomDateTime.value = task.customDate + (task.customTime ? `T${task.customTime}` : 'T00:00')
-  } else {
-    editCustomDateTime.value = ''
-  }
-  
-  editWeekdays.value = task.weekdays ? [...task.weekdays] : []
-  editMonthDay.value = task.monthDay || 1
-  
-  // 初始化所有textarea的自适应高度
-  nextTick(() => {
-    const textareas = document.querySelectorAll('.log-content-textarea-mini')
-    textareas.forEach(textarea => {
-      textarea.style.height = 'auto'
-      const newHeight = Math.min(Math.max(textarea.scrollHeight, 80), 300)
-      textarea.style.height = newHeight + 'px'
-    })
-  })
-}
 
 // 方法：打开任务详情（统一入口：复用编辑 Bottom Sheet）
 const openTaskDetail = (task) => {
@@ -9661,13 +9337,6 @@ const handleEditTypeChange = () => {
 }
 
 // 方法：确认自定义日期选择
-const confirmCustomDate = () => {
-  if (editingTask.value) {
-    // 如果是编辑任务，同步到编辑表单
-    editCustomDateTime.value = customDateTime.value
-  }
-  showCustomDateModal.value = false
-}
 
 // 方法：确认周期选择
 const confirmWeeklySelect = () => {
@@ -11060,86 +10729,6 @@ const exportMarkdown = () => {
 }
 
 // 方法：导出数据海报
-const exportPoster = async () => {
-  try {
-    const reportElement = document.querySelector('.report-preview-cards')
-    if (!reportElement) {
-      alert(currentLanguage.value === 'zh' ? '未找到报告内容，请先生成报告' : 'Report content not found, please generate report first')
-      return
-    }
-    
-    // 显示加载提示
-    const loadingMsg = currentLanguage.value === 'zh' ? '正在生成海报...' : 'Generating poster...'
-    const button = event.target
-    const originalText = button.textContent
-    button.textContent = loadingMsg
-    button.disabled = true
-    
-    // 保存原始滚动位置和样式
-    const modalBody = document.querySelector('.modal-body')
-    const originalOverflow = modalBody.style.overflow
-    const originalMaxHeight = modalBody.style.maxHeight
-    const originalScrollTop = modalBody.scrollTop
-    
-    // 临时移除滚动限制，显示完整内容
-    modalBody.style.overflow = 'visible'
-    modalBody.style.maxHeight = 'none'
-    
-    // 等待 DOM 更新
-    await new Promise(resolve => setTimeout(resolve, 200))
-    
-    // 生成海报（完整内容）
-    const canvas = await html2canvas(reportElement, {
-      backgroundColor: '#f5f5f5',
-      scale: 3, // 提高清晰度（3倍分辨率）
-      logging: false,
-      useCORS: true,
-      allowTaint: true,
-      windowHeight: reportElement.scrollHeight, // 关键：设置为完整高度
-      height: reportElement.scrollHeight,
-      width: reportElement.scrollWidth,
-      scrollX: 0,
-      scrollY: 0
-    })
-    
-    // 恢复原始样式
-    modalBody.style.overflow = originalOverflow
-    modalBody.style.maxHeight = originalMaxHeight
-    modalBody.scrollTop = originalScrollTop
-    
-    // 转换为图片并下载
-    canvas.toBlob((blob) => {
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      const filename = `${reportData.value.title}_${new Date().getTime()}.png`
-      link.href = url
-      link.download = filename
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
-      
-      // 恢复按钮状态
-      button.textContent = originalText
-      button.disabled = false
-      
-      alert(currentLanguage.value === 'zh' ? '海报已保存（高清版）' : 'Poster saved (HD)')
-    }, 'image/png', 1.0) // 最高质量
-  } catch (err) {
-    console.error('导出海报失败:', err)
-    // 确保恢复样式
-    const modalBody = document.querySelector('.modal-body')
-    if (modalBody) {
-      modalBody.style.overflow = ''
-      modalBody.style.maxHeight = ''
-    }
-    alert(currentLanguage.value === 'zh' ? '导出失败，请重试' : 'Export failed, please try again')
-    // 恢复按钮状态
-    if (event.target) {
-      event.target.disabled = false
-    }
-  }
-}
 
 const exportHTML = async () => {
   try {
@@ -11289,22 +10878,6 @@ const getLogTypeIcon = (type) => {
 }
 
 // 方法：格式化日志时间（简短版）
-const formatLogTimeMini = (dateStr) => {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  const now = new Date()
-  const diff = now - date
-  const hours = Math.floor(diff / (1000 * 60 * 60))
-  
-  if (hours < 1) return '刚刚'
-  if (hours < 24) return `${hours}小时前`
-  
-  const days = Math.floor(hours / 24)
-  if (days === 1) return '昨天'
-  if (days < 7) return `${days}天前`
-  
-  return `${date.getMonth() + 1}/${date.getDate()}`
-}
 
 // 自适应textarea高度
 const autoResizeTextarea = (event) => {
@@ -11986,41 +11559,6 @@ const exportToExcel = async () => {
 }
 
 // 方法：获取任务类型文本
-const getTaskTypeText = (task) => {
-  switch (task.type) {
-    case 'today':
-      return t('today')
-    case 'tomorrow':
-      return t('tomorrow')
-    case 'this_week':
-      return t('thisWeek')
-    case 'custom_date':
-      if (task.customDate) {
-        const date = new Date(task.customDate)
-        const month = date.getMonth() + 1
-        const day = date.getDate()
-        let text = `${month}/${day}`
-        // 如果有具体时间，也显示时间
-        if (task.customTime) {
-          text += ` ${task.customTime}`
-        }
-        return text
-      }
-      return t('customDate')
-    case 'daily':
-      return t('daily')
-    case 'weekday':
-      return t('weekday')
-    case 'weekly':
-      if (task.weekdays) {
-        const selectedDays = task.weekdays.map(day => weekdays[day]).join(',')
-        return currentLanguage.value === 'zh' ? `每周${selectedDays}` : `Weekly: ${selectedDays}`
-      }
-      return t('weekly')
-    default:
-      return ''
-  }
-}
 
 // 方法：获取优先级文本
 const getPriorityText = (priority) => {
@@ -12447,71 +11985,16 @@ const cancelImport = () => {
 }
 
 // 解析分类文本
-const parseCategoryText = (text) => {
-  const map = { '工作': 'work', '学习': 'study', '生活': 'life' }
-  return map[text] || 'work'
-}
 
 // 解析优先级文本
-const parsePriorityText = (text) => {
-  const map = { '高': 'high', '中': 'medium', '低': 'low' }
-  return map[text] || 'medium'
-}
 
 // 解析类型文本
-const parseTypeText = (text) => {
-  if (!text) return 'today'
-  if (text === '仅今天') return 'today'
-  if (text === '每天') return 'daily'
-  if (text.includes('每周')) return 'weekly'
-  return 'today'
-}
 
 // 解析状态文本
-const parseStatusText = (text) => {
-  if (text === '已完成') return 'completed'
-  if (text === '已逾期') return 'overdue'
-  return 'pending'
-}
 
 // 解析周期（从类型字段提取）
-const parseWeekdays = (text) => {
-  if (!text || !text.includes('每周')) return []
-  const dayMap = { '周一': 1, '周二': 2, '周三': 3, '周四': 4, '周五': 5, '周六': 6, '周日': 0 }
-  const days = []
-  for (const [key, value] of Object.entries(dayMap)) {
-    if (text.includes(key)) days.push(value)
-  }
-  return days
-}
 
 // 解析日期时间
-const parseDateTime = (text) => {
-  if (!text) return new Date().toISOString()
-  try {
-    // 处理字符串格式
-    if (typeof text === 'string') {
-      // 替换斜杠为横杠，统一格式
-      const normalized = text.replace(/\//g, '-')
-      const date = new Date(normalized)
-      if (!isNaN(date.getTime())) {
-        return date.toISOString()
-      }
-    }
-    // 处理Excel日期数字格式
-    if (typeof text === 'number') {
-      // Excel日期是从1900-01-01开始的天数
-      const excelEpoch = new Date(1900, 0, 1)
-      const date = new Date(excelEpoch.getTime() + (text - 2) * 86400000)
-      return date.toISOString()
-    }
-    // 直接尝试转换
-    const date = new Date(text)
-    return isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString()
-  } catch {
-    return new Date().toISOString()
-  }
-}
 
 // 方法：格式化日期时间
 const formatDateTime = (dateStr) => {
@@ -12602,69 +12085,8 @@ const getCompactStatus = (task) => {
 }
 
 // 方法：获取计划完成时间（纯日期，不含状态）
-const getPlannedDeadlineText = (task) => {
-  const deadline = calculateDeadline(task)
-  if (!deadline) return t('noDeadline')
-  
-  const date = new Date(deadline)
-  const year = date.getFullYear()
-  const month = date.getMonth() + 1
-  const day = date.getDate()
-  const hour = String(date.getHours()).padStart(2, '0')
-  const minute = String(date.getMinutes()).padStart(2, '0')
-  
-  return `${year}/${month}/${day} ${hour}:${minute}`
-}
 
 // 方法：获取任务截止时间文本
-const getDeadlineText = (task) => {
-  // 已完成任务：显示完成状态（准时/逾期）
-  if (task.status === 'completed') {
-    const deadline = calculateDeadline(task)
-    if (!deadline) return '✅ 已完成'
-    
-    const completedTime = new Date(task.completed_at || task.created_at)
-    const isOnTime = completedTime <= deadline
-    
-    return isOnTime ? '🏁 准时完成' : '⚠️ 逾期完成'
-  }
-  
-  const deadline = calculateDeadline(task)
-  if (!deadline) return t('noDeadline')
-  
-  const now = new Date()
-  const diff = deadline - now
-  
-  if (diff < 0) {
-    // 已逾期
-    const absDiff = Math.abs(diff)
-    const hours = Math.floor(absDiff / (1000 * 60 * 60))
-    const days = Math.floor(hours / 24)
-    const remainingHours = hours % 24
-    
-    if (days > 0) return `${t('overdue')} ${days}${t('days')} ${remainingHours}${t('hours')}`
-    return `${t('overdue')} ${hours}${t('hours')}`
-  } else {
-    // 未逾期
-    const hours = Math.floor(diff / (1000 * 60 * 60))
-    const days = Math.floor(hours / 24)
-    const remainingHours = hours % 24
-    
-    const date = new Date(deadline)
-    const year = date.getFullYear()
-    const month = date.getMonth() + 1
-    const day = date.getDate()
-    const hour = String(date.getHours()).padStart(2, '0')
-    const minute = String(date.getMinutes()).padStart(2, '0')
-    
-    // 始终显示具体日期格式（不使用"今天"、"明天"）
-    const dateStr = `${year}/${month}/${day} ${hour}:${minute}`
-    
-    // 添加剩余时间提醒
-    if (days > 0) return `${dateStr} (${t('remaining')} ${days}${t('days')})`
-    return `${dateStr} (${t('onlyRemaining')} ${hours}${t('hours')})`
-  }
-}
 
 // 方法：计算任务截止时间
 const calculateDeadline = (task) => {
@@ -12922,10 +12344,6 @@ const handleRefresh = async () => {
 }
 
 // 🆕 文件夹相关方法（已废弃，保留兼容性）
-const toggleCollectionList = () => {
-  // 不再使用，点击"管理"按钮直接打开管理页面
-  showCollectionManage.value = true
-}
 
 const selectCollection = (collectionId) => {
   // 如果正在编辑，先保存
@@ -13006,10 +12424,6 @@ const saveCollectionName = async () => {
 }
 
 // 🆕 取消编辑
-const cancelEditCollectionName = () => {
-  editingCollectionId.value = null
-  editingCollectionName.value = ''
-}
 
 // 🆕 获取选中文件夹的名称
 const getSelectedCollectionName = () => {
@@ -13020,10 +12434,6 @@ const getSelectedCollectionName = () => {
 }
 
 // 🆕 打开指定文件夹的批量添加弹窗
-const openBatchAddForCollection = (collectionId) => {
-  selectedCollectionId.value = collectionId
-  showBatchAddModal.value = true
-}
 
 // 🆕 打开迁入弹窗
 const openBatchMoveIn = (collectionId, fromManage = false) => {
@@ -13588,32 +12998,6 @@ const cancelTaskReminder = async (taskId) => {
 }
 
 // 测试通知功能（5秒后触发）
-const testNotification = async () => {
-  try {
-    const testTime = new Date(Date.now() + 5000) // 5秒后
-    await LocalNotifications.schedule({
-      notifications: [{
-        title: '🧪 测试通知',
-        body: '如果你看到这条通知，说明通知功能正常！',
-        id: 999998,
-        schedule: { at: testTime },
-        channelId: 'task-reminders-v3',
-        sound: 'default',
-        autoCancel: true,
-        vibrate: [0, 1000, 500, 1000, 500, 1000, 500, 1000]
-      }]
-    })
-    showNotification('测试通知已设置，5秒后触发', 'success')
-    console.log('🧪 测试通知已设置，将在', testTime, '触发')
-    
-    // 查看所有待触发的通知
-    const pending = await LocalNotifications.getPending()
-    console.log('📋 当前待触发的通知列表:', pending)
-  } catch (error) {
-    console.error('测试通知失败:', error)
-    showNotification('测试通知失败: ' + error.message, 'error')
-  }
-}
 
 // 设置每日任务摘要通知
 const scheduleDailySummaryNotification = async () => {

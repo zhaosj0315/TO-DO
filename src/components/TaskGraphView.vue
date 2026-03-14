@@ -745,10 +745,6 @@ function isTaskIsolated(task) {
 }
 
 // 🆕 切换显示已完成任务
-function toggleCompleted() {
-  showCompleted.value = !showCompleted.value
-  console.log('✅ 切换已完成任务显示:', showCompleted.value)
-}
 
 // 🆕 监听 hideIsolated 变化，显示提示3秒
 watch(hideIsolated, (newVal) => {
@@ -800,44 +796,6 @@ function showIsolatedTasks() {
 }
 
 // 🆕 获取相关任务（可配置层级深度）
-function getRelatedTasks(taskId) {
-  const related = new Set()
-  const queue = [taskId]
-  const visited = new Set()
-  let depth = 0
-
-  while (queue.length > 0 && depth < relationDepth.value) {  // 🆕 使用动态层级
-    const levelSize = queue.length
-    for (let i = 0; i < levelSize; i++) {
-      const currentId = queue.shift()
-      if (visited.has(currentId)) continue
-      visited.add(currentId)
-
-      const task = taskStore.tasks.find(t => t.id === currentId)
-      if (task) {
-        // 🆕 过滤孤立任务
-        if (hideIsolated.value && isTaskIsolated(task)) {
-          continue
-        }
-        
-        related.add(task)
-
-        // 添加相关任务到队列
-        task.linkedTasks?.forEach(id => queue.push(id))
-        task.waitFor?.forEach(id => queue.push(id))
-        if (task.parentTaskId) queue.push(task.parentTaskId)
-        task.subtasks?.forEach(id => queue.push(id))
-        
-        // 添加反向链接
-        const backlinks = taskStore.getBacklinks(currentId)
-        backlinks.forEach(t => queue.push(t.id))
-      }
-    }
-    depth++
-  }
-
-  return Array.from(related)
-}
 
 // 🆕 获取直接关系任务（双击聚焦用）
 function getDirectRelatedTasks(taskId) {
@@ -912,16 +870,6 @@ function getCategoryColor(category) {
 }
 
 // 🆕 获取笔记本层级深度（v0.9.2）
-function getCollectionDepth(collection) {
-  let depth = 0
-  let current = collection
-  while (current.parentId) {
-    depth++
-    current = taskStore.collections.find(c => c.id === current.parentId)
-    if (!current) break
-  }
-  return depth
-}
 
 // 🆕 获取优先级颜色
 function getPriorityColor(priority) {

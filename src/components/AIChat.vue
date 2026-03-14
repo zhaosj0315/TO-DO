@@ -525,21 +525,6 @@ const filteredGroupedChats = computed(() => {
 })
 
 // 旧的加载/保存方法（兼容）
-const loadChatHistory = () => {
-  const history = localStorage.getItem('ai_chat_history')
-  if (history) {
-    try {
-      const parsed = JSON.parse(history)
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        messages.value = parsed
-        return true
-      }
-    } catch (e) {
-      console.error('加载聊天历史失败:', e)
-    }
-  }
-  return false
-}
 
 // 保存聊天记录（更新为保存当前对话）
 const saveChatHistory = () => {
@@ -547,14 +532,6 @@ const saveChatHistory = () => {
 }
 
 // 清空聊天记录
-const clearChatHistory = () => {
-  if (confirm('确定要清空所有聊天记录吗？')) {
-    messages.value = []
-    localStorage.removeItem('ai_chat_history')
-    // 重新显示欢迎消息
-    showWelcomeMessage()
-  }
-}
 
 // 显示欢迎消息
 const showWelcomeMessage = () => {
@@ -1649,73 +1626,6 @@ const callOpenAIStream = async (context, question, model, msgIndex) => {
 }
 
 // 保留非流式版本作为降级方案
-const callOllama = async (context, question, model) => {
-  try {
-    const res = await fetch(model.url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: model.modelName || 'gemma2:2b',
-        prompt: `${context}\n\n用户问题：${question}\n\n回答：`,
-        stream: false
-      })
-    })
-
-    if (!res.ok) {
-      if (res.status === 403 && model.url.includes('ngrok')) {
-        throw new Error(`Ngrok访问被拒绝\n\n请先在浏览器中访问：\n${model.url.split('/api')[0]}\n\n点击"Visit Site"后再试`)
-      }
-      throw new Error(`API错误 (${res.status})`)
-    }
-    const data = await res.json()
-    return data.response || '无响应'
-  } catch (error) {
-    if (error.message.includes('Failed to fetch')) {
-      throw new Error(`无法连接到 ${model.name}\n请检查：\n1. 模型服务是否运行\n2. 地址是否正确\n3. 网络是否通畅`)
-    }
-    throw error
-  }
-}
-
-const callOpenAI = async (context, question, model) => {
-  if (!model.apiKey) throw new Error('请在配置中填写API Key')
-  
-  try {
-    // 统一URL处理：先规范化基础URL，再拼接API路径
-    const normalizeBaseUrl = (url) => {
-      if (!url) return ''
-      let baseUrl = url.trim().replace(/\/v1(\/.*)?$/, '').replace(/\/$/, '')
-      return baseUrl
-    }
-    
-    let baseUrl = normalizeBaseUrl(model.url)
-    let apiUrl = `${baseUrl}/v1/chat/completions`
-    
-    const res = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${model.apiKey}`
-      },
-      body: JSON.stringify({
-        model: model.modelName || 'gpt-3.5-turbo',
-        messages: [
-          { role: 'system', content: context },
-          { role: 'user', content: question }
-        ]
-      })
-    })
-
-    if (!res.ok) throw new Error(`OpenAI错误 (${res.status})`)
-    const data = await res.json()
-    return data.choices[0].message.content
-  } catch (error) {
-    if (error.message.includes('Failed to fetch')) {
-      throw new Error('无法连接到OpenAI，请检查网络')
-    }
-    throw error
-  }
-}
 
 // 创建任务相关方法
 const getCategoryLabel = (category) => {
