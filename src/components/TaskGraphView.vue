@@ -30,132 +30,47 @@
       </div>
 
       <!-- 控制栏 -->
-      <div class="graph-controls" :class="{ collapsed: controlsCollapsed }">
-        <button class="toggle-controls-btn" @click="controlsCollapsed = !controlsCollapsed" :title="controlsCollapsed ? '展开筛选' : '收起筛选'">
-          {{ controlsCollapsed ? '▼ 展开筛选' : '▲ 收起筛选' }}
-        </button>
-        
-        <div v-show="!controlsCollapsed" class="controls-content">
-        <!-- 任务选择器 + 搜索框合并 -->
-        <select v-model="selectedTaskId" class="task-selector">
-          <option :value="null">🌐 全部任务</option>
-          <option value="search">🔍 搜索任务...</option>
-          <option 
-            v-for="task in availableTasks" 
-            :key="task.id"
-            :value="task.id"
-          >
-            {{ (task.text || '未命名任务').substring(0, 20) }}{{ (task.text || '').length > 20 ? '...' : '' }}
-          </option>
-        </select>
-        
-        <!-- 搜索输入框（选择搜索时显示） -->
-        <input 
-          v-if="selectedTaskId === 'search'"
-          v-model="searchKeyword" 
-          type="text" 
-          placeholder="输入关键词搜索..."
-          @input="handleSearch"
-          class="search-input"
-          autofocus
-        />
-        
-        <!-- 🆕 层级控制 -->
-        <div class="limit-control">
-          <label>层级: {{ relationDepth }}</label>
-          <input 
-            v-model.number="relationDepth" 
-            type="range" 
-            min="1" 
-            max="5" 
-            step="1"
-            class="limit-slider"
+      <!-- 简化控制栏：一行核心操作 + 折叠高级选项 -->
+      <div class="graph-controls">
+        <!-- 主控制行 -->
+        <div class="controls-main">
+          <input
+            v-model="searchKeyword"
+            type="text"
+            placeholder="🔍 搜索任务..."
+            @input="handleSearch"
+            class="search-input"
           />
+          <button :class="['ctrl-tag', { active: showCompleted }]" @click="toggleCompleted">
+            ✅ 已完成
+          </button>
+          <button :class="['ctrl-tag', { active: !hideIsolated }]" @click="hideIsolated = !hideIsolated">
+            🔗 含孤立
+          </button>
+          <button :class="['ctrl-tag', { active: showAdvanced }]" @click="showAdvanced = !showAdvanced">
+            ⚙️ 高级 {{ showAdvanced ? '▲' : '▼' }}
+          </button>
+          <button class="ctrl-tag reset" @click="resetView">🔄</button>
         </div>
-        
-        <!-- 🆕 数量控制 -->
-        <div class="limit-control">
-          <label>数量: {{ displayLimit }}</label>
-          <input 
-            v-model.number="displayLimit" 
-            type="range" 
-            min="10" 
-            max="200" 
-            step="10"
-            class="limit-slider"
-          />
-        </div>
-        
-        <!-- 🆕 最小关系数 -->
-        <div class="limit-control">
-          <label>最小关系: {{ minRelationCount }}</label>
-          <input 
-            v-model.number="minRelationCount" 
-            type="range" 
-            min="0" 
-            max="10" 
-            step="1"
-            class="limit-slider"
-          />
-        </div>
-        
-        <!-- 笔记本筛选 -->
-        <select v-model="selectedCollectionId" class="collection-filter">
-          <option :value="null">📚 全部笔记本</option>
-          <option 
-            v-for="collection in taskStore.sortedCollections" 
-            :key="collection.id"
-            :value="collection.id"
-          >
-            {{ '　'.repeat(getCollectionDepth(collection)) }}📁 {{ collection.name }}
-          </option>
-        </select>
-        
-        <button 
-          :class="['control-btn', { active: showCompleted }]"
-          @click="toggleCompleted"
-        >
-          <span class="checkbox">{{ showCompleted ? '☑' : '☐' }}</span> ✅<span> 已完成</span>
-        </button>
-        <button 
-          :class="['control-btn', { active: hideIsolated }]"
-          @click="hideIsolated = !hideIsolated"
-        >
-          <span class="checkbox">{{ hideIsolated ? '☑' : '☐' }}</span> 🚫<span> 隐藏孤立</span>
-        </button>
-        <button 
-          :class="['control-btn', { active: showLinks }]"
-          @click="showLinks = !showLinks"
-        >
-          <span class="checkbox">{{ showLinks ? '☑' : '☐' }}</span> 🔗<span> 引用</span>
-        </button>
-        <button 
-          :class="['control-btn', { active: showDependencies }]"
-          @click="showDependencies = !showDependencies"
-        >
-          <span class="checkbox">{{ showDependencies ? '☑' : '☐' }}</span> 🔒<span> 依赖</span>
-        </button>
-        <button 
-          :class="['control-btn', { active: showSubtasks }]"
-          @click="showSubtasks = !showSubtasks"
-        >
-          <span class="checkbox">{{ showSubtasks ? '☑' : '☐' }}</span> 🌳<span> 父子</span>
-        </button>
-        <button 
-          :class="['control-btn', { active: showLogRelations }]"
-          @click="showLogRelations = !showLogRelations"
-        >
-          <span class="checkbox">{{ showLogRelations ? '☑' : '☐' }}</span> 💡<span> 阻碍方案</span>
-        </button>
-        <button 
-          :class="['control-btn', { active: showTagRelations }]"
-          @click="showTagRelations = !showTagRelations"
-        >
-          <span class="checkbox">{{ showTagRelations ? '☑' : '☐' }}</span> 🏷️<span> 标签关系</span>
-        </button>
-        <button class="control-btn" @click="resetView">
-          🔄<span> 重置</span>
-        </button>
+
+        <!-- 高级选项（折叠） -->
+        <div v-show="showAdvanced" class="controls-advanced">
+          <div class="adv-row">
+            <span class="adv-label">关系类型</span>
+            <button :class="['ctrl-tag', { active: showLinks }]" @click="showLinks = !showLinks">🔗 引用</button>
+            <button :class="['ctrl-tag', { active: showDependencies }]" @click="showDependencies = !showDependencies">🔒 依赖</button>
+            <button :class="['ctrl-tag', { active: showSubtasks }]" @click="showSubtasks = !showSubtasks">🌳 父子</button>
+            <button :class="['ctrl-tag', { active: showLogRelations }]" @click="showLogRelations = !showLogRelations">💡 阻碍</button>
+            <button :class="['ctrl-tag', { active: showTagRelations }]" @click="showTagRelations = !showTagRelations">🏷️ 标签</button>
+          </div>
+          <div class="adv-row">
+            <span class="adv-label">显示数量</span>
+            <input v-model.number="displayLimit" type="range" min="10" max="200" step="10" class="limit-slider" />
+            <span class="adv-val">{{ displayLimit }}</span>
+            <span class="adv-label" style="margin-left:12px">关系层级</span>
+            <input v-model.number="relationDepth" type="range" min="1" max="5" step="1" class="limit-slider" />
+            <span class="adv-val">{{ relationDepth }}</span>
+          </div>
         </div>
       </div>
 
@@ -322,9 +237,11 @@ const displayLimit = ref(50)       // 🔧 显示数量限制（默认50）
 const relationDepth = ref(2)       // 🆕 关系层级深度（默认2）
 const showIsolatedHint = ref(true) // 🆕 显示孤立任务提示
 const showHideIsolatedHint = ref(false) // 🆕 显示隐藏孤立提示
-const controlsCollapsed = ref(false) // 🆕 控制栏收起状态
-const focusedTaskId = ref(null)    // 🆕 双击聚焦的任务ID（展开关系网络）
-const minRelationCount = ref(1)    // 🆕 最小关系数（默认1个关系以上）
+const controlsCollapsed = ref(false)
+const focusedTaskId = ref(null)
+const minRelationCount = ref(1)
+const showAdvanced = ref(false)
+const showEdgeLabels = ref(false) // 边线标签（默认关闭）
 
 // 🆕 拖拽连线功能状态
 const isDragging = ref(false)
@@ -492,13 +409,14 @@ const graphData = computed(() => {
 
       nodes.push({
         id: String(task.id),
-        name: task.text || '未命名任务', // 任务名称
-        value: relationCount, // 🆕 关系数量
+        name: task.text || '未命名任务',
+        value: relationCount,
+        _relationCount: relationCount, // 暂存，归一化时用
         category: getCategoryIndex(task),
-        symbolSize: Math.max(35, Math.min(70, 35 + relationCount * 3)), // 🆕 根据关系数量动态调整大小
+        symbolSize: 30, // 先占位，后面统一归一化
         label: {
           show: true,
-          position: 'bottom', // 圆圈下显示
+          position: 'bottom',
           formatter: (params) => {
             const taskName = params.data.name.length > 10 ? params.data.name.substring(0, 10) + '...' : params.data.name
             return `${taskName}\n(${relationCount}个关系)`
@@ -510,7 +428,7 @@ const graphData = computed(() => {
         },
         itemStyle: {
           color: task.status === 'completed' 
-            ? '#9ca3af'  // 已完成：灰色
+            ? '#9ca3af'
             : task.id === selectedTaskId.value 
               ? '#f59e0b' 
               : getCategoryColor(task.category),
@@ -518,8 +436,7 @@ const graphData = computed(() => {
           borderWidth: task.id === selectedTaskId.value ? 3 : borderWidth,
           borderColor: task.id === selectedTaskId.value ? '#f59e0b' : borderColor
         },
-        // 🆕 存储信息用于tooltip
-        relationCount: relationCount, // 🆕 存储关系数量
+        relationCount: relationCount,
         logRelationsCount: logRelations.length,
         unresolvedBlocksCount: hasUnresolvedBlocks ? taskStore.getUnresolvedBlocks(task.id).length : 0
       })
@@ -534,16 +451,13 @@ const graphData = computed(() => {
           edges.push({
             source: String(task.id),
             target: String(linkedId),
-            label: { show: false },
             lineStyle: { 
               color: '#8b5cf6',
-              width: 3,  // 🔧 引用链接加粗（强关联）
+              width: 3,
               type: 'solid'
             },
             // 🆕 边线tooltip
-            tooltip: {
-              formatter: `🔗 引用链接<br/>${task.text} → ${linkedTask?.text || '未知任务'}`
-            }
+tooltipText: `🔗 引用  ${task.text} → ${linkedTask?.text || '?'}`
           })
         }
       })
@@ -557,16 +471,13 @@ const graphData = computed(() => {
           edges.push({
             source: String(task.id),
             target: String(waitId),
-            label: { show: false },
             lineStyle: { 
               color: '#ef4444',
-              width: 3,  // 🔧 依赖关系加粗（强关联）
+              width: 3,
               type: 'dashed'
             },
             // 🆕 边线tooltip
-            tooltip: {
-              formatter: `🔒 依赖关系<br/>${task.text} 等待 ${waitTask?.text || '未知任务'}`
-            }
+tooltipText: `🔒 依赖  ${task.text} 等待 ${waitTask?.text || '?'}`
           })
         }
       })
@@ -579,74 +490,45 @@ const graphData = computed(() => {
         edges.push({
           source: String(task.parentTaskId),
           target: String(task.id),
-          label: { show: false },
           lineStyle: { 
             color: '#10b981',
-            width: 2,  // 父子关系保持中等粗细
+            width: 2,
             type: 'dotted'
           },
           // 🆕 边线tooltip
-          tooltip: {
-            formatter: `🌳 父子关系<br/>${parentTask?.text || '未知任务'} → ${task.text}`
-          }
+tooltipText: `🌳 父子  ${parentTask?.text || '?'} → ${task.text}`
         })
       }
     }
 
-    // 🆕 添加日志关系标记（自环边）（v0.9.1）
-    if (showLogRelations.value) {
-      const logRelations = taskStore.getLogRelations(task.id)
-      if (logRelations.length > 0) {
-        // 添加自环边表示任务内部有阻碍-方案关系
+    // 标签关系：两个任务之间只建一条边，合并所有共同标签
+    if (showTagRelations.value && task.tags?.length > 0) {
+      tasksToShow.forEach(otherTask => {
+        if (otherTask.id <= task.id || !nodeMap.has(otherTask.id)) return
+        const commonTags = task.tags.filter(tag => otherTask.tags?.includes(tag))
+        if (commonTags.length === 0) return
         edges.push({
           source: String(task.id),
-          target: String(task.id),
-          label: { 
-            show: true,
-            formatter: `💡${logRelations.length}`,
-            fontSize: 10,
-            color: '#f97316'
-          },
-          lineStyle: { 
-            color: '#f97316',
-            width: 2,
-            type: 'solid',
-            curveness: 0.5
-          }
-        })
-      }
-    }
-
-    // 🆕 添加标签关系（v0.9.2）
-    if (showTagRelations.value && task.tags?.length > 0) {
-      // 查找有相同标签的其他任务
-      task.tags.forEach(tag => {
-        tasksToShow.forEach(otherTask => {
-          if (otherTask.id !== task.id && 
-              otherTask.tags?.includes(tag) && 
-              nodeMap.has(otherTask.id)) {
-            // 避免重复边（只添加 id 小的指向 id 大的）
-            if (task.id < otherTask.id) {
-              edges.push({
-                source: String(task.id),
-                target: String(otherTask.id),
-                label: { show: false },
-                lineStyle: { 
-                  color: '#94a3b8',
-                  width: 1,  // 标签关系最细（弱关联）
-                  type: 'dotted',
-                  opacity: 0.3
-                },
-                // 🆕 边线tooltip
-                tooltip: {
-                  formatter: `🏷️ 标签关系<br/>${task.text} ⇄ ${otherTask.text}<br/>共同标签: #${tag}`
-                }
-              })
-            }
-          }
+          target: String(otherTask.id),
+          lineStyle: { color: '#94a3b8', width: 1, type: 'dotted', opacity: 0.3 },
+          tooltipText: `🏷️ 共同标签 ${commonTags.map(t => '#'+t).join(' ')}  ${task.text} ⇄ ${otherTask.text}`
         })
       })
     }
+  })
+
+  // 归一化节点大小：最小30，最大45（1.5倍上限）
+  const MIN_SIZE = 30
+  const MAX_SIZE = 45
+  const counts = nodes.map(n => n._relationCount)
+  const minCount = Math.min(...counts)
+  const maxCount = Math.max(...counts)
+  const range = maxCount - minCount || 1 // 避免除以0
+
+  nodes.forEach(n => {
+    // 线性归一化到 [MIN_SIZE, MAX_SIZE]
+    n.symbolSize = Math.round(MIN_SIZE + ((n._relationCount - minCount) / range) * (MAX_SIZE - MIN_SIZE))
+    delete n._relationCount
   })
 
   return { nodes, edges }
@@ -941,21 +823,22 @@ function initChart() {
           const logRelations = params.data.logRelationsCount || 0
           const unresolvedBlocks = params.data.unresolvedBlocksCount || 0
           
-          let tooltip = `
-            <strong>${params.data.name}</strong><br/>
-            分类：${task?.category === 'work' ? '工作' : task?.category === 'study' ? '学习' : '生活'}<br/>
-            优先级：${task?.priority === 'high' ? '高' : task?.priority === 'medium' ? '中' : '低'}
-          `
+          const collection = task?.collectionId 
+            ? taskStore.collections.find(c => c.id === task.collectionId)
+            : null
+          const statusText = task?.status === 'completed' ? '✅ 已完成' : task?.status === 'overdue' ? '⚠️ 已逾期' : '⏳ 待办'
           
-          // 🆕 添加日志关系信息（v0.9.1）
-          if (logRelations > 0) {
-            tooltip += `<br/>💡 阻碍-方案：${logRelations}个`
-          }
-          if (unresolvedBlocks > 0) {
-            tooltip += `<br/>🚫 未解决阻碍：${unresolvedBlocks}个`
-          }
+          let tooltip = `<strong>${params.data.name}</strong><br/>
+            ${statusText} · ${task?.priority === 'high' ? '高优先级' : task?.priority === 'medium' ? '中优先级' : '低优先级'}`
+          
+          if (collection) tooltip += `<br/>📁 ${collection.name}`
+          if (logRelations > 0) tooltip += `<br/>💡 阻碍-方案：${logRelations}个`
+          if (unresolvedBlocks > 0) tooltip += `<br/>🚫 未解决阻碍：${unresolvedBlocks}个`
           
           return tooltip
+        }
+        if (params.dataType === 'edge') {
+          return params.data?.tooltipText || ''
         }
         return ''
       }
@@ -985,11 +868,11 @@ function initChart() {
       draggable: true,
       label: {
         show: true,
-        position: 'bottom', // 任务名称显示在圆圈下方
-        formatter: '{b}', // 显示节点名称
+        position: 'bottom',
+        formatter: '{b}',
         fontSize: 11,
         color: '#333',
-        distance: 5 // 🔧 减小距离，让名称更靠近圆圈
+        distance: 5
       },
       force: {
         initLayout: 'circular',  // 🔧 圆形初始布局，更快
@@ -1115,7 +998,7 @@ function updateChart() {
       }
     }],
     series: [{
-      type: 'graph',  // 🔧 必须包含 type
+      type: 'graph',
       data: nodes.value,
       links: edges.value,
       categories: [
@@ -1373,18 +1256,10 @@ function cancelRelationMenu() {
 
 // 监听数据变化
 watch([
-  showLinks, 
-  showDependencies, 
-  showSubtasks, 
-  showLogRelations,
-  showTagRelations,
-  showCompleted, 
-  displayLimit, 
-  hideIsolated, 
-  relationDepth,
-  selectedCollectionId,
-  focusedTaskId,
-  minRelationCount       // 🆕 添加最小关系数
+  showLinks, showDependencies, showSubtasks, showLogRelations,
+  showTagRelations, showCompleted, displayLimit, hideIsolated,
+  relationDepth, selectedCollectionId, focusedTaskId,
+  minRelationCount, showEdgeLabels
 ], () => {
   updateChart()
 }, { deep: true })
@@ -1406,9 +1281,9 @@ onUnmounted(() => {
   window.removeEventListener('resize', () => chartInstance?.resize())
 })
 
-// 收起/展开筛选时触发 ECharts resize
-watch(controlsCollapsed, () => {
-  setTimeout(() => chartInstance?.resize(), 350) // 等动画结束
+// 高级选项展开时触发 ECharts resize
+watch(showAdvanced, () => {
+  setTimeout(() => chartInstance?.resize(), 350)
 })
 </script>
 
@@ -1542,220 +1417,98 @@ watch(controlsCollapsed, () => {
 }
 
 .graph-controls {
-  padding: 12px 20px;
+  padding: 8px 16px;
   border-bottom: 1px solid #f0f0f0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
   flex-shrink: 0;
-  transition: all 0.3s ease;
 }
 
-.graph-controls.collapsed {
-  padding: 8px 20px;
-}
-
-.toggle-controls-btn {
-  align-self: flex-start;
-  padding: 6px 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-weight: 500;
-}
-
-.toggle-controls-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
-
-.controls-content {
+.controls-main {
   display: flex;
+  align-items: center;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.task-selector,
-.collection-filter {
-  flex: 1;
-  min-width: 200px;
-  padding: 6px 12px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  background: white;
-  cursor: pointer;
-  transition: border-color 0.2s;
-}
-
-.collection-filter:hover {
-  border-color: #8b5cf6;
-}
-
 .search-input {
   flex: 1;
-  min-width: 200px;
-  padding: 6px 12px;
-  border: 1px solid #8b5cf6;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-@media (max-width: 768px) {
-  .task-selector,
-  .search-input {
-    width: 100%;
-    flex: none;
-    font-size: 0.85rem;
-  }
-}
-
-/* 🆕 数量控制 */
-.limit-control {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 150px;
-}
-
-.limit-control label {
-  font-size: 0.85rem;
-  color: #666;
-  font-weight: 500;
-}
-
-.limit-slider {
-  width: 100%;
-  height: 6px;
-  border-radius: 3px;
-  background: linear-gradient(to right, #e5e7eb 0%, #8b5cf6 100%);
-  outline: none;
-  -webkit-appearance: none;
-  cursor: pointer;
-}
-
-.limit-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #8b5cf6;
-  cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-  transition: transform 0.2s;
-}
-
-.limit-slider::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
-}
-
-.limit-slider::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #8b5cf6;
-  cursor: pointer;
-  border: none;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-@media (max-width: 768px) {
-  .limit-control {
-    width: 100%;
-    flex: none;
-  }
-}
-
-@media (max-width: 768px) {
-  .task-selector {
-    width: 100%;
-    flex: none;
-    font-size: 0.85rem;
-  }
-}
-
-.task-selector:focus,
-.search-input:focus {
-  outline: none;
-  border-color: #8b5cf6;
-}
-
-.task-selector option {
-  padding: 8px;
-}
-
-.search-box {
-  flex: 1;
-  min-width: 200px;
-}
-
-@media (max-width: 768px) {
-  .search-box {
-    width: 100%;
-    flex: none;
-  }
-}
-
-.search-box input {
-  width: 100%;
+  min-width: 160px;
   padding: 6px 12px;
   border: 1px solid #e0e0e0;
-  border-radius: 8px;
+  border-radius: 20px;
   font-size: 0.9rem;
   outline: none;
   transition: border-color 0.2s;
 }
 
-.search-box input:focus {
+.search-input:focus {
   border-color: #8b5cf6;
 }
 
-.control-btn {
-  padding: 6px 12px;
+.ctrl-tag {
+  padding: 5px 12px;
   border: 1px solid #e0e0e0;
   background: white;
-  border-radius: 8px;
-  font-size: 0.9rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
   cursor: pointer;
+  white-space: nowrap;
   transition: all 0.2s;
+  color: #555;
+}
+
+.ctrl-tag:hover {
+  border-color: #8b5cf6;
+  color: #8b5cf6;
+}
+
+.ctrl-tag.active {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+  color: white;
+}
+
+.ctrl-tag.reset {
+  padding: 5px 10px;
+  color: #999;
+}
+
+.controls-advanced {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #f0f0f0;
+}
+
+.adv-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.adv-label {
+  font-size: 0.8rem;
+  color: #999;
   white-space: nowrap;
 }
 
-@media (max-width: 768px) {
-  .control-btn {
-    flex: 1;
-    padding: 8px 6px;
-    font-size: 1.1rem;
-  }
-  
-  .control-btn span {
-    display: none;
-  }
-}
-
-.control-btn:hover {
-  background: rgba(139, 92, 246, 0.1);
-  border-color: #8b5cf6;
-}
-
-.control-btn.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-color: #667eea;
+.adv-val {
+  font-size: 0.8rem;
+  color: #8b5cf6;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  min-width: 24px;
 }
 
-.control-btn .checkbox {
-  font-size: 1.2rem;
-  margin-right: 4px;
+.limit-slider {
+  width: 80px;
+  height: 4px;
+  border-radius: 2px;
+  outline: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  accent-color: #8b5cf6;
 }
 
 .graph-wrapper {
