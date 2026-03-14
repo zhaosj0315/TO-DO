@@ -160,7 +160,67 @@
       </div>
 
       <!-- 图谱容器 -->
-      <div ref="chartRef" class="graph-container"></div>
+      <!-- 图谱容器（包裹层统一坐标系） -->
+      <div class="graph-wrapper">
+        <div ref="chartRef" class="graph-container"></div>
+        
+        <!-- 🆕 拖拽连线层 -->
+        <svg v-if="isDragging" class="drag-line-layer">
+          <line
+            :x1="dragStart.x" :y1="dragStart.y"
+            :x2="dragEnd.x" :y2="dragEnd.y"
+            stroke="#8b5cf6" stroke-width="3"
+            stroke-dasharray="5,5" stroke-linecap="round"
+          />
+          <circle :cx="dragEnd.x" :cy="dragEnd.y" r="8" fill="#8b5cf6" opacity="0.6" />
+        </svg>
+        
+        <!-- 🆕 连接点 -->
+        <div 
+          v-for="anchor in visibleAnchors" 
+          :key="`anchor-${anchor.nodeId}-${anchor.position}`"
+          class="anchor-point"
+          :style="{ left: anchor.x + 'px', top: anchor.y + 'px' }"
+          @mousedown.stop="startDrag(anchor)"
+        ></div>
+        
+        <!-- 🆕 新任务快速创建弹窗 -->
+        <div v-if="showQuickCreate" class="quick-create-modal"
+          :style="{ left: quickCreatePos.x + 'px', top: quickCreatePos.y + 'px' }"
+        >
+          <input ref="quickInputRef" v-model="quickTaskName" type="text"
+            placeholder="输入新任务名称..."
+            @keyup.enter="createTaskAndLink" @keyup.esc="cancelQuickCreate"
+            class="quick-input"
+          />
+          <div class="quick-actions">
+            <button @click="createTaskAndLink" class="btn-create">✓ 创建</button>
+            <button @click="cancelQuickCreate" class="btn-cancel">✕ 取消</button>
+          </div>
+        </div>
+        
+        <!-- 🆕 关系类型选择菜单 -->
+        <div v-if="showRelationMenu" class="relation-menu"
+          :style="{ left: relationMenuPos.x + 'px', top: relationMenuPos.y + 'px' }"
+        >
+          <div class="menu-title">选择关系类型</div>
+          <button @click="createRelation('link')" class="menu-item">
+            <span class="icon">📎</span><span>引用关系</span><span class="desc">[[任务名]]</span>
+          </button>
+          <button @click="createRelation('dependency')" class="menu-item">
+            <span class="icon">🔗</span><span>依赖关系</span><span class="desc">等待完成</span>
+          </button>
+          <button @click="createRelation('subtask')" class="menu-item">
+            <span class="icon">👨‍👧</span><span>父子关系</span><span class="desc">子任务</span>
+          </button>
+          <button @click="createRelation('log')" class="menu-item">
+            <span class="icon">💬</span><span>日志关联</span><span class="desc">阻碍-方案</span>
+          </button>
+          <button @click="cancelRelationMenu" class="menu-item cancel">
+            <span class="icon">✕</span><span>取消</span>
+          </button>
+        </div>
+      </div>
 
       <!-- 🆕 孤立任务提示（3秒后自动消失） -->
       <transition name="fade">
@@ -185,6 +245,14 @@
 
       <!-- 关系类型图例 -->
       <div class="graph-legend">
+        <div class="legend-item">
+          <span class="node-sample" style="background:#9ca3af;"></span>
+          <span>✅ 已完成</span>
+        </div>
+        <div class="legend-item">
+          <span class="node-sample" style="background:#ef4444;"></span>
+          <span>⚠️ 已逾期</span>
+        </div>
         <div class="legend-item">
           <span class="line-sample solid purple"></span>
           <span>🔗 引用链接</span>
@@ -240,7 +308,7 @@ const chartRef = ref(null)
 const isLoading = ref(true)  // 🆕 加载状态
 let chartInstance = null
 
-const showCompleted = ref(false)   // 显示已完成任务（默认关闭）
+const showCompleted = ref(true)   // 显示已完成任务（默认开启）
 const hideIsolated = ref(true)     // 🆕 隐藏孤立任务（默认开启 - 只显示有关系的）
 const showLinks = ref(true)        // 引用链接（默认开启 - 显示连线）
 const showDependencies = ref(true) // 依赖关系（默认开启 - 显示连线）
@@ -257,6 +325,20 @@ const showHideIsolatedHint = ref(false) // 🆕 显示隐藏孤立提示
 const controlsCollapsed = ref(false) // 🆕 控制栏收起状态
 const focusedTaskId = ref(null)    // 🆕 双击聚焦的任务ID（展开关系网络）
 const minRelationCount = ref(1)    // 🆕 最小关系数（默认1个关系以上）
+
+// 🆕 拖拽连线功能状态
+const isDragging = ref(false)
+const dragStart = ref({ x: 0, y: 0, nodeId: null })
+const dragEnd = ref({ x: 0, y: 0 })
+const hoveredNodeId = ref(null)
+const visibleAnchors = ref([])
+const showQuickCreate = ref(false)
+const quickCreatePos = ref({ x: 0, y: 0 })
+const quickTaskName = ref('')
+const quickInputRef = ref(null)
+const showRelationMenu = ref(false)
+const relationMenuPos = ref({ x: 0, y: 0 })
+const pendingRelation = ref({ sourceId: null, targetId: null, isNewTask: false })
 
 // 可选择的任务列表
 const availableTasks = computed(() => {
@@ -360,7 +442,7 @@ const graphData = computed(() => {
       let borderColor = '#999'
       
       if (task.status === 'completed') {
-        opacity = 0.5  // 已完成半透明
+        opacity = 0.6  // 已完成半透明
       } else if (task.status === 'overdue') {
         borderWidth = 3
         borderColor = '#ef4444'  // 逾期红色边框
@@ -427,9 +509,13 @@ const graphData = computed(() => {
           lineHeight: 14
         },
         itemStyle: {
-          color: task.id === selectedTaskId.value ? '#f59e0b' : getCategoryColor(task.category),
-          opacity: opacity,  // ✨ 状态透明度
-          borderWidth: task.id === selectedTaskId.value ? 3 : borderWidth,  // ✨ 状态边框
+          color: task.status === 'completed' 
+            ? '#9ca3af'  // 已完成：灰色
+            : task.id === selectedTaskId.value 
+              ? '#f59e0b' 
+              : getCategoryColor(task.category),
+          opacity: opacity,
+          borderWidth: task.id === selectedTaskId.value ? 3 : borderWidth,
           borderColor: task.id === selectedTaskId.value ? '#f59e0b' : borderColor
         },
         // 🆕 存储信息用于tooltip
@@ -966,6 +1052,21 @@ function initChart() {
       }
     }
   })
+  
+  // 🆕 鼠标悬浮显示连接点
+  chartInstance.on('mouseover', (params) => {
+    if (params.dataType === 'node') {
+      const taskId = parseInt(params.data.id)
+      showAnchorsForNode(taskId, params.event.event)
+    }
+  })
+  
+  // 🆕 鼠标移出隐藏连接点
+  chartInstance.on('mouseout', (params) => {
+    if (params.dataType === 'node') {
+      setTimeout(hideAnchors, 200) // 延迟隐藏，避免移动到连接点时消失
+    }
+  })
 }
 
 // 🆕 导出为图片
@@ -1037,6 +1138,239 @@ function resetView() {
   }
 }
 
+// 🆕 ========== 拖拽连线功能 ==========
+
+// 鼠标移动到节点时显示连接点
+function showAnchorsForNode(nodeId, event) {
+  if (isDragging.value) return
+  if (!chartRef.value || !chartInstance) return
+  
+  // event.offsetX/Y 是相对于 ECharts canvas 的坐标
+  // graph-wrapper 和 graph-container 完全重叠，坐标系一致
+  const x = event.offsetX
+  const y = event.offsetY
+  
+  const d = 35 // 连接点距节点中心距离
+  visibleAnchors.value = [
+    { nodeId, position: 'top',    x: x,   y: y-d },
+    { nodeId, position: 'right',  x: x+d, y: y   },
+    { nodeId, position: 'bottom', x: x,   y: y+d },
+    { nodeId, position: 'left',   x: x-d, y: y   }
+  ]
+  hoveredNodeId.value = nodeId
+}
+
+// 隐藏连接点
+function hideAnchors() {
+  if (!isDragging.value) {
+    visibleAnchors.value = []
+    hoveredNodeId.value = null
+  }
+}
+
+// 开始拖拽
+function startDrag(anchor) {
+  isDragging.value = true
+  dragStart.value = { x: anchor.x, y: anchor.y, nodeId: anchor.nodeId }
+  dragEnd.value = { x: anchor.x, y: anchor.y }
+  
+  // 添加全局鼠标监听
+  document.addEventListener('mousemove', onDragMove)
+  document.addEventListener('mouseup', onDragEnd)
+}
+
+// 拖拽移动
+function onDragMove(event) {
+  if (!isDragging.value) return
+  const rect = chartRef.value.getBoundingClientRect()
+  dragEnd.value = {
+    x: event.clientX - rect.left,
+    y: event.clientY - rect.top
+  }
+}
+
+// 结束拖拽
+function onDragEnd(event) {
+  if (!isDragging.value) return
+  
+  const rect = chartRef.value.getBoundingClientRect()
+  const endX = event.clientX - rect.left
+  const endY = event.clientY - rect.top
+  
+  // 检测是否落在节点上
+  const targetNode = detectNodeAtPosition(endX, endY)
+  
+  if (targetNode && targetNode.id !== dragStart.value.nodeId) {
+    // 连接到现有节点
+    pendingRelation.value = {
+      sourceId: dragStart.value.nodeId,
+      targetId: targetNode.id,
+      isNewTask: false
+    }
+    showRelationMenu.value = true
+    relationMenuPos.value = { x: endX, y: endY }
+  } else if (!targetNode) {
+    // 创建新任务
+    quickCreatePos.value = { x: endX, y: endY }
+    showQuickCreate.value = true
+    pendingRelation.value = {
+      sourceId: dragStart.value.nodeId,
+      targetId: null,
+      isNewTask: true
+    }
+    
+    // 聚焦输入框
+    setTimeout(() => {
+      quickInputRef.value?.focus()
+    }, 100)
+  }
+  
+  // 清理状态
+  isDragging.value = false
+  visibleAnchors.value = []
+  document.removeEventListener('mousemove', onDragMove)
+  document.removeEventListener('mouseup', onDragEnd)
+}
+
+// 检测位置上的节点
+function detectNodeAtPosition(x, y) {
+  if (!chartInstance) return null
+  
+  // 将像素坐标转换为图表坐标
+  const point = chartInstance.convertFromPixel('grid', [x, y])
+  if (!point) return null
+  
+  // 查找最近的节点
+  const threshold = 40 // 检测半径
+  for (const node of nodes.value) {
+    const nodePos = chartInstance.convertToPixel('grid', [node.x, node.y])
+    if (!nodePos) continue
+    
+    const distance = Math.sqrt(
+      Math.pow(nodePos[0] - x, 2) + Math.pow(nodePos[1] - y, 2)
+    )
+    
+    if (distance < threshold) {
+      return { id: parseInt(node.id), name: node.name }
+    }
+  }
+  
+  return null
+}
+
+// 创建任务并建立关系
+async function createTaskAndLink() {
+  if (!quickTaskName.value.trim()) return
+  
+  try {
+    // 创建新任务
+    const newTask = {
+      text: quickTaskName.value.trim(),
+      description: '',
+      type: 'today',
+      category: 'work',
+      priority: 'medium',
+      status: 'pending',
+      created_at: new Date().toISOString()
+    }
+    
+    await taskStore.addTask(newTask)
+    
+    // 获取新创建的任务ID
+    const createdTask = taskStore.tasks[taskStore.tasks.length - 1]
+    pendingRelation.value.targetId = createdTask.id
+    
+    // 显示关系类型选择菜单
+    showQuickCreate.value = false
+    showRelationMenu.value = true
+    relationMenuPos.value = quickCreatePos.value
+    quickTaskName.value = ''
+    
+  } catch (error) {
+    console.error('创建任务失败:', error)
+    alert('创建任务失败，请重试')
+  }
+}
+
+// 取消快速创建
+function cancelQuickCreate() {
+  showQuickCreate.value = false
+  quickTaskName.value = ''
+  pendingRelation.value = { sourceId: null, targetId: null, isNewTask: false }
+}
+
+// 创建关系
+async function createRelation(type) {
+  const { sourceId, targetId } = pendingRelation.value
+  if (!sourceId || !targetId) return
+  
+  try {
+    const sourceTask = taskStore.tasks.find(t => t.id === sourceId)
+    const targetTask = taskStore.tasks.find(t => t.id === targetId)
+    
+    if (!sourceTask || !targetTask) {
+      throw new Error('任务不存在')
+    }
+    
+    switch (type) {
+      case 'link':
+        // 引用关系：在源任务描述中添加 [[目标任务名]]
+        if (!sourceTask.linkedTasks) sourceTask.linkedTasks = []
+        if (!sourceTask.linkedTasks.includes(targetId)) {
+          sourceTask.linkedTasks.push(targetId)
+          sourceTask.description += `\n[[${targetTask.text}]]`
+        }
+        break
+        
+      case 'dependency':
+        // 依赖关系：源任务等待目标任务完成
+        if (!sourceTask.waitFor) sourceTask.waitFor = []
+        if (!sourceTask.waitFor.includes(targetId)) {
+          sourceTask.waitFor.push(targetId)
+        }
+        break
+        
+      case 'subtask':
+        // 父子关系：目标任务成为源任务的子任务
+        targetTask.parentTaskId = sourceId
+        if (!sourceTask.subtasks) sourceTask.subtasks = []
+        if (!sourceTask.subtasks.includes(targetId)) {
+          sourceTask.subtasks.push(targetId)
+        }
+        break
+        
+      case 'log':
+        // 日志关联：在目标任务的日志中添加关联
+        if (!targetTask.logs) targetTask.logs = []
+        targetTask.logs.push({
+          type: 'progress',
+          content: `关联任务：${sourceTask.text}`,
+          timestamp: new Date().toISOString()
+        })
+        break
+    }
+    
+    await taskStore.saveTasks()
+    updateChart()
+    
+    console.log(`✅ 创建${type}关系成功:`, sourceId, '→', targetId)
+    
+  } catch (error) {
+    console.error('创建关系失败:', error)
+    alert('创建关系失败，请重试')
+  } finally {
+    cancelRelationMenu()
+  }
+}
+
+// 取消关系菜单
+function cancelRelationMenu() {
+  showRelationMenu.value = false
+  pendingRelation.value = { sourceId: null, targetId: null, isNewTask: false }
+}
+
+// 🆕 ========== 拖拽连线功能结束 ==========
+
 // 监听数据变化
 watch([
   showLinks, 
@@ -1069,6 +1403,12 @@ onUnmounted(() => {
   if (chartInstance) {
     chartInstance.dispose()
   }
+  window.removeEventListener('resize', () => chartInstance?.resize())
+})
+
+// 收起/展开筛选时触发 ECharts resize
+watch(controlsCollapsed, () => {
+  setTimeout(() => chartInstance?.resize(), 350) // 等动画结束
 })
 </script>
 
@@ -1418,6 +1758,15 @@ onUnmounted(() => {
   margin-right: 4px;
 }
 
+.graph-wrapper {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 .graph-container {
   flex: 1;
   width: 100%;
@@ -1529,6 +1878,14 @@ onUnmounted(() => {
   display: inline-block;
 }
 
+.node-sample {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
 .line-sample.solid.purple {
   background: #8b5cf6;
 }
@@ -1592,5 +1949,164 @@ onUnmounted(() => {
 .empty-state .hint {
   font-size: 0.9rem;
   color: #bbb;
+}
+
+/* 🆕 拖拽连线样式 */
+.drag-line-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.anchor-point {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: rgba(139, 92, 246, 0.3);
+  border: 2px solid #8b5cf6;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  cursor: crosshair;
+  z-index: 999;
+  transition: all 0.2s;
+}
+
+.anchor-point:hover {
+  background: rgba(139, 92, 246, 0.6);
+  transform: translate(-50%, -50%) scale(1.3);
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.6);
+}
+
+.quick-create-modal {
+  position: absolute;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  padding: 16px;
+  min-width: 280px;
+  z-index: 1001;
+  transform: translate(-50%, -50%);
+  animation: popIn 0.2s ease-out;
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.quick-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.quick-input:focus {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.quick-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.btn-create,
+.btn-cancel {
+  flex: 1;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-create {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: white;
+}
+
+.btn-create:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}
+
+.btn-cancel {
+  background: #f3f4f6;
+  color: #666;
+}
+
+.btn-cancel:hover {
+  background: #e5e7eb;
+}
+
+.relation-menu {
+  position: absolute;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  padding: 8px;
+  min-width: 240px;
+  z-index: 1001;
+  transform: translate(-50%, -50%);
+  animation: popIn 0.2s ease-out;
+}
+
+.menu-title {
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  color: #999;
+  font-weight: 500;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 4px;
+}
+
+.menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.menu-item:hover {
+  background: rgba(139, 92, 246, 0.1);
+}
+
+.menu-item.cancel:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.menu-item .icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.menu-item .desc {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: #999;
 }
 </style>
