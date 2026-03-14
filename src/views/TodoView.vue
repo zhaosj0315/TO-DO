@@ -9,12 +9,12 @@
           <!-- 左侧靠左 -->
           <div class="header-group">
             <div class="header-item">
-              <button class="btn-icon-circle btn-manage" @click="showCollectionManage = true" title="管理文件夹">📓</button>
-              <span class="item-label">笔记本</span>
-            </div>
-            <div class="header-item">
               <button class="btn-icon-circle btn-ai" @click="showAIChat = true" :title="t('aiChat')">🤖</button>
               <span class="item-label">AI助手</span>
+            </div>
+            <div class="header-item">
+              <button class="btn-icon-circle btn-manage" @click="showCollectionManage = true" title="管理文件夹">📓</button>
+              <span class="item-label">笔记本</span>
             </div>
             <div class="header-item">
               <button class="btn-icon-circle btn-refresh-icon" @click="handleRefresh" :title="t('refresh')">
@@ -29,25 +29,25 @@
               </button>
               <span class="item-label">回收站</span>
             </div>
-            <div class="header-item">
-              <button class="btn-icon-circle btn-tutorial" @click="startTutorial" :title="t('tutorial')">💡</button>
-              <span class="item-label">教程</span>
-            </div>
           </div>
 
           <!-- 右侧靠右 -->
           <div class="header-group">
             <div class="header-item">
-              <button class="btn-avatar" @click="showProfile = true" :title="t('profile')">
-                <span class="username-text">{{ currentUsername }}</span>
-              </button>
-              <span class="item-label">我的主页</span>
+              <button class="btn-icon-circle btn-tutorial" @click="startTutorial" :title="t('tutorial')">💡</button>
+              <span class="item-label">教程</span>
             </div>
             <div class="header-item">
               <button class="btn-icon-circle btn-toggle-row2" @click="headerRow2Expanded = !headerRow2Expanded">
                 {{ headerRow2Expanded ? '▲' : '▼' }}
               </button>
               <span class="item-label">{{ headerRow2Expanded ? '收起' : '更多' }}</span>
+            </div>
+            <div class="header-item">
+              <button class="btn-avatar" @click="showProfile = true" :title="t('profile')">
+                <span class="username-text">{{ currentUsername }}</span>
+              </button>
+              <span class="item-label">我的主页</span>
             </div>
           </div>
         </div>
@@ -583,7 +583,7 @@
         <footer class="app-footer">
           <div class="footer-content">
             <p class="footer-main">
-              <span class="footer-version">TO-DO App v0.8.6</span>
+              <span class="footer-version">TO-DO App v0.9.4</span>
               <span class="footer-divider">·</span>
               <span class="footer-text">
                 {{ currentLanguage === 'zh' ? '完全离线 · 本地存储' : 'Offline · Local Storage' }}
@@ -5246,7 +5246,7 @@ const batchDeleteReports = () => {
 const showVersionModal = ref(false) // 版本历史弹窗
 const versionHistory = ref([]) // 版本历史列表
 const hasUnreadVersions = ref(false) // 是否有未读版本
-const CURRENT_VERSION = '0.9.3' // 当前应用版本
+const CURRENT_VERSION = '0.9.4' // 当前应用版本
 const versionModalTitle = ref('🎉 版本更新') // 弹窗标题（动态）
 
 // 版本历史数据
@@ -5275,6 +5275,7 @@ const initVersionHistory = () => {
         '📎 日志附件支持：日志数据结构新增 media 字段，附件随日志持久化保存',
         '🔄 任务详情日志列表：MarkdownRenderer 传入 media，图片和文件正确渲染',
         '💾 添加日志后自动刷新任务详情，确保 logs 和 media 数据同步',
+        '🎯 Header 第一行图标顺序优化：按使用频率重排（AI助手→笔记本→刷新→回收站），教程/更多/我的主页靠右',
       ],
       fixes: [
         '🐛 修复任务详情描述区图片/文件保存后无法预览（media 未持久化）',
@@ -15936,7 +15937,7 @@ watch(() => reportData.value, (newData) => {
 .header-group {
   display: flex;
   align-items: flex-start;
-  gap: 0.5rem;
+  gap: 0.8rem;
 }
 
 /* 每个图标+文字单元 */

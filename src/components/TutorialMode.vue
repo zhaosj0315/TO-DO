@@ -85,7 +85,7 @@ const steps = [
   {
     target: null,
     icon: '👋',
-    title: '欢迎使用 TO-DO App v0.9.2！',
+    title: '欢迎使用 TO-DO App v0.9.4！',
     description: `
       这是一个<strong>功能强大的离线任务管理应用</strong><br>
       <strong>✨ 核心特色</strong>：<br>
@@ -104,13 +104,13 @@ const steps = [
     icon: '🎛️',
     title: '顶部功能区',
     description: `
-      <strong>第一行</strong>：<br>
-      🔄 刷新 | 🤖 AI助手 | 🗑️ 回收站 | 📖 教程 | 👤 我的<br>
+      <strong>第一行（高频操作）</strong>：<br>
+      🤖 AI助手 | 📓 笔记本 | ⟳ 刷新 | 🗑️ 回收站 | 💡 教程 | ▼ 更多 | 👤 我的主页<br>
       <br>
-      <strong>第二行</strong>：<br>
-      📚 笔记本 | 🏷️ 标签 | 🕸️ 图谱 | 📊 甘特图 | 📅 日历<br>
+      <strong>第二行（点击"更多"展开）</strong>：<br>
+      🏷️ 标签 | 🕸️ 图谱 | 📊 甘特图 | 📅 日历<br>
       <br>
-      💡 点击🔄刷新可回到初始状态
+      💡 点击⟳刷新可回到初始状态
     `,
     position: 'bottom',
     category: 'intro'
@@ -313,6 +313,7 @@ const steps = [
     description: `
       <strong>📎 富媒体附件</strong>：图片、PDF、Word、视频等<br>
       <strong>📝 Markdown编辑</strong>：编辑/预览模式切换<br>
+      <strong>⛶ 全屏编辑</strong>：描述区和日志均支持全屏编辑<br>
       <strong>🔔 智能提醒</strong>：逾期提醒、1小时预警<br>
       <strong>🔗 任务依赖</strong>：设置任务之间的依赖关系<br>
       <strong>🎤 语音输入</strong>：语音识别输入任务<br>
@@ -356,7 +357,7 @@ const steps = [
       4️⃣ 配置AI助手（个人主页 → AI配置）<br>
       5️⃣ 定期备份数据<br>
       <br>
-      💡 随时点击右上角📖按钮重新查看教程
+      💡 随时点击右上角💡按钮重新查看教程
     `,
     position: 'center',
     category: 'intro'
