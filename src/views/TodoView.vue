@@ -583,7 +583,7 @@
         <footer class="app-footer">
           <div class="footer-content">
             <p class="footer-main">
-              <span class="footer-version">TO-DO App v0.9.4</span>
+              <span class="footer-version">TO-DO App v0.9.5</span>
               <span class="footer-divider">·</span>
               <span class="footer-text">
                 {{ currentLanguage === 'zh' ? '完全离线 · 本地存储' : 'Offline · Local Storage' }}
@@ -2754,9 +2754,9 @@
             <button 
               class="btn btn-primary" 
               @click="confirmImport"
-              :disabled="importPreviewData.analysis.newTasks.length === 0"
+              :disabled="importPreviewData.analysis.newTasks.length === 0 || isImporting"
             >
-              确认导入 ({{ importPreviewData.analysis.newTasks.length }} 条)
+              {{ isImporting ? '导入中...' : `确认导入 (${importPreviewData.analysis.newTasks.length} 条)` }}
             </button>
           </div>
         </div>
@@ -5246,7 +5246,7 @@ const batchDeleteReports = () => {
 const showVersionModal = ref(false) // 版本历史弹窗
 const versionHistory = ref([]) // 版本历史列表
 const hasUnreadVersions = ref(false) // 是否有未读版本
-const CURRENT_VERSION = '0.9.4' // 当前应用版本
+const CURRENT_VERSION = '0.9.5' // 当前应用版本
 const versionModalTitle = ref('🎉 版本更新') // 弹窗标题（动态）
 
 // 版本历史数据
@@ -5256,7 +5256,7 @@ const initVersionHistory = () => {
   // 完整版本历史
   const allVersions = [
     {
-      version: '0.9.4',
+      version: '0.9.5',
       date: '2026-03-15',
       features: [
         '🛠️ 编辑器工具栏组件化（FullscreenDescEditor）：',
@@ -5279,17 +5279,27 @@ const initVersionHistory = () => {
         '📊 甘特图全面升级：时间轴移至顶部，支持日/周/月/季/年视图切换',
         '📊 甘特图时间范围自动包含所有任务，切换视图不丢失任务',
         '📊 甘特图任务按截止时间倒序排列，最近到期的排最上面',
-        '📊 甘特图图表高度撑满容器，消除底部空白',
-        '📊 甘特图"显示更多"按钮移至 header 右侧，节省图表空间',
+        '🛡️ 完整备份覆盖增强：新增备份 language、priorityMode、db_type 等全局设置',
+        '🛡️ 完整备份新增用户级设置：tutorial、backupReminderDisabled、lastBackup',
+        '🛡️ 完整备份新增 Web 端分批任务数据，确保大量任务不丢失',
+        '🛡️ 完整备份新增 clipboard_history、read_versions、smartReminder 通知记录',
+        '🛡️ 恢复备份前自动清理旧批次数据（Web 端和移动端统一）',
+        '🛡️ 恢复备份新增 JSON 格式校验，上传非备份文件时报错',
+        '🛡️ Excel 导入新增文件类型校验、防重复点击、重复任务不再被导入',
       ],
       fixes: [
         '🐛 修复任务详情描述区图片/文件保存后无法预览（media 未持久化）',
         '🐛 修复日志附件 media 数据未传入 MarkdownRenderer',
         '🐛 修复 @update:media 模板赋值错误（Vue ref 解包陷阱）',
         '🐛 修复添加日志后任务详情未刷新导致 media 数据不同步',
-        '🐛 甘特图：修复同名任务重复显示（yAxis 改用 taskId 作唯一 key）',
-        '🐛 甘特图：修复任务名左侧大片留白（containLabel: false + 固定 grid.left）',
-        '🐛 甘特图：支持所有7种任务类型（今天/明天/本周/重复任务等）',
+        '🐛 甘特图：修复同名任务重复显示、任务名左侧大片留白，支持所有7种任务类型',
+        '🐛 修复完整备份 Web 端大量任务丢失（分批数据未被收录）',
+        '🐛 修复恢复备份后语言/优先级模式/数据库配置/教程状态丢失',
+        '🐛 修复恢复备份后重复弹教程、备份提醒、版本更新通知',
+        '🐛 修复移动端恢复备份未清理旧批次导致加载脏数据',
+        '🐛 修复 Excel 导入重复任务在预览标记跳过但实际仍被导入',
+        '🐛 修复 Excel 导入任务 ID 批量碰撞问题',
+        '🐛 修复设备文件列表恢复失败时错误信息被吞掉',
       ]
     },
     {
@@ -11253,8 +11263,26 @@ const handleRestoreFile = async (event) => {
     const text = await file.text()
     const backupData = JSON.parse(text)
     
+    // 校验备份文件格式
+    if (!backupData || typeof backupData !== 'object' || Array.isArray(backupData)) {
+      throw new Error('无效的备份文件格式')
+    }
+    const hasTaskData = Object.keys(backupData).some(k => k.startsWith('tasks_') || k === 'currentUser' || k === 'users')
+    if (!hasTaskData) {
+      throw new Error('文件不是有效的 TODO App 备份文件')
+    }
+    
     // Web端特殊处理：分批恢复，避免配额限制
     const isWeb = Capacitor.getPlatform() === 'web'
+    
+    // 清理旧批次数据，避免残留
+    if (isWeb) {
+      const allKeys = (await Preferences.keys()).keys || []
+      const batchKeys = allKeys.filter(k => k.includes('_batch_') || k.includes('_meta'))
+      for (const k of batchKeys) {
+        await Preferences.remove({ key: k }).catch(() => {})
+      }
+    }
     
     // 1. 恢复 Preferences 数据
     let preferencesCount = 0
@@ -11346,6 +11374,10 @@ const handleRestoreFile = async (event) => {
       }
     }
     
+    if (preferencesCount === 0) {
+      throw new Error('没有数据被成功恢复，请检查备份文件')
+    }
+    
     showNotification(
       `✅ 恢复成功！\n\n` +
       `📦 Preferences: ${preferencesCount}项\n` +
@@ -11405,7 +11437,7 @@ const handleRestore = async (fileName) => {
     }
   } catch (error) {
     console.error('恢复失败:', error)
-    showNotification('恢复失败，请重试', 'error')
+    showNotification(`恢复失败: ${error.message}`, 'error')
   }
 }
 
@@ -11725,6 +11757,7 @@ const downloadTemplate = async () => {
 // 导入预览数据
 const importPreviewData = ref(null)
 const showImportPreview = ref(false)
+const isImporting = ref(false)
 
 // 数据验证函数
 const validateTaskData = (row, rowIndex) => {
@@ -11803,6 +11836,15 @@ const isValidDate = (dateStr) => {
 const importFromExcel = async (event) => {
   const file = event.target.files?.[0]
   if (!file) return
+  
+  // 文件类型校验
+  const validExts = ['.xlsx', '.xls']
+  const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase()
+  if (!validExts.includes(ext)) {
+    showNotification('请上传 Excel 文件（.xlsx 或 .xls）', 'error')
+    event.target.value = ''
+    return
+  }
   
   try {
     const reader = new FileReader()
@@ -11904,23 +11946,26 @@ const importFromExcel = async (event) => {
 
 // 确认导入
 const confirmImport = async () => {
-  if (!importPreviewData.value) return
+  if (!importPreviewData.value || isImporting.value) return
   
-  const { rows } = importPreviewData.value
+  const { rows, analysis } = importPreviewData.value
+  
+  // 只导入非重复的行（按行号过滤）
+  const newRowNums = new Set(analysis.newTasks.map(t => t.row))
+  const rowsToImport = rows.filter((_, i) => newRowNums.has(i + 2))
+  
+  isImporting.value = true
   let successCount = 0
   let errorCount = 0
   
-  for (const row of rows) {
+  for (let i = 0; i < rowsToImport.length; i++) {
+    const row = rowsToImport[i]
     try {
       const taskName = row['任务名称']?.trim()
-      if (!taskName) {
-        errorCount++
-        continue
-      }
+      if (!taskName) { errorCount++; continue }
       
-      // 使用统一格式转换
       const newTask = excelRowToTask(row, currentUsername.value)
-      newTask.id = Date.now() + successCount
+      newTask.id = Date.now() + i * 10 + Math.floor(Math.random() * 10)
       
       await taskStore.addTask(newTask)
       successCount++
@@ -11930,9 +11975,8 @@ const confirmImport = async () => {
     }
   }
   
+  isImporting.value = false
   showNotification(`导入完成：成功 ${successCount} 条，失败 ${errorCount} 条`, 'success')
-  
-  // 关闭预览
   showImportPreview.value = false
   importPreviewData.value = null
 }
@@ -12243,6 +12287,21 @@ const handleRefresh = async () => {
   showTaskGraph.value = false
   showGanttChart.value = false
   showMoreCollections.value = false
+  showCalendar.value = false
+  showDatabaseConfig.value = false
+  showAITaskPreview.value = false
+  showManualSubtaskModal.value = false
+  showTemplateSelector.value = false
+  showBatchAddModal.value = false
+  showBatchMoveOutModal.value = false
+  showChangePasswordModal.value = false
+  showFilePreview.value = false
+  showTutorial.value = false
+  showCreateCollectionModal.value = false
+  showDeleteCollectionModal.value = false
+  showRenameCollectionModal.value = false
+  showMoveCollectionModal.value = false
+  showMoveToCollectionModal.value = false
   
   // 5. 清空选中的任务和临时数据
   selectedTask.value = null

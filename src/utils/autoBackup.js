@@ -30,7 +30,8 @@ async function setLastBackupDate(date) {
 
 // 获取所有需要备份的数据
 async function getAllData() {
-  const keys = ['users', 'currentUser', 'userInfo', 'phoneMapping', 'security', 'lastBackupDate'];
+  const keys = ['users', 'currentUser', 'userInfo', 'phoneMapping', 'security', 'lastBackupDate',
+    'hasCheckedAlarmPermission', 'hidePermissionGuide', 'language', 'priorityMode', 'db_type'];
   const data = {};
   
   // 1. 获取 Preferences 基础数据
@@ -44,7 +45,6 @@ async function getAllData() {
   if (usersStr) {
     const users = JSON.parse(usersStr);
     for (const username in users) {
-      // 任务数据
       const tasksKey = `tasks_${username}`;
       const deletedKey = `deletedTasks_${username}`;
       const notifiedKey = `notified_reminders_${username}`;
@@ -59,46 +59,63 @@ async function getAllData() {
       if (deleted) data[deletedKey] = deleted;
       if (notified) data[notifiedKey] = notified;
       if (collections) data[collectionsKey] = collections;
+      
+      // Web端分批任务数据（tasks_xxx_batch_0, batch_1...）
+      const { value: metaStr } = await Preferences.get({ key: `${tasksKey}_meta` });
+      if (metaStr) {
+        data[`${tasksKey}_meta`] = metaStr;
+        const meta = JSON.parse(metaStr);
+        for (let i = 0; i < meta.batches; i++) {
+          const batchKey = `${tasksKey}_batch_${i}`;
+          const { value: batch } = await Preferences.get({ key: batchKey });
+          if (batch) data[batchKey] = batch;
+        }
+      }
+      
+      // Web端分批回收站数据
+      const { value: deletedMetaStr } = await Preferences.get({ key: `${deletedKey}_meta` });
+      if (deletedMetaStr) {
+        data[`${deletedKey}_meta`] = deletedMetaStr;
+        const meta = JSON.parse(deletedMetaStr);
+        for (let i = 0; i < meta.batches; i++) {
+          const batchKey = `${deletedKey}_batch_${i}`;
+          const { value: batch } = await Preferences.get({ key: batchKey });
+          if (batch) data[batchKey] = batch;
+        }
+      }
+      
+      // 用户级 Preferences 设置
+      const userPrefKeys = [
+        `tutorial_${username}`,
+        `backupReminderDisabled_${username}`,
+        `lastBackup_${username}`,
+        `showBackupReminder_${username}`
+      ];
+      for (const key of userPrefKeys) {
+        const { value } = await Preferences.get({ key });
+        if (value) data[key] = value;
+      }
     }
   }
   
-  // 3. 获取 localStorage 数据（AI相关 + 用户隔离数据 + 数据库配置）
+  // 3. 获取 localStorage 数据
   data._localStorage = {};
   
-  // 3.1 旧版本数据（无用户后缀）
+  // 3.1 全局 key（无用户后缀）
   const globalKeys = [
-    'weekly_reports',
-    'unified_reports',
-    'ai_chat_list',
-    'ai_models',
-    'ai_default_model',
-    'ai_provider_configs',
-    'backupFiles'
+    'weekly_reports', 'unified_reports', 'ai_chat_list',
+    'ai_models', 'ai_default_model', 'ai_provider_configs', 'backupFiles',
+    'db_config', 'db_takeover', 'sqlite_config',
+    'clipboard_history', 'read_versions',
+    'ai_suggestion_snooze', 'ai_suggestion_last_shown', 'last_report_notify_date'
   ];
   
   for (const key of globalKeys) {
     const value = localStorage.getItem(key);
-    if (value) {
-      data._localStorage[key] = value;
-    }
+    if (value) data._localStorage[key] = value;
   }
   
-  // 3.2 数据库配置（关键）
-  const dbKeys = [
-    'db_config',
-    'db_type',
-    'db_takeover',
-    'sqlite_config'
-  ];
-  
-  for (const key of dbKeys) {
-    const value = localStorage.getItem(key);
-    if (value) {
-      data._localStorage[key] = value;
-    }
-  }
-  
-  // 3.3 所有用户的数据（有用户后缀）
+  // 3.2 用户隔离 key（有用户后缀）
   if (usersStr) {
     const users = JSON.parse(usersStr);
     for (const username in users) {
@@ -115,8 +132,14 @@ async function getAllData() {
       
       for (const key of userKeys) {
         const value = localStorage.getItem(key);
-        if (value) {
-          data._localStorage[key] = value;
+        if (value) data._localStorage[key] = value;
+      }
+      
+      // smartReminderService 的通知记录（动态 key）
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith(`smartReminder_`) || k.startsWith(`milestone_`)) && k.includes(username)) {
+          data._localStorage[k] = localStorage.getItem(k);
         }
       }
     }
@@ -198,6 +221,13 @@ export async function restoreBackup(fileName) {
     console.log('📦 开始恢复备份...');
     let preferencesCount = 0;
     let localStorageCount = 0;
+    
+    // 清理旧批次数据，避免残留
+    const allKeys = (await Preferences.keys()).keys || [];
+    const batchKeys = allKeys.filter(k => k.includes('_batch_') || k.endsWith('_meta'));
+    for (const k of batchKeys) {
+      await Preferences.remove({ key: k }).catch(() => {});
+    }
     
     // 1. 恢复 Preferences 数据
     for (const key in backupData) {
