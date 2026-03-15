@@ -23,6 +23,7 @@
           <span v-if="relationStats.subtasks > 0" class="stat-detail">🌳{{ relationStats.subtasks }}</span>
           <span v-if="relationStats.logs > 0" class="stat-detail">💡{{ relationStats.logs }}</span>
           <span v-if="relationStats.tags > 0" class="stat-detail">🏷️{{ relationStats.tags }}</span>
+          <span v-if="relationStats.collections > 0" class="stat-detail">📓{{ relationStats.collections }}</span>
           <span v-if="isLimited" class="stat-item warning">
             已限制显示
           </span>
@@ -52,6 +53,15 @@
             <button v-if="searchKeyword" class="search-clear" @click="resetView">✕</button>
           </div>
           <button class="ctrl-tag reset" @click="resetView">🔄 重置</button>
+        </div>
+        <!-- 关系类型开关 -->
+        <div class="controls-toggles">
+          <button :class="['ctrl-tag', { active: showLinks }]" @click="showLinks = !showLinks">🔗 引用</button>
+          <button :class="['ctrl-tag', { active: showDependencies }]" @click="showDependencies = !showDependencies">🔒 依赖</button>
+          <button :class="['ctrl-tag', { active: showSubtasks }]" @click="showSubtasks = !showSubtasks">🌳 父子</button>
+          <button :class="['ctrl-tag', { active: showTagRelations }]" @click="showTagRelations = !showTagRelations">🏷️ 标签</button>
+          <button :class="['ctrl-tag', { active: showCollectionRelations }]" @click="showCollectionRelations = !showCollectionRelations">📓 笔记本</button>
+          <button :class="['ctrl-tag', { active: !hideIsolated }]" @click="hideIsolated = !hideIsolated">🔵 孤立</button>
         </div>
       </div>
 
@@ -177,6 +187,14 @@
           <span class="line-sample dotted green"></span>
           <span>🌳 父子</span>
         </div>
+        <div v-if="showTagRelations" class="legend-item">
+          <span class="line-sample dotted gray"></span>
+          <span>🏷️ 标签</span>
+        </div>
+        <div v-if="showCollectionRelations" class="legend-item">
+          <span class="line-sample dotted yellow"></span>
+          <span>📓 笔记本</span>
+        </div>
       </div>
 
       <!-- 空状态 -->
@@ -219,6 +237,7 @@ const showDependencies = ref(true) // 依赖关系（默认开启 - 显示连线
 const showSubtasks = ref(true)     // 父子关系（默认开启 - 显示连线）
 const showLogRelations = ref(false) // 🆕 阻碍-方案关系（默认关闭）
 const showTagRelations = ref(false) // 🆕 标签关系（默认关闭）
+const showCollectionRelations = ref(false) // 🆕 笔记本同组关系（默认关闭）
 const selectedCollectionId = ref(null) // 🆕 笔记本筛选（v0.9.2）
 const searchKeyword = ref('')      // 搜索关键字
 const selectedTaskId = ref(props.centerTaskId) // 选中的任务ID
@@ -261,6 +280,10 @@ function calcRelCount(task) {
     cnt += taskStore.tasks.filter(t => t.parentTaskId === task.id).length
   }
   if (showTagRelations.value) cnt += (task.tags?.length || 0)
+  if (showLogRelations.value) cnt += (taskStore.getLogRelations(task.id)?.length || 0)
+  if (showCollectionRelations.value && task.collectionId) {
+    cnt += taskStore.tasks.filter(t => t.collectionId === task.collectionId && t.id !== task.id).length
+  }
   return cnt
 }
 
@@ -326,6 +349,28 @@ function handleSearch() {
   })
 }
 
+// 获取任务的所有直接邻居 ID（根据当前开关状态）
+function getNeighborIds(t) {
+  const ids = [
+    ...(t.linkedTasks || []),
+    ...(t.waitFor || []),
+    ...(t.parentTaskId ? [t.parentTaskId] : []),
+    ...taskStore.tasks.filter(x => x.parentTaskId === t.id).map(x => x.id),
+    ...taskStore.getBacklinks(t.id).map(x => x.id)
+  ]
+  if (showTagRelations.value && t.tags?.length) {
+    taskStore.tasks.forEach(other => {
+      if (other.id !== t.id && other.tags?.some(tag => t.tags.includes(tag))) ids.push(other.id)
+    })
+  }
+  if (showCollectionRelations.value && t.collectionId) {
+    taskStore.tasks.forEach(other => {
+      if (other.id !== t.id && other.collectionId === t.collectionId) ids.push(other.id)
+    })
+  }
+  return ids
+}
+
 // 构建图谱数据
 const graphData = computed(() => {
   const nodes = []
@@ -346,13 +391,7 @@ const graphData = computed(() => {
       const { id, level } = queue.shift()
       const t = taskStore.tasks.find(x => x.id === id)
       if (!t) continue
-      const neighbors = [
-        ...(t.linkedTasks || []),
-        ...(t.waitFor || []),
-        ...(t.parentTaskId ? [t.parentTaskId] : []),
-        ...taskStore.tasks.filter(x => x.parentTaskId === t.id).map(x => x.id),
-        ...taskStore.getBacklinks(t.id).map(x => x.id)
-      ]
+      const neighbors = getNeighborIds(t)
       neighbors.forEach(nid => {
         if (!taskSet.has(nid)) {
           taskSet.add(nid)
@@ -383,13 +422,7 @@ const graphData = computed(() => {
       const { id, level } = queue.shift()
       const t = taskStore.tasks.find(x => x.id === id)
       if (!t) continue
-      const neighbors = [
-        ...(t.linkedTasks || []),
-        ...(t.waitFor || []),
-        ...(t.parentTaskId ? [t.parentTaskId] : []),
-        ...taskStore.tasks.filter(x => x.parentTaskId === t.id).map(x => x.id),
-        ...taskStore.getBacklinks(t.id).map(x => x.id)
-      ]
+      const neighbors = getNeighborIds(t)
       neighbors.forEach(nid => {
         if (!taskSet.has(nid)) {
           taskSet.add(nid)
@@ -577,6 +610,25 @@ tooltipText: `🌳 父子  ${parentTask?.text || '?'} → ${task.text}`
         })
       })
     }
+
+    // 日志关系：有共同阻碍-方案链的任务之间连线（任务内部关系用节点高亮，跨任务用边）
+    // 这里处理：同一任务内有阻碍-方案对时，在节点上标记（已在节点构建时处理）
+    // 跨任务日志关系：A 的方案日志引用了 B 的阻碍（暂无此数据结构，跳过）
+
+    // 笔记本同组关系：同一笔记本内的任务连线
+    if (showCollectionRelations.value && task.collectionId) {
+      tasksToShow.forEach(otherTask => {
+        if (otherTask.id <= task.id || !nodeMap.has(otherTask.id)) return
+        if (otherTask.collectionId !== task.collectionId) return
+        const col = taskStore.collections?.find(c => c.id === task.collectionId)
+        edges.push({
+          source: String(task.id),
+          target: String(otherTask.id),
+          lineStyle: { color: '#f59e0b', width: 1, type: 'dotted', opacity: 0.25 },
+          tooltipText: `📓 同笔记本「${col?.name || '未知'}」  ${task.text} ⇄ ${otherTask.text}`
+        })
+      })
+    }
   })
 
   // 第二遍：统计每个节点实际画出来的边数
@@ -663,32 +715,15 @@ const edges = computed(() => graphData.value.edges)
 
 // 🆕 关系统计（v0.9.2）
 const relationStats = computed(() => {
-  const stats = {
-    total: edges.value.length,
-    links: 0,    // 引用链接
-    deps: 0,     // 依赖关系
-    subtasks: 0, // 父子关系
-    logs: 0,     // 阻碍方案
-    tags: 0      // 标签关系
-  }
-  
+  const stats = { total: edges.value.length, links: 0, deps: 0, subtasks: 0, logs: 0, tags: 0, collections: 0 }
   edges.value.forEach(edge => {
-    // 自环边 = 阻碍方案
-    if (edge.source === edge.target) {
-      stats.logs++
-    }
-    // 根据线条样式判断类型
-    else if (edge.lineStyle.color === '#8b5cf6') {
-      stats.links++  // 紫色 = 引用
-    } else if (edge.lineStyle.color === '#ef4444') {
-      stats.deps++   // 红色 = 依赖
-    } else if (edge.lineStyle.color === '#10b981') {
-      stats.subtasks++ // 绿色 = 父子
-    } else if (edge.lineStyle.color === '#94a3b8') {
-      stats.tags++   // 灰色 = 标签
-    }
+    const c = edge.lineStyle.color
+    if (c === '#8b5cf6') stats.links++
+    else if (c === '#ef4444') stats.deps++
+    else if (c === '#10b981') stats.subtasks++
+    else if (c === '#94a3b8') stats.tags++
+    else if (c === '#f59e0b') stats.collections++
   })
-  
   return stats
 })
 
@@ -771,31 +806,35 @@ function getDirectRelatedTasks(taskId) {
   
   const related = new Set([task])
   
-  // 添加所有直接关系的任务
   task.linkedTasks?.forEach(id => {
     const t = taskStore.tasks.find(t => t.id === id)
     if (t) related.add(t)
   })
-  
   task.waitFor?.forEach(id => {
     const t = taskStore.tasks.find(t => t.id === id)
     if (t) related.add(t)
   })
-  
   if (task.parentTaskId) {
     const t = taskStore.tasks.find(t => t.id === task.parentTaskId)
     if (t) related.add(t)
   }
-  
   task.subtasks?.forEach(id => {
     const t = taskStore.tasks.find(t => t.id === id)
     if (t) related.add(t)
   })
-  
-  // 添加反向链接
-  const backlinks = taskStore.getBacklinks(taskId)
-  backlinks.forEach(t => related.add(t))
-  
+  taskStore.getBacklinks(taskId).forEach(t => related.add(t))
+
+  if (showTagRelations.value && task.tags?.length) {
+    taskStore.tasks.forEach(other => {
+      if (other.id !== task.id && other.tags?.some(tag => task.tags.includes(tag))) related.add(other)
+    })
+  }
+  if (showCollectionRelations.value && task.collectionId) {
+    taskStore.tasks.forEach(other => {
+      if (other.id !== task.id && other.collectionId === task.collectionId) related.add(other)
+    })
+  }
+
   console.log('🔍 直接关系任务:', Array.from(related).map(t => t.text))
   return Array.from(related)
 }
@@ -1311,7 +1350,7 @@ function cancelRelationMenu() {
 // 监听数据变化
 watch([
   showLinks, showDependencies, showSubtasks, showLogRelations,
-  showTagRelations, showCompleted, displayLimit, hideIsolated,
+  showTagRelations, showCollectionRelations, showCompleted, displayLimit, hideIsolated,
   relationDepth, selectedCollectionId, focusedTaskId,
   minRelationCount, showEdgeLabels
 ], () => {
@@ -1479,6 +1518,13 @@ watch(showAdvanced, () => {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.controls-toggles {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 6px;
 }
 
 .search-input {
