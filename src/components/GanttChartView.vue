@@ -294,7 +294,11 @@ function initChart() {
           if (viewMode.value === 'day') return `${m}/${day}`
           if (viewMode.value === 'week') return `${m}/${day}`
           if (viewMode.value === 'month') return `${m}月`
-          if (viewMode.value === 'quarter') return `${m}月`
+          if (viewMode.value === 'quarter') {
+            // 季度标签：Q1/Q2/Q3/Q4
+            const q = Math.ceil(m / 3)
+            return day <= 7 ? `Q${q}` : ''
+          }
           if (viewMode.value === 'year') return `${d.getFullYear()}/${m}`
           return `${m}/${day}`
         }
