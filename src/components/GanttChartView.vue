@@ -71,13 +71,22 @@ const inProgressTasks = computed(() =>
   allGanttData.value.filter(t => t.status === 'pending').length
 )
 
-// 计算时间范围：自动包含所有任务，边距根据视图粒度
+// 计算时间范围：自动包含所有任务，同时保证每个视图至少有足够宽度
 const timeRange = computed(() => {
   const DAY = 86400000
+  const now = Date.now()
+
+  // 每个视图的最小宽度（保证至少有多个周期可见）
+  const minSpan = {
+    day:     DAY * 14,       // 至少2周
+    week:    DAY * 21,       // 至少3周
+    month:   DAY * 90,       // 至少3个月
+    quarter: DAY * 270,      // 至少3个季度
+    year:    DAY * 365 * 3,  // 至少3年
+  }[viewMode.value] ?? DAY * 21
 
   if (ganttData.value.length === 0) {
-    const now = Date.now()
-    return { start: now - 7 * DAY, end: now + 7 * DAY }
+    return { start: now - minSpan / 2, end: now + minSpan / 2 }
   }
 
   let minTime = Infinity, maxTime = -Infinity
@@ -95,14 +104,24 @@ const timeRange = computed(() => {
     year:    DAY * 60,
   }[viewMode.value] ?? DAY * 15
 
-  return { start: minTime - padding, end: maxTime + padding }
+  const start = minTime - padding
+  const end = maxTime + padding
+
+  // 如果任务跨度不足最小宽度，以今天为中心扩展
+  if (end - start < minSpan) {
+    const center = (start + end) / 2
+    return { start: center - minSpan / 2, end: center + minSpan / 2 }
+  }
+
+  return { start, end }
 })
 
 // 构建甘特图数据（全部任务）
-// 根据任务类型推算截止时间
+// 根据任务类型推算截止时间（以任务创建时间为基准，而非今天）
 function getTaskDeadline(task) {
-  const now = new Date()
-  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
+  // 以任务创建时间为基准，推算当时的计划完成时间
+  const base = task.created_at ? new Date(task.created_at) : new Date()
+  const baseEnd = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 23, 59, 59)
 
   switch (task.type) {
     case 'custom_date': {
@@ -113,33 +132,34 @@ function getTaskDeadline(task) {
     }
     case 'today':
     case 'daily':
-      return todayEnd
+      // 创建当天 23:59
+      return baseEnd
     case 'tomorrow': {
-      const d = new Date(todayEnd)
+      // 创建次日 23:59
+      const d = new Date(baseEnd)
       d.setDate(d.getDate() + 1)
       return d
     }
     case 'this_week': {
-      // 本周日 23:59
-      const d = new Date(todayEnd)
+      // 创建时所在周的周日 23:59
+      const d = new Date(baseEnd)
       const day = d.getDay() // 0=周日
       d.setDate(d.getDate() + (day === 0 ? 0 : 7 - day))
       return d
     }
     case 'weekday': {
-      // 下一个工作日结束（今天是工作日则今天，否则下周一）
-      const d = new Date(todayEnd)
+      // 创建时当天若是工作日则当天，否则下个工作日
+      const d = new Date(baseEnd)
       const day = d.getDay()
       if (day === 0) d.setDate(d.getDate() + 1) // 周日→周一
       else if (day === 6) d.setDate(d.getDate() + 2) // 周六→周一
       return d
     }
     case 'weekly': {
-      // 本周指定的星期几
-      if (!task.weekdays || task.weekdays.length === 0) return todayEnd
-      const d = new Date(todayEnd)
+      // 创建时所在周的指定星期几
+      if (!task.weekdays || task.weekdays.length === 0) return baseEnd
+      const d = new Date(baseEnd)
       const currentDay = d.getDay()
-      // 找最近的一个指定星期几
       const targets = task.weekdays.map(w => {
         const diff = (w - currentDay + 7) % 7
         return diff === 0 ? 0 : diff
@@ -157,7 +177,13 @@ const allGanttData = computed(() => {
   const data = taskStore.tasks
     .map(task => {
       const startTime = new Date(task.created_at)
-      const endTime = getTaskDeadline(task)
+      // 已完成任务：右端用实际完成时间；未完成：用计划完成时间
+      let endTime
+      if (task.status === 'completed' && task.completed_at) {
+        endTime = new Date(task.completed_at)
+      } else {
+        endTime = getTaskDeadline(task)
+      }
       if (!endTime) return null
 
       return {
@@ -171,22 +197,26 @@ const allGanttData = computed(() => {
         priority: task.priority,
         taskId: task.id,
         deadline: endTime.getTime(),
-        taskType: task.type
+        taskType: task.type,
+        plannedEnd: getTaskDeadline(task)?.getTime() || null,  // 保留计划时间用于 tooltip
+        completedAt: task.completed_at || null
       }
     })
     .filter(task => {
       if (!task) return false
       return !isNaN(task.value[0]) && !isNaN(task.value[1]) && task.value[1] > task.value[0]
     })
-    .sort((a, b) => b.deadline - a.deadline) // 截止时间倒序：最近到期的排最上面
+    // 升序：截止时间最近的排在数组末尾 → ECharts Y轴从下到上，最近的显示在顶部
+    .sort((a, b) => a.deadline - b.deadline)
 
   console.log('📊 甘特图全部数据:', data.length, '个任务')
   return data
 })
 
-// 🆕 显示的任务数据（限制数量）
+// 显示的任务数据（取截止时间最近的前N个，即数组末尾）
 const ganttData = computed(() => {
-  return allGanttData.value.slice(0, displayLimit.value)
+  const all = allGanttData.value
+  return all.slice(Math.max(0, all.length - displayLimit.value))
 })
 
 // 🆕 是否还有更多任务
@@ -242,12 +272,20 @@ function initChart() {
         const task = params.data
         const start = new Date(task.value[0])
         const end = new Date(task.value[1])
-        return `
-          <strong>${task.name}</strong><br/>
-          开始：${start.toLocaleDateString()}<br/>
-          结束：${end.toLocaleDateString()}<br/>
-          状态：${task.status === 'completed' ? '已完成' : '进行中'}
-        `
+        const isCompleted = task.status === 'completed'
+        let html = `<strong>${task.name}</strong><br/>
+          创建：${start.toLocaleDateString()}<br/>`
+        if (isCompleted) {
+          if (task.plannedEnd) {
+            html += `计划完成：${new Date(task.plannedEnd).toLocaleDateString()}<br/>`
+          }
+          html += `实际完成：${end.toLocaleDateString()}<br/>`
+          html += `状态：✅ 已完成`
+        } else {
+          html += `计划完成：${end.toLocaleDateString()}<br/>`
+          html += `状态：${task.status === 'overdue' ? '⚠️ 已逾期' : '⏳ 进行中'}`
+        }
+        return html
       }
     },
     grid: {
