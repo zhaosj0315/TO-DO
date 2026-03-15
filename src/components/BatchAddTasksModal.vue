@@ -7,6 +7,16 @@
       </div>
       
       <p class="tip">从其他地方选择要迁入的任务</p>
+
+      <!-- AI 推荐栏 -->
+      <div class="ai-bar">
+        <button class="btn-ai" :disabled="aiLoading" @click="runAIRecommend">
+          {{ aiLoading ? '🤖 AI 分析中...' : '🤖 AI 推荐分类' }}
+        </button>
+        <span v-if="aiRecommendedIds.size > 0" class="ai-hint">
+          已推荐 {{ aiRecommendedIds.size }} 个任务，可取消勾选
+        </span>
+      </div>
       
       <!-- 🆕 搜索框 -->
       <div class="search-box">
@@ -30,7 +40,7 @@
           v-for="task in filteredTasks" 
           :key="task.id"
           class="task-item"
-          :class="{ selected: selectedTaskIds.includes(task.id) }"
+          :class="{ selected: selectedTaskIds.includes(task.id), 'ai-recommended': aiRecommendedIds.has(task.id) }"
         >
           <input 
             type="checkbox" 
@@ -38,7 +48,11 @@
             v-model="selectedTaskIds"
           />
           <div class="task-info">
-            <div class="task-title">{{ task.text }}</div>
+            <div class="task-title">
+              {{ task.text }}
+              <span v-if="aiRecommendedIds.has(task.id)" class="ai-badge">🤖 AI推荐</span>
+            </div>
+            <div v-if="aiReasons.get(task.id)" class="ai-reason">{{ aiReasons.get(task.id) }}</div>
             <div class="task-meta">
               <span class="badge badge-collection">{{ getTaskCollectionName(task) }}</span>
               <span class="badge">{{ getCategoryText(task.category) }}</span>
@@ -77,36 +91,111 @@ const emit = defineEmits(['close', 'added'])
 const store = useOfflineTaskStore()
 const selectedTaskIds = ref([])
 const searchKeyword = ref('')
+const aiLoading = ref(false)
+const aiRecommendedIds = ref(new Set())
+const aiReasons = ref(new Map())
 
 // 搜索处理
 const handleSearch = () => {
-  // 触发响应式更新
   searchKeyword.value = searchKeyword.value
 }
 
-// 清空搜索
 const clearSearch = () => {
   searchKeyword.value = ''
 }
 
-// 🆕 可迁入的任务：只显示未分类的任务（collectionId === null）
+// 可迁入的任务：只显示未分类的任务
 const availableTasks = computed(() => {
   return props.allTasks.filter(t => t.collectionId === null)
 })
 
-// 🆕 搜索过滤
 const filteredTasks = computed(() => {
-  if (!searchKeyword.value.trim()) {
-    return availableTasks.value
-  }
-  
+  if (!searchKeyword.value.trim()) return availableTasks.value
   const keyword = searchKeyword.value.toLowerCase().trim()
   return availableTasks.value.filter(task => {
-    const text = task.text || ''
-    const description = task.description || ''
-    return text.toLowerCase().includes(keyword) || description.toLowerCase().includes(keyword)
+    return (task.text || '').toLowerCase().includes(keyword) ||
+           (task.description || '').toLowerCase().includes(keyword)
   })
 })
+
+// AI 推荐分类
+const runAIRecommend = async () => {
+  if (availableTasks.value.length === 0) return
+  aiLoading.value = true
+  aiRecommendedIds.value = new Set()
+  aiReasons.value = new Map()
+
+  try {
+    const models = JSON.parse(localStorage.getItem('ai_models') || '[]')
+    const defaultModelId = localStorage.getItem('ai_default_model')
+    const model = models.find(m => m.id === defaultModelId) || models[0]
+    if (!model) { alert('请先配置 AI 模型'); return }
+
+    const taskList = availableTasks.value.slice(0, 50).map(t =>
+      `ID:${t.id} 标题:${t.text}${t.description ? ' 描述:' + t.description.slice(0, 50) : ''}`
+    ).join('\n')
+
+    const prompt = `你是一个任务分类助手。
+笔记本名称："${props.collectionName}"
+
+以下是未分类的任务列表：
+${taskList}
+
+请判断哪些任务适合归入"${props.collectionName}"笔记本，并给出简短理由。
+只返回适合的任务，格式严格如下（每行一条，不要其他内容）：
+ID:任务ID|原因:一句话理由
+
+如果没有合适的任务，返回：NONE`
+
+    let apiUrl = model.url
+    if (!apiUrl.includes('/v1/chat/completions')) {
+      apiUrl = apiUrl.replace(/\/api\/.*$/, '').replace(/\/v1.*$/, '').replace(/\/$/, '') + '/v1/chat/completions'
+    }
+
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${model.apiKey || 'dummy'}` },
+      body: JSON.stringify({
+        model: model.modelName || model.model,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.3,
+        max_tokens: 800
+      })
+    })
+
+    const data = await res.json()
+    const content = data.choices?.[0]?.message?.content || data.response || ''
+
+    if (content.trim() === 'NONE') return
+
+    const newRecommended = new Set()
+    const newReasons = new Map()
+    content.split('\n').forEach(line => {
+      const match = line.match(/ID:(\d+)\|原因:(.+)/)
+      if (match) {
+        const id = parseInt(match[1])
+        const reason = match[2].trim()
+        const task = availableTasks.value.find(t => t.id === id)
+        if (task) {
+          newRecommended.add(id)
+          newReasons.set(id, reason)
+        }
+      }
+    })
+
+    aiRecommendedIds.value = newRecommended
+    aiReasons.value = newReasons
+    // 自动勾选推荐的任务
+    newRecommended.forEach(id => {
+      if (!selectedTaskIds.value.includes(id)) selectedTaskIds.value.push(id)
+    })
+  } catch (err) {
+    console.error('AI推荐失败:', err)
+    alert('AI 推荐失败，请检查模型配置')
+  } finally {
+    aiLoading.value = false
+  }
+}
 
 const getTaskCollectionName = (task) => {
   if (!task.collectionId) return '📂未分类'
@@ -359,5 +448,61 @@ const handleAdd = async () => {
 .btn-confirm:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.ai-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.btn-ai {
+  padding: 7px 14px;
+  border: none;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  color: white;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-ai:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-ai:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(139, 92, 246, 0.35);
+}
+
+.ai-hint {
+  font-size: 0.82rem;
+  color: #8b5cf6;
+}
+
+.task-item.ai-recommended {
+  border-color: #a78bfa;
+  background: #faf5ff;
+}
+
+.ai-badge {
+  font-size: 0.72rem;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  color: white;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.ai-reason {
+  font-size: 0.8rem;
+  color: #7c3aed;
+  margin: 3px 0 5px;
+  font-style: italic;
 }
 </style>

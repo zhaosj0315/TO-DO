@@ -3817,6 +3817,59 @@
       @moved="handleTaskMoved"
     />
 
+    <!-- 🆕 AI 智能归类弹窗 -->
+    <div v-if="showAIClassifyModal" class="modal-overlay" @click.self="showAIClassifyModal = false" style="z-index:10010">
+      <div class="bottom-sheet" @click.stop style="max-height:90vh;overflow-y:auto">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header" style="background:linear-gradient(135deg,#8b5cf6,#6366f1)">
+          <button class="back-btn" @click="showAIClassifyModal = false"><span>← 返回</span></button>
+          <h3 style="color:white;margin:0">🤖 AI 智能归类</h3>
+          <div style="width:60px"></div>
+        </div>
+        <div style="padding:16px">
+          <!-- 未分析状态 -->
+          <div v-if="!aiClassifyResults.length && !aiClassifyLoading">
+            <p style="color:#666;margin-bottom:12px">AI 将分析 {{ uncategorizedTaskCount }} 个未分类任务，为每个任务推荐最合适的笔记本（或建议新建笔记本）。</p>
+            <button class="btn-primary-purple" @click="runAIClassify" style="width:100%">🚀 开始分析</button>
+          </div>
+          <!-- 加载中 -->
+          <div v-if="aiClassifyLoading" style="text-align:center;padding:40px 0;color:#8b5cf6">
+            <div style="font-size:2rem;margin-bottom:8px">🤖</div>
+            <p>AI 正在分析任务，请稍候...</p>
+          </div>
+          <!-- 结果列表 -->
+          <div v-if="aiClassifyResults.length && !aiClassifyLoading">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+              <span style="color:#666;font-size:0.9rem">共 {{ aiClassifyResults.length }} 条推荐，勾选后点击确认执行</span>
+              <button style="font-size:0.8rem;color:#8b5cf6;background:none;border:none;cursor:pointer" @click="toggleAllClassify">
+                {{ aiClassifySelected.size === aiClassifyResults.length ? '取消全选' : '全选' }}
+              </button>
+            </div>
+            <div v-for="item in aiClassifyResults" :key="item.taskId"
+              class="classify-item"
+              :class="{ selected: aiClassifySelected.has(item.taskId) }"
+              @click="toggleClassifyItem(item.taskId)"
+            >
+              <input type="checkbox" :checked="aiClassifySelected.has(item.taskId)" @click.stop="toggleClassifyItem(item.taskId)" style="margin-right:10px;flex-shrink:0" />
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:500;margin-bottom:3px">{{ item.taskText }}</div>
+                <div style="font-size:0.85rem;color:#8b5cf6">
+                  → {{ item.collectionName }}
+                  <span v-if="item.isNew" style="background:#fef3c7;color:#d97706;padding:1px 6px;border-radius:8px;font-size:0.75rem;margin-left:4px">新建</span>
+                </div>
+                <div style="font-size:0.8rem;color:#999;margin-top:2px;font-style:italic">{{ item.reason }}</div>
+              </div>
+            </div>
+            <button class="btn-primary-purple" style="width:100%;margin-top:16px"
+              :disabled="aiClassifySelected.size === 0"
+              @click="applyAIClassify">
+              确认归类 ({{ aiClassifySelected.size }})
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 🆕 批量迁入任务弹窗 -->
     <BatchAddTasksModal
       v-if="showBatchAddModal"
@@ -3877,6 +3930,7 @@
       @delete="(c) => { fromCollectionManage = true; openDeleteCollection(c.id); showCollectionManage = false }"
       @batchEncrypt="handleBatchEncrypt"
       @batchDelete="handleBatchDelete"
+      @aiClassify="openAIClassify"
     />
 
     <!-- 🆕 标签浏览器（v0.9.0）-->
@@ -4548,6 +4602,12 @@ const showVerifyPasswordModal = ref(false)  // 🆕 密码验证弹窗
 const showChangePasswordModal = ref(false)  // 🆕 修改密码弹窗
 const pendingCollectionId = ref(null)  // 🆕 待验证的文件夹ID
 const verifiedCollections = ref(new Set())  // 🆕 已验证的文件夹（会话内有效）
+
+// AI 智能归类
+const showAIClassifyModal = ref(false)
+const aiClassifyLoading = ref(false)
+const aiClassifyResults = ref([])  // [{ taskId, taskText, collectionId, collectionName, isNew, reason }]
+const aiClassifySelected = ref(new Set())
 
 const aiExtractedTasks = ref([])
 const showAITaskPreview = ref(false)
@@ -12633,6 +12693,134 @@ const handleBatchDelete = async (collectionIds) => {
   showNotification(`✅ 已删除 ${allIdsToDelete.size} 个笔记本，${movedCount} 个任务已移至未分类`, 'success')
 }
 
+// AI 智能归类
+const openAIClassify = () => {
+  showCollectionManage.value = false
+  aiClassifyResults.value = []
+  aiClassifySelected.value = new Set()
+  showAIClassifyModal.value = true
+}
+
+const runAIClassify = async () => {
+  const uncategorized = taskStore.tasks.filter(t => !t.collectionId)
+  if (uncategorized.length === 0) return
+
+  aiClassifyLoading.value = true
+  try {
+    const models = JSON.parse(localStorage.getItem('ai_models') || '[]')
+    const defaultModelId = localStorage.getItem('ai_default_model')
+    const model = models.find(m => m.id === defaultModelId) || models[0]
+    if (!model) { showNotification('请先配置 AI 模型', 'error'); return }
+
+    const collectionList = taskStore.collections.map(c => `"${c.name}"`).join('、') || '（暂无笔记本）'
+    const taskList = uncategorized.slice(0, 60).map(t =>
+      `ID:${t.id} 标题:${t.text}${t.description ? ' 描述:' + t.description.slice(0, 40) : ''}`
+    ).join('\n')
+
+    const prompt = `你是一个任务管理助手。
+现有笔记本：${collectionList}
+
+以下是未分类的任务：
+${taskList}
+
+请为每个任务推荐最合适的笔记本。如果现有笔记本都不合适，可以建议新建一个笔记本（用"新建:笔记本名"格式）。
+只返回有明确归属的任务，格式严格如下（每行一条）：
+ID:任务ID|笔记本:笔记本名称|原因:一句话理由
+
+不确定的任务不要返回。`
+
+    let apiUrl = model.url
+    if (!apiUrl.includes('/v1/chat/completions')) {
+      apiUrl = apiUrl.replace(/\/api\/.*$/, '').replace(/\/v1.*$/, '').replace(/\/$/, '') + '/v1/chat/completions'
+    }
+
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${model.apiKey || 'dummy'}` },
+      body: JSON.stringify({
+        model: model.modelName || model.model,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.3,
+        max_tokens: 1500
+      })
+    })
+    const data = await res.json()
+    const content = data.choices?.[0]?.message?.content || data.response || ''
+
+    const results = []
+    content.split('\n').forEach(line => {
+      const match = line.match(/ID:(\d+)\|笔记本:(.+?)\|原因:(.+)/)
+      if (!match) return
+      const taskId = parseInt(match[1])
+      const colName = match[2].trim()
+      const reason = match[3].trim()
+      const task = uncategorized.find(t => t.id === taskId)
+      if (!task) return
+      const isNew = colName.startsWith('新建:')
+      const realName = isNew ? colName.replace('新建:', '') : colName
+      const existing = taskStore.collections.find(c => c.name === realName)
+      results.push({
+        taskId,
+        taskText: task.text,
+        collectionId: existing?.id || null,
+        collectionName: realName,
+        isNew: isNew || !existing,
+        reason
+      })
+    })
+
+    aiClassifyResults.value = results
+    // 默认全选
+    aiClassifySelected.value = new Set(results.map(r => r.taskId))
+  } catch (err) {
+    console.error('AI归类失败:', err)
+    showNotification('AI 分析失败，请检查模型配置', 'error')
+  } finally {
+    aiClassifyLoading.value = false
+  }
+}
+
+const toggleAllClassify = () => {
+  if (aiClassifySelected.value.size === aiClassifyResults.value.length) {
+    aiClassifySelected.value = new Set()
+  } else {
+    aiClassifySelected.value = new Set(aiClassifyResults.value.map(r => r.taskId))
+  }
+}
+
+const toggleClassifyItem = (taskId) => {
+  const s = new Set(aiClassifySelected.value)
+  s.has(taskId) ? s.delete(taskId) : s.add(taskId)
+  aiClassifySelected.value = s
+}
+
+const applyAIClassify = async () => {
+  const selected = aiClassifyResults.value.filter(r => aiClassifySelected.value.has(r.taskId))
+  // 先创建需要新建的笔记本
+  const newColMap = {}
+  for (const item of selected) {
+    if (item.isNew && !item.collectionId) {
+      if (newColMap[item.collectionName]) {
+        item.collectionId = newColMap[item.collectionName]
+      } else {
+        const newCol = await taskStore.createCollection({ name: item.collectionName, icon: '📁', parentId: null })
+        newColMap[item.collectionName] = newCol.id
+        item.collectionId = newCol.id
+      }
+    }
+  }
+  // 批量归类
+  for (const item of selected) {
+    if (item.collectionId) {
+      const task = taskStore.tasks.find(t => t.id === item.taskId)
+      if (task) task.collectionId = item.collectionId
+    }
+  }
+  await taskStore.saveTasks()
+  showNotification(`✅ 已归类 ${selected.length} 个任务`, 'success')
+  showAIClassifyModal.value = false
+}
+
 const handleCollectionCreated = (collection) => {
   showNotification(`✅ 文件夹"${collection.name}"创建成功`, 'success')
   showCreateCollectionModal.value = false
@@ -18127,6 +18315,34 @@ watch(() => reportData.value, (newData) => {
   border-radius: 2px;
   margin: 0 auto 0.8rem;
 }
+
+/* AI 智能归类 */
+.btn-primary-purple {
+  padding: 12px;
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-primary-purple:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary-purple:not(:disabled):hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(139,92,246,0.3); }
+
+.classify-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 12px;
+  margin-bottom: 8px;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.classify-item:hover { border-color: #a78bfa; background: #faf5ff; }
+.classify-item.selected { border-color: #8b5cf6; background: #f3f0ff; }
 
 .bottom-sheet-header h3 {
   margin: 0;

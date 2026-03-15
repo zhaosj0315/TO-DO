@@ -28,6 +28,11 @@
         <button v-if="!batchMode" class="create-btn" @click="$emit('create', null)">
           ➕ 新建笔记本
         </button>
+
+        <!-- AI 智能归类按钮 -->
+        <button v-if="!batchMode && uncategorizedCount > 0" class="ai-classify-btn" @click="$emit('aiClassify')">
+          🤖 AI 智能归类未分类任务 ({{ uncategorizedCount }})
+        </button>
         
         <!-- 🆕 树形笔记本列表 -->
         <div class="collection-tree">
@@ -87,7 +92,7 @@ import { ref, computed } from 'vue'
 import CollectionTreeNode from './CollectionTreeNode.vue'
 
 const props = defineProps(['collections', 'getTaskCount', 'totalTaskCount', 'getChildCollections', 'uncategorizedCount'])
-const emit = defineEmits(['close', 'create', 'select', 'rename', 'setPrivate', 'changePassword', 'moveIn', 'moveOut', 'moveCollection', 'delete', 'batchEncrypt', 'batchDelete'])
+const emit = defineEmits(['close', 'create', 'select', 'rename', 'setPrivate', 'changePassword', 'moveIn', 'moveOut', 'moveCollection', 'delete', 'batchEncrypt', 'batchDelete', 'aiClassify'])
 
 const batchMode = ref(false)
 const selectedIds = ref([])
@@ -412,12 +417,31 @@ const handleBatchDelete = () => {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-  margin-bottom: 20px;
+  margin-bottom: 8px;
 }
 
 .create-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.ai-classify-btn {
+  width: 100%;
+  padding: 11px;
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 16px;
+}
+
+.ai-classify-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
 }
 
 /* 🆕 树形列表容器 */
