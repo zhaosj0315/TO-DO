@@ -255,7 +255,7 @@ function initChart() {
     grid: {
       left: isMobile ? 100 : 130,  // 固定留出任务名宽度，不用 containLabel
       right: isMobile ? 20 : 40,
-      top: 80,
+      top: 20,
       bottom: 50,
       height: Math.max(ganttData.value.length * 50, 300),
       containLabel: false
