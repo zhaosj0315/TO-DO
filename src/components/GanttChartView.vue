@@ -10,24 +10,15 @@
         <div class="gantt-stats">
           <span class="stat-item">{{ totalTasks }} 个任务</span>
           <span class="stat-item">{{ inProgressTasks }} 进行中</span>
+          <button v-if="hasMoreTasks" @click="showMoreTasks" class="load-more-inline-btn">
+            +{{ remainingTasks }} 更多
+          </button>
         </div>
-      </div>
-
-      <!-- 控制栏 -->
-      <div class="gantt-controls">
-        <div class="mobile-hint">💡 左右滑动查看完整时间轴 · 自动适配任务时间范围</div>
       </div>
 
       <!-- 图表容器 -->
       <div class="gantt-wrapper">
         <div ref="chartRef" class="gantt-container"></div>
-        
-        <!-- 🆕 显示更多按钮 -->
-        <div v-if="hasMoreTasks" class="load-more">
-          <button @click="showMoreTasks" class="load-more-btn">
-            显示更多任务 (还有 {{ remainingTasks }} 个)
-          </button>
-        </div>
       </div>
 
       <!-- 空状态 -->
@@ -221,9 +212,10 @@ function getPriorityColor(priority) {
 function initChart() {
   if (!chartRef.value || ganttData.value.length === 0) return
 
-  // 🆕 设置容器高度
-  const chartHeight = Math.max(ganttData.value.length * 50 + 150, 400)
-  chartRef.value.style.height = `${chartHeight}px`
+  // 高度：撑满 gantt-wrapper 容器，最小保证每行40px
+  const wrapperHeight = chartRef.value.parentElement?.clientHeight || 0
+  const minHeight = ganttData.value.length * 40 + 80
+  chartRef.value.style.height = `${Math.max(wrapperHeight, minHeight)}px`
 
   chartInstance = echarts.init(chartRef.value)
 
@@ -253,11 +245,11 @@ function initChart() {
       }
     },
     grid: {
-      left: isMobile ? 100 : 130,  // 固定留出任务名宽度，不用 containLabel
+      left: isMobile ? 100 : 130,
       right: isMobile ? 20 : 40,
       top: 20,
       bottom: 50,
-      height: Math.max(ganttData.value.length * 50, 300),
+      height: Math.max(ganttData.value.length * 40, chartRef.value.clientHeight - 80),
       containLabel: false
     },
     xAxis: {
@@ -637,7 +629,6 @@ onUnmounted(() => {
 .gantt-container {
   width: 100%;
   height: 100%;
-  min-height: 400px; /* 🆕 确保有最小高度 */
   background: #fafafa;
   padding: 0 10px;
 }
@@ -684,32 +675,21 @@ onUnmounted(() => {
 }
 
 /* 🆕 显示更多按钮 */
-.load-more {
-  padding: 20px;
-  text-align: center;
-  background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.95));
-}
-
-.load-more-btn {
-  padding: 12px 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.load-more-inline-btn {
+  padding: 4px 12px;
+  background: rgba(255,255,255,0.25);
   color: white;
-  border: none;
-  border-radius: 12px;
-  font-size: 14px;
+  border: 1px solid rgba(255,255,255,0.4);
+  border-radius: 20px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  transition: all 0.2s;
+  white-space: nowrap;
 }
 
-.load-more-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
-}
-
-.load-more-btn:active {
-  transform: translateY(0);
+.load-more-inline-btn:hover {
+  background: rgba(255,255,255,0.4);
 }
 
 .empty-state p {
