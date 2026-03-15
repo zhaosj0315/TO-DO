@@ -71,7 +71,7 @@ const inProgressTasks = computed(() =>
   allGanttData.value.filter(t => t.status === 'pending').length
 )
 
-// 计算时间范围：以任务数据的时间中心为基准，根据 viewMode 控制窗口宽度
+// 计算时间范围：自动包含所有任务，边距根据视图粒度
 const timeRange = computed(() => {
   const DAY = 86400000
 
@@ -80,24 +80,22 @@ const timeRange = computed(() => {
     return { start: now - 7 * DAY, end: now + 7 * DAY }
   }
 
-  // 找出任务数据的时间中心
   let minTime = Infinity, maxTime = -Infinity
   ganttData.value.forEach(task => {
     if (task.value[0] < minTime) minTime = task.value[0]
     if (task.value[1] > maxTime) maxTime = task.value[1]
   })
-  const center = (minTime + maxTime) / 2
 
-  // 根据视图模式决定窗口半径
-  const half = {
-    day:     4 * DAY,
-    week:    14 * DAY,
-    month:   45 * DAY,
-    quarter: 90 * DAY,
-    year:    365 * DAY,
-  }[viewMode.value] ?? 45 * DAY
+  // 左右各加一个刻度单位的边距
+  const padding = {
+    day:     DAY,
+    week:    DAY * 7,
+    month:   DAY * 15,
+    quarter: DAY * 30,
+    year:    DAY * 60,
+  }[viewMode.value] ?? DAY * 15
 
-  return { start: center - half, end: center + half }
+  return { start: minTime - padding, end: maxTime + padding }
 })
 
 // 构建甘特图数据（全部任务）
