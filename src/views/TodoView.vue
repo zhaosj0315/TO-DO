@@ -5282,6 +5282,9 @@ const initVersionHistory = () => {
         '🐛 修复日志附件 media 数据未传入 MarkdownRenderer',
         '🐛 修复 @update:media 模板赋值错误（Vue ref 解包陷阱）',
         '🐛 修复添加日志后任务详情未刷新导致 media 数据不同步',
+        '🐛 甘特图：修复同名任务重复显示（yAxis 改用 taskId 作唯一 key）',
+        '🐛 甘特图：修复任务名左侧大片留白（containLabel: false + 固定 grid.left）',
+        '🐛 甘特图：支持所有7种任务类型（今天/明天/本周/重复任务等）',
       ]
     },
     {
