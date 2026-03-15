@@ -85,7 +85,7 @@ const steps = [
   {
     target: null,
     icon: '👋',
-    title: '欢迎使用 TO-DO App v0.9.4！',
+    title: '欢迎使用 TO-DO App v0.9.5！',
     description: `
       这是一个<strong>功能强大的离线任务管理应用</strong><br>
       <strong>✨ 核心特色</strong>：<br>

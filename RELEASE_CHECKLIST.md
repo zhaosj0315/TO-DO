@@ -11,9 +11,9 @@
 
 | 文件 | 位置 | 示例 |
 |------|------|------|
-| `package.json` | `"version"` 字段 | `"version": "0.9.4"` |
-| `src/views/TodoView.vue` | `const CURRENT_VERSION` | `const CURRENT_VERSION = '0.9.4'` |
-| `src/views/TodoView.vue` | 底部 footer | `TO-DO App v0.9.4` |
+| `package.json` | `"version"` 字段 | `"version": "0.9.5"` |
+| `src/views/TodoView.vue` | `const CURRENT_VERSION` | `const CURRENT_VERSION = '0.9.5'` |
+| `src/views/TodoView.vue` | 底部 footer | `TO-DO App v0.9.5` |
 
 > ⚠️ 三处必须完全一致，否则版本更新通知逻辑会出错
 
