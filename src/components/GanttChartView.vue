@@ -7,6 +7,12 @@
           <span>← 返回</span>
         </button>
         <h2>📊 甘特图</h2>
+        <!-- 视图切换 -->
+        <div class="view-switcher">
+          <button v-for="v in viewOptions" :key="v.key"
+            :class="['view-btn', { active: viewMode === v.key }]"
+            @click="setViewMode(v.key)">{{ v.label }}</button>
+        </div>
         <div class="gantt-stats">
           <span class="stat-item">{{ totalTasks }} 个任务</span>
           <span class="stat-item">{{ inProgressTasks }} 进行中</span>
@@ -42,7 +48,21 @@ const taskStore = useOfflineTaskStore()
 const chartRef = ref(null)
 let chartInstance = null
 
-const viewMode = ref('week') // week, month, quarter
+const viewMode = ref('month') // day, week, month, quarter, year
+
+const viewOptions = [
+  { key: 'day',     label: '日' },
+  { key: 'week',    label: '周' },
+  { key: 'month',   label: '月' },
+  { key: 'quarter', label: '季' },
+  { key: 'year',    label: '年' },
+]
+
+const setViewMode = (mode) => {
+  viewMode.value = mode
+  if (chartInstance) { chartInstance.dispose(); chartInstance = null }
+  initChart()
+}
 const displayLimit = ref(8) // 🆕 默认只显示8个任务
 
 // 统计
@@ -247,37 +267,47 @@ function initChart() {
     grid: {
       left: isMobile ? 100 : 130,
       right: isMobile ? 20 : 40,
-      top: 20,
-      bottom: 50,
+      top: 40,
+      bottom: 20,
       height: Math.max(ganttData.value.length * 40, chartRef.value.clientHeight - 80),
       containLabel: false
     },
     xAxis: {
       type: 'time',
+      position: 'top',
       min: timeRange.value.start,
       max: timeRange.value.end,
       splitLine: {
         show: true,
-        lineStyle: {
-          color: '#e5e7eb',
-          type: 'solid',
-          width: 1
-        }
+        lineStyle: { color: '#e5e7eb', type: 'solid', width: 1 }
       },
       axisLine: {
-        lineStyle: {
-          color: '#d1d5db',
-          width: 1
-        }
+        lineStyle: { color: '#d1d5db', width: 1 }
       },
       axisLabel: {
         fontSize: isMobile ? 11 : 12,
         color: '#6b7280',
         formatter: (value) => {
-          const date = new Date(value)
-          return `${date.getMonth() + 1}/${date.getDate()}`
+          const d = new Date(value)
+          const m = d.getMonth() + 1
+          const day = d.getDate()
+          if (viewMode.value === 'day') return `${m}/${day}`
+          if (viewMode.value === 'week') return `${m}/${day}`
+          if (viewMode.value === 'month') return `${m}月`
+          if (viewMode.value === 'quarter') return `${m}月`
+          if (viewMode.value === 'year') return `${d.getFullYear()}/${m}`
+          return `${m}/${day}`
         }
-      }
+      },
+      minInterval: (() => {
+        const DAY = 86400000
+        if (viewMode.value === 'day') return DAY
+        if (viewMode.value === 'week') return DAY * 7
+        if (viewMode.value === 'month') return DAY * 28
+        if (viewMode.value === 'quarter') return DAY * 85
+        if (viewMode.value === 'year') return DAY * 365
+        return DAY * 7
+      })()
     },
     yAxis: {
       type: 'category',
@@ -519,6 +549,31 @@ onUnmounted(() => {
     width: 100%;
     order: -1;
   }
+}
+
+.view-switcher {
+  display: flex;
+  gap: 4px;
+  background: rgba(0,0,0,0.15);
+  border-radius: 20px;
+  padding: 3px;
+}
+
+.view-btn {
+  padding: 3px 10px;
+  border: none;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  color: rgba(255,255,255,0.7);
+  background: transparent;
+  transition: all 0.2s;
+}
+
+.view-btn.active {
+  background: rgba(255,255,255,0.9);
+  color: #6d28d9;
 }
 
 .gantt-stats {
