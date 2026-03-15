@@ -71,38 +71,30 @@ const inProgressTasks = computed(() =>
   allGanttData.value.filter(t => t.status === 'pending').length
 )
 
-// 计算时间范围
+// 计算时间范围：根据 viewMode 固定窗口，以今天为基准
 const timeRange = computed(() => {
-  // 🔧 修复：根据实际任务的时间范围自动调整
-  if (ganttData.value.length === 0) {
-    const now = new Date()
-    return { 
-      start: now.getTime(), 
-      end: now.getTime() + 7 * 24 * 60 * 60 * 1000 
-    }
-  }
-  
-  // 找出所有任务的最早开始时间和最晚结束时间
-  let minTime = Infinity
-  let maxTime = -Infinity
-  
-  ganttData.value.forEach(task => {
-    if (task.value[0] < minTime) minTime = task.value[0]
-    if (task.value[1] > maxTime) maxTime = task.value[1]
-  })
-  
-  // 添加一些边距（前后各加10%）
-  const timeSpan = maxTime - minTime
-  const padding = timeSpan * 0.1
-  
-  console.log('📊 自动计算时间范围:')
-  console.log('  最早:', new Date(minTime))
-  console.log('  最晚:', new Date(maxTime))
-  console.log('  时间跨度:', Math.round(timeSpan / (24 * 60 * 60 * 1000)), '天')
-  
-  return { 
-    start: minTime - padding, 
-    end: maxTime + padding 
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const DAY = 86400000
+
+  switch (viewMode.value) {
+    case 'day':
+      // 最近7天（前3天 + 今天 + 后3天）
+      return { start: today.getTime() - 3 * DAY, end: today.getTime() + 4 * DAY }
+    case 'week':
+      // 最近4周（本周起前3周 + 后1周）
+      return { start: today.getTime() - 21 * DAY, end: today.getTime() + 7 * DAY }
+    case 'month':
+      // 最近3个月（前2个月 + 后1个月）
+      return { start: today.getTime() - 60 * DAY, end: today.getTime() + 30 * DAY }
+    case 'quarter':
+      // 最近半年（前4个月 + 后2个月）
+      return { start: today.getTime() - 120 * DAY, end: today.getTime() + 60 * DAY }
+    case 'year':
+      // 最近2年（前1年 + 后1年）
+      return { start: today.getTime() - 365 * DAY, end: today.getTime() + 365 * DAY }
+    default:
+      return { start: today.getTime() - 60 * DAY, end: today.getTime() + 30 * DAY }
   }
 })
 
@@ -304,8 +296,8 @@ function initChart() {
         if (viewMode.value === 'day') return DAY
         if (viewMode.value === 'week') return DAY * 7
         if (viewMode.value === 'month') return DAY * 28
-        if (viewMode.value === 'quarter') return DAY * 85
-        if (viewMode.value === 'year') return DAY * 365
+        if (viewMode.value === 'quarter') return DAY * 30
+        if (viewMode.value === 'year') return DAY * 60
         return DAY * 7
       })()
     },
