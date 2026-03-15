@@ -180,13 +180,7 @@ const allGanttData = computed(() => {
       if (!task) return false
       return !isNaN(task.value[0]) && !isNaN(task.value[1]) && task.value[1] > task.value[0]
     })
-    .sort((a, b) => {
-      const priorityWeight = { high: 3, medium: 2, low: 1 }
-      if (priorityWeight[a.priority] !== priorityWeight[b.priority]) {
-        return priorityWeight[b.priority] - priorityWeight[a.priority]
-      }
-      return a.deadline - b.deadline
-    })
+    .sort((a, b) => b.deadline - a.deadline) // 截止时间倒序：最近到期的排最上面
 
   console.log('📊 甘特图全部数据:', data.length, '个任务')
   return data
