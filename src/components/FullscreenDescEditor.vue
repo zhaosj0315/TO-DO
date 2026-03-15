@@ -79,6 +79,10 @@
             <span class="fde-menu-icon">📐</span>
             <div><div class="fde-menu-title">Markdown 渲染</div><div class="fde-menu-desc">一键格式化为 Markdown</div></div>
           </button>
+          <button class="fde-menu-item" @click="runAI('autoTag')" :disabled="!localTitle.trim() && !localValue.trim()">
+            <span class="fde-menu-icon">🏷️</span>
+            <div><div class="fde-menu-title">自动打标签</div><div class="fde-menu-desc">AI 推荐 #标签，采纳后插入描述</div></div>
+          </button>
         </div>
       </div>
 
@@ -340,12 +344,18 @@ const AI_PROMPTS = {
   polish: (desc) => `请优化以下任务描述，使其更清晰专业，直接返回优化后内容：\n\n${desc}`,
   extract: (desc) => `请从以下内容提取3-5个关键要点，每行一条以"- "开头，只返回列表：\n\n${desc}`,
   rewrite: (desc) => `请用简洁口语化方式改写以下内容，直接返回改写结果：\n\n${desc}`,
-  markdown: (desc) => `请将以下内容转换为格式良好的Markdown，直接返回Markdown内容：\n\n${desc}`
+  markdown: (desc) => `请将以下内容转换为格式良好的Markdown，直接返回Markdown内容：\n\n${desc}`,
+  autoTag: (input) => `请根据以下任务信息，推荐3-6个合适的标签（中文或英文均可）。
+标签应简洁（2-6字），能反映任务的主题、领域或类型。
+只返回标签列表，每行一个，以"#"开头，不要其他内容。
+
+任务信息：${input}`
 }
 
 const AI_TITLES = {
   generateTitle: '✨ 生成标题', suggestion: '💡 生成描述', continue: '📝 续写内容',
-  polish: '🎯 优化润色', extract: '📋 提取要点', rewrite: '🔄 改写风格', markdown: '📐 Markdown 渲染'
+  polish: '🎯 优化润色', extract: '📋 提取要点', rewrite: '🔄 改写风格', markdown: '📐 Markdown 渲染',
+  autoTag: '🏷️ 自动打标签'
 }
 
 const runAI = async (action) => {
@@ -360,7 +370,14 @@ const runAI = async (action) => {
   showAIResult.value = true
 
   try {
-    const input = action === 'suggestion' ? localTitle.value : localValue.value
+    let input
+    if (action === 'suggestion') {
+      input = localTitle.value
+    } else if (action === 'autoTag') {
+      input = `标题：${localTitle.value}${localValue.value ? '\n描述：' + localValue.value.slice(0, 200) : ''}`
+    } else {
+      input = localValue.value
+    }
     const content = await callAI(AI_PROMPTS[action](input))
     aiResultContent.value = content
     // generateTitle 直接应用，不走预览
@@ -385,6 +402,15 @@ const adoptAIResult = () => {
   } else if (mode === 'markdown') {
     localValue.value = content
     isPreview.value = true
+  } else if (mode === 'autoTag') {
+    // 提取 #标签 并追加到描述末尾
+    const tags = content.split('\n')
+      .map(l => l.trim())
+      .filter(l => l.startsWith('#'))
+      .join(' ')
+    if (tags) {
+      localValue.value = (localValue.value ? localValue.value + '\n\n' : '') + tags
+    }
   } else {
     localValue.value = content
   }
