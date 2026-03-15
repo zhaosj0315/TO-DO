@@ -116,10 +116,8 @@ const timeRange = computed(() => {
   return { start, end }
 })
 
-// 构建甘特图数据（全部任务）
-// 根据任务类型推算截止时间（以任务创建时间为基准，而非今天）
+// 根据任务类型推算计划完成时间（以任务创建时间为基准）
 function getTaskDeadline(task) {
-  // 以任务创建时间为基准，推算当时的计划完成时间
   const base = task.created_at ? new Date(task.created_at) : new Date()
   const baseEnd = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 23, 59, 59)
 
@@ -131,11 +129,12 @@ function getTaskDeadline(task) {
       return isNaN(d) ? null : d
     }
     case 'today':
-    case 'daily':
       // 创建当天 23:59
       return baseEnd
+    case 'daily':
+      // 重复任务：条形固定为1天宽（创建当天 00:00 → 23:59），避免越来越长
+      return baseEnd
     case 'tomorrow': {
-      // 创建次日 23:59
       const d = new Date(baseEnd)
       d.setDate(d.getDate() + 1)
       return d
@@ -143,29 +142,28 @@ function getTaskDeadline(task) {
     case 'this_week': {
       // 创建时所在周的周日 23:59
       const d = new Date(baseEnd)
-      const day = d.getDay() // 0=周日
+      const day = d.getDay()
       d.setDate(d.getDate() + (day === 0 ? 0 : 7 - day))
       return d
     }
     case 'weekday': {
-      // 创建时当天若是工作日则当天，否则下个工作日
+      // 工作日重复：条形固定为1天宽（当天若非工作日则顺延到下个工作日）
       const d = new Date(baseEnd)
       const day = d.getDay()
-      if (day === 0) d.setDate(d.getDate() + 1) // 周日→周一
-      else if (day === 6) d.setDate(d.getDate() + 2) // 周六→周一
+      if (day === 0) d.setDate(d.getDate() + 1)       // 周日→周一
+      else if (day === 6) d.setDate(d.getDate() + 2)  // 周六→周一
       return d
     }
     case 'weekly': {
-      // 创建时所在周的指定星期几
+      // 每周重复：条形到创建时所在周最近的目标星期几 23:59，至少1天宽
       if (!task.weekdays || task.weekdays.length === 0) return baseEnd
       const d = new Date(baseEnd)
       const currentDay = d.getDay()
-      const targets = task.weekdays.map(w => {
+      const diffs = task.weekdays.map(w => {
         const diff = (w - currentDay + 7) % 7
-        return diff === 0 ? 0 : diff
+        return diff === 0 ? 7 : diff  // 当天恰好是目标星期几时，取下一周（保证至少1天宽）
       })
-      const minDiff = Math.min(...targets)
-      d.setDate(d.getDate() + minDiff)
+      d.setDate(d.getDate() + Math.min(...diffs))
       return d
     }
     default:
@@ -177,57 +175,44 @@ const allGanttData = computed(() => {
   const data = taskStore.tasks
     .map(task => {
       const startTime = new Date(task.created_at)
+      const plannedEnd = getTaskDeadline(task)
       // 已完成任务：右端用实际完成时间；未完成：用计划完成时间
-      let endTime
-      if (task.status === 'completed' && task.completed_at) {
-        endTime = new Date(task.completed_at)
-      } else {
-        endTime = getTaskDeadline(task)
-      }
+      const endTime = (task.status === 'completed' && task.completed_at)
+        ? new Date(task.completed_at)
+        : plannedEnd
       if (!endTime) return null
+
+      // 保证条形至少1小时宽（避免极窄条形）
+      const MIN_WIDTH = 3600000
+      const end = Math.max(endTime.getTime(), startTime.getTime() + MIN_WIDTH)
 
       return {
         name: task.text || '未命名任务',
-        value: [startTime.getTime(), endTime.getTime()],
-        itemStyle: {
-          color: getPriorityColor(task.priority),
-          opacity: task.status === 'completed' ? 0.5 : 1
-        },
+        value: [startTime.getTime(), end],
         status: task.status,
         priority: task.priority,
         taskId: task.id,
-        deadline: endTime.getTime(),
-        taskType: task.type,
-        plannedEnd: getTaskDeadline(task)?.getTime() || null,  // 保留计划时间用于 tooltip
+        deadline: plannedEnd?.getTime() ?? end,  // 排序用计划截止时间
+        plannedEnd: plannedEnd?.getTime() ?? null,
         completedAt: task.completed_at || null
       }
     })
-    .filter(task => {
-      if (!task) return false
-      return !isNaN(task.value[0]) && !isNaN(task.value[1]) && task.value[1] > task.value[0]
-    })
-    // 升序：截止时间最近的排在数组末尾 → ECharts Y轴从下到上，最近的显示在顶部
-    .sort((a, b) => a.deadline - b.deadline)
+    .filter(task => task && !isNaN(task.value[0]) && !isNaN(task.value[1]))
+    // 降序：截止时间最近的排在数组前面 → slice(0,N) 取最近的 → ECharts 顶部显示最近截止
+    .sort((a, b) => a.deadline - b.deadline)  // 升序，ECharts Y轴从下到上，顶部=数组末尾
 
   console.log('📊 甘特图全部数据:', data.length, '个任务')
   return data
 })
 
-// 显示的任务数据（取截止时间最近的前N个，即数组末尾）
+// 显示的任务数据：取截止时间最近的前N个（数组末尾）
 const ganttData = computed(() => {
   const all = allGanttData.value
   return all.slice(Math.max(0, all.length - displayLimit.value))
 })
 
-// 🆕 是否还有更多任务
-const hasMoreTasks = computed(() => {
-  return allGanttData.value.length > displayLimit.value
-})
-
-// 🆕 剩余任务数量
-const remainingTasks = computed(() => {
-  return allGanttData.value.length - displayLimit.value
-})
+const hasMoreTasks = computed(() => allGanttData.value.length > displayLimit.value)
+const remainingTasks = computed(() => allGanttData.value.length - displayLimit.value)
 
 // 🆕 显示更多任务
 const showMoreTasks = () => {
