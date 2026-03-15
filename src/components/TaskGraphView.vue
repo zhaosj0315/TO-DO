@@ -54,15 +54,6 @@
           </div>
           <button class="ctrl-tag reset" @click="resetView">🔄 重置</button>
         </div>
-        <!-- 关系类型开关 -->
-        <div class="controls-toggles">
-          <button :class="['ctrl-tag', { active: showLinks }]" @click="showLinks = !showLinks">🔗 引用</button>
-          <button :class="['ctrl-tag', { active: showDependencies }]" @click="showDependencies = !showDependencies">🔒 依赖</button>
-          <button :class="['ctrl-tag', { active: showSubtasks }]" @click="showSubtasks = !showSubtasks">🌳 父子</button>
-          <button :class="['ctrl-tag', { active: showTagRelations }]" @click="showTagRelations = !showTagRelations">🏷️ 标签</button>
-          <button :class="['ctrl-tag', { active: showCollectionRelations }]" @click="showCollectionRelations = !showCollectionRelations">📓 笔记本</button>
-          <button :class="['ctrl-tag', { active: !hideIsolated }]" @click="hideIsolated = !hideIsolated">🔵 孤立</button>
-        </div>
       </div>
 
       <!-- 图谱容器 -->
@@ -1518,13 +1509,6 @@ watch(showAdvanced, () => {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-}
-
-.controls-toggles {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-top: 6px;
 }
 
 .search-input {
