@@ -230,9 +230,13 @@ function initChart() {
   // 移动端优化：任务名称截断
   const isMobile = window.innerWidth < 768
   const maxNameLength = isMobile ? 8 : 15
-  const taskNames = ganttData.value.map(t => 
-    t.name.substring(0, maxNameLength) + (t.name.length > maxNameLength ? '...' : '')
-  )
+  // 用 taskId 作为唯一 key，避免同名任务合并到同一行
+  const taskKeys = ganttData.value.map(t => String(t.taskId))
+  const taskNameMap = {}
+  ganttData.value.forEach(t => {
+    const name = t.name.substring(0, maxNameLength) + (t.name.length > maxNameLength ? '...' : '')
+    taskNameMap[String(t.taskId)] = name
+  })
 
   const option = {
     tooltip: {
@@ -249,12 +253,12 @@ function initChart() {
       }
     },
     grid: {
-      left: isMobile ? 20 : 20,  // ✨ 与返回按钮左对齐
+      left: isMobile ? 100 : 130,  // 固定留出任务名宽度，不用 containLabel
       right: isMobile ? 20 : 40,
       top: 80,
       bottom: 50,
       height: Math.max(ganttData.value.length * 50, 300),
-      containLabel: true
+      containLabel: false
     },
     xAxis: {
       type: 'time',
@@ -285,7 +289,7 @@ function initChart() {
     },
     yAxis: {
       type: 'category',
-      data: taskNames,
+      data: taskKeys,
       splitLine: {
         show: true,
         lineStyle: {
@@ -295,7 +299,7 @@ function initChart() {
         }
       },
       axisLine: {
-        show: true,  // ✨ 显示Y轴线作为分隔线
+        show: true,
         lineStyle: {
           color: '#d1d5db',
           width: 2
@@ -308,10 +312,11 @@ function initChart() {
         fontSize: isMobile ? 12 : 14,
         color: '#1f2937',
         fontWeight: 500,
-        align: 'left',
-        padding: [0, 8, 0, 20],  // ✨ 左边距20px，与返回按钮对齐
+        align: 'right',
+        padding: [0, 8, 0, 0],
         overflow: 'truncate',
-        ellipsis: '...'
+        ellipsis: '...',
+        formatter: (value) => taskNameMap[value] || value
       }
     },
     series: [
@@ -383,8 +388,7 @@ function initChart() {
           data: [{ xAxis: new Date().getTime() }]
         },
         encode: {
-          x: [0, 1],
-          y: 0
+          x: [0, 1]
         },
         data: ganttData.value
       }
