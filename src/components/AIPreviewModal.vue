@@ -11,18 +11,34 @@
       </div>
       
       <div class="preview-content">
-        <textarea 
-          v-if="!isMarkdownMode"
-          v-model="editableContent"
-          class="preview-textarea"
-          placeholder="AI生成的内容..."
-          rows="10"
-        ></textarea>
-        <div 
-          v-else
-          class="markdown-preview"
-          v-html="renderedMarkdown"
-        ></div>
+        <!-- 标签模式：chip 列表 -->
+        <div v-if="props.mode === 'autoTag'" class="tag-chip-area">
+          <div class="tag-chip-hint">点击标签可删除，点击"+ 添加"可新增</div>
+          <div class="tag-chips">
+            <span
+              v-for="(tag, i) in editableTags"
+              :key="i"
+              class="tag-chip"
+              @click="removeTag(i)"
+            >{{ tag }} ✕</span>
+            <span class="tag-chip tag-chip-add" @click="addTag">+ 添加</span>
+          </div>
+        </div>
+        <!-- 普通模式 -->
+        <template v-else>
+          <textarea 
+            v-if="!isMarkdownMode"
+            v-model="editableContent"
+            class="preview-textarea"
+            placeholder="AI生成的内容..."
+            rows="10"
+          ></textarea>
+          <div 
+            v-else
+            class="markdown-preview"
+            v-html="renderedMarkdown"
+          ></div>
+        </template>
       </div>
       
       <div class="preview-actions">
@@ -175,22 +191,34 @@ const simpleMarkdownFallback = (text) => {
 const props = defineProps({
   visible: Boolean,
   content: String,
-  title: {
-    type: String,
-    default: '✨ AI生成预览'
-  },
-  loading: Boolean
+  title: { type: String, default: '✨ AI生成预览' },
+  loading: Boolean,
+  mode: { type: String, default: '' }  // 'autoTag' 时展示标签编辑模式
 })
 
 const emit = defineEmits(['close', 'adopt', 'regenerate'])
 
 const editableContent = ref('')
-const isMarkdownMode = ref(true) // 默认预览模式
+const isMarkdownMode = ref(true)
+const editableTags = ref([])
 
-// 监听content变化，更新可编辑内容
+// 监听content变化
 watch(() => props.content, (newContent) => {
   editableContent.value = newContent
+  // autoTag 模式：解析 #标签 列表
+  if (props.mode === 'autoTag' && newContent) {
+    editableTags.value = newContent.split('\n')
+      .map(l => l.trim())
+      .filter(l => l.startsWith('#'))
+      .map(l => l)
+  }
 }, { immediate: true })
+
+const removeTag = (i) => { editableTags.value.splice(i, 1) }
+const addTag = () => {
+  const name = prompt('输入标签名称（不含#）：')
+  if (name?.trim()) editableTags.value.push('#' + name.trim())
+}
 
 // 渲染 Markdown
 const renderedMarkdown = computed(() => {
@@ -230,7 +258,11 @@ const toggleMode = () => {
 }
 
 const handleAdopt = () => {
-  emit('adopt', editableContent.value)
+  if (props.mode === 'autoTag') {
+    emit('adopt', editableTags.value.join(' '))
+  } else {
+    emit('adopt', editableContent.value)
+  }
 }
 
 const handleRegenerate = () => {
@@ -239,6 +271,22 @@ const handleRegenerate = () => {
 </script>
 
 <style scoped>
+.tag-chip-area { padding: 12px 0; }
+.tag-chip-hint { font-size: 0.8rem; color: #999; margin-bottom: 10px; }
+.tag-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.tag-chip {
+  padding: 6px 12px; border-radius: 20px;
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  color: white; font-size: 0.85rem; cursor: pointer;
+  transition: all 0.2s;
+}
+.tag-chip:hover { opacity: 0.8; transform: scale(0.97); }
+.tag-chip-add {
+  background: #f3f4f6; color: #6b7280;
+  border: 1px dashed #d1d5db;
+}
+.tag-chip-add:hover { background: #e5e7eb; }
+
 .modal-overlay {
   position: fixed !important;
   top: 0 !important;

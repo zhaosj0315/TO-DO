@@ -2357,6 +2357,7 @@
       :content="aiPreviewContent"
       :title="aiPreviewTitle"
       :loading="aiLoading"
+      :mode="currentAIMode"
       @close="showAIPreview = false"
       @adopt="handleAdoptAIContent"
       @regenerate="handleRegenerateAI"
@@ -2553,6 +2554,17 @@
               <div class="menu-content">
                 <div class="menu-title">Markdown 渲染</div>
                 <div class="menu-desc">一键格式化为 Markdown</div>
+              </div>
+            </button>
+            <button 
+              class="menu-item" 
+              @click="handleAIAction('autoTag')"
+              :disabled="!quickTaskInput.trim() && !newTaskDescription.trim()"
+            >
+              <span class="menu-icon">🏷️</span>
+              <div class="menu-content">
+                <div class="menu-title">自动打标签</div>
+                <div class="menu-desc">AI 推荐 #标签，可编辑后采纳</div>
               </div>
             </button>
           </div>
@@ -6844,6 +6856,11 @@ const handleAdoptAIContent = (content) => {
     // Markdown渲染：替换原内容并切换到预览模式
     newTaskDescription.value = content
     isMarkdownPreview.value = true
+  } else if (currentAIMode.value === 'autoTag') {
+    // 自动打标签：追加到描述末尾
+    if (content.trim()) {
+      newTaskDescription.value = (newTaskDescription.value ? newTaskDescription.value + '\n\n' : '') + content.trim()
+    }
   }
   
   showAIPreview.value = false
@@ -6898,6 +6915,54 @@ const handleAIAction = async (action) => {
     case 'rewrite':
       await rewriteStyle()
       break
+    case 'autoTag':
+      await autoTagTask()
+      break
+  }
+}
+
+// 🏷️ 自动打标签
+const autoTagTask = async () => {
+  const title = quickTaskInput.value.trim()
+  const desc = newTaskDescription.value.trim()
+  if (!title && !desc) { showNotification('请先输入标题或描述', 'error'); return }
+
+  try {
+    aiLoading.value = true
+    aiLoadingText.value = 'AI 正在推荐标签...'
+    const models = JSON.parse(localStorage.getItem('ai_models') || '[]')
+    const defaultModelId = localStorage.getItem('ai_default_model')
+    const defaultModel = models.find(m => m.id === defaultModelId) || models[0]
+    if (!defaultModel) { showNotification('请先配置 AI 模型', 'error'); return }
+
+    const input = `标题：${title}${desc ? '\n描述：' + desc.slice(0, 200) : ''}`
+    const prompt = `请根据以下任务信息，推荐3-6个合适的标签（中文或英文均可）。
+标签应简洁（2-6字），能反映任务的主题、领域或类型。
+只返回标签列表，每行一个，以"#"开头，不要其他内容。
+
+任务信息：${input}`
+
+    let apiUrl = defaultModel.url
+    if (!apiUrl.includes('/v1/chat/completions')) {
+      apiUrl = apiUrl.replace(/\/api\/.*$/, '').replace(/\/v1.*$/, '').replace(/\/$/, '') + '/v1/chat/completions'
+    }
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${defaultModel.apiKey || 'dummy'}` },
+      body: JSON.stringify({ model: defaultModel.modelName || defaultModel.model, messages: [{ role: 'user', content: prompt }], temperature: 0.3, max_tokens: 200 })
+    })
+    const data = await res.json()
+    const content = data.choices?.[0]?.message?.content || data.response || ''
+    if (content) {
+      currentAIMode.value = 'autoTag'
+      aiPreviewContent.value = content
+      aiPreviewTitle.value = '🏷️ 自动打标签'
+      showAIPreview.value = true
+    }
+  } catch (e) {
+    showNotification('标签推荐失败', 'error')
+  } finally {
+    aiLoading.value = false
   }
 }
 
